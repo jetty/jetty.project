@@ -27,13 +27,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -637,7 +642,34 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             return;
 
         if (_coreRequest.getConnectionMetaData().isPersistent())
+        {
+            _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, l) ->
+            {
+                if (l == null || l.isEmpty())
+                    return HttpFields.CONNECTION_CLOSE;
+
+                if (l.size() == 1)
+                {
+                    HttpField f = l.get(0);
+                    String v = f.getValue();
+                    if (HttpHeaderValue.CLOSE.is(v) || HttpHeaderValue.KEEP_ALIVE.is(v))
+                        return HttpFields.CONNECTION_CLOSE;
+                }
+
+                String coalesced = l.stream()
+                    .flatMap(field -> Stream.of(field.getValues()))
+                    .filter(v -> !HttpHeaderValue.KEEP_ALIVE.is(v))
+                    .collect(Collectors.joining(", "));
+
+                if (!HttpField.contains(coalesced, HttpHeaderValue.CLOSE.asString()))
+                    coalesced += ", close";
+
+                // Returns a single Cookie header with all cookies.
+                return new HttpField(HttpHeader.CONNECTION, coalesced);
+
+            });
             _response.getHttpFields().ensureField(HttpFields.CONNECTION_CLOSE);
+        }
     }
 
     /**

@@ -1588,6 +1588,9 @@ public class Request implements HttpServletRequest
 
     void setCoreRequest(org.eclipse.jetty.server.Request coreRequest)
     {
+        _input.reopen();
+        _channel.getResponse().getHttpOutput().reopen();
+
         _coreRequest = coreRequest;
         _metaData = new MetaData.Request(
             _coreRequest.getMethod(),
@@ -1603,7 +1606,7 @@ public class Request implements HttpServletRequest
         UriCompliance compliance = null;
         if (uri.hasViolations())
         {
-            compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
+            compliance = _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
             String badMessage = UriCompliance.checkUriCompliance(compliance, uri);
             if (badMessage != null)
                 throw new BadMessageException(badMessage);
@@ -1714,14 +1717,7 @@ public class Request implements HttpServletRequest
         _handled = false;
         _contentParamsExtracted = false;
         _requestedSessionIdFromCookie = false;
-        _attributes = Attributes.unwrap(_attributes);
-        if (_attributes != null)
-        {
-            if (ServletAttributes.class.equals(_attributes.getClass()))
-                _attributes.clearAttributes();
-            else
-                _attributes = null;
-        }
+        _attributes = null;
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
@@ -1786,15 +1782,17 @@ public class Request implements HttpServletRequest
     @Override
     public void setAttribute(String name, Object value)
     {
-        Object oldValue = _attributes == null ? null : _attributes.getAttribute(name);
+        if (_attributes == null)
+            return;
 
-        if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
-            setQueryEncoding(value == null ? null : value.toString());
-        else if ("org.eclipse.jetty.server.sendContent".equals(name))
-            LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
+        // TODO are these still needed?
+        switch (name)
+        {
+            case "org.eclipse.jetty.server.Request.queryEncoding" -> setQueryEncoding(value == null ? null : value.toString());
+            case "org.eclipse.jetty.server.sendContent" -> LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
+        }
 
-        if (_attributes != null)
-            _attributes.setAttribute(name, value);
+        Object oldValue = _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
         {

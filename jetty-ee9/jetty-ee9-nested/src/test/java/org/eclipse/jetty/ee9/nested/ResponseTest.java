@@ -29,7 +29,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -65,6 +64,7 @@ import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -2183,24 +2183,23 @@ public class ResponseTest
     }
 
     @Test
-    @Disabled // TODO
     public void testEnsureConsumeAllOrNotPersistentHttp10() throws Exception
     {
         Response response = getResponse(HttpVersion.HTTP_1_0);
         response.getHttpChannel().ensureConsumeAllOrNotPersistent();
-        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
 
         response = getResponse(HttpVersion.HTTP_1_0);
         response.setHeader(HttpHeader.CONNECTION, "keep-alive");
         response.getHttpChannel().ensureConsumeAllOrNotPersistent();
-        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
 
         response = getResponse(HttpVersion.HTTP_1_0);
         response.setHeader(HttpHeader.CONNECTION, "before");
         response.getHttpFields().add(HttpHeader.CONNECTION, "foo, keep-alive, bar");
         response.getHttpFields().add(HttpHeader.CONNECTION, "after");
         response.getHttpChannel().ensureConsumeAllOrNotPersistent();
-        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("before, foo, bar, after"));
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("before, foo, bar, after, close"));
 
         response = getResponse(HttpVersion.HTTP_1_0);
         response.setHeader(HttpHeader.CONNECTION, "close");
@@ -2258,199 +2257,8 @@ public class ResponseTest
 
         MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
-        org.eclipse.jetty.server.Request coreRequest = new org.eclipse.jetty.server.Request()
-        {
-            @Override
-            public String getId()
-            {
-                return "test";
-            }
-
-            @Override
-            public Components getComponents()
-            {
-                return null;
-            }
-
-            @Override
-            public ConnectionMetaData getConnectionMetaData()
-            {
-                return new MockConnectionMetaData();
-            }
-
-            @Override
-            public String getMethod()
-            {
-                return reqMeta.getMethod();
-            }
-
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return reqMeta.getURI();
-            }
-
-            @Override
-            public Context getContext()
-            {
-                return _server.getContext();
-            }
-
-            @Override
-            public String getPathInContext()
-            {
-                return reqMeta.getURI().getCanonicalPath();
-            }
-
-            @Override
-            public HttpFields getHeaders()
-            {
-                return reqMeta.getFields();
-            }
-
-            @Override
-            public long getTimeStamp()
-            {
-                return now;
-            }
-
-            @Override
-            public boolean isSecure()
-            {
-                return false;
-            }
-
-            @Override
-            public long getContentLength()
-            {
-                return 0;
-            }
-
-            @Override
-            public Content readContent()
-            {
-                return null;
-            }
-
-            @Override
-            public void demandContent(Runnable onContentAvailable)
-            {
-
-            }
-
-            @Override
-            public void push(MetaData.Request request)
-            {
-
-            }
-
-            @Override
-            public boolean addErrorListener(Predicate<Throwable> onError)
-            {
-                return false;
-            }
-
-            @Override
-            public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
-            {
-
-            }
-
-            @Override
-            public Object removeAttribute(String name)
-            {
-                return null;
-            }
-
-            @Override
-            public Object setAttribute(String name, Object attribute)
-            {
-                return null;
-            }
-
-            @Override
-            public Object getAttribute(String name)
-            {
-                return null;
-            }
-
-            @Override
-            public Set<String> getAttributeNameSet()
-            {
-                return null;
-            }
-
-            @Override
-            public void clearAttributes()
-            {
-
-            }
-        };
-        org.eclipse.jetty.server.Response coreResponse = new org.eclipse.jetty.server.Response()
-        {
-            int _status;
-            final HttpFields.Mutable _headers = HttpFields.build();
-            boolean _committed;
-            boolean _last;
-
-            @Override
-            public org.eclipse.jetty.server.Request getRequest()
-            {
-                return coreRequest;
-            }
-
-            @Override
-            public int getStatus()
-            {
-                return _status;
-            }
-
-            @Override
-            public void setStatus(int code)
-            {
-                _status = code;
-            }
-
-            @Override
-            public HttpFields.Mutable getHeaders()
-            {
-                return _headers;
-            }
-
-            @Override
-            public HttpFields.Mutable getTrailers()
-            {
-                return null;
-            }
-
-            @Override
-            public void write(boolean last, Callback callback, ByteBuffer... content)
-            {
-                for (ByteBuffer c : content)
-                    BufferUtil.append(_content, c);
-                _committed = true;
-                _last |= last;
-                callback.succeeded();
-            }
-
-            @Override
-            public boolean isCommitted()
-            {
-                return _committed;
-            }
-
-            @Override
-            public boolean isCompletedSuccessfully()
-            {
-                return _last;
-            }
-
-            @Override
-            public void reset()
-            {
-
-            }
-        };
+        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now);
+        org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
         _channel.onRequest(coreRequest, coreResponse, Callback.NOOP);
         _channel.getRequest().setContext(_context.getServletContext(), "/path/info");
@@ -2461,5 +2269,184 @@ public class ResponseTest
 
     private static class TestServletContextHandler extends ContextHandler
     {
+    }
+
+    private class MockRequest extends Attributes.Mapped implements org.eclipse.jetty.server.Request
+    {
+        private final MetaData.Request _reqMeta;
+        private final long _now;
+
+        public MockRequest(MetaData.Request reqMeta, long now)
+        {
+            _reqMeta = reqMeta;
+            _now = now;
+        }
+
+        @Override
+        public String getId()
+        {
+            return "test";
+        }
+
+        @Override
+        public Components getComponents()
+        {
+            return null;
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return new MockConnectionMetaData();
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return _reqMeta.getMethod();
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return _reqMeta.getURI();
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return _server.getContext();
+        }
+
+        @Override
+        public String getPathInContext()
+        {
+            return _reqMeta.getURI().getCanonicalPath();
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _reqMeta.getFields();
+        }
+
+        @Override
+        public long getTimeStamp()
+        {
+            return _now;
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return false;
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return 0;
+        }
+
+        @Override
+        public Content readContent()
+        {
+            return Content.EOF;
+        }
+
+        @Override
+        public void demandContent(Runnable onContentAvailable)
+        {
+            onContentAvailable.run();
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+        }
+
+        @Override
+        public boolean addErrorListener(Predicate<Throwable> onError)
+        {
+            return false;
+        }
+
+        @Override
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        {
+        }
+    }
+
+    private class MockResponse implements org.eclipse.jetty.server.Response
+    {
+        private final org.eclipse.jetty.server.Request _coreRequest;
+        int _status;
+        final HttpFields.Mutable _headers;
+        boolean _committed;
+        boolean _last;
+
+        public MockResponse(org.eclipse.jetty.server.Request coreRequest)
+        {
+            _coreRequest = coreRequest;
+            _headers = HttpFields.build();
+        }
+
+        @Override
+        public org.eclipse.jetty.server.Request getRequest()
+        {
+            return _coreRequest;
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return _status;
+        }
+
+        @Override
+        public void setStatus(int code)
+        {
+            _status = code;
+        }
+
+        @Override
+        public HttpFields.Mutable getHeaders()
+        {
+            return _headers;
+        }
+
+        @Override
+        public HttpFields.Mutable getTrailers()
+        {
+            return null;
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            for (ByteBuffer c : content)
+                BufferUtil.append(_content, c);
+            _committed = true;
+            _last |= last;
+            callback.succeeded();
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return _committed;
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully()
+        {
+            return _last;
+        }
+
+        @Override
+        public void reset()
+        {
+
+        }
     }
 }

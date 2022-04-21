@@ -1870,7 +1870,8 @@ public class RequestTest
     public void testPushBuilder()
     {
         String uri = "/foo/something";
-        Request request = new TestRequest(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null);
+        HttpChannel httpChannel = new HttpChannel(null, new MockConnectionMetaData(new MockConnector()));
+        Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
@@ -1905,7 +1906,8 @@ public class RequestTest
     public void testPushBuilderWithIdNoAuth()
     {
         String uri = "/foo/something";
-        Request request = new TestRequest(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null)
+        HttpChannel httpChannel = new HttpChannel(null, new MockConnectionMetaData(new MockConnector()));
+        Request request = new MockRequest(httpChannel, new HttpInput(httpChannel))
         {
             @Override
             public Principal getUserPrincipal()
@@ -2046,14 +2048,14 @@ public class RequestTest
         }
     }
 
-    private static class TestRequest extends Request
+    private static class MockRequest extends Request
     {
         public static final String TEST_SESSION_ID = "abc123";
         Response _response = new Response(null, null);
         Cookie c1;
         Cookie c2;
 
-        public TestRequest(HttpChannel channel, HttpInput input)
+        public MockRequest(HttpChannel channel, HttpInput input)
         {
             super(channel, input);
             c1 = new Cookie("maxpos", "xxx");
@@ -2072,9 +2074,6 @@ public class RequestTest
         public HttpSession getSession()
         {
             return null;
-//            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID, "", "0.0.0.0", 0, 0, 0, 300));
-//            session.setResident(true); //necessary for session methods to not throw ISE
-//            return session;
         }
 
         @Override
