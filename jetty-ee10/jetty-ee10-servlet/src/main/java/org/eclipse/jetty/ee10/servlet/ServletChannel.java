@@ -733,7 +733,7 @@ public class ServletChannel implements Runnable
         try
         {
             _state.completing();
-            getResponse().write(true, Callback.from(() -> _state.completed(null), _state::completed));
+            getResponse().write(true, Callback.from(() -> _state.completed(null), _state::completed), getResponse().getHttpOutput().getBuffer());
         }
         catch (Throwable x)
         {

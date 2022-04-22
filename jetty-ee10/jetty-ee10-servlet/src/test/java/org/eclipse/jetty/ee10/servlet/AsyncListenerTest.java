@@ -148,7 +148,6 @@ public class AsyncListenerTest
         assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
     }
 
-    @Disabled
     @Test
     public void testStartAsyncThrowOnErrorSendErrorCustomErrorPage() throws Exception
     {
@@ -301,7 +300,6 @@ public class AsyncListenerTest
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
     }
 
-    @Disabled
     @Test
     public void testStartAsyncOnTimeoutSendErrorCustomErrorPage() throws Exception
     {
