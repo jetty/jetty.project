@@ -452,6 +452,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     }
                     catch (InterruptedException e)
                     {
+                        // TODO this is flaky sometimes. It may be that the test is stopped before the exchange is complete
                         throw new RuntimeException(e);
                     }
                 }
