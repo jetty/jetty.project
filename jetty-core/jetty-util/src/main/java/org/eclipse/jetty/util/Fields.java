@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>A container for name/value pairs, known as fields.</p>
@@ -111,6 +112,11 @@ public class Fields implements Iterable<Fields.Field>
             result.add(field.getName());
         }
         return result;
+    }
+
+    public Stream<Field> stream()
+    {
+        return fields.values().stream();
     }
 
     protected String normalizeName(String name)

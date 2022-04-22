@@ -11,42 +11,41 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Enumeration;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.HttpOutput;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +61,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled // TODO
 public class GzipHandlerTest
 {
     private static final String __content =
@@ -87,10 +85,12 @@ public class GzipHandlerTest
     private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", __content.hashCode());
     private static final String __icontent = "BEFORE" + __content + "AFTER";
 
+    private static final MimeTypes __mimeTypes = new MimeTypes();
+
     private Server _server;
     private LocalConnector _connector;
-    private GzipHandler gzipHandler;
-    private ServletContextHandler context;
+    private GzipHandler _gziphandler;
+    private ContextHandler _contextHandler;
 
     @BeforeEach
     public void init() throws Exception
@@ -99,214 +99,168 @@ public class GzipHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        gzipHandler = new GzipHandler();
-        gzipHandler.setMinGzipSize(16);
-        gzipHandler.setInflateBufferSize(4096);
+        CheckHandler checkHandler = new CheckHandler();
+        _server.setHandler(checkHandler);
 
-        context = new ServletContextHandler(_server, "/ctx");
+        _gziphandler = new GzipHandler();
+        _gziphandler.setMinGzipSize(16);
+        _gziphandler.setInflateBufferSize(4096);
+        checkHandler.setHandler(_gziphandler);
 
-        gzipHandler.setHandler(context);
-        context.addServlet(MicroServlet.class, "/micro");
-        context.addServlet(MicroChunkedServlet.class, "/microchunked");
-        context.addServlet(TestServlet.class, "/content");
-        context.addServlet(MimeTypeContentServlet.class, "/mimetypes/*");
-        context.addServlet(ForwardServlet.class, "/forward");
-        context.addServlet(IncludeServlet.class, "/include");
-        context.addServlet(EchoServlet.class, "/echo/*");
-        context.addServlet(DumpServlet.class, "/dump/*");
-        context.addServlet(AsyncServlet.class, "/async/*");
-        context.addServlet(BufferServlet.class, "/buffer/*");
-        context.addFilter(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-
-        _server.start();
+        _contextHandler = new ContextHandler("/ctx");
+        _gziphandler.setHandler(_contextHandler);
     }
 
-    public static class MicroServlet extends HttpServlet
+    public static class MicroHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setHeader("ETag", __contentETag);
-            String ifnm = req.getHeader("If-None-Match");
+            String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
-                response.sendError(304);
+                Response.writeError(request, response, callback, 304);
             else
             {
-                PrintWriter writer = response.getWriter();
-                writer.write(__micro);
+                response.write(true, callback, __micro);
             }
         }
     }
 
-    public static class MicroChunkedServlet extends HttpServlet
+    public static class MicroChunkedHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            PrintWriter writer = response.getWriter();
-            writer.write(__micro);
-            response.flushBuffer();
+            response.write(false, callback, __micro);
         }
     }
 
-    public static class MimeTypeContentServlet extends HttpServlet
+    public static class MimeTypeContentHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String pathInfo = req.getPathInfo();
-            resp.setContentType(getContentTypeFromRequest(pathInfo, req));
-            resp.getWriter().println("This is content for " + pathInfo);
+            String pathInfo = request.getPathInContext();
+            response.setContentType(getContentTypeFromRequest(pathInfo, request));
+            response.write(true, callback, "This is content for " + pathInfo + "\n");
         }
 
-        private String getContentTypeFromRequest(String filename, HttpServletRequest req)
+        private String getContentTypeFromRequest(String filename, Request request)
         {
             String defaultContentType = "application/octet-stream";
-            if (req.getParameter("type") != null)
-                defaultContentType = req.getParameter("type");
-            ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(getServletContext());
-            if (servletContextHandler == null)
-                return defaultContentType;
-            String contentType = servletContextHandler.getMimeTypes().getMimeByExtension(filename);
+            Fields parameters = Request.extractQueryParameters(request);
+            if (parameters.get("type") != null)
+                defaultContentType = parameters.get("type").getValue();
+
+            // TODO get mime type from context.
+            Context context = request.getContext();
+            String contentType = __mimeTypes.getMimeByExtension(filename);
             if (contentType != null)
                 return contentType;
             return defaultContentType;
         }
     }
 
-    public static class TestServlet extends HttpServlet
+    public static class TestHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            if (req.getParameter("vary") != null)
-                response.addHeader("Vary", req.getParameter("vary"));
+            if (HttpMethod.DELETE.is(request.getMethod()))
+            {
+                doDelete(request, response, callback);
+                return;
+            }
+
+            Fields parameters = Request.extractQueryParameters(request);
+            if (parameters.get("vary") != null)
+                response.addHeader("Vary", parameters.get("vary").getValue());
             response.setHeader("ETag", __contentETag);
-            String ifnm = req.getHeader("If-None-Match");
+            String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
-            {
-                response.setStatus(304);
-                response.flushBuffer();
-            }
+                Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
             else
-            {
-                PrintWriter writer = response.getWriter();
-                writer.write(__content);
-            }
+                response.write(true, callback, __content);
         }
 
-        @Override
-        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws IOException
+        void doDelete(Request request, Response response, Callback callback) throws IOException
         {
-            String ifm = req.getHeader("If-Match");
+            String ifm = request.getHeaders().get("If-Match");
             if (ifm != null && ifm.equals(__contentETag))
-                response.sendError(HttpServletResponse.SC_NO_CONTENT);
+                Response.writeError(request, response, callback, HttpStatus.NO_CONTENT_204);
             else
-                response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
+                Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
         }
     }
 
-    public static class AsyncServlet extends HttpServlet
+    public static class AsyncHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String writes = req.getParameter("writes");
-            final AsyncContext context = req.startAsync();
-            final ServletOutputStream out = response.getOutputStream();
+            Fields parameters = Request.extractQueryParameters(request);
+            String writes = parameters.get("writes").getValue();
+            AtomicInteger count = new AtomicInteger(writes == null ? 1 : Integer.parseInt(writes));
 
-            out.setWriteListener(new WriteListener()
+            response.setContentLength((long)count.get() * __bytes.length);
+
+            Runnable writer = new Runnable()
             {
-                int count = writes == null ? 1 : Integer.valueOf(writes);
-
-                {
-                    response.setContentLength(count * __bytes.length);
-                }
-
                 @Override
-                public void onWritePossible() throws IOException
+                public void run()
                 {
-                    while (out.isReady())
-                    {
-                        if (count-- == 0)
-                        {
-                            out.close();
-                            break;
-                        }
-
-                        out.write(__bytes);
-                    }
+                    if (count.getAndDecrement() == 0)
+                        response.write(true, callback);
+                    else
+                        response.write(false, Callback.from(this), ByteBuffer.wrap(__bytes));
                 }
+            };
 
-                @Override
-                public void onError(Throwable t)
-                {
-                    t.printStackTrace();
-                }
-            });
+            Context context = request.getContext();
+            context.run(writer);
         }
     }
 
-    public static class BufferServlet extends HttpServlet
+    public static class BufferHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            HttpOutput out = (HttpOutput)response.getOutputStream();
             ByteBuffer buffer = BufferUtil.toBuffer(__bytes).asReadOnlyBuffer();
             response.setContentLength(buffer.remaining());
             response.setContentType("text/plain");
-            out.write(buffer);
+            response.write(true, callback, buffer);
         }
     }
 
-    public static class EchoServlet extends HttpServlet
+    public static class EchoHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType(req.getContentType());
-            IO.copy(req.getInputStream(), response.getOutputStream());
-        }
+            HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+            if (contentType != null)
+                response.getHeaders().add(contentType);
 
-        @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
-        {
-            doGet(req, response);
+            IO.copy(Content.asInputStream(request), Content.asOutputStream(response));
+            callback.succeeded();
         }
     }
 
-    public static class DumpServlet extends HttpServlet
+    public static class DumpHandler extends Handler.Processor
     {
         @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setContentType("text/plain");
-            for (Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); )
-            {
-                String n = e.nextElement();
-                response.getWriter().printf("%s: %s\n", n, req.getParameter(n));
-            }
-        }
-    }
 
-    public static class ForwardServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            getServletContext().getRequestDispatcher("/content").forward(request, response);
-        }
-    }
+            Fields parameters = Request.extractQueryParameters(request);
+            FutureFormFields futureFormFields = new FutureFormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
+            parameters = futureFormFields.get();
 
-    public static class IncludeServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            response.getWriter().write("BEFORE");
-            getServletContext().getRequestDispatcher("/content").include(request, response);
-            response.getWriter().write("AFTER");
+            String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
+            response.write(true, callback, dump);
         }
     }
 
@@ -320,6 +274,9 @@ public class GzipHandlerTest
     @Test
     public void testNotGzipHandler() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -346,6 +303,9 @@ public class GzipHandlerTest
     @Test
     public void testBlockingResponse() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -373,6 +333,9 @@ public class GzipHandlerTest
     @Test
     public void testAsyncResponse() throws Exception
     {
+        _contextHandler.setHandler(new AsyncHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -399,6 +362,9 @@ public class GzipHandlerTest
     @Test
     public void testBufferResponse() throws Exception
     {
+        _contextHandler.setHandler(new BufferHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -425,6 +391,9 @@ public class GzipHandlerTest
     @Test
     public void testAsyncLargeResponse() throws Exception
     {
+        _contextHandler.setHandler(new AsyncHandler());
+        _server.start();
+
         int writes = 100;
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -457,8 +426,11 @@ public class GzipHandlerTest
     @Test
     public void testAsyncEmptyResponse() throws Exception
     {
+        _contextHandler.setHandler(new AsyncHandler());
+        _server.start();
+
         int writes = 0;
-        gzipHandler.setMinGzipSize(0);
+        _gziphandler.setMinGzipSize(0);
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -480,6 +452,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipHandlerWithMultipleAcceptEncodingHeaders() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -508,6 +483,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipNotMicro() throws Exception
     {
+        _contextHandler.setHandler(new MicroHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -533,8 +511,12 @@ public class GzipHandlerTest
     }
 
     @Test
+    @Disabled // TODO
     public void testGzipNotMicroChunked() throws Exception
     {
+        _contextHandler.setHandler(new MicroChunkedHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -564,6 +546,9 @@ public class GzipHandlerTest
     @Test
     public void testETagNotGzipHandler() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -583,8 +568,12 @@ public class GzipHandlerTest
     }
 
     @Test
+    @Disabled // TODO
     public void testETagGzipHandler() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -606,6 +595,9 @@ public class GzipHandlerTest
     @Test
     public void testDeleteETagGzipHandler() throws Exception
     {
+        _contextHandler.setHandler(new TestHandler());
+        _server.start();
+
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -618,7 +610,7 @@ public class GzipHandlerTest
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
-        assertThat(response.getStatus(), is(HttpServletResponse.SC_NOT_MODIFIED));
+        assertThat(response.getStatus(), Matchers.is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response.get("Content-Encoding"), not(Matchers.equalToIgnoringCase("gzip")));
 
         request = HttpTester.newRequest();
@@ -631,62 +623,8 @@ public class GzipHandlerTest
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
-        assertThat(response.getStatus(), is(HttpServletResponse.SC_NO_CONTENT));
+        assertThat(response.getStatus(), Matchers.is(HttpStatus.NO_CONTENT_204));
         assertThat(response.get("Content-Encoding"), not(Matchers.equalToIgnoringCase("gzip")));
-    }
-
-    @Test
-    public void testForwardGzipHandler() throws Exception
-    {
-        // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host", "tester");
-        request.setHeader("accept-encoding", "gzip");
-        request.setURI("/ctx/forward");
-
-        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
-
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
-        assertThat(response.get("ETag"), is(__contentETagGzip));
-        assertThat(response.get("Vary"), is("Accept-Encoding"));
-
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
-    }
-
-    @Test
-    public void testIncludeGzipHandler() throws Exception
-    {
-        // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host", "tester");
-        request.setHeader("accept-encoding", "gzip");
-        request.setURI("/ctx/include");
-
-        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
-
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
-        assertThat(response.get("ETag"), nullValue());
-        assertThat(response.get("Vary"), is("Accept-Encoding"));
-
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__icontent, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -704,6 +642,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipRequest() throws Exception
     {
+        _contextHandler.setHandler(new EchoHandler());
+        _server.start();
+
         String data = "Hello Nice World! ";
         for (int i = 0; i < 10; ++i)
         {
@@ -736,6 +677,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipRequestChunked() throws Exception
     {
+        _contextHandler.setHandler(new EchoHandler());
+        _server.start();
+
         String data = "Hello Nice World! ";
         for (int i = 0; i < 10; ++i)
         {
@@ -766,8 +710,12 @@ public class GzipHandlerTest
     }
 
     @Test
+    @Disabled // TODO
     public void testGzipFormRequest() throws Exception
     {
+        _contextHandler.setHandler(new DumpHandler());
+        _server.start();
+
         String data = "name=value";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
@@ -796,6 +744,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipBomb() throws Exception
     {
+        _contextHandler.setHandler(new EchoHandler());
+        _server.start();
+
         byte[] data = new byte[512 * 1024];
         Arrays.fill(data, (byte)'X');
 
@@ -827,9 +778,12 @@ public class GzipHandlerTest
     @Test
     public void testGzipExcludeNewMimeType() throws Exception
     {
+        _contextHandler.setHandler(new MimeTypeContentHandler());
+        _server.start();
+
         // setting all excluded mime-types to a mimetype new mime-type
         // Note: this mime-type does not exist in MimeTypes object.
-        gzipHandler.setExcludedMimeTypes("image/webfoo");
+        _gziphandler.setExcludedMimeTypes("image/webfoo");
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -870,26 +824,23 @@ public class GzipHandlerTest
         assertThat(response.get("Vary"), is("Accept-Encoding"));
     }
 
-    public static class CheckFilter implements Filter
+    public static class CheckHandler extends Handler.Wrapper
     {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException
+        public Request.Processor handle(Request request) throws Exception
         {
-        }
+            Request.Processor processor = super.handle(request);
+            if (processor == null)
+                return null;
 
-        @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            if (request.getParameter("X-Content-Encoding") != null)
-                assertEquals(-1, request.getContentLength());
-            else if (request.getContentLength() >= 0)
-                assertThat(request.getParameter("X-Content-Encoding"), Matchers.nullValue());
-            chain.doFilter(request, response);
-        }
-
-        @Override
-        public void destroy()
-        {
+            return (req, res, cb) ->
+            {
+                if (req.getHeaders().get("X-Content-Encoding") != null)
+                    assertEquals(-1, req.getContentLength());
+                else if (req.getContentLength() >= 0)
+                    MatcherAssert.assertThat(req.getHeaders().get("X-Content-Encoding"), nullValue());
+                processor.process(req, res, cb);
+            };
         }
     }
 }

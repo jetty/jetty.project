@@ -1549,7 +1549,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);

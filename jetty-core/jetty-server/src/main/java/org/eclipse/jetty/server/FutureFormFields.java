@@ -73,7 +73,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
     }
 
     private final Content.Reader _reader;
-    private final Fields _fields = new Fields();
+    private final Fields _fields;
     private final CharsetStringBuilder _builder;
     private final int _maxFields;
     private final int _maxSize;
@@ -82,15 +82,21 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
 
     public FutureFormFields(Content.Reader reader)
     {
-        this(reader, StandardCharsets.UTF_8, -1, -1);
+        this(reader, StandardCharsets.UTF_8, -1, -1, null);
     }
 
     public FutureFormFields(Content.Reader reader, Charset charset, int maxFields, int maxSize)
+    {
+        this(reader, charset, maxFields, maxSize, null);
+    }
+
+    public FutureFormFields(Content.Reader reader, Charset charset, int maxFields, int maxSize, Fields fields)
     {
         _reader = reader;
         _maxFields = maxFields;
         _maxSize = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
+        _fields = fields == null ? new Fields() : fields;
     }
 
     @Override
