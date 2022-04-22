@@ -40,7 +40,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -61,7 +60,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@Disabled
+@Disabled("A lot of the test expectations are now broken because of the request wrapping done by Jetty 12 implementation.")
 public class AsyncServletTest
 {
     protected AsyncServlet _servlet = new AsyncServlet();
@@ -185,6 +184,7 @@ public class AsyncServletTest
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(__history, contains(
             "REQUEST /ctx/noasync/info",
+            "wrapped REQ",
             "initial"
         ));
 
@@ -194,21 +194,22 @@ public class AsyncServletTest
     @Test
     public void testAsyncNotSupportedAsync() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
         {
             _expectedCode = "500 ";
             String response = process("noasync", "start=200", null);
             assertThat(response, Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(__history, contains(
                 "REQUEST /ctx/noasync/info?start=200",
+                "wrapped REQ",
                 "initial",
                 "ERROR /ctx/error/custom?start=200",
+                "wrapped REQ",
                 "!initial"
             ));
 
             assertContains("500", response);
-            assertContains("!asyncSupported", response);
-            assertContains("AsyncServletTest$AsyncServlet", response);
+            assertContains("Async Not Supported", response);
         }
     }
 
@@ -224,6 +225,7 @@ public class AsyncServletTest
             "start",
             "onTimeout",
             "ERROR /ctx/error/custom?start=200",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
 
