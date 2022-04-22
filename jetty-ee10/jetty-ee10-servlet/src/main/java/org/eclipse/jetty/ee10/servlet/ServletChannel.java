@@ -419,7 +419,7 @@ public class ServletChannel implements Runnable
                             {
                                 String contextPath = _request.getContext().getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                                pathInContext = dispatchUri.getPath();
+                                pathInContext = URIUtil.normalizePath(dispatchUri.getPath());
                                 uri = HttpURI.build(_request.getHttpURI())
                                     .path(URIUtil.addPaths(contextPath, pathInContext))
                                     .query(dispatchUri.getQuery());
