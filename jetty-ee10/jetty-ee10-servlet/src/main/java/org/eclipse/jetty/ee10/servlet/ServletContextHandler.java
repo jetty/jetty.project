@@ -1395,12 +1395,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         // TODO We should cache this heavy weight object!  Something like:
-        ServletChannel servletChannel = (ServletChannel)request.getComponents().getCache().get("blah.blah.ServletChannel");
+        // TODO: ServletChannel is not properly cleared out so I have disabled the caching of this for now.
+        ServletChannel servletChannel = null; // (ServletChannel)request.getComponents().getCache().get("blah.blah.ServletChannel");
         if (servletChannel == null)
         {
             // TODO this may not be the right object to recycle, but ultimately we want to reuse: HttpInput, HttpOutput, ServletChannelState etc. etc.
             servletChannel = new ServletChannel();
-            request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel);
+            // request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel); TODO: Re-enable.
         }
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);

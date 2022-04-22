@@ -142,7 +142,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        // TODO: should we set callback here instead of using the getCallback() below.
+        _servletChannel.setCallback(callback);
         super.process(request, response, callback);
     }
 
@@ -150,7 +150,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     protected ContextResponse newContextResponse(Request request, Response response)
     {
         _response = new ServletContextResponse(_servletChannel, this, response);
-        _servletChannel.setCallback(getCallback());
         return _response;
     }
 

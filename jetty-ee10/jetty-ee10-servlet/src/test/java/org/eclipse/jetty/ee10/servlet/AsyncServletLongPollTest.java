@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,7 +61,6 @@ public class AsyncServletLongPollTest
         server.stop();
     }
 
-    @Disabled
     @Test
     public void testSuspendedRequestCompletedByAnotherRequest() throws Exception
     {
