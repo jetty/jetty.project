@@ -104,7 +104,7 @@
     <jacoco.plugin.version>0.8.8</jacoco.plugin.version>
     <jetty-version-txt.plugin.version>2.7</jetty-version-txt.plugin.version>
     <license.plugin.version>4.1</license.plugin.version>
-    <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
+    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
