@@ -372,6 +372,8 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
         {
             org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+
+            // TODO should we use the Stream wrapper? Could use the HttpChannel#onCompleted mechanism instead.
             _sessionManager.addSessionStreamWrapper(coreRequest);
 
             // find and set the session if one exists

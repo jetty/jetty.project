@@ -186,7 +186,6 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
-    private List<Session> _sessions; //list of sessions used during lifetime of request
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -339,43 +338,6 @@ public class Request implements HttpServletRequest
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
-    }
-
-    /**
-     * Remember a session that this request has just entered.
-     *
-     * @param s the session
-     */
-    public void enterSession(HttpSession s)
-    {
-        // TODO use this?
-        if (!(s instanceof Session))
-            return;
-
-        if (_sessions == null)
-            _sessions = new ArrayList<>();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request {} entering session={}", this, s);
-        _sessions.add((Session)s);
-    }
-
-    /**
-     * Complete this request's access to a session.
-     *
-     * @param session the session
-     */
-    private void leaveSession(Session session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request {} leaving session {}", this, session);
-        //try and scope to a request and context before leaving the session
-        HttpSession httpSession = session.getAPISession();
-        ServletContext ctx = httpSession.getServletContext();
-        ContextHandler handler = ContextHandler.getContextHandler(ctx);
-        if (handler == null)
-            session.complete();
-        else
-            handler.handle(this, session::complete);
     }
 
     /**
@@ -1322,12 +1284,6 @@ public class Request implements HttpServletRequest
     {
         _input.releaseContent();
 
-        if (_sessions != null)
-        {
-            for (Session s:_sessions)
-                leaveSession(s);
-        }
-
         //Clean up any tmp files created by MultiPartInputStream
         if (_multiParts != null)
         {
@@ -1348,13 +1304,7 @@ public class Request implements HttpServletRequest
      */
     public void onResponseCommit()
     {
-        if (_sessions != null)
-        {
-            for (Session s:_sessions)
-            {
-                commitSession(s);
-            }
-        }
+        // TODO remove this method?
     }
 
     /**
@@ -1366,21 +1316,9 @@ public class Request implements HttpServletRequest
      */
     public HttpSession getSession(SessionManager sessionManager)
     {
-        if (_sessions == null || _sessions.size() == 0 || sessionManager == null)
-            return null;
-
-        HttpSession httpSession = null;
-
-        for (Session s : _sessions)
-        {
-            if (sessionManager == s.getSessionManager())
-            {
-                httpSession = s.getAPISession();
-                if (s.isValid())
-                    return httpSession;
-            }
-        }
-        return httpSession;
+        if (_coreSession != null && _coreSession.getSessionManager() == sessionManager)
+            return _coreSession.getAPISession();
+        return null;
     }
 
     @Override
@@ -1673,7 +1611,6 @@ public class Request implements HttpServletRequest
         if (_async != null)
             _async.reset();
         _async = null;
-        _sessions = null;
     }
 
     @Override
