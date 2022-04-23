@@ -64,7 +64,6 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -72,13 +71,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
@@ -152,6 +149,7 @@ public class Request implements HttpServletRequest
     }
 
     private final HttpChannel _channel;
+    private final ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private org.eclipse.jetty.server.Request _coreRequest;
@@ -164,7 +162,6 @@ public class Request implements HttpServletRequest
     private ServletPathMapping _servletPathMapping;
     private Object _asyncNotSupportedSource = null;
     private boolean _secure;
-    private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
     private boolean _contentParamsExtracted;
@@ -173,8 +170,6 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private String _contentType;
     private String _characterEncoding;
-    private ContextHandler.APIContext _context;
-    private ContextHandler.APIContext _errorContext;
     private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -197,6 +192,7 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _input = input;
+        _context = channel.getContextHandler().getServletContext();
     }
 
     public HttpFields getHttpFields()
@@ -732,7 +728,7 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @return The current {@link ContextHandler.APIContext context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
+     * @return The {@link ContextHandler.APIContext context} used for this request. Never null.
      */
     public ContextHandler.APIContext getContext()
     {
@@ -745,14 +741,7 @@ public class Request implements HttpServletRequest
      */
     public ContextHandler.APIContext getErrorContext()
     {
-        if (isAsyncStarted())
-        {
-            ContextHandler handler = _channel.getState().getContextHandler();
-            if (handler != null)
-                return handler.getServletContext();
-        }
-
-        return _errorContext;
+        return _context;
     }
 
     @Override
@@ -784,7 +773,6 @@ public class Request implements HttpServletRequest
      * If no context is set, then the path in context is the full path.
      * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
      *         up to any {@link #getQueryString()}, excluding path parameters.
-     * @see #setContext(ContextHandler.APIContext, String)
      */
     public String getPathInContext()
     {
@@ -1455,11 +1443,13 @@ public class Request implements HttpServletRequest
         return _uri;
     }
 
-    public void setHttpURI(HttpURI uri)
+    public void onDispatch(HttpURI uri, String decodedPathInContext)
     {
         if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
             _parameters = _queryParameters = null;
         _uri = uri.asImmutable();
+        _pathInContext = decodedPathInContext;
+        _servletPathMapping = null;
     }
 
     /**
@@ -1586,7 +1576,7 @@ public class Request implements HttpServletRequest
         return false;
     }
 
-    void setCoreRequest(org.eclipse.jetty.server.Request coreRequest)
+    void onRequest(org.eclipse.jetty.server.Request coreRequest)
     {
         _input.reopen();
         _channel.getResponse().getHttpOutput().reopen();
@@ -1601,67 +1591,11 @@ public class Request implements HttpServletRequest
         _attributes = new ServletAttributes(coreRequest);
 
         _method = _coreRequest.getMethod();
+        _uri = _coreRequest.getHttpURI();
+        _pathInContext = URIUtil.decodePath(_coreRequest.getPathInContext());
         _httpFields = _coreRequest.getHeaders();
-        final HttpURI uri = _coreRequest.getHttpURI();
-        UriCompliance compliance = null;
-        if (uri.hasViolations())
-        {
-            compliance = _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
-            String badMessage = UriCompliance.checkUriCompliance(compliance, uri);
-            if (badMessage != null)
-                throw new BadMessageException(badMessage);
-        }
 
-        if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
-        {
-            _uri = uri;
-        }
-        else
-        {
-            HttpURI.Mutable builder = HttpURI.build(uri);
-
-            if (!uri.isAbsolute())
-                builder.scheme(HttpScheme.HTTP.asString());
-
-            if (uri.getPath() == null)
-                builder.path("/");
-
-            if (!uri.hasAuthority())
-            {
-                HttpField field = getHttpFields().getField(HttpHeader.HOST);
-                if (field instanceof HostPortHttpField authority)
-                    builder.host(authority.getHost()).port(authority.getPort());
-                else
-                    builder.host(findServerName()).port(org.eclipse.jetty.server.Request.getServerPort(getCoreRequest()));
-            }
-            _uri = builder.asImmutable();
-        }
-        setSecure(HttpScheme.HTTPS.is(_uri.getScheme()));
-
-        String encoded = _uri.getPath();
-        String path;
-        if (encoded == null)
-            path = _uri.isAbsolute() ? "/" : null;  // TODO this is not really right for CONNECT
-
-        else if (encoded.startsWith("/"))
-        {
-            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
-        }
-        else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
-        {
-            path = encoded;
-        }
-        else
-        {
-            path = null;
-        }
-
-        if (path == null || path.isEmpty())
-        {
-            _pathInContext = encoded == null ? "" : encoded;
-            throw new BadMessageException(400, "Bad URI");
-        }
-        _pathInContext = path;
+        setSecure(_coreRequest.isSecure());
     }
 
     public org.eclipse.jetty.server.Request getCoreRequest()
@@ -1712,7 +1646,6 @@ public class Request implements HttpServletRequest
         _servletPathMapping = null;
         _asyncNotSupportedSource = null;
         _secure = false;
-        _newContext = false;
         _cookiesExtracted = false;
         _handled = false;
         _contentParamsExtracted = false;
@@ -1721,8 +1654,6 @@ public class Request implements HttpServletRequest
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
-        _context = null;
-        _errorContext = null;
         if (_cookies != null)
             _cookies.reset();
         _dispatcherType = null;
@@ -1933,33 +1864,6 @@ public class Request implements HttpServletRequest
     public void setContentType(String contentType)
     {
         _contentType = contentType;
-    }
-
-    /**
-     * Set request context and path in the context.
-     *
-     * @param context context object
-     * @param pathInContext the part of the URI path that is withing the context.
-     *                      For servlets, this is equal to servletPath + pathInfo
-     */
-    public void setContext(ContextHandler.APIContext context, String pathInContext)
-    {
-        _newContext = _context != context;
-        _context = context;
-        _pathInContext = pathInContext;
-        if (context != null)
-            _errorContext = context;
-    }
-
-    /**
-     * @return True if this is the first call of <code>takeNewContext()</code> since the last
-     * {@link #setContext(ContextHandler.APIContext, String)} call.
-     */
-    public boolean takeNewContext()
-    {
-        boolean nc = _newContext;
-        _newContext = false;
-        return nc;
     }
 
     /**

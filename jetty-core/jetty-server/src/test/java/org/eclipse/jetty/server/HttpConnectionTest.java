@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -1387,6 +1388,117 @@ public class HttpConnectionTest
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousParameters() throws Exception
+    {
+        String request = """
+            GET /ambiguous/..;/path HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSegments() throws Exception
+    {
+        String request = """
+            GET /ambiguous/%2e%2e/path HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSeparators() throws Exception
+    {
+        String request = """
+            GET /ambiguous/%2f/path HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(new UriCompliance("Test", EnumSet.noneOf(UriCompliance.Violation.class)));
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousPaths() throws Exception
+    {
+        String request = """
+            GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(
+            UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
+            UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
+            UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)));
+        assertThat(_connector.getResponse(request), Matchers.allOf(
+            startsWith("HTTP/1.1 200"),
+            containsString("pathInContext=/path/ambiguous%2F../info")));
+    }
+
+    @Test
+    public void testAmbiguousEncoding() throws Exception
+    {
+        String request = """
+            GET /ambiguous/encoded/%25/path HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        UriCompliance custom = new UriCompliance("Custom", EnumSet.complementOf(
+            EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(custom);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+    }
+
+    @Test
+    public void testAmbiguousDoubleSlash() throws Exception
+    {
+        String request = """
+            GET /ambiguous/doubleSlash// HTTP/1.0
+            Host: whatever
+            
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }

@@ -37,7 +37,7 @@ public class MetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
-    public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
+    public static final String VALIDATE_XML = "org.eclipse.jetty.ee9.webapp.validateXml";
     public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 

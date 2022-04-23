@@ -846,7 +846,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
-        _request.setCoreRequest(coreRequest);
+        _request.onRequest(coreRequest);
 
         _combinedListener.onRequestBegin(_request);
 

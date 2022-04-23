@@ -29,7 +29,6 @@ import java.security.Principal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -932,7 +931,7 @@ public class RequestTest
             @Override
             public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
             {
-                ConnectionMetaData cmd = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
+                ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
                     @Override
                     public SocketAddress getRemoteSocketAddress()
@@ -946,7 +945,7 @@ public class RequestTest
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
                     {
-                        return cmd;
+                        return connectionMetaData;
                     }
                 };
 
@@ -1705,24 +1704,20 @@ public class RequestTest
     @Test
     public void testNotSupportedCharacterEncoding()
     {
-        Request request = new Request(null, null);
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
         assertThrows(UnsupportedEncodingException.class, () -> request.setCharacterEncoding("doesNotExist"));
     }
 
     @Test
     public void testGetterSafeFromNullPointerException()
     {
-        Request request = new Request(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null);
+        // This is only needed for tests that mock with null values.
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
 
         assertNull(request.getAuthType());
         assertNull(request.getAuthentication());
-
         assertNull(request.getContentType());
-
         assertNull(request.getCookies());
-        assertNull(request.getContext());
-        assertNull(request.getContextPath());
-
         assertNull(request.getHttpFields());
         assertNull(request.getHttpURI());
 
@@ -1755,122 +1750,10 @@ public class RequestTest
     }
 
     @Test
-    public void testAmbiguousParameters() throws Exception
-    {
-        _handler._checker = (request, response) -> true;
-        String request = "GET /ambiguous/..;/path HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-    }
-
-    @Test
-    public void testAmbiguousSegments() throws Exception
-    {
-        _handler._checker = (request, response) -> true;
-        String request = "GET /ambiguous/%2e%2e/path HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-    }
-
-    @Test
-    public void testAmbiguousSeparators() throws Exception
-    {
-        _handler._checker = (request, response) -> true;
-        String request = "GET /ambiguous/%2f/path HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(new UriCompliance("Test", EnumSet.noneOf(UriCompliance.Violation.class)));
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-    }
-
-    @Test
-    public void testAmbiguousPaths() throws Exception
-    {
-        _handler._checker = (request, response) ->
-        {
-            response.getOutputStream().println("servletPath=" + request.getServletPath());
-            response.getOutputStream().println("pathInfo=" + request.getPathInfo());
-            return true;
-        };
-        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
-
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(
-            UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
-            UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
-            UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)));
-        assertThat(_connector.getResponse(request), Matchers.allOf(
-            startsWith("HTTP/1.1 200"),
-            containsString("pathInfo=/path/ambiguous%2F../info")));
-    }
-
-    @Test
-    public void testAmbiguousEncoding() throws Exception
-    {
-        _handler._checker = (request, response) -> true;
-        String request = "GET /ambiguous/encoded/%25/path HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-
-        UriCompliance custom = new UriCompliance("Custom", EnumSet.complementOf(
-            EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(custom);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-    }
-
-    @Test
-    public void testAmbiguousDoubleSlash() throws Exception
-    {
-        _handler._checker = (request, response) -> true;
-        String request = """
-            GET /ambiguous/doubleSlash// HTTP/1.0
-            Host: whatever
-            
-            """;
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-    }
-
-    @Test
     public void testPushBuilder()
     {
-        String uri = "/foo/something";
-        HttpChannel httpChannel = new HttpChannel(null, new MockConnectionMetaData(new MockConnector()));
+        String uri = "http://host/foo/something";
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
@@ -1878,7 +1761,7 @@ public class RequestTest
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
 
-        request.setCoreRequest(new TestCoreRequest(uri, fields));
+        request.onRequest(new TestCoreRequest(uri, fields));
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
@@ -1905,8 +1788,8 @@ public class RequestTest
     @Test
     public void testPushBuilderWithIdNoAuth()
     {
-        String uri = "/foo/something";
-        HttpChannel httpChannel = new HttpChannel(null, new MockConnectionMetaData(new MockConnector()));
+        String uri = "http://host/foo/something";
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel))
         {
             @Override
@@ -1916,7 +1799,7 @@ public class RequestTest
             }
         };
         HttpFields.Mutable fields = HttpFields.build();
-        request.setCoreRequest(new TestCoreRequest(uri, fields));
+        request.onRequest(new TestCoreRequest(uri, fields));
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);

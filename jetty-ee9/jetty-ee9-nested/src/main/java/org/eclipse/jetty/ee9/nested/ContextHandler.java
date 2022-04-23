@@ -853,13 +853,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final DispatcherType dispatch = baseRequest.getDispatcherType();
-        final boolean new_context = baseRequest.takeNewContext();
+        final boolean new_context = dispatch == DispatcherType.REQUEST;
         try
         {
             if (new_context)
                 requestInitialized(baseRequest, request);
 
-            if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
+            if (new_context && isProtectedTarget(target))
             {
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -1169,7 +1169,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         try
         {
-            _coreContextHandler.setResourceBase(base.getFile().toPath());
+            _coreContextHandler.setResourceBase(base == null ? null : base.getFile().toPath());
             _baseResource = base;
         }
         catch (IOException e)
@@ -1649,12 +1649,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
+        final String oldPathInContext = baseRequest.getPathInContext();
+        final ServletPathMapping oldServletPathMapping = baseRequest.getServletPathMapping();
         final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
         try
         {
             if (encodedPathQuery == null)
             {
-                baseRequest.setHttpURI(baseUri);
+                baseRequest.onDispatch(baseUri, oldPathInContext);
             }
             else
             {
@@ -1679,19 +1681,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     builder.param(baseUri.getParam());
                 if (StringUtil.isEmpty(builder.getQuery()))
                     builder.query(baseUri.getQuery());
-                baseRequest.setHttpURI(builder);
 
+                HttpURI uri = builder.asImmutable();
+                String pathInContext = uri.getDecodedPath();
+                if (baseRequest.getContextPath().length() > 1)
+                    pathInContext = pathInContext.substring(baseRequest.getContextPath().length());
+
+                baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
                     // TODO why can't the old map be passed?
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
-            baseRequest.setContext(null, baseRequest.getHttpURI().getDecodedPath());
             handleAsync(channel, event, baseRequest);
         }
         finally
         {
-            baseRequest.setHttpURI(oldUri);
+            baseRequest.onDispatch(oldUri, oldPathInContext);
+            baseRequest.setServletPathMapping(oldServletPathMapping);
             baseRequest.setQueryParameters(oldQueryParams);
             baseRequest.resetParameters();
         }
@@ -2544,7 +2551,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(request, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
             httpChannel.onRequest(request, response, callback);
-            httpChannel.getRequest().setContext(_apiContext, request.getPathInContext());
 
             httpChannel.handle();
         }

@@ -127,7 +127,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlet-extras</artifactId>
+      <artifactId>jetty-ee9-servlets</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

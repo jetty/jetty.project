@@ -25,7 +25,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 
-module org.eclipse.jetty.webapp
+module org.eclipse.jetty.ee9.webapp
 {
     requires org.slf4j;
 

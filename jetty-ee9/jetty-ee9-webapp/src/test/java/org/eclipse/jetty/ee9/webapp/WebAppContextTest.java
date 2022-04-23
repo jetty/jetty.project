@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -179,14 +180,14 @@ public class WebAppContextTest
         JmxConfiguration jmx = new JmxConfiguration();
         if (jmx.isAvailable()) // depending on JVM runtime, this might not be available when this test is run
         {
-            expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
+            expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JmxConfiguration");
         }
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.FragmentConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebAppConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration");
 
         assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }
@@ -227,6 +228,7 @@ public class WebAppContextTest
      * @throws Exception on test failure
      */
     @Test
+    @Disabled // No cross context dispatch
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();

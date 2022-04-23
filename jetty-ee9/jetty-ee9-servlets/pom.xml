@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-servlet-extras</artifactId>
-  <name>EE9 :: Jetty :: Extra Utility Servlets and Filters</name>
-  <description>Extra Utility Servlets from Jetty</description>
+  <artifactId>jetty-ee9-servlets</artifactId>
+  <name>EE9 :: Jetty :: Utility Servlets and Filters</name>
+  <description>Jetty Utility Servlets</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>
@@ -22,7 +22,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.ee9.servlets=java.management --add-reads org.eclipse.jetty.ee9.servlets=org.eclipse.jetty.jmx
           </argLine>
         </configuration>
       </plugin>

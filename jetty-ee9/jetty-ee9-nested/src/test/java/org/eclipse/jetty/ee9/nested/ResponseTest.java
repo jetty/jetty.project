@@ -330,10 +330,9 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        ContextHandler context = new ContextHandler();
+        ContextHandler context = _context;
         context.addLocaleEncoding(Locale.ENGLISH.toString(), "ISO-8859-1");
         context.addLocaleEncoding(Locale.ITALIAN.toString(), "ISO-8859-2");
-        response.getHttpChannel().getRequest().setContext(context.getServletContext(), "/");
 
         response.setLocale(java.util.Locale.ITALIAN);
         assertNull(response.getContentType());
@@ -353,10 +352,9 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        ContextHandler context = new ContextHandler();
+        ContextHandler context = _context;
         context.addLocaleEncoding(Locale.ENGLISH.toString(), "ISO-8859-1");
         context.addLocaleEncoding(Locale.ITALIAN.toString(), "ISO-8859-2");
-        response.getHttpChannel().getRequest().setContext(context.getServletContext(), "/");
 
         response.setLocale(java.util.Locale.ITALIAN);
 
@@ -399,46 +397,38 @@ public class ResponseTest
     {
         //test setting the default response character encoding
         Response response = getResponse();
-        response.getHttpChannel().getRequest().setContext(_context.getServletContext(), "/");
         assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
 
-        _channel.getRequest().setContext(null, "/");
         response.recycle();
 
         //test that explicit overrides default
         response = getResponse();
-        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setCharacterEncoding("ascii");
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
         //getWriter should not change explicit character encoding
         response.getWriter();
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
 
-        _channel.getRequest().setContext(null, "/");
         response.recycle();
 
         //test that assumed overrides default
         response = getResponse();
-        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setContentType("application/json");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
         response.getWriter();
         //getWriter should not have modified character encoding
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
-        _channel.getRequest().setContext(null, "/");
         response.recycle();
 
         //test that inferred overrides default
         response = getResponse();
-        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setContentType("application/xhtml+xml");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
         //getWriter should not have modified character encoding
         response.getWriter();
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
-        _channel.getRequest().setContext(null, "/");
         response.recycle();
 
         //test that without a default or any content type, use iso-8859-1
@@ -459,7 +449,6 @@ public class ResponseTest
         _server.start();
 
         Response response = getResponse();
-        response.getHttpChannel().getRequest().setContext(_context.getServletContext(), "/");
 
         response.setContentType("text/html");
         assertEquals("iso-8859-1", response.getCharacterEncoding());
@@ -1607,7 +1596,7 @@ public class ResponseTest
 
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
+        request.onDispatch(HttpURI.build(request.getHttpURI()).host("myhost").port(8888), "/path/info");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
@@ -1629,7 +1618,6 @@ public class ResponseTest
 
         // TODO assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
-        request.setContext(_context.getServletContext(), "/");
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
         assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
         assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
@@ -1719,7 +1707,7 @@ public class ResponseTest
                 uri.scheme("http");
                 if (host != null)
                     uri.host(host).port(port);
-                request.setHttpURI(uri);
+                request.onDispatch(uri, "/path/info");
 
                 request.setSessionManager(sessionHandler.getSessionManager());
                 request.setRequestedSessionId("12345");
@@ -1792,8 +1780,7 @@ public class ResponseTest
                     if (host != null)
                         uri.authority(host, port);
                     uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
-                    request.setHttpURI(uri);
-                    request.setContext(null, "/path");
+                    request.onDispatch(uri, "/info");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i > 2);
                     SessionHandler handler = new SessionHandler();
@@ -1952,9 +1939,7 @@ public class ResponseTest
     public void testAddCookieSameSiteDefault() throws Exception
     {
         Response response = getResponse();
-        TestServletContextHandler context = new TestServletContextHandler();
-        _channel.getRequest().setContext(context.getServletContext(), "/");
-        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
         Cookie cookie = new Cookie("name", "value");
         cookie.setDomain("domain");
         cookie.setPath("/path");
@@ -1968,7 +1953,7 @@ public class ResponseTest
         response.getHttpFields().remove("Set-Cookie");
 
         //test bad default samesite value
-        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
+        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
 
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
@@ -2117,9 +2102,7 @@ public class ResponseTest
     public void testReplaceHttpCookieSameSite()
     {
         Response response = getResponse();
-        TestServletContextHandler context = new TestServletContextHandler();
-        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
-        _channel.getRequest().setContext(context.getServletContext(), "/");
+        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         //replace with no prior does an add
         response.replaceCookie(new HttpCookie("Foo", "123456"));
         String set = response.getHttpFields().get("Set-Cookie");
@@ -2159,10 +2142,8 @@ public class ResponseTest
     public void testReplaceParsedHttpCookieSiteDefault()
     {
         Response response = getResponse();
-        TestServletContextHandler context = new TestServletContextHandler();
-        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
-        _channel.getRequest().setContext(context.getServletContext(), "/");
-        
+        _context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
         response.replaceCookie(new HttpCookie("Foo", "value"));
         String set = response.getHttpFields().get("Set-Cookie");
@@ -2183,7 +2164,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testEnsureConsumeAllOrNotPersistentHttp10() throws Exception
+    public void testEnsureConsumeAllOrNotPersistentHttp10()
     {
         Response response = getResponse(HttpVersion.HTTP_1_0);
         response.getHttpChannel().ensureConsumeAllOrNotPersistent();
@@ -2257,29 +2238,31 @@ public class ResponseTest
 
         MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
-        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now);
+        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
         _channel.onRequest(coreRequest, coreResponse, Callback.NOOP);
-        _channel.getRequest().setContext(_context.getServletContext(), "/path/info");
 
         BufferUtil.clear(_content);
         return _channel.getResponse();
-    }
-
-    private static class TestServletContextHandler extends ContextHandler
-    {
     }
 
     private class MockRequest extends Attributes.Mapped implements org.eclipse.jetty.server.Request
     {
         private final MetaData.Request _reqMeta;
         private final long _now;
+        private final Context _context;
 
         public MockRequest(MetaData.Request reqMeta, long now)
         {
+            this(reqMeta, now, null);
+        }
+
+        public MockRequest(MetaData.Request reqMeta, long now, Context context)
+        {
             _reqMeta = reqMeta;
             _now = now;
+            _context = context == null ? _server.getContext() : context;
         }
 
         @Override
@@ -2315,7 +2298,7 @@ public class ResponseTest
         @Override
         public Context getContext()
         {
-            return _server.getContext();
+            return _context;
         }
 
         @Override

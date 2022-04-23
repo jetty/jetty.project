@@ -82,8 +82,9 @@ public class ScopedHandlerTest
     @Test
     public void testDouble() throws Exception
     {
-        Request request = new Request(null, null);
-        Response response = new Response(null, null);
+        HttpChannel httpChannel = new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
+        Request request = new Request(httpChannel, null);
+        Response response = new Response(httpChannel, null);
 
         TestHandler handler0 = new TestHandler("0");
         OtherHandler handlerA = new OtherHandler("A");
@@ -106,8 +107,9 @@ public class ScopedHandlerTest
     @Test
     public void testTriple() throws Exception
     {
-        Request request = new Request(null, null);
-        Response response = new Response(null, null);
+        HttpChannel httpChannel = new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
+        Request request = new Request(httpChannel, null);
+        Response response = new Response(httpChannel, null);
 
         TestHandler handler0 = new TestHandler("0");
         OtherHandler handlerA = new OtherHandler("A");

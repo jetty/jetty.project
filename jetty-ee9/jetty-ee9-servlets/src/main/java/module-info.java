@@ -28,7 +28,7 @@ module org.eclipse.jetty.ee9.servlets
     // Only required if using CrossOriginFilter, DoSFilter, etc.
     requires static org.eclipse.jetty.util;
     // Only required if using DataRateLimitedServlet
-    requires static org.eclipse.jetty.ee9.handler;
+    requires static org.eclipse.jetty.ee9.nested;
 
     exports org.eclipse.jetty.ee9.servlets;
 }

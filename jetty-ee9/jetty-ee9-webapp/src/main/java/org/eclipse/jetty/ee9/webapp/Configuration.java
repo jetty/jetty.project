@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  */
 public interface Configuration
 {
-    String ATTR = "org.eclipse.jetty.webapp.configuration";
+    String ATTR = "org.eclipse.jetty.ee9.webapp.configuration";
 
     /**
      * @return True if the feature this configuration represents is available and has all its dependencies.

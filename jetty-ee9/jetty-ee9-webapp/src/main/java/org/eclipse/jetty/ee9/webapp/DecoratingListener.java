@@ -16,13 +16,13 @@ package org.eclipse.jetty.ee9.webapp;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 
 /**
- * An extended org.eclipse.jetty.servlet.DecoratingListener.
- * The context attribute "org.eclipse.jetty.webapp.DecoratingListener" if
+ * An extended org.eclipse.jetty.ee9.servlet.DecoratingListener.
+ * The context attribute "org.eclipse.jetty.ee9.webapp.DecoratingListener" if
  * not set, is set to the name of the attribute this listener listens for.
  */
 public class DecoratingListener extends org.eclipse.jetty.ee9.servlet.DecoratingListener
 {
-    public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.webapp.decorator";
+    public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.ee9.webapp.decorator";
 
     public DecoratingListener()
     {
