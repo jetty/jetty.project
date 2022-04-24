@@ -43,7 +43,7 @@ public class JarServer
         ServletContextHandler context = new ServletContextHandler();
         Resource.setDefaultUseCaches(true);
         Resource base = Resource.newResource("jar:" + jarFile.toAbsolutePath().toUri().toASCIIString() + "!/");
-        context.setBaseResource(base);
+        context.setResourceBase(base.getPath());
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
 
         server.setHandler(new HandlerList(context, new DefaultHandler()));

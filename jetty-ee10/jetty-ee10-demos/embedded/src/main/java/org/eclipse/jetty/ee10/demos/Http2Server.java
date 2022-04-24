@@ -49,12 +49,10 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +75,7 @@ public class Http2Server
         if (!Files.exists(docroot))
             throw new FileNotFoundException(docroot.toString());
 
-        context.setBaseResource(new PathResource(docroot));
+        context.setResourceBase(docroot);
         context.addFilter(PushCacheFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -140,6 +138,7 @@ public class Http2Server
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
+            /* TODO
             Request baseRequest = Request.getBaseRequest(request);
 
             if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles"))
@@ -148,6 +147,8 @@ public class Http2Server
                 request.getRequestDispatcher(uri).forward(request, response);
                 return;
             }
+
+             */
 
             chain.doFilter(request, response);
         }

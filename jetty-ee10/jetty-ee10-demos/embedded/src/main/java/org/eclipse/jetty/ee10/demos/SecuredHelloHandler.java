@@ -17,11 +17,11 @@ import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.Collections;
 
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.HashLoginService;
-import org.eclipse.jetty.ee10.security.LoginService;
-import org.eclipse.jetty.ee10.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 

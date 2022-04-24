@@ -20,7 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.ee10.servlet.HttpOutput;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**

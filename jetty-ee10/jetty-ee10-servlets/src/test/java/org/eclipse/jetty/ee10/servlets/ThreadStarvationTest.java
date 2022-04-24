@@ -53,11 +53,13 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled // TODO
 public class ThreadStarvationTest
 {
     private Server _server;

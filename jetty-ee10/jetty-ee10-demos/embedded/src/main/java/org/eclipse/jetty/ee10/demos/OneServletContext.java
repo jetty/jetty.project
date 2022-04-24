@@ -48,7 +48,7 @@ public class OneServletContext
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResource(baseResource);
+        context.setResourceBase(baseResource.getPath());
         server.setHandler(context);
 
         // add hello servlet

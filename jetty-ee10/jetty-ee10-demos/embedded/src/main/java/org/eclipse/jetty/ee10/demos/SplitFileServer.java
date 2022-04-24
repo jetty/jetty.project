@@ -49,21 +49,21 @@ public class SplitFileServer
         // directory, you needn't use these, you simply need to supply the paths
         // you are looking to serve content from.
         ResourceHandler rh0 = new ResourceHandler();
-        rh0.setDirectoriesListed(false);
+        rh0.setDirAllowed(false);
 
         ContextHandler context0 = new ContextHandler();
         context0.setContextPath("/");
-        context0.setBaseResource(baseResource0);
+        context0.setResourceBase(baseResource0.getPath());
         context0.setHandler(rh0);
 
         // Rinse and repeat the previous item, only specifying a different
         // resource base.
         ResourceHandler rh1 = new ResourceHandler();
-        rh1.setDirectoriesListed(false);
+        rh1.setDirAllowed(false);
 
         ContextHandler context1 = new ContextHandler();
         context1.setContextPath("/");
-        context1.setBaseResource(baseResource1);
+        context1.setResourceBase(baseResource1.getPath());
         context1.setHandler(rh1);
 
         // Create a ContextHandlerCollection and set the context handlers to it.

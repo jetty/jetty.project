@@ -63,7 +63,7 @@
     <module>jetty-ee10-quickstart</module>
     <module>jetty-ee10-runner</module>
     <module>jetty-ee10-servlet</module>
-<!--    <module>jetty-ee10-servlet-extras</module>-->
+    <module>jetty-ee10-servlets</module>
     <module>jetty-ee10-webapp</module>
     <module>jetty-ee10-websocket</module>
     <module>jetty-ee10-tests</module>
@@ -141,7 +141,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-servlet-extras</artifactId>
+        <artifactId>jetty-ee10-servlets</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

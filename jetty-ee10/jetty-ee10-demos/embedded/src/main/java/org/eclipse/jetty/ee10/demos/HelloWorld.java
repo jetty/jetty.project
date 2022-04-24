@@ -13,24 +13,19 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 
-public class HelloWorld extends AbstractHandler
+public class HelloWorld extends Handler.Processor
 {
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException,
-        ServletException
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
+
         // Declare response encoding and types
         response.setContentType("text/html; charset=utf-8");
 
@@ -38,10 +33,7 @@ public class HelloWorld extends AbstractHandler
         response.setStatus(HttpServletResponse.SC_OK);
 
         // Write back response
-        response.getWriter().println("<h1>Hello World</h1>");
-
-        // Inform jetty that this request has now been handled
-        baseRequest.setHandled(true);
+        response.write(true, callback, "<h1>Hello World</h1>\n");
     }
 
     public static void main(String[] args) throws Exception

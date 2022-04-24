@@ -182,7 +182,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-servlet-extras</artifactId>
+      <artifactId>jetty-${ee.version}-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

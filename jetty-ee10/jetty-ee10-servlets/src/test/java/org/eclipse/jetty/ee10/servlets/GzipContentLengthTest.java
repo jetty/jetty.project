@@ -31,9 +31,9 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.not;
 /**
  * Test the {@code GzipHandler} support for the various ways that an App can set {@code Content-Length}.
  */
+@Disabled // TODO move to core
 public class GzipContentLengthTest extends AbstractGzipTest
 {
     enum GzipMode
@@ -167,7 +168,7 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        servletContextHandler.setResourceBase(contextDir);
         servletContextHandler.addServlet(contentServlet, "/*");
         GzipHandler gzipHandler = new GzipHandler();
 

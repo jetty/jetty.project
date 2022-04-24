@@ -33,8 +33,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,6 +49,7 @@ import static org.hamcrest.Matchers.nullValue;
  * Tests {@link GzipHandler} in combination with {@link DefaultServlet} for ability to configure {@link GzipHandler} to
  * ignore recompress situations from upstream.
  */
+@Disabled // TODO move to core
 public class GzipHandlerNoReCompressTest extends AbstractGzipTest
 {
     public static Stream<Arguments> scenarios()
@@ -96,7 +97,7 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        servletContextHandler.setResourceBase(contextDir);
         servletContextHandler.addServlet(TestStaticMimeTypeServlet.class, "/*");
         servletContextHandler.insertHandler(gzipHandler);
 

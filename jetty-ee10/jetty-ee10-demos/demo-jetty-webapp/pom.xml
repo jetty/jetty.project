@@ -127,7 +127,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet-extras</artifactId>
+      <artifactId>jetty-ee10-servlets</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

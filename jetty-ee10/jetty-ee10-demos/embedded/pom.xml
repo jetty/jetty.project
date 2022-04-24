@@ -31,7 +31,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet-extras</artifactId>
+      <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee10-servlet-extras</artifactId>
-  <name>EE10 :: Jetty :: Extra Utility Servlets and Filters</name>
-  <description>Extra Utility Servlets from Jetty</description>
+  <artifactId>jetty-ee10-servlets</artifactId>
+  <name>EE10 :: Jetty :: Utility Servlets and Filters</name>
+  <description>Utility Servlets from Jetty</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>

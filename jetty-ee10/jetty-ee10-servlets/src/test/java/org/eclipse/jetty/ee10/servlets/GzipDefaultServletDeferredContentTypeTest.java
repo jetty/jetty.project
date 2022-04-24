@@ -33,8 +33,8 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.not;
  *
  * Originally from http://bugs.eclipse.org/408909
  */
+@Disabled // TODO move to core
 public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
 {
     private Server server;
@@ -73,7 +74,7 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        servletContextHandler.setResourceBase(contextDir);
         ServletHolder holder = new ServletHolder("default", new DefaultServlet()
         {
             @Override

@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
-public class HelloHandler extends AbstractHandler
+public class HelloHandler extends Handler.Processor
 {
     final String greeting;
     final String body;
@@ -40,27 +37,15 @@ public class HelloHandler extends AbstractHandler
     public HelloHandler(String greeting, String body)
     {
         this.greeting = greeting;
-        this.body = body;
+        this.body = body == null ? "" : body;
     }
 
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException,
-        ServletException
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.setContentType("text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        PrintWriter out = response.getWriter();
-
-        out.println("<h1>" + greeting + "</h1>");
-        if (body != null)
-        {
-            out.println(body);
-        }
-
-        baseRequest.setHandled(true);
+        response.write(true, callback, "<h1>" + greeting + "</h1>\n" + body);
     }
 }
