@@ -57,7 +57,7 @@
 <!--    <module>jetty-ee9-cdi</module>-->
 <!--    <module>jetty-ee9-fcgi-server-proxy</module>-->
 <!--    <module>jetty-ee9-http-spi</module>-->
-<!--    <module>jetty-ee9-jaas</module>-->
+    <module>jetty-ee9-jaas</module>
 <!--    <module>jetty-ee9-jaspi</module>-->
 <!--    <module>jetty-ee9-jspc-maven-plugin</module>-->
 <!--    <module>jetty-ee9-maven-plugin</module>-->

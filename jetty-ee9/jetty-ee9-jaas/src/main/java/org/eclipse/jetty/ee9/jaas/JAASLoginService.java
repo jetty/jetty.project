@@ -32,12 +32,12 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler;
 import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.DefaultIdentityService;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -198,8 +198,8 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             if (callbackHandler instanceof DefaultCallbackHandler)
             {
                 DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                if (request instanceof Request)
-                    dch.setRequest((Request)request);
+                if (request instanceof HttpServletRequest httpServletRequest)
+                    dch.setRequest(httpServletRequest);
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }
