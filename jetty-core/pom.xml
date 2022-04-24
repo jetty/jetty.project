@@ -20,6 +20,7 @@
     <module>jetty-http</module>
     <module>jetty-http2</module>
     <module>jetty-http3</module>
+    <module>jetty-http-spi</module>
     <module>jetty-http-tools</module>
     <module>jetty-io</module>
     <module>jetty-jmx</module>
