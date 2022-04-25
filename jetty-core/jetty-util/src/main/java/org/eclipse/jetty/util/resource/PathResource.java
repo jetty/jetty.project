@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Java NIO Path Resource.
  */
+@Deprecated(forRemoval = true)
 public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
