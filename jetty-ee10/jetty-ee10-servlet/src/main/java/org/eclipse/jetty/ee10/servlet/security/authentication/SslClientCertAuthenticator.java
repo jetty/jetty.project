@@ -64,6 +64,12 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
         //TODO this seems fragile, to rely on this name
         //X509Certificate[] certs = (X509Certificate[])req.getAttribute("jakarta.servlet.request.X509Certificate");
         SslSessionData sslSessionData = (SslSessionData)req.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
+        if (sslSessionData == null)
+        {
+            Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
+            return Authentication.SEND_FAILURE;
+        }
+        
         X509Certificate[] certs = sslSessionData.getX509Certificates();
         
         try
