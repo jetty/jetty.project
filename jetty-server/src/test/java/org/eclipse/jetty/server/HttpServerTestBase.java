@@ -217,7 +217,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             catch (Exception e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.warn("write exception", e);
+                    LOG.debug("write exception", e);
             }
 
             // Read the response.
