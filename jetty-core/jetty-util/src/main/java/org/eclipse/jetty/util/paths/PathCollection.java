@@ -217,13 +217,22 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
     }
 
     /**
-     * Resolve the first path that exists against the
+     * Resolve the first path that exists against the collection of paths.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @see Path#resolve(String)
      */
     public Path resolveFirstExisting(String other)
     {
         return resolveFirst(other, Files::exists);
     }
 
+    /**
+     * Resolve the first path that matches the predicate.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @param pathPredicate the predicate of {@code Path} to evaluate for first valid hit.
+     */
     public Path resolveFirst(String other, Predicate<Path> pathPredicate)
     {
         for (Path path : this)
@@ -235,6 +244,13 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
         return null;
     }
 
+    /**
+     * Resolve all paths across the path collection that matches the provided other.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @param pathPredicate the predicate of {@code Path} to evaluate for valid hit.
+     * @return the list of {@link Path} objects that satisfy the combination of {@code other} and {@code Predicate<Path>}
+     */
     public List<Path> resolveAll(String other, Predicate<Path> pathPredicate)
     {
         List<Path> ret = new ArrayList<>();
@@ -247,6 +263,13 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
         return ret;
     }
 
+    /**
+     * Find all files (up to 300 levels deep) in the path collection that match the provided {@link BiPredicate}
+     * of &lt;{@link Path}, {@link BasicFileAttributes}&gt;
+     *
+     * @param pathPredicate the predicate to evaluate across all paths in this collection
+     * @return the stream of hits for the find operation.
+     */
     public Stream<Path> find(BiPredicate<Path, BasicFileAttributes> pathPredicate)
     {
         Stream<Path> ret = Stream.of();
