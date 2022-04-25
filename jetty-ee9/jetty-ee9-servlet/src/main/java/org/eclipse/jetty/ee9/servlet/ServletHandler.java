@@ -1246,7 +1246,7 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
-    protected ServletPathSpec asPathSpec(String pathSpec)
+    protected PathSpec asPathSpec(String pathSpec)
     {
         return new ServletPathSpec(pathSpec);
     }
@@ -1359,7 +1359,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
-                ServletPathSpec servletPathSpec = asPathSpec(pathSpec);
+                PathSpec servletPathSpec = asPathSpec(pathSpec);
                 MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }

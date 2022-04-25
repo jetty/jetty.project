@@ -1161,10 +1161,10 @@ public class ServletHandler extends Handler.Wrapper
         }
     }
 
-    protected ServletPathSpec asPathSpec(String pathSpec)
+    protected PathSpec asPathSpec(String pathSpec)
     {
         return new ServletPathSpec(pathSpec);
-    }
+}
 
     protected void updateMappings()
     {
@@ -1274,7 +1274,7 @@ public class ServletHandler extends Handler.Wrapper
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
-                ServletPathSpec servletPathSpec = asPathSpec(pathSpec);
+                PathSpec servletPathSpec = asPathSpec(pathSpec);
                 MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }

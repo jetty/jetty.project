@@ -62,6 +62,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Components;
@@ -1889,6 +1890,39 @@ public class RequestTest
         assertThat(m.getServletName(), is("CatalogServlet"));
         assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
         assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+    }
+
+    @Test
+    public void testRegexPathMapping()
+    {
+        RegexPathSpec spec;
+        ServletPathMapping m;
+
+        spec = new RegexPathSpec("^/.*$");
+        m = new ServletPathMapping(spec, "Something", "/some/path");
+        assertThat(m.getMappingMatch(), nullValue());
+        assertThat(m.getPattern(), is(spec.getDeclaration()));
+        assertThat(m.getServletName(), is("Something"));
+        assertThat(m.getServletPath(), is("/some/path"));
+        assertThat(m.getPathInfo(), nullValue());
+        assertThat(m.getMatchValue(), is("some/path"));
+
+        spec = new RegexPathSpec("^/some(/.*)?$");
+        m = new ServletPathMapping(spec, "Something", "/some/path");
+        assertThat(m.getMappingMatch(), nullValue());
+        assertThat(m.getPattern(), is(spec.getDeclaration()));
+        assertThat(m.getServletName(), is("Something"));
+        assertThat(m.getServletPath(), is("/some"));
+        assertThat(m.getPathInfo(), is("/path"));
+        assertThat(m.getMatchValue(), is("some"));
+
+        m = new ServletPathMapping(spec, "Something", "/some");
+        assertThat(m.getMappingMatch(), nullValue());
+        assertThat(m.getPattern(), is(spec.getDeclaration()));
+        assertThat(m.getServletName(), is("Something"));
+        assertThat(m.getServletPath(), is("/some"));
+        assertThat(m.getPathInfo(), nullValue());
+        assertThat(m.getMatchValue(), is("some"));
     }
 
     private static long getFileCount(Path path)
