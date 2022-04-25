@@ -54,9 +54,9 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
 
         // assertEquals(0, args.getEnabledModules().size(), "--stop should not build module tree");
-        assertEquals("10000", args.getProperties().getString("STOP.PORT"), "--stop missing port");
-        assertEquals("foo", args.getProperties().getString("STOP.KEY"), "--stop missing key");
-        assertEquals("300", args.getProperties().getString("STOP.WAIT"), "--stop missing wait");
+        assertEquals("10000", args.getCoreEnvironment().getProperties().getString("STOP.PORT"), "--stop missing port");
+        assertEquals("foo", args.getCoreEnvironment().getProperties().getString("STOP.KEY"), "--stop missing key");
+        assertEquals("300", args.getCoreEnvironment().getProperties().getString("STOP.WAIT"), "--stop missing wait");
     }
 
     @Test

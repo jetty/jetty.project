@@ -96,7 +96,7 @@ public class Module implements Comparable<Module>
     /**
      * List of default config
      */
-    private final List<String> _defaultConfig = new ArrayList<>();
+    private final List<String> _ini = new ArrayList<>();
 
     /**
      * List of library options for this Module
@@ -255,9 +255,9 @@ public class Module implements Comparable<Module>
         _before.addAll(tmp);
     }
 
-    public List<String> getDefaultConfig()
+    public List<String> getIniSection()
     {
-        return _defaultConfig;
+        return _ini;
     }
 
     public List<String> getIniTemplate()
@@ -307,7 +307,7 @@ public class Module implements Comparable<Module>
 
     public boolean hasDefaultConfig()
     {
-        return !_defaultConfig.isEmpty();
+        return !_ini.isEmpty();
     }
 
     public boolean hasIniTemplate()
@@ -427,16 +427,16 @@ public class Module implements Comparable<Module>
                                     if (key.endsWith("?") || key.endsWith("+"))
                                     {
                                         // already the correct way
-                                        _defaultConfig.add(line);
+                                        _ini.add(line);
                                     }
                                     else
                                     {
-                                        _defaultConfig.add(String.format("%s?=%s", key, value));
+                                        _ini.add(String.format("%s?=%s", key, value));
                                     }
                                 }
                                 else
                                 {
-                                    _defaultConfig.add(line);
+                                    _ini.add(line);
                                 }
                                 break;
                             }

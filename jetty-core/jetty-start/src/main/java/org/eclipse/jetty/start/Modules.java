@@ -56,12 +56,13 @@ public class Modules implements Iterable<Module>
         this._args = args;
 
         // Allow override mostly for testing
-        if (!args.getProperties().containsKey("java.version"))
+        if (!args.getCoreEnvironment().getProperties().containsKey("java.version"))
         {
             String javaVersion = System.getProperty("java.version");
             if (javaVersion != null)
             {
-                args.setProperty("java.version", javaVersion, "<internal>");
+                // TODO environment
+                args.setProperty(null, "java.version", javaVersion, "<internal>");
             }
         }
 
@@ -454,26 +455,24 @@ public class Modules implements Iterable<Module>
             }
         }
 
-        // Enable the  module
+        // Enable the module
         if (module.enable(enabledFrom, transitive))
         {
             StartLog.debug("Enabled [%s]", module.getName());
             newlyEnabled.add(module.getName());
 
             // Expand module properties
-            module.expandDependencies(_args.getProperties());
+            module.expandDependencies(_args.getCoreEnvironment().getProperties());
 
             // Apply default configuration
             if (module.hasDefaultConfig())
             {
-                for (String line : module.getDefaultConfig())
-                {
-                    _args.parse(line, module.getName() + "[ini]");
-                }
+                Environment environment = _args.getCoreEnvironment();
+                for (String line : module.getIniSection())
+                    environment = _args.parse(environment, line, module.getName() + "[ini]");
+
                 for (Module m : _modules)
-                {
-                    m.expandDependencies(_args.getProperties());
-                }
+                    m.expandDependencies(environment.getProperties());
             }
         }
 
@@ -499,7 +498,7 @@ public class Modules implements Iterable<Module>
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
                     if (!isConditional || Files.exists(file))
                     {
-                        registerModule(file).expandDependencies(_args.getProperties());
+                        registerModule(file).expandDependencies(_args.getCoreEnvironment().getProperties());
                         providers = _provided.get(dependentModule);
                         if (providers == null || providers.isEmpty())
                             throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);

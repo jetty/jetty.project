@@ -68,7 +68,7 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        String platformProperty = args.getProperties().getString("java.version.platform");
+        String platformProperty = args.getCoreEnvironment().getProperties().getString("java.version.platform");
         assertThat("java.version.platform", Integer.parseInt(platformProperty), greaterThanOrEqualTo(8));
 
         List<String> moduleNames = new ArrayList<>();
@@ -245,7 +245,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is(nullValue()));
     }
 
@@ -295,7 +295,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dive"));
     }
 
@@ -345,7 +345,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dynamic"));
     }
 

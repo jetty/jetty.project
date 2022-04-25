@@ -115,25 +115,21 @@ public class Main
 
     private void copyInThread(final InputStream in, final OutputStream out)
     {
-        new Thread(new Runnable()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                byte[] buf = new byte[1024];
+                int len = in.read(buf);
+                while (len > 0)
                 {
-                    byte[] buf = new byte[1024];
-                    int len = in.read(buf);
-                    while (len > 0)
-                    {
-                        out.write(buf, 0, len);
-                        len = in.read(buf);
-                    }
+                    out.write(buf, 0, len);
+                    len = in.read(buf);
                 }
-                catch (IOException e)
-                {
-                    // e.printStackTrace();
-                }
+            }
+            catch (IOException e)
+            {
+                // e.printStackTrace();
             }
         }).start();
     }
@@ -200,7 +196,7 @@ public class Main
             return;
         }
 
-        Class<?> invokedClass = null;
+        Class<?> invokedClass;
         String mainclass = args.getMainClassname();
         try
         {
@@ -237,7 +233,7 @@ public class Main
         modules.listEnabled(out);
 
         // Dump Jetty Home / Base
-        args.dumpEnvironment(out);
+        args.dumpJavaEnvironment(out);
 
         // Dump JVM Args
         args.dumpJvmArgs(out);
@@ -245,14 +241,19 @@ public class Main
         // Dump System Properties
         args.dumpSystemProperties(out);
 
-        // Dump Properties
-        args.dumpProperties(out);
+        // TODO iterate over environments
+        {
+            Environment environment = args.getCoreEnvironment();
 
-        // Dump Classpath
-        dumpClasspathWithVersions(out, args.getClasspath());
+            // Dump Properties
+            environment.dumpProperties(out);
 
-        // Dump Resolved XMLs
-        args.dumpActiveXmls(out);
+            // Dump Classpath
+            dumpClasspathWithVersions(out, environment.getClasspath());
+
+            // Dump Resolved XMLs
+            environment.dumpActiveXmls(out);
+        }
     }
 
     public void listModules(PrintStream out, StartArgs args)
@@ -284,7 +285,7 @@ public class Main
      */
     public StartArgs processCommandLine(List<String> cmdLine) throws Exception
     {
-        return this.processCommandLine(cmdLine.toArray(new String[cmdLine.size()]));
+        return this.processCommandLine(cmdLine.toArray(new String[0]));
     }
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
@@ -307,15 +308,16 @@ public class Main
 
         Props props = baseHome.getConfigSources().getProps();
         Prop home = props.getProp(BaseHome.JETTY_HOME);
-        if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
-            args.getProperties().setProperty(home);
-        args.getProperties().setProperty(BaseHome.JETTY_HOME + ".uri",
+        Props argProps = args.getCoreEnvironment().getProperties();
+        if (!argProps.containsKey(BaseHome.JETTY_HOME))
+            argProps.setProperty(home);
+        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
             home.source);
         Prop base = props.getProp(BaseHome.JETTY_BASE);
-        if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
-            args.getProperties().setProperty(base);
-        args.getProperties().setProperty(BaseHome.JETTY_BASE + ".uri",
+        if (!argProps.containsKey(BaseHome.JETTY_BASE))
+            argProps.setProperty(base);
+        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
             normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.source);
 
@@ -355,18 +357,10 @@ public class Main
         }
 
         // 5) Lib & XML Expansion / Resolution
-        args.expandSystemProperties();
-        args.expandLibs();
-        args.expandModules(activeModules);
-
         // 6) Resolve Extra XMLs
-        args.resolveExtraXmls();
-
         // 7) JPMS Expansion
-        args.expandJPMS(activeModules);
-
         // 8) Resolve Property Files
-        args.resolvePropertyFiles();
+        args.expandEnvironments(activeModules);
 
         return args;
     }
@@ -383,7 +377,7 @@ public class Main
         StartLog.debug("StartArgs: %s", args);
 
         // Get Desired Classpath based on user provided Active Options.
-        Classpath classpath = args.getClasspath();
+        Classpath classpath = args.getCoreEnvironment().getClasspath();
 
         // Show the usage information and return
         if (args.isHelp())
@@ -421,7 +415,7 @@ public class Main
             Path outputFile = baseHome.getBasePath(args.getModuleGraphFilename());
             System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n", baseHome.toShortForm(outputFile));
             ModuleGraphWriter writer = new ModuleGraphWriter();
-            writer.config(args.getProperties());
+            writer.config(args.getCoreEnvironment().getProperties());
             writer.write(args.getAllModules(), outputFile);
         }
 
@@ -443,7 +437,7 @@ public class Main
             {
                 for (StartIni ini : config.getStartInis())
                 {
-                    ini.update(baseHome, args.getProperties());
+                    ini.update(baseHome, args.getCoreEnvironment().getProperties());
                 }
             }
         }
@@ -481,15 +475,11 @@ public class Main
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
             final Process process = pbuilder.start();
-            Runtime.getRuntime().addShutdownHook(new Thread()
+            Runtime.getRuntime().addShutdownHook(new Thread(() ->
             {
-                @Override
-                public void run()
-                {
-                    StartLog.debug("Destroying " + process);
-                    process.destroy();
-                }
-            });
+                StartLog.debug("Destroying " + process);
+                process.destroy();
+            }));
 
             copyInThread(process.getErrorStream(), System.err);
             copyInThread(process.getInputStream(), System.out);
@@ -527,10 +517,11 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        final Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
-        final Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
-        final Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
-        final Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        Props argsProps = args.getCoreEnvironment().getProperties();
+        final Prop stopHostProp = argsProps.getProp("STOP.HOST", true);
+        final Prop stopPortProp = argsProps.getProp("STOP.PORT", true);
+        final Prop stopKeyProp = argsProps.getProp("STOP.KEY", true);
+        final Prop stopWaitProp = argsProps.getProp("STOP.WAIT", true);
 
         String stopHost = "127.0.0.1";
         int stopPort = -1;
@@ -640,7 +631,7 @@ public class Main
     }
 
     /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
-    public void stop() throws Exception
+    public void stop()
     {
         doStop(jsvcStartArgs);
     }
@@ -690,7 +681,7 @@ public class Main
     }
 
     /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
-    public void init(String[] args) throws Exception
+    public void init(String[] args)
     {
         try
         {

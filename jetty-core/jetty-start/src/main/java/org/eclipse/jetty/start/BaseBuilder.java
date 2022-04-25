@@ -294,13 +294,13 @@ public class BaseBuilder
                         // if (explicitly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
-                            ini = builder.get().addModule(module, startArgs.getProperties());
+                            ini = builder.get().addModule(module, startArgs.getCoreEnvironment().getProperties());
                             if (ini != null)
                                 modified.set(true);
                         }
                         for (String file : module.getFiles())
                         {
-                            files.add(new FileArg(module, startArgs.getProperties().expand(file)));
+                            files.add(new FileArg(module, startArgs.getCoreEnvironment().getProperties().expand(file)));
                         }
                     }
                 }

@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
-    private static String __serverInfo = "jetty/" + Server.getVersion();
+    private static final String __serverInfo = "jetty/" + Server.getVersion();
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
@@ -72,6 +72,15 @@ public class Server extends Handler.Wrapper implements Attributes
     private volatile DateField _dateField;
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
+
+    interface Environment extends Attributes
+    {
+        String getName();
+
+        Server getServer();
+
+        ClassLoader getClassLoader();
+    }
 
     public Server()
     {
