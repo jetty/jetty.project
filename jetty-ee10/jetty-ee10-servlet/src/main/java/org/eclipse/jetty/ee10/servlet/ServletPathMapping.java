@@ -98,7 +98,6 @@ public class ServletPathMapping implements HttpServletMapping
         }
         else
         {
-            // TODO can we do better for RegexPathSpec
             _mappingMatch = null;
             _matchValue = "";
             _servletPath = pathInContext;
