@@ -90,9 +90,15 @@ public class ServletPathMapping implements HttpServletMapping
                     throw new IllegalStateException();
             }
         }
+        else if (pathSpec != null)
+        {
+            _mappingMatch = null;
+            _servletPath = pathSpec.getPathMatch(pathInContext);
+            _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
+            _pathInfo = pathSpec.getPathInfo(pathInContext);
+        }
         else
         {
-            // TODO can we do better for RegexPathSpec
             _mappingMatch = null;
             _matchValue = "";
             _servletPath = pathInContext;

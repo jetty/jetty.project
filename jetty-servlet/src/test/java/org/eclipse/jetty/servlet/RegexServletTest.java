@@ -79,7 +79,7 @@ public class RegexServletTest
         assertThat(response, containsString("servletPath='/test/info'"));
         assertThat(response, containsString("pathInfo='null'"));
         assertThat(response, containsString("mapping.mappingMatch='null'"));
-        assertThat(response, containsString("mapping.matchValue=''"));
+        assertThat(response, containsString("mapping.matchValue='test/info'"));
         assertThat(response, containsString("mapping.pattern='^/test/.*$'"));
     }
 
@@ -96,7 +96,7 @@ public class RegexServletTest
         assertThat(response, containsString("servletPath='/Test/info'"));
         assertThat(response, containsString("pathInfo='null'"));
         assertThat(response, containsString("mapping.mappingMatch='null'"));
-        assertThat(response, containsString("mapping.matchValue=''"));
+        assertThat(response, containsString("mapping.matchValue='Test/info'"));
         assertThat(response, containsString("mapping.pattern='^/[Tt]est(/.*)?'"));
     }
 
@@ -113,7 +113,7 @@ public class RegexServletTest
         assertThat(response, containsString("servletPath='/include'"));
         assertThat(response, containsString("pathInfo='null'"));
         assertThat(response, containsString("mapping.mappingMatch='null'"));
-        assertThat(response, containsString("mapping.matchValue=''"));
+        assertThat(response, containsString("mapping.matchValue='include'"));
         assertThat(response, containsString("mapping.pattern='^/include$'"));
     }
 
