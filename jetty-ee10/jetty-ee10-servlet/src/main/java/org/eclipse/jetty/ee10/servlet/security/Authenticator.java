@@ -56,7 +56,7 @@ public interface Authenticator
      * where the http method of the original request causing authentication
      * is not the same as the http method resulting from the redirect
      * after authentication.
-     * @param request TODO
+     * @param request the request to prepare for authentication
      */
     void prepareRequest(Request request);
 
@@ -65,7 +65,7 @@ public interface Authenticator
      *
      * @param request The request
      * @param response The response
-     * @param callback TODO
+     * @param callback the callback to use for writing a response
      * @param mandatory True if authentication is mandatory.
      * @return An Authentication.  If Authentication is successful, this will be a {@link Authentication.User}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
@@ -80,8 +80,8 @@ public interface Authenticator
      *
      * @param request the request
      * @param response the response
-     * @param callback TODO
-     * @param mandatory if security is mandator
+     * @param callback the callback to write a response
+     * @param mandatory if security is mandatory
      * @param validatedUser the user that was validated
      * @return true if response is secure
      * @throws ServerAuthException if unable to test response
