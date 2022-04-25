@@ -21,9 +21,9 @@ import java.nio.file.Paths;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -46,7 +46,7 @@ public class JarServer
         context.setResourceBase(base.getPath());
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
         return server;
     }
 

@@ -33,8 +33,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -267,9 +270,9 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         connectHandler = new ConnectHandler()
         {
             @Override
-            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+            protected boolean handleAuthentication(Request request, Response response, String address)
             {
-                String proxyAuthorization = request.getHeader("Proxy-Authorization");
+                String proxyAuthorization = request.getHeaders().get("Proxy-Authorization");
                 if (proxyAuthorization == null)
                 {
                     response.setHeader("Proxy-Authenticate", "Basic realm=\"test\"");
@@ -669,7 +672,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         proxy.setHandler(new ConnectHandler()
         {
             @Override
-            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+            protected boolean handleAuthentication(Request request, Response response, String address)
             {
                 request.setAttribute(contextKey, contextValue);
                 return super.handleAuthentication(request, response, address);
@@ -808,25 +811,25 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
     }
 
-    private static class ServerHandler extends AbstractHandler
+    private static class ServerHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            request.setHandled(true);
-
-            String uri = httpRequest.getRequestURI();
-            switch (uri)
+            String cp = request.getContext().getContextPath();
+            switch (cp)
             {
                 case "/echo":
                 {
                     StringBuilder builder = new StringBuilder();
-                    builder.append(httpRequest.getMethod()).append(" ").append(uri);
-                    if (httpRequest.getQueryString() != null)
-                        builder.append("?").append(httpRequest.getQueryString());
+                    builder.append(request.getMethod()).append(" ").append(cp);
+                    String query = request.getHttpURI().getQuery();
+
+                    if (query != null)
+                        builder.append("?").append(query);
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    InputStream input = httpRequest.getInputStream();
+                    InputStream input = Request.asInputStream(request);
                     int read;
                     while ((read = input.read()) >= 0)
                     {
@@ -835,17 +838,19 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     baos.close();
                     byte[] bytes = baos.toByteArray();
 
-                    ServletOutputStream output = httpResponse.getOutputStream();
                     if (bytes.length == 0)
-                        output.print(builder.toString());
+                        response.write(true, callback, builder.toString());
                     else
-                        output.println(builder.toString());
-                    output.write(bytes);
+                    {
+                        response.write(false, callback, builder.toString());
+                        response.write(true, callback, "/n" + bytes);
+                    }
                     break;
                 }
                 case "/close":
                 {
-                    request.getHttpChannel().getEndPoint().close();
+                    callback.succeeded();
+                    request.getConnectionMetaData().getConnection().getEndPoint().close();
                     break;
                 }
                 default:

@@ -46,7 +46,8 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.Request.Processor;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
  */
-public class ConnectHandler extends HandlerWrapper
+public class ConnectHandler extends Handler.Wrapper
 {
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectHandler.class);
 
@@ -188,25 +189,30 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    public Request.Processor handle(Request request) throws Exception
     {
-        String tunnelProtocol = jettyRequest.getMetaData().getProtocol();
+        String tunnelProtocol = request.getConnectionMetaData().getProtocol();
         if (HttpMethod.CONNECT.is(request.getMethod()) && tunnelProtocol == null)
         {
-            String serverAddress = target;
-            if (HttpVersion.HTTP_2.is(request.getProtocol()))
+            //we will fully handle this request
+            return (req, res, callback) -> 
             {
-                HttpURI httpURI = jettyRequest.getHttpURI();
-                serverAddress = httpURI.getHost() + ":" + httpURI.getPort();
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("CONNECT request for {}", serverAddress);
-            handleConnect(jettyRequest, request, response, serverAddress);
+                String serverAddress = req.getHttpURI().getHost() + ":" + req.getHttpURI().getPort();
+                if (HttpVersion.HTTP_2.is(request.getConnectionMetaData().getProtocol()))
+                {
+                    HttpURI httpURI = request.getHttpURI();
+                    serverAddress = httpURI.getHost() + ":" + httpURI.getPort();
+                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CONNECT request for {}", serverAddress);
+                handleConnect(req, res, callback, serverAddress);
+            };
         }
         else
         {
-            super.handle(target, jettyRequest, request, response);
-        }
+            //we're not handling this request
+            return super.handle(request);
+        }  
     }
 
     /**
@@ -214,52 +220,52 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param baseRequest Jetty-specific http request
-     * @param request the http request
-     * @param response the http response
+     * @param request the jetty request
+     * @param response the jetty response
+     * @param callback the callback with which to generate a response
      * @param serverAddress the remote server address in the form {@code host:port}
      */
-    protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+    protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
     {
-        baseRequest.setHandled(true);
-        try
+        //TODO fix me
+        /*       try
         {
             boolean proceed = handleAuthentication(request, response, serverAddress);
             if (!proceed)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Missing proxy authentication");
-                sendConnectResponse(request, response, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
+                sendConnectResponse(request, response, callback, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
                 return;
             }
-
+        
             HostPort hostPort = new HostPort(serverAddress);
             String host = hostPort.getHost();
             int port = hostPort.getPort(80);
-
+        
             if (!validateDestination(host, port))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Destination {}:{} forbidden", host, port);
-                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                sendConnectResponse(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
-
+        
             HttpChannel httpChannel = baseRequest.getHttpChannel();
             if (!httpChannel.isTunnellingSupported())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("CONNECT not supported for {}", httpChannel);
-                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                sendConnectResponse(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
-
+        
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
-
+        
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}:{}", host, port);
-
+        
             connectToServer(request, host, port, new Promise<>()
             {
                 @Override
@@ -271,7 +277,7 @@ public class ConnectHandler extends HandlerWrapper
                     else
                         selector.connect(channel, connectContext);
                 }
-
+        
                 @Override
                 public void failed(Throwable x)
                 {
@@ -282,7 +288,7 @@ public class ConnectHandler extends HandlerWrapper
         catch (Exception x)
         {
             onConnectFailure(request, response, null, x);
-        }
+        }*/
     }
 
     protected void connectToServer(HttpServletRequest request, String host, int port, Promise<SocketChannel> promise)
@@ -345,7 +351,8 @@ public class ConnectHandler extends HandlerWrapper
             LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
 
         HttpServletResponse response = connectContext.getResponse();
-        sendConnectResponse(request, response, HttpServletResponse.SC_OK);
+        //TODO fix me
+        //sendConnectResponse(request, response, HttpServletResponse.SC_OK);
 
         upgradeConnection(request, response, downstreamConnection);
 
@@ -356,21 +363,29 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("CONNECT failed", failure);
-        sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        //TODO fix me
+        //sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         if (asyncContext != null)
             asyncContext.complete();
     }
 
-    private void sendConnectResponse(HttpServletRequest request, HttpServletResponse response, int statusCode)
+    private void sendConnectResponse(Request request, Response response, Callback callback, int statusCode)
     {
         try
         {
-            response.setStatus(statusCode);
             response.setContentLength(0);
             if (statusCode != HttpServletResponse.SC_OK)
+            {
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                Response.writeError(request, response, callback, statusCode);
+            }
+            else
+            {
+                response.setStatus(HttpServletResponse.SC_OK);
+                callback.succeeded();
+            }
             if (LOG.isDebugEnabled())
-                LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
+                LOG.debug("CONNECT response sent {} {}", request.getConnectionMetaData().getProtocol(), statusCode);
         }
         catch (Throwable x)
         {
@@ -388,7 +403,7 @@ public class ConnectHandler extends HandlerWrapper
      * @param address the address of the remote server in the form {@code host:port}.
      * @return true to allow to connect to the remote host, false otherwise
      */
-    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+    protected boolean handleAuthentication(Request request, Response response, String address)
     {
         return true;
     }

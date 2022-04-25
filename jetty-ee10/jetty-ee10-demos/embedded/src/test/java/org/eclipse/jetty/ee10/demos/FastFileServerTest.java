@@ -53,7 +53,8 @@ public class FastFileServerTest extends AbstractEmbeddedTest
             writer.write(TEXT_CONTENT);
         }
 
-        server = FastFileServer.createServer(0, baseDir.toFile());
+        //TODO fix me
+        // server = FastFileServer.createServer(0, baseDir.toFile());
         server.start();
     }
 

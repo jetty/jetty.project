@@ -18,7 +18,7 @@ import java.net.URL;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee10.security.HashLoginService;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.PathResource;

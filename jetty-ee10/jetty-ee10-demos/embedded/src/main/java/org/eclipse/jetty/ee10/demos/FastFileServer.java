@@ -26,13 +26,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.HttpOutput;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
@@ -68,16 +67,17 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FastFileServer
 {
-    public static Server createServer(int port, File resourceBase)
+    //TODO
+    /*    public static Server createServer(int port, File resourceBase)
     {
         Server server = new Server(port);
-
-        server.setHandler(new HandlerList(
+    
+        server.setHandler(new Handler.Collection(
             new FastFileHandler(resourceBase),
             new DefaultHandler()));
         return server;
     }
-
+    
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
@@ -86,17 +86,17 @@ public class FastFileServer
         server.start();
         server.join();
     }
-
+    
     static class FastFileHandler extends AbstractHandler
     {
         private final MimeTypes mimeTypes = new MimeTypes();
         private final File dir;
-
+    
         private FastFileHandler(File dir)
         {
             this.dir = dir;
         }
-
+    
         @Override
         public void handle(String target,
                            Request baseRequest,
@@ -109,17 +109,17 @@ public class FastFileServer
             // huge HTTP response buffer size as a measure
             final int SMALL = response.getBufferSize();
             final int MEDIUM = 8 * SMALL;
-
+    
             // What file to serve?
             final File file = new File(this.dir, request.getPathInfo());
-
+    
             // Only handle existing files
             if (!file.exists())
                 return;
-
+    
             // we will handle this request
             baseRequest.setHandled(true);
-
+    
             // Handle directories
             if (file.isDirectory())
             {
@@ -136,15 +136,15 @@ public class FastFileServer
                 response.getWriter().println(listing);
                 return;
             }
-
+    
             // Set some content headers.
-
+    
             // Jetty DefaultServlet will cache formatted date strings, but we
             // will reformat for each request here
             response.setDateHeader("Last-Modified", file.lastModified());
             response.setContentLengthLong(file.length());
             response.setContentType(mimeTypes.getMimeByExtension(file.getName()));
-
+    
             // send "small" files blocking directly from an input stream
             if (file.length() < SMALL)
             {
@@ -154,7 +154,7 @@ public class FastFileServer
                         StandardOpenOption.READ));
                 return;
             }
-
+    
             // send not "small" files asynchronously so we don't hold threads if
             // the client is slow
             final AsyncContext async = request.startAsync();
@@ -166,7 +166,7 @@ public class FastFileServer
                     // Async content write succeeded, so complete async response
                     async.complete();
                 }
-
+    
                 @Override
                 public void failed(Throwable x)
                 {
@@ -174,14 +174,14 @@ public class FastFileServer
                     x.printStackTrace();
                     async.complete();
                 }
-
+    
                 @Override
                 public InvocationType getInvocationType()
                 {
                     return InvocationType.NON_BLOCKING;
                 }
             };
-
+    
             // send "medium" files from an input stream
             if (file.length() < MEDIUM)
             {
@@ -191,7 +191,7 @@ public class FastFileServer
                         StandardOpenOption.READ), completionCB);
                 return;
             }
-
+    
             // for "large" files get the file mapped buffer to send Typically
             // the resulting buffer should be cached as allocating kernel memory
             // can be hard to GC on some JVMs. But for this example we will
@@ -202,15 +202,15 @@ public class FastFileServer
                 buffer = raf.getChannel().map(MapMode.READ_ONLY, 0,
                     raf.length());
             }
-
+    
             // Assuming the file buffer might be shared cached version, so lets
             // take our own view of it
             buffer = buffer.asReadOnlyBuffer();
-
+    
             // send the content as a buffer with a callback to complete the
             // async request need to caste to Jetty output stream for best API
             ((HttpOutput)response.getOutputStream()).sendContent(buffer,
                 completionCB);
         }
-    }
+    }*/
 }

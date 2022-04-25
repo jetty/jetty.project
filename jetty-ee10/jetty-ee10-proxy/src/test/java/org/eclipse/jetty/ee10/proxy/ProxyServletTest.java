@@ -72,6 +72,7 @@ import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -607,8 +608,8 @@ public class ProxyServletTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Make sure the proxy coalesced the Via headers into just one.
-                org.eclipse.jetty.server.Request jettyRequest = (org.eclipse.jetty.server.Request)request;
-                assertEquals(1, jettyRequest.getHttpFields().getFields(HttpHeader.VIA).size());
+                ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(request);
+                assertEquals(1, servletContextRequest.getHeaders().getFields(HttpHeader.VIA).size());
                 PrintWriter writer = response.getWriter();
                 List<String> viaValues = Collections.list(request.getHeaders("Via"));
                 writer.write(String.join(", ", viaValues));

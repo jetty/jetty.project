@@ -15,10 +15,10 @@ package org.eclipse.jetty.ee10.demos;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 
 public class ExampleServer
 {
@@ -35,7 +35,7 @@ public class ExampleServer
         context.addServlet(HelloServlet.class, "/hello");
         context.addServlet(AsyncEchoServlet.class, "/echo/*");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
 
         return server;
     }

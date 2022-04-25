@@ -13,6 +13,7 @@
 
 module org.eclipse.jetty.ee10.proxy
 {
+    requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.slf4j;

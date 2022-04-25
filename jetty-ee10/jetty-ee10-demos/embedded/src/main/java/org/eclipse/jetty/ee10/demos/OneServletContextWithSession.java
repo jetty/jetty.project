@@ -17,11 +17,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -35,7 +35,7 @@ public class OneServletContextWithSession
         ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResource(baseResource);
+        context.setResourceBase(baseResource.getPath());
         server.setHandler(context);
 
         // Access the SessionHandler from the context.

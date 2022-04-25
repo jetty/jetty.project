@@ -11,35 +11,29 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee10;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.security.HashLoginService;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.FileSessionDataStore;
@@ -92,12 +86,12 @@ public class TestServer
 
         // Handlers
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        HandlerList handlers = new HandlerList(contexts, new DefaultHandler());
+        Handler.Collection handlers = new Handler.Collection(contexts, new DefaultHandler());
 
         // Add restart handler to test the ability to save sessions and restart
-        RestartHandler restart = new RestartHandler();
+        /*        RestartHandler restart = new RestartHandler();
         restart.setHandler(handlers);
-        server.setHandler(restart);
+        server.setHandler(restart);*/
 
         // Setup context
         HashLoginService login = new HashLoginService();
@@ -114,7 +108,7 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
+        webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp"));
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
                 ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
@@ -131,20 +125,23 @@ public class TestServer
         contexts.addHandler(webapp);
 
         ContextHandler srcroot = new ContextHandler();
-        srcroot.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src").toString());
+        srcroot.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src"));
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);
 
+        server.setHandler(contexts);
         server.start();
         server.dumpStdErr();
 
         server.join();
     }
-
+    
+    //TODO how to restart server?
+    /*
     private static class RestartHandler extends HandlerWrapper
     {
-
+    
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -152,7 +149,7 @@ public class TestServer
             if (Boolean.valueOf(request.getParameter("restart")))
             {
                 final Server server = getServer();
-
+    
                 new Thread()
                 {
                     @Override
@@ -173,5 +170,5 @@ public class TestServer
                 }.start();
             }
         }
-    }
+    }*/
 }

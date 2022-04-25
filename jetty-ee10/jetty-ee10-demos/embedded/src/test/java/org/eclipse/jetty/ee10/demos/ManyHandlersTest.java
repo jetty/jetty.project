@@ -38,7 +38,8 @@ public class ManyHandlersTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = ManyHandlers.createServer(0);
+        //TODO fix me
+        //server = ManyHandlers.createServer(0);
         server.start();
     }
 

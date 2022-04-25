@@ -38,7 +38,8 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = LikeJettyXml.createServer(0, 0, false);
+        //TODO fix me
+        //server = LikeJettyXml.createServer(0, 0, false);
         server.start();
 
         Map<String, Integer> ports = ServerUtil.fixDynamicPortConfigurations(server);
