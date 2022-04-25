@@ -28,6 +28,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -60,6 +61,7 @@ public class Dispatcher implements RequestDispatcher
     private final String _named;
     private final ServletHandler.MappedServlet _mappedServlet;
     private final ServletHandler _servletHandler;
+    private final ServletPathMapping _servletPathMapping;
 
     public Dispatcher(ServletContextHandler contextHandler, HttpURI uri, String pathInContext)
     {
@@ -70,6 +72,7 @@ public class Dispatcher implements RequestDispatcher
 
         _servletHandler = _contextHandler.getServletHandler();
         _mappedServlet = _servletHandler.getMappedServlet(pathInContext);
+        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext);
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -81,6 +84,7 @@ public class Dispatcher implements RequestDispatcher
 
         _servletHandler = _contextHandler.getServletHandler();
         _mappedServlet = _servletHandler.getMappedServlet(name);
+        _servletPathMapping = null;
     }
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
@@ -207,13 +211,19 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+            return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            return _servletPathMapping.getServletPath();
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            return _servletPathMapping;
         }
 
         @Override

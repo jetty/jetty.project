@@ -70,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 public class DispatcherTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(DispatcherTest.class);
@@ -131,6 +130,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testForwardNonUTF8() throws Exception
     {
         _contextHandler.addServlet(ForwardNonUTF8Servlet.class, "/ForwardServlet/*");
@@ -148,6 +148,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testForwardWithParam() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
@@ -169,6 +170,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testNamedForward() throws Exception
     {
         _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
@@ -206,6 +208,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testForwardWithBadParams() throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
@@ -313,6 +316,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testIncludeThenForward() throws Exception
     {
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
@@ -399,6 +403,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -412,6 +417,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -423,6 +429,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -434,6 +441,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -472,6 +480,7 @@ public class DispatcherTest
     }
 
     @Test
+    @Disabled // TODO
     public void testDispatchMapping() throws Exception
     {
         _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
