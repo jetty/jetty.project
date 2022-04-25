@@ -1164,7 +1164,7 @@ public class ServletHandler extends Handler.Wrapper
     protected PathSpec asPathSpec(String pathSpec)
     {
         return new ServletPathSpec(pathSpec);
-}
+    }
 
     protected void updateMappings()
     {
