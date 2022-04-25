@@ -36,7 +36,9 @@ import org.eclipse.jetty.util.URIUtil;
  * The first resource in the collection is the main resource.
  * If a resource is not found in the main resource, it looks it up in
  * the order the resources were constructed.
+ * @deprecated
  */
+@Deprecated(forRemoval = true)
 public class ResourceCollection extends Resource
 {
     private List<Resource> _resources;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.resource;
+package org.eclipse.jetty.util.paths;
 
 import java.io.IOException;
 import java.nio.file.Files;
