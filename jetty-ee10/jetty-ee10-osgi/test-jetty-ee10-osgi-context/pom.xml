@@ -13,6 +13,14 @@
   </properties>
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
       <scope>provided</scope>
@@ -69,8 +77,8 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-              jakarta.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
-              jakarta.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              jakarta.servlet;version="[$(version;==;${servletImpl.osgiVersion}),$(version;+;${servletImpl.osgiVersion}))",
+              jakarta.servlet.resources;version="[$(version;==;${servletImpl.osgiVersion}),$(version;+;${servletImpl.osgiVersion}))",
               org.osgi.framework,
               org.osgi.service.cm;version="1.2.0",
               org.osgi.service.packageadmin,

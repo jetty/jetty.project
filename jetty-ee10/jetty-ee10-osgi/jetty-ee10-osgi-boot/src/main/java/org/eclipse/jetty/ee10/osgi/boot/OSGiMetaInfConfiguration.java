@@ -263,7 +263,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
             Resource[] resources = new Resource[1 + prependedResourcesPath.size()];
             System.arraycopy(prependedResourcesPath.values().toArray(new Resource[prependedResourcesPath.size()]), 0, resources, 0, prependedResourcesPath.size());
             resources[resources.length - 1] = context.getBaseResource();
-            context.setBaseResource(new ResourceCollection(resources));
+            //TODO needs WebAppContext ResourceCollection fixed
+            //context.setBaseResource(new ResourceCollection(resources));
         }
     }
 

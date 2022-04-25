@@ -307,7 +307,7 @@ public class ServerInstanceWrapper
     private void init()
     {
         // Get the context handler
-        _ctxtCollection = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
+        _ctxtCollection = (ContextHandlerCollection)_server.getDescendant(ContextHandlerCollection.class);
 
         if (_ctxtCollection == null)
             throw new IllegalStateException("ERROR: No ContextHandlerCollection configured in Server");

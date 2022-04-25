@@ -23,6 +23,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee10.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.ee10.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.ee10.osgi.boot.utils.OSGiClassLoader;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -109,9 +110,9 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             }
 
             //Set the base resource of the ContextHandler, if not already set, can also be overridden by the context xml file
-            if (_contextHandler != null && _contextHandler.getBaseResource() == null)
+            if (_contextHandler != null && _contextHandler.getResourceBase() == null)
             {
-                _contextHandler.setBaseResource(rootResource);
+                _contextHandler.setResourceBase(rootResource.getPath());
             }
 
             //Use a classloader that knows about the common jetty parent loader, and also the bundle                  
@@ -178,19 +179,23 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             _contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
 
             //make sure we protect also the osgi dirs specified by OSGi Enterprise spec
-            String[] targets = _contextHandler.getProtectedTargets();
-            int length = (targets == null ? 0 : targets.length);
 
-            String[] updatedTargets = null;
-            if (targets != null)
+            if (_contextHandler instanceof ServletContextHandler servletContextHandler)
             {
-                updatedTargets = new String[length + OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
-                System.arraycopy(targets, 0, updatedTargets, 0, length);
+                String[] targets = servletContextHandler.getProtectedTargets();
+                int length = (targets == null ? 0 : targets.length);
+
+                String[] updatedTargets = null;
+                if (targets != null)
+                {
+                    updatedTargets = new String[length + OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+                    System.arraycopy(targets, 0, updatedTargets, 0, length);
+                }
+                else
+                    updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+                System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
+                servletContextHandler.setProtectedTargets(updatedTargets);
             }
-            else
-                updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
-            System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
-            _contextHandler.setProtectedTargets(updatedTargets);
         }
     }
 
