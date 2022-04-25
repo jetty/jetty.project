@@ -70,7 +70,7 @@
     <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
     <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
+    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
