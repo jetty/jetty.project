@@ -107,7 +107,7 @@
     <mariadb.version>3.0.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.7.3</maven.resolver.version>
+    <maven.resolver.version>1.8.0</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
     <mongodb.version>3.2.2</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -137,7 +137,7 @@
     <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
-    <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
+    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.4</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
@@ -152,7 +152,7 @@
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.3.2</maven.javadoc.plugin.version>
+    <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.2.0</maven.jxr.plugin.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
@@ -160,7 +160,7 @@
     <maven.remote-resources-plugin.version>1.7.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
-    <maven.site.plugin.version>3.11.0</maven.site.plugin.version>
+    <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
