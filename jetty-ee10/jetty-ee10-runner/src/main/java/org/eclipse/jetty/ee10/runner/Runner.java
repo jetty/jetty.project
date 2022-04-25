@@ -30,13 +30,14 @@ import java.util.Locale;
 
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.HashLoginService;
-import org.eclipse.jetty.ee10.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.StatisticsServlet;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
+import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -50,10 +51,7 @@ import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -346,15 +344,15 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        HandlerCollection handlers = _server.getChildHandlerByClass(HandlerCollection.class);
+                        Handler.Collection handlers = _server.getDescendant(Handler.Collection.class);
                         if (handlers == null)
                         {
-                            handlers = new HandlerList();
+                            handlers = new Handler.Collection();
                             _server.setHandler(handlers);
                         }
 
                         //check if contexts already configured
-                        _contexts = handlers.getChildHandlerByClass(ContextHandlerCollection.class);
+                        _contexts = handlers.getDescendant(ContextHandlerCollection.class);
                         if (_contexts == null)
                         {
                             _contexts = new ContextHandlerCollection();
@@ -364,7 +362,7 @@ public class Runner
                         if (_enableStats)
                         {
                             //if no stats handler already configured
-                            if (handlers.getChildHandlerByClass(StatisticsHandler.class) == null)
+                            if (handlers.getDescendant(StatisticsHandler.class) == null)
                             {
                                 StatisticsHandler statsHandler = new StatisticsHandler();
 
@@ -397,7 +395,7 @@ public class Runner
                         }
 
                         //ensure a DefaultHandler is present
-                        if (handlers.getChildHandlerByClass(DefaultHandler.class) == null)
+                        if (handlers.getDescendant(DefaultHandler.class) == null)
                         {
                             handlers.addHandler(new DefaultHandler());
                         }
@@ -516,15 +514,15 @@ public class Runner
         }
     }
 
-    protected void prependHandler(Handler handler, HandlerCollection handlers)
+    protected void prependHandler(Handler handler, Handler.Collection handlers)
     {
         if (handler == null || handlers == null)
             return;
 
-        Handler[] existing = handlers.getChildHandlers();
-        Handler[] children = new Handler[existing.length + 1];
-        children[0] = handler;
-        System.arraycopy(existing, 0, children, 1, existing.length);
+        List<Handler> existing = handlers.getHandlers();
+        List<Handler> children = new ArrayList<>(existing.size() + 1);
+        children.add(handler);
+        children.addAll(existing);
         handlers.setHandlers(children);
     }
 
