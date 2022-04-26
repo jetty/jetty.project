@@ -211,12 +211,16 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
+            if (_servletPathMapping == null)
+                return super.getPathInfo();
             return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
+            if (_servletPathMapping == null)
+                return super.getServletPath();
             return _servletPathMapping.getServletPath();
         }
 
@@ -241,7 +245,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? null : _uri.getPath();
+            return _uri == null ? super.getRequestURI() : _uri.getPath();
         }
 
         @Override

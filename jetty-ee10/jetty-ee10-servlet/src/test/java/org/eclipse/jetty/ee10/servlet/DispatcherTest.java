@@ -168,7 +168,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testNamedForward() throws Exception
     {
         _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
