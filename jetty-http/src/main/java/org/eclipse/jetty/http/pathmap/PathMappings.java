@@ -199,10 +199,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public static PathSpec asPathSpec(String pathSpecString)
     {
-        if ((pathSpecString == null) || (pathSpecString.length() < 1))
-        {
+        if (pathSpecString == null)
             throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
-        }
+
+        if (pathSpecString.length() == 0)
+            return new ServletPathSpec("");
+
         return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString) : new ServletPathSpec(pathSpecString);
     }
 
