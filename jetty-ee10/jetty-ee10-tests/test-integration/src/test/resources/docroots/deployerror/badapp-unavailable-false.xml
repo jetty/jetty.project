@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
   <Set name="contextPath">/badapp-uaf</Set>
   <Set name="war"><SystemProperty name="test.docroots"/>/badapp/</Set>
   <Set name="extraClasspath"><SystemProperty name="maven.test.classes"/></Set>

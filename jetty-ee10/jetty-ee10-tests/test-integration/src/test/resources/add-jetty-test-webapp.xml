@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure id="Contexts" class="org.eclipse.jetty.server.handler.HandlerCollection">
+<Configure id="Contexts" class="org.eclipse.jetty.server.Handler.Collection">
   <Call name="addHandler">
-    <New class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+    <New class="org.eclipse.jetty.ee10.webapp.WebAppContext">
       <Set name="contextPath">/test-jetty-webapp</Set>
       <Set name="war"><Property name="test.webapps" default="." />/test-jetty-webapp.war</Set>
       <Call name="insertHandler">

@@ -103,15 +103,15 @@ INSTALLED 2
 39 org.eclipse.jetty.websocket.core file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.core_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 40 org.eclipse.jetty.websocket.servlet file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.servlet_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 41 org.eclipse.jetty.websocket.util file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.util_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
-42 org.eclipse.jetty.ee9.websocket.api file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee9.websocket.api_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
+42 org.eclipse.jetty.ee10.websocket.api file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee10.websocket.api_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 43 org.eclipse.jetty.websocket.server file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.server_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
-44 org.eclipse.jetty.ee9.websocket.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee9.websocket.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
+44 org.eclipse.jetty.ee10.websocket.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee10.websocket.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 45 org.eclipse.jetty.websocket.common file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.common_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 46 org.eclipse.jetty.websocket-api file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket-api_1.1.2.jar 1.1.2 4
 47 org.eclipse.jetty.websocket.javax.server file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.javax.server_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
 48 org.eclipse.jetty.websocket.javax.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.javax.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
 49 org.eclipse.jetty.websocket.javax.common file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.websocket.javax.common_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
-50 org.eclipse.jetty.ee9.osgi.boot file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee9.osgi.boot_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
+50 org.eclipse.jetty.ee10.osgi.boot file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee10.osgi.boot_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 51 org.eclipse.jetty.alpn.java.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.alpn.java.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 52 org.eclipse.jetty.alpn.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.alpn.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 53 javax.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/javax.servlet.jsp.jstl_1.2.0.v201105211821.jar 1.2.0.v201105211821 32
@@ -120,7 +120,7 @@ INSTALLED 2
 56 org.eclipse.jetty.apache-jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.apache-jsp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 57 org.glassfish.web.javax.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.glassfish.web.javax.servlet.jsp.jstl_1.2.2.jar 1.2.2 32
 58 org.eclipse.jdt.core.compiler.batch file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jdt.core.compiler.batch_3.19.0.v20190903-0936.jar 3.19.0.v20190903-0936 32
-59 org.eclipse.jetty.ee9.osgi.boot.jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee9.osgi.boot.jsp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
+59 org.eclipse.jetty.ee10.osgi.boot.jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.ee10.osgi.boot.jsp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
 60 org.eclipse.jetty.tests.webapp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-ee10-osgi/test-jetty-ee10-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.tests.webapp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 61 PAXEXAM-PROBE-d9c5a341-5c98-4084-b814-8303880cb447 local 0.0.0 32
 
@@ -163,9 +163,9 @@ at org.eclipse.osgi.internal.loader.BundleLoader.findClass(BundleLoader.java:425
 at org.eclipse.osgi.internal.loader.BundleLoader.findClass(BundleLoader.java:417)
 at org.eclipse.osgi.internal.loader.ModuleClassLoader.loadClass(ModuleClassLoader.java:171)
 at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:522)
-at org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper.configure(ServerInstanceWrapper.java:143)
-at org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(DefaultJettyAtJettyHomeHelper.java:211)
-at org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator.start(JettyBootstrapActivator.java:98)
+at org.eclipse.jetty.ee10.osgi.boot.internal.serverfactory.ServerInstanceWrapper.configure(ServerInstanceWrapper.java:143)
+at org.eclipse.jetty.ee10.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(DefaultJettyAtJettyHomeHelper.java:211)
+at org.eclipse.jetty.ee10.osgi.boot.JettyBootstrapActivator.start(JettyBootstrapActivator.java:98)
 at org.eclipse.osgi.internal.framework.BundleContextImpl$3.run(BundleContextImpl.java:842)
 at org.eclipse.osgi.internal.framework.BundleContextImpl$3.run(BundleContextImpl.java:1)
 at java.base/java.security.AccessController.doPrivileged(AccessController.java:554)

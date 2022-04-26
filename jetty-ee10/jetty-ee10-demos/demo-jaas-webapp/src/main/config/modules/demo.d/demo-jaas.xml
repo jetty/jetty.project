@@ -4,7 +4,7 @@
 <!-- =============================================================== -->
 <!-- Configure the demo-jaas webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <Set name="contextPath">/test-jaas</Set>
   <Set name="war"><Property name="jetty.webapps" default="." />/demo-jaas.war
@@ -12,7 +12,7 @@
   <Set name="extractWAR">true</Set>
 
   <Set name="securityHandler">
-    <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
+    <New class="org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler">
      <Set name="loginService">
        <New class="org.eclipse.jetty.jaas.JAASLoginService">
          <Set name="name">Demo JAAS Realm</Set>

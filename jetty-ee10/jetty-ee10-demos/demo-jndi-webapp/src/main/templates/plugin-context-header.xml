@@ -4,7 +4,7 @@
 <!-- =============================================================== -->
 <!-- Configure the test-jndi webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
     <Arg>
