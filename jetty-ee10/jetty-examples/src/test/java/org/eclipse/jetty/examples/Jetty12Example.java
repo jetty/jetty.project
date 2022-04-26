@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.examples;
 
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.util.Callback;
-
 import java.net.URL;
 import java.net.URLClassLoader;
+
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.util.Callback;
 
 public class Jetty12Example
 {
