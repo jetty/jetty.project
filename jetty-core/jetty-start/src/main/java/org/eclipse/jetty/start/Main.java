@@ -134,12 +134,12 @@ public class Main
         }).start();
     }
 
-    private void dumpClasspathWithVersions(PrintStream out, Classpath classpath)
+    private void dumpClasspathWithVersions(String name, PrintStream out, Classpath classpath)
     {
         StartLog.endStartLog();
         out.println();
-        out.println("Jetty Server Classpath:");
-        out.println("-----------------------");
+        out.printf("Classpath: %s%n", name);
+        out.printf("-----------%s%n", "-".repeat(name.length()));
         if (classpath.count() == 0)
         {
             out.println("No classpath entries and/or version information available show.");
@@ -241,16 +241,22 @@ public class Main
         // Dump System Properties
         args.dumpSystemProperties(out);
 
-        // TODO iterate over environments
-        {
-            Environment environment = args.getCoreEnvironment();
 
+        Environment coreEnvironment = args.getCoreEnvironment();
+
+        // Dump Core Properties
+        coreEnvironment.dumpProperties(out);
+        // Dump Core Classpath
+        dumpClasspathWithVersions(coreEnvironment.getName(), out, coreEnvironment.getClasspath());
+        // Dump Core Resolved XMLs
+        coreEnvironment.dumpActiveXmls(out);
+
+        for (Environment environment : args.getEnvironments())
+        {
             // Dump Properties
             environment.dumpProperties(out);
-
             // Dump Classpath
-            dumpClasspathWithVersions(out, environment.getClasspath());
-
+            dumpClasspathWithVersions(environment.getName(), out, environment.getClasspath());
             // Dump Resolved XMLs
             environment.dumpActiveXmls(out);
         }
@@ -294,16 +300,22 @@ public class Main
         // 1) Configuration Locations
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         baseHome = new BaseHome(cmdLineSource);
+        StartArgs args = new StartArgs(baseHome);
 
         StartLog.debug("jetty.home=%s", baseHome.getHome());
         StartLog.debug("jetty.base=%s", baseHome.getBase());
+
+        // 3) Module Registration
+        Modules modules = new Modules(baseHome, args);
+        StartLog.debug("Registering all modules");
+        modules.registerAll();
+        args.setAllModules(modules);
 
         // 2) Parse everything provided.
         // This would be the directory information +
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
-        StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
         Props props = baseHome.getConfigSources().getProps();
@@ -321,11 +333,6 @@ public class Main
             normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.source);
 
-        // 3) Module Registration
-        Modules modules = new Modules(baseHome, args);
-        StartLog.debug("Registering all modules");
-        modules.registerAll();
-
         // 4) Active Module Resolution
         for (String enabledModule : modules.getSortedNames(args.getEnabledModules()))
         {
@@ -336,7 +343,6 @@ public class Main
             }
         }
 
-        args.setAllModules(modules);
         List<Module> activeModules = modules.getEnabled();
 
         final Version START_VERSION = new Version(StartArgs.VERSION);
@@ -388,7 +394,7 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            dumpClasspathWithVersions(System.out, classpath);
+            dumpClasspathWithVersions("Core", System.out, classpath);
         }
 
         // Show configuration

@@ -167,6 +167,7 @@ public class Module implements Comparable<Module>
      * Module names from {@code [after]} section
      */
     private final Set<String> _after = new HashSet<>();
+    private String _environment;
 
     public Module(BaseHome basehome, Path path) throws IOException
     {
@@ -211,6 +212,11 @@ public class Module implements Comparable<Module>
         if (isConditionalDependency(name))
             return name.substring(1);
         return name;
+    }
+
+    public String getEnvironment()
+    {
+        return _environment;
     }
 
     public String getName()
@@ -405,6 +411,10 @@ public class Module implements Comparable<Module>
                                 break;
                             case "DEPRECATED":
                                 _deprecated.add(line);
+                                break;
+                            case "ENV":
+                            case "ENVIRONMENT":
+                                _environment = line;
                                 break;
                             case "FILE":
                             case "FILES":

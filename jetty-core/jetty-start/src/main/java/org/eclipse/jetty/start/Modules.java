@@ -102,6 +102,10 @@ public class Modules implements Iterable<Module>
             {
                 out.printf("           : %s%n", description);
             }
+            if (module.getEnvironment() != null)
+            {
+                out.printf("Environment: %s%n", module.getEnvironment());
+            }
             if (!module.getTags().isEmpty())
             {
                 label = "       Tags: %s";
@@ -384,20 +388,9 @@ public class Modules implements Iterable<Module>
         return all;
     }
 
-    public List<String> getSortedNames(List<String> enabledModules)
+    public List<String> getSortedNames(Set<String> enabledModules)
     {
-        List<Module> all = getSortedAll();
-        List<String> order = new ArrayList<>();
-        for (Module module : all)
-        {
-            String name = module.getName();
-            if (enabledModules.contains(name))
-            {
-                order.add(name);
-            }
-        }
-
-        return order;
+        return getSortedAll().stream().map(Module::getName).filter(enabledModules::contains).collect(Collectors.toList());
     }
 
     /**
@@ -467,9 +460,12 @@ public class Modules implements Iterable<Module>
             // Apply default configuration
             if (module.hasDefaultConfig())
             {
+                String source = module.getName() + "[ini]";
                 Environment environment = _args.getCoreEnvironment();
+                environment = _args.parse(environment, "--module=" + module.getName(), source);
+
                 for (String line : module.getIniSection())
-                    environment = _args.parse(environment, line, module.getName() + "[ini]");
+                    environment = _args.parse(environment, line, source);
 
                 for (Module m : _modules)
                     m.expandDependencies(environment.getProperties());
