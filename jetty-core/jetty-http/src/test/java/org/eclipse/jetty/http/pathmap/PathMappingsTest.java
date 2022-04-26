@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -455,5 +456,19 @@ public class PathMappingsTest
         assertThat(p.remove(new ServletPathSpec("/a/b/d")), is(false));
         assertThat(p.remove(new ServletPathSpec("/a/b/c")), is(true));
         assertThat(p.remove(new ServletPathSpec("/a/b/c")), is(false));
+    }
+
+    @Test
+    public void testAsPathSpec()
+    {
+        assertThat(PathMappings.asPathSpec(""), instanceOf(ServletPathSpec.class));
+        assertThat(PathMappings.asPathSpec("/"), instanceOf(ServletPathSpec.class));
+        assertThat(PathMappings.asPathSpec("/*"), instanceOf(ServletPathSpec.class));
+        assertThat(PathMappings.asPathSpec("/foo/*"), instanceOf(ServletPathSpec.class));
+        assertThat(PathMappings.asPathSpec("*.jsp"), instanceOf(ServletPathSpec.class));
+
+        assertThat(PathMappings.asPathSpec("^$"), instanceOf(RegexPathSpec.class));
+        assertThat(PathMappings.asPathSpec("^.*"), instanceOf(RegexPathSpec.class));
+        assertThat(PathMappings.asPathSpec("^/"), instanceOf(RegexPathSpec.class));
     }
 }

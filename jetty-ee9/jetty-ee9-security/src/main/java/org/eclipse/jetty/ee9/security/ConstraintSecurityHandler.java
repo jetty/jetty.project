@@ -39,6 +39,7 @@ import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
@@ -422,7 +423,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintRoles.get(PathMappings.asPathSpec(mapping.getPathSpec()));
+        Map<String, RoleInfo> mappings = _constraintRoles.get(asPathSpec(mapping));
         if (mappings == null)
         {
             mappings = new HashMap<>();
@@ -465,6 +466,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 mappings.put(ALL_METHODS, roleInfo);
             }
         }
+    }
+
+    protected PathSpec asPathSpec(ConstraintMapping mapping)
+    {
+        // As currently written, this allows regex patterns to be used.
+        // This may not be supported by default in future releases.
+        return PathMappings.asPathSpec(mapping.getPathSpec());
     }
 
     /**
