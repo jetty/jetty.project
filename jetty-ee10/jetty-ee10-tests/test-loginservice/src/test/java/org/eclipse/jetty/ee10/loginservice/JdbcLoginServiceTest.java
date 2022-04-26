@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee10.loginservice;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,8 +28,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.ee10.security.JDBCLoginService;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.JDBCLoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -88,7 +88,7 @@ public class JdbcLoginServiceTest
         LoginService loginService = new JDBCLoginService(__realm, realmFile.getAbsolutePath());
         
         __testServer = new DatabaseLoginServiceTestServer();
-        __testServer.setResourceBase(__docRoot.getAbsolutePath());
+        __testServer.setResourceBase(__docRoot.toPath());
         __testServer.setLoginService(loginService);
         __testServer.start();
         
@@ -185,6 +185,6 @@ public class JdbcLoginServiceTest
         request.body(new BytesRequestContent(_content.getBytes()));
         ContentResponse response = request.send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(_content, __testServer.getTestHandler().getRequestContent());
+        assertEquals(_content, __testServer.getTestFilter().getRequestContent());
     }
 }

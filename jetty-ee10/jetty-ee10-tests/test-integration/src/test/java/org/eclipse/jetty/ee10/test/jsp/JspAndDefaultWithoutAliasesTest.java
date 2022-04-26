@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee10.security.HashLoginService;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -93,7 +97,7 @@ public class JspAndDefaultWithoutAliasesTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
-        context.setResourceBase(webappBase.getAbsolutePath());
+        context.setResourceBase(webappBase.toPath());
         context.setClassLoader(Thread.currentThread().getContextClassLoader());
 
         // add default servlet
@@ -111,11 +115,29 @@ public class JspAndDefaultWithoutAliasesTest
         // Add customizer to convert "_00_" to a real null
         server.getContainedBeans(HttpConfiguration.class).forEach(config ->
         {
-            config.addCustomizer((connector, channelConfig, request) ->
+            config.addCustomizer(new Customizer()
             {
-                HttpURI uri = request.getHttpURI();
-                if (uri.getPath().contains("_00_"))
-                    request.setHttpURI(HttpURI.build(uri, uri.getPath().replace("_00_", "\000"), uri.getParam(), uri.getQuery()));
+                @Override
+                public Request customize(Request request, Mutable responseHeaders)
+                {
+                    HttpURI uri = request.getHttpURI();
+
+                    if (uri.getPath().contains("_00_"))
+                    {
+                        return new Request.Wrapper(request)
+                        {
+
+                            @Override
+                            public HttpURI getHttpURI()
+                            {
+                                return HttpURI.build(uri, uri.getPath().replace("_00_", "\000"), uri.getParam(), uri.getQuery());
+                            }
+
+                        };
+                    }
+                    return request;
+                }
+
             });
         });
 

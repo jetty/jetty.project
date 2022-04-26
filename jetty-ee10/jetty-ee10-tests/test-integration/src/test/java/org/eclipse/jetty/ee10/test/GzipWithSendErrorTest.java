@@ -38,7 +38,6 @@ import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -179,7 +178,8 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new HttpChannelState.Listener()
+        //TODO
+        /*        connector.addBean(new HttpChannelState.Listener()
         {
             @Override
             public void onComplete(Request request)
@@ -191,7 +191,7 @@ public class GzipWithSendErrorTest
                 inputBytesIn.set(connection.getBytesIn());
                 serverRequestCompleteLatch.countDown();
             }
-        });
+        });*/
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the
@@ -285,7 +285,8 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new HttpChannelState.Listener()
+        //TODO
+        /*        connector.addBean(new HttpChannelState.Listener()
         {
             @Override
             public void onComplete(Request request)
@@ -297,7 +298,7 @@ public class GzipWithSendErrorTest
                 inputBytesIn.set(connection.getBytesIn());
                 serverRequestCompleteLatch.countDown();
             }
-        });
+        });*/
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the

@@ -354,11 +354,12 @@ public class TransportScenario
         connector = newServerConnector(server);
         server.addConnector(connector);
 
-        server.setRequestLog((request, response) ->
+        //TODO
+        /*        server.setRequestLog((request, response) ->
         {
             int status = response.getCommittedMetaData().getStatus();
             requestLog.offer(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
-        });
+        });*/
 
         server.setHandler(handler);
 

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.cdi.tests;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.EnumSet;
 
 import jakarta.servlet.DispatcherType;
@@ -67,7 +68,7 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        context.setResourceBase("src/test/weldtest");
+        context.setResourceBase(Paths.get("src", "test", "weldtest"));
         server.setHandler(context);
 
         // Setup context
@@ -103,29 +104,29 @@ public class EmbeddedWeldTest
 
             case "CdiServletContainerInitializer+Listener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
+                context.addServletContainerInitializer(new CdiServletContainerInitializer());
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiServletContainerInitializer(CdiDecoratingListener)+Listener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
                 context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
-                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
+                context.addServletContainerInitializer(new CdiServletContainerInitializer());
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiServletContainerInitializer+EnhancedListener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
-                context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
+                context.addServletContainerInitializer(new CdiServletContainerInitializer());
+                context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
                 break;
 
             // NOTE: This is the preferred mode from the Weld team.
             case "CdiServletContainerInitializer(CdiDecoratingListener)+EnhancedListener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
                 context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
-                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
-                context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
+                context.addServletContainerInitializer(new CdiServletContainerInitializer());
+                context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
                 break;
         }
 
@@ -186,12 +187,12 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setResourceBase("src/test/weldtest");
+        webapp.setResourceBase(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
         webapp.setInitParameter(org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee10.cdi.CdiDecoratingListener.MODE);
-        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer()));
-        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
+        webapp.addServletContainerInitializer(new org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer());
+        webapp.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
         webapp.getServerClassMatcher().add("-" + pkg + ".");
@@ -219,7 +220,7 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setResourceBase("src/test/weldtest");
+        webapp.setResourceBase(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
         // Need the AnnotationConfiguration to detect SCIs

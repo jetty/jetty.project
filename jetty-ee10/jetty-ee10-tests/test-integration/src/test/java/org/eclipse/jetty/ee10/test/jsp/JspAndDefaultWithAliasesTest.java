@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee10.security.HashLoginService;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -86,7 +86,7 @@ public class JspAndDefaultWithAliasesTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
-        context.setResourceBase(webappBase.getAbsolutePath());
+        context.setResourceBase(webappBase.toPath());
         context.setClassLoader(Thread.currentThread().getContextClassLoader());
 
         // add default servlet
