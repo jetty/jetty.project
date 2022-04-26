@@ -876,7 +876,7 @@ public class UrlEncoded
         }
     }
 
-    private static byte decodeHexByte(char hi, char lo)
+    public static byte decodeHexByte(char hi, char lo)
     {
         try
         {
