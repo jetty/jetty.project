@@ -130,7 +130,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testForwardNonUTF8() throws Exception
     {
         _contextHandler.addServlet(ForwardNonUTF8Servlet.class, "/ForwardServlet/*");

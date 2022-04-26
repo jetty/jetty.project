@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -365,6 +366,15 @@ public interface Request extends Attributes, Content.Reader
         String query = request.getHttpURI().getQuery();
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, fields);
+        return fields;
+    }
+
+    static Fields extractQueryParameters(Request request, Charset charset)
+    {
+        Fields fields = new Fields(true);
+        String query = request.getHttpURI().getQuery();
+        if (StringUtil.isNotBlank(query))
+            UrlEncoded.decodeTo(query, fields::add, charset);
         return fields;
     }
 
