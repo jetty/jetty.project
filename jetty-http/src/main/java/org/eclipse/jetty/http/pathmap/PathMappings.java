@@ -201,6 +201,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     {
         if ((pathSpecString == null) || (pathSpecString.length() < 1))
         {
+            if (pathSpecString != null)
+                return new ServletPathSpec("");
             throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
         }
         return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString) : new ServletPathSpec(pathSpecString);
