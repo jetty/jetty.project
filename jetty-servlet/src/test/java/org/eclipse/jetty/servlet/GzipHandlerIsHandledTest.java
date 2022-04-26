@@ -48,6 +48,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+/**
+ * Tests of behavior of GzipHandler when Request.isHandled() or Response.isCommitted() is true
+ */
 public class GzipHandlerIsHandledTest
 {
     public WorkDir workDir;
@@ -73,7 +76,7 @@ public class GzipHandlerIsHandledTest
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(32);
-        gzipHandler.setHandler(new EventHandler(events, "GzipHandler"));
+        gzipHandler.setHandler(new EventHandler(events, "GzipHandler-wrapped-handler"));
 
         handlers.setHandlers(new Handler[]{resourceHandler, gzipHandler, new DefaultHandler()});
 
@@ -98,8 +101,14 @@ public class GzipHandlerIsHandledTest
         assertThat("response.status", response.getStatus(), is(200));
         // we should have received a directory listing from the ResourceHandler
         assertThat("response.content", response.getContentAsString(), containsString("Directory: /"));
-        // resource handler should have handled the request, meaning no other handlers should have handled it, nor any wrapped handlers
-        assertThat("No events should have been recorded", events.size(), is(0));
+        // resource handler should have handled the request
+        // the gzip handler and default handlers should have been executed, seeing as this is a HandlerCollection
+        // but the gzip handler should not have acted on the request, as the response is committed
+        assertThat("One event should have been recorded", events.size(), is(1));
+        // the event handler should see the request.isHandled = true
+        // and response.isCommitted = true as the gzip handler didn't really do anything due to these
+        // states and let the wrapped handler (the EventHandler in this case) make the call on what it should do.
+        assertThat("Event indicating that GzipHandler-wrapped-handler ran", events.remove(), is("GzipHandler-wrapped-handler [request.isHandled=true, response.isCommitted=true]"));
     }
 
     private static class EventHandler extends AbstractHandler
@@ -116,7 +125,7 @@ public class GzipHandlerIsHandledTest
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            events.offer(action);
+            events.offer(String.format("%s [request.isHandled=%b, response.isCommitted=%b]", action, baseRequest.isHandled(), response.isCommitted()));
         }
     }
 }
