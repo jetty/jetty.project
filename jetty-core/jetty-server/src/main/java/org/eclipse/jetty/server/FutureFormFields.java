@@ -81,6 +81,8 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
     private final int _maxSize;
     private String _name;
     private int _size;
+    private int _percent = 0;
+    private byte _percentCode;
 
     public FutureFormFields(Content.Reader reader)
     {
@@ -148,8 +150,6 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
         }
     }
 
-    int _percent = 0;
-    byte code0;
     protected Fields.Field parse(ByteBuffer buffer, boolean last) throws CharacterCodingException
     {
         String value = null;
@@ -161,13 +161,13 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
             {
                 case 1 ->
                 {
-                    code0 = b;
+                    _percentCode = b;
                     _percent++;
                     continue;
                 }
                 case 2 ->
                 {
-                    _builder.append(decodeHexByte((char)code0, (char)b));
+                    _builder.append(decodeHexByte((char)_percentCode, (char)b));
                     _percent = 0;
                     continue;
                 }
@@ -211,7 +211,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
                 if (_percent > 0)
                 {
                     _builder.append((byte)'%');
-                    _builder.append(code0);
+                    _builder.append(_percentCode);
                 }
                 value = _builder.takeString();
                 checkSize(value);
