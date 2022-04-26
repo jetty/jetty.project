@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -210,14 +209,10 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public E get(PathSpec spec)
     {
-        Optional<E> optionalResource = _mappings.stream()
+        return _mappings.stream()
             .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
-            .map(mappedResource -> mappedResource.getResource())
-            .findFirst();
-        if (!optionalResource.isPresent())
-            return null;
-
-        return optionalResource.get();
+            .map(MappedResource::getResource)
+            .findFirst().orElse(null);
     }
 
     public boolean put(String pathSpecString, E resource)
