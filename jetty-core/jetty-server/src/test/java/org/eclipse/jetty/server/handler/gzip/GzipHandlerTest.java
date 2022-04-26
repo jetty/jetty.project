@@ -49,7 +49,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -257,6 +256,7 @@ public class GzipHandlerTest
 
             Fields parameters = Request.extractQueryParameters(request);
             FutureFormFields futureFormFields = new FutureFormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
+            futureFormFields.run();
             parameters = futureFormFields.get();
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
@@ -511,7 +511,6 @@ public class GzipHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testGzipNotMicroChunked() throws Exception
     {
         _contextHandler.setHandler(new MicroChunkedHandler());
@@ -568,7 +567,6 @@ public class GzipHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testETagGzipHandler() throws Exception
     {
         _contextHandler.setHandler(new TestHandler());
@@ -710,7 +708,6 @@ public class GzipHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testGzipFormRequest() throws Exception
     {
         _contextHandler.setHandler(new DumpHandler());

@@ -68,7 +68,7 @@ public class GzipRequest extends Request.WrapperProcessor
 
         int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         GzipResponse gzipResponse = new GzipResponse(this, response, _gzipHandler, _gzipHandler.getVary(), outputBufferSize, _gzipHandler.isSyncFlush());
-        Callback cb = Callback.from(this::destroy, callback);
+        Callback cb = Callback.from(() -> destroy(gzipResponse), callback);
         super.process(this, gzipResponse, cb);
     }
 
@@ -89,8 +89,12 @@ public class GzipRequest extends Request.WrapperProcessor
         return super.readContent();
     }
 
-    public void destroy()
+    private void destroy(GzipResponse response)
     {
+        // We need to do this to intercept the committing of the response
+        // and possibly change headers in case write is never called.
+        response.write(true, Callback.NOOP);
+
         if (_decoder != null)
         {
             _decoder.destroy();
