@@ -30,16 +30,16 @@
   </build>
 
   <modules>
-    <module>demo-async-rest</module>
-    <module>demo-jaas-webapp</module>
-    <module>demo-jndi-webapp</module>
-    <module>demo-jetty-webapp</module>
-    <module>demo-proxy-webapp</module>
-    <module>demo-simple-webapp</module>
-    <module>demo-jsp-webapp</module>
-    <module>demo-mock-resources</module>
-    <module>demo-spec</module>
-    <module>demo-template</module>
-    <module>embedded</module>
+    <module>demo-ee9-async-rest</module>
+    <module>demo-ee9-jaas-webapp</module>
+    <module>demo-ee9-jndi-webapp</module>
+    <module>demo-ee9-jetty-webapp</module>
+    <module>demo-ee9-proxy-webapp</module>
+    <module>demo-ee9-simple-webapp</module>
+    <module>demo-ee9-jsp-webapp</module>
+    <module>demo-ee9-mock-resources</module>
+    <module>demo-ee9-spec</module>
+    <module>demo-ee9-template</module>
+    <module>demo-ee9-embedded</module>
   </modules>
 </project>
