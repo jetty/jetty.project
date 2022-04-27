@@ -49,7 +49,7 @@ public abstract class AbstractOSGiApp extends App
 
     public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary<?, ?> properties, String originId)
     {
-        super(manager, provider, originId);
+        super(manager, provider, null, originId); // TODO environment
         _properties = properties;
         _bundle = bundle;
     }
