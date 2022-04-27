@@ -8,7 +8,7 @@
 
 <filter>
     <filter-name>wsuf-alt</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <init-param>
       <param-name>idleTimeout</param-name>
       <param-value>5999</param-value>
