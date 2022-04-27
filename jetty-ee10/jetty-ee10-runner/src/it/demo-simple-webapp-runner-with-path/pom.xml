@@ -15,13 +15,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-runner</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-runner</artifactId>
       <version>@project.version@</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-runner</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-runner</artifactId>
       <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
@@ -64,8 +64,8 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-runner</artifactId>
+                  <groupId>org.eclipse.jetty.ee10</groupId>
+                  <artifactId>jetty-ee10-runner</artifactId>
                   <version>@project.version@</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
