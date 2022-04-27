@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +62,6 @@ public class TestResourceAnnotations
         comp.destroySubcontext("env");
     }
 
-    @Disabled //TODO
     @Test
     public void testResourceAnnotations()
         throws Exception
