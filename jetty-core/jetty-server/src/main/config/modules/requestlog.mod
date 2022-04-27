@@ -21,7 +21,7 @@ jetty.requestlog.dir?=logs
 
 [ini-template]
 ## Format string
-# jetty.requestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
+# jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %O "%{Referer}i" "%{User-Agent}i"
 
 ## Logging directory (relative to $jetty.base)
 # jetty.requestlog.dir=logs
