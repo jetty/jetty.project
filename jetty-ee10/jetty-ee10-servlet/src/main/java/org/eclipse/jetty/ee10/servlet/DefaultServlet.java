@@ -13,8 +13,33 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.IOException;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.handler.ResourceService;
 
 public class DefaultServlet extends HttpServlet
 {
+    private final ResourceService _resourceService = new ResourceService();
+
+    @Override
+    public void init(ServletConfig config) throws ServletException
+    {
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        super.doGet(req, resp);
+    }
+
+    @Override
+    protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        super.doHead(req, resp);
+    }
 }
