@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,6 +44,7 @@ public class JettyAntTaskTest
         build.stop();
     }
 
+    @Disabled //TODO
     @Test
     public void testWebApp() throws Exception
     {
