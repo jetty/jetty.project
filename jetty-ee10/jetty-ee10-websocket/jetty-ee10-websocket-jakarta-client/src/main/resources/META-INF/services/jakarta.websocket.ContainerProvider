@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider
+org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider
