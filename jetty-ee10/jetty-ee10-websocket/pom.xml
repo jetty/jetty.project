@@ -27,4 +27,18 @@
     <module>jetty-ee10-websocket-jetty-tests</module>
     <module>jetty-ee10-websocket-servlet</module>
   </modules>
+
+  <!-- TODO -->
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
