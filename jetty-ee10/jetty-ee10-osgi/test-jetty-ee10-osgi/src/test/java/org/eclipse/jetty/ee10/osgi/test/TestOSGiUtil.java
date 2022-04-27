@@ -181,29 +181,28 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-servlet").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-http").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-xml").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-security").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-servlets").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-servlets").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-plus").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-server").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-client").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-common").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-servlet").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-server").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-client").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-plus").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-annotations").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-core-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-core-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-core-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-servlet").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jetty-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jetty-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jetty-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-websocket-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-client").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-common").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jakarta-server").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jakarta-client").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.websocket").artifactId("websocket-jakarta-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-ee10-osgi-boot").versionAsInProject().start());
     }
 
@@ -232,7 +231,7 @@ public class TestOSGiUtil
         
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());

@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
+@Disabled //TODO
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2JDK9
