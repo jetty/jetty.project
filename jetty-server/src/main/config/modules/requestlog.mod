@@ -20,6 +20,7 @@ logs/
 # tag::documentation[]
 ## Request log line format string.
 # jetty.requestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
+# jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %O "%{Referer}i" "%{User-Agent}i"
 
 ## The logging directory (relative to $JETTY_BASE).
 # jetty.requestlog.dir=logs
