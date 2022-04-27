@@ -38,16 +38,17 @@ import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// TODO check that the Awaitility usage is the right thing to do.
 public class ClientServerTest extends AbstractClientServerTest
 {
     @Test
@@ -147,7 +148,6 @@ public class ClientServerTest extends AbstractClientServerTest
         assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
     }
 
-    @Disabled("TODO")
     @Test
     public void testGETThenResponseWithoutContent() throws Exception
     {
@@ -186,8 +186,8 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
 
         HTTP3Session serverSession = serverSessionRef.get();
-        assertTrue(serverSession.getStreams().isEmpty());
-        assertTrue(clientSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverSession.getStreams().isEmpty()); // onRequest is called *before* the serverSession's streams collection is cleaned up -> racy
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty()); // onResponse is called *before* the clientSession's streams collection is cleaned up -> racy
 
         QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
         assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
@@ -404,7 +404,6 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Disabled("TODO")
     @Test
     public void testResponseHeadersTooLarge() throws Exception
     {
@@ -461,7 +460,7 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverSessionRef.get().getStreams().isEmpty());
-        assertTrue(clientSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty()); // onFailure is called *before* the clientSession's streams collection is cleaned up -> racy
 
         // Verify that the connection is still good.
         CountDownLatch responseLatch = new CountDownLatch(1);
