@@ -198,7 +198,8 @@ public class LifeCycleCallbackCollectionTest
         ServletHolder runas = new ServletHolder();
         runas.setHeldClass(TestServlet.class);
         runas.setName("runas");
-        runas.setRunAsRole("admin");
+        //TODO not implemented by ServletHolder
+        //runas.setRunAsRole("admin");
         runas.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(runas, "/runas/*");
 
@@ -206,7 +207,8 @@ public class LifeCycleCallbackCollectionTest
         ServletHolder both = new ServletHolder();
         both.setHeldClass(TestServlet.class);
         both.setName("both");
-        both.setRunAsRole("admin");
+        //TODO not implemented by ServletHolder
+        //both.setRunAsRole("admin");
         both.setAsyncSupported(false);
         both.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(both, "/both/*");
