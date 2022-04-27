@@ -44,11 +44,13 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -123,6 +125,7 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+        _environments.put("Server", new ServerEnvironment());
     }
 
     public String getServerInfo()
@@ -149,12 +152,14 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
     @Override
     public Environment getEnvironment(String name)
     {
-        Environment environment = _environments.get(name);
+        String key = StringUtil.isBlank(name) ? "server" : name.toLowerCase();
+
+        Environment environment = _environments.get(key);
         if (environment != null)
             return environment;
 
-        environment = new ServerEnvironment(name, this);
-        Environment existing = _environments.putIfAbsent(name, environment);
+        environment = new NamedEnvironment(name);
+        Environment existing = _environments.putIfAbsent(key, environment);
         if (existing != null)
             return existing;
 
@@ -773,18 +778,42 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         }
     }
 
-    private static class ServerEnvironment extends ContainerLifeCycle implements Environment
+    private class ServerEnvironment extends Attributes.Wrapper implements Environment
+    {
+        private ServerEnvironment()
+        {
+            super(Server.this);
+        }
+
+        @Override
+        public String getName()
+        {
+            return "Server";
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return Server.class.getClassLoader();
+        }
+
+        @Override
+        public void addClassPath(Path path)
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private class NamedEnvironment extends Attributes.Layer implements Environment, Dumpable
     {
         private final String _name;
-        private final Attributes _attributes;
         private final EnvClassLoader _classLoader;
 
-        private ServerEnvironment(String name, Server server)
+        private NamedEnvironment(String name)
         {
+            super(Server.this);
             _name = name;
-            _attributes = new Attributes.Layer(server);
             _classLoader = new EnvClassLoader(name, Server.class.getClassLoader());
-            addBean(_classLoader);
         }
 
         @Override
@@ -812,36 +841,7 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
             }
         }
 
-        @Override
-        public Object removeAttribute(String name)
-        {
-            return _attributes.removeAttribute(name);
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            return _attributes.setAttribute(name, attribute);
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return _attributes.getAttribute(name);
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            return _attributes.getAttributeNameSet();
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            _attributes.clearAttributes();
-        }
-
+        // TODO replace with PathClassLoader?
         private static class EnvClassLoader extends URLClassLoader
         {
             public EnvClassLoader(String name, ClassLoader parent)
@@ -854,6 +854,18 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
             {
                 super.addURL(url);
             }
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            dumpObjects(out, indent, new ClassLoaderDump(getClassLoader()));
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%s{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
         }
     }
 }

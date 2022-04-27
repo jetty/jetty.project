@@ -18,7 +18,7 @@ import java.util.Collection;
 
 import org.eclipse.jetty.util.Attributes;
 
-public interface Environment extends Attributes, LifeCycle, Container
+public interface Environment extends Attributes
 {
     String getName();
 

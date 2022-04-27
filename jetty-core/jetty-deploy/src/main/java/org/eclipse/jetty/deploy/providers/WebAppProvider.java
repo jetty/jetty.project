@@ -257,14 +257,17 @@ public class WebAppProvider extends ScanningAppProvider
             // same temp / work directory, overwriting each others work.
             webapp.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
         }
-
         */
     }
 
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Environment environment = getDeploymentManager().getServer().getEnvironment("xxx");
+        Environment environment = getDeploymentManager().getServer().getEnvironment(app.getEnvironment());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("createContextHandler {} in {}", app, environment);
+
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {

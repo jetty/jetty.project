@@ -23,6 +23,7 @@ public class App
 {
     private final DeploymentManager _manager;
     private final AppProvider _provider;
+    private final String _environment;
     private final String _originId;
     private ContextHandler _context;
 
@@ -31,34 +32,18 @@ public class App
      *
      * @param manager the deployment manager
      * @param provider the app provider
+     * @param environment the name of the environment or null for the server environment.
      * @param originId the origin ID (The ID that the {@link AppProvider} knows
      * about)
      * @see App#getOriginId()
      * @see App#getContextPath()
      */
-    public App(DeploymentManager manager, AppProvider provider, String originId)
+    public App(DeploymentManager manager, AppProvider provider, String environment, String originId)
     {
         _manager = manager;
         _provider = provider;
+        _environment = environment;
         _originId = originId;
-    }
-
-    /**
-     * Create an App with specified Origin ID and archivePath
-     *
-     * @param manager the deployment manager
-     * @param provider the app provider
-     * @param originId the origin ID (The ID that the {@link AppProvider} knows
-     * about)
-     * @param context Some implementations of AppProvider might have to use an
-     * already created ContextHandler.
-     * @see App#getOriginId()
-     * @see App#getContextPath()
-     */
-    public App(DeploymentManager manager, AppProvider provider, String originId, ContextHandler context)
-    {
-        this(manager, provider, originId);
-        _context = context;
     }
 
     /**
@@ -130,11 +115,12 @@ public class App
      */
     public String getContextPath()
     {
-        if (this._context == null)
-        {
-            return null;
-        }
-        return this._context.getContextPath();
+        return _context == null ? null : _context.getContextPath();
+    }
+
+    public String getEnvironment()
+    {
+        return _environment;
     }
 
     /**
