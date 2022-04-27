@@ -18,6 +18,8 @@
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <spifly.version>1.3.4</spifly.version>
+    <!-- TODO -->
+    <skipTests>true</skipTests>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->

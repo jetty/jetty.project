@@ -45,7 +45,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  * Tests the ServiceContextProvider.
  */
 @Disabled //TODO
-@RunWith(PaxExam.class)
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
     @Inject

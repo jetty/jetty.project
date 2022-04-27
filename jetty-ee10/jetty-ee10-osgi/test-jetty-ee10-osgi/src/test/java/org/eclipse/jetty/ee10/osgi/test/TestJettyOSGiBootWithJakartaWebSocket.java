@@ -43,7 +43,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * Test using websocket in osgi
  */
 @Disabled //TODO
-@RunWith(PaxExam.class)
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJakartaWebSocket
 {
     @Inject

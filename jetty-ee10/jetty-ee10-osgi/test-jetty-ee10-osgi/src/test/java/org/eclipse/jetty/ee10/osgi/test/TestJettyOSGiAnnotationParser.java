@@ -27,6 +27,7 @@ import aQute.bnd.osgi.Constants;
 import org.eclipse.jetty.ee10.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.ee10.osgi.annotations.AnnotationParser;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -45,8 +46,8 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * TestJettyOSGiAnnotationParser
  *
  */
-
-@RunWith(PaxExam.class)
+@Disabled //TODO
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiAnnotationParser
 {
     @Inject

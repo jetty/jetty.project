@@ -44,7 +44,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  *
  */
 @Disabled //TODO
-@RunWith(PaxExam.class)
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiClasspathResources
 {
     @Inject

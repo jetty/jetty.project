@@ -49,7 +49,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  * Tests the ServiceContextProvider.
  */
 @Disabled //TODO
-@RunWith(PaxExam.class)
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithBundle
 {
     private static final String TEST_JETTY_HOME_BUNDLE = "test-jetty-xml-bundle";

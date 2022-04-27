@@ -49,8 +49,8 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 @Disabled //TODO
-@RunWith(PaxExam.class)
-@ExamReactorStrategy(PerClass.class)
+//@RunWith(PaxExam.class)
+//@ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2Conscrypt
 {
     @Inject

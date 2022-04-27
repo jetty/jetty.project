@@ -47,8 +47,8 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 @Disabled //TODO
-@RunWith(PaxExam.class)
-@ExamReactorStrategy(PerClass.class)
+//@RunWith(PaxExam.class)
+//@ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2JDK9
 {
     @Inject

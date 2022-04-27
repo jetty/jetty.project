@@ -47,7 +47,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * top of this.
  */
 @Disabled //TODO
-@RunWith(PaxExam.class)
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWebAppAsService
 {
     @Inject
