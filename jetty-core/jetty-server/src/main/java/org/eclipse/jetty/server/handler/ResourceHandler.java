@@ -23,6 +23,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceBase;
+import org.eclipse.jetty.server.ResourceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,9 +98,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the resourceBase.
      */
-    public Path getBaseResource()
+    public ResourceBase getResourceBase()
     {
-        return _resourceService.getBaseResource();
+        return _resourceService.getResourceBase();
     }
 
     /**
@@ -195,9 +197,9 @@ public class ResourceHandler extends Handler.Wrapper
      * @param base The resourceBase to server content from. If null the
      * context resource base is used.
      */
-    public void setBaseResource(Path base)
+    public void setResourceBase(ResourceBase base)
     {
-        _resourceService.setBaseResource(base);
+        _resourceService.setResourceBase(base);
     }
 
     /**

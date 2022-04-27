@@ -18,9 +18,11 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -45,7 +47,7 @@ public class FileServer
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
         resourceHandler.setDirAllowed(true);
         resourceHandler.setWelcomeFiles(Arrays.asList(new String[]{"index.html"}));
-        resourceHandler.setBaseResource(baseResource.getPath());
+        resourceHandler.setResourceBase(new ResourceBase(new PathCollection(baseResource.getPath())));
 
         // Add the ResourceHandler to the server.
         server.setHandler(new Handler.Collection(resourceHandler, new DefaultHandler()));
