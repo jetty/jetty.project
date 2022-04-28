@@ -770,7 +770,7 @@ public class ResourceService
         }
         else
         {
-            throw new UnsupportedOperationException("TODO");
+            throw new UnsupportedOperationException("TODO ranges not yet supported");
             // TODO rewrite with ByteChannel only which should simplify HttpContentRangeWriter as HttpContent's Path always provides a SeekableByteChannel
             //      but MultiPartOutputStream also needs to be rewritten.
 /*

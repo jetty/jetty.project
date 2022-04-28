@@ -14,14 +14,31 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.server.Components;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
@@ -45,8 +62,8 @@ public class DefaultServlet extends HttpServlet
 
     protected ContextHandler initContextHandler(ServletContext servletContext)
     {
-        ContextHandler.Context scontext = ContextHandler.getCurrentContext();
-        if (scontext == null)
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context == null)
         {
             if (servletContext instanceof ContextHandler.Context)
                 return ((ContextHandler.Context)servletContext).getContextHandler();
@@ -55,18 +72,31 @@ public class DefaultServlet extends HttpServlet
                     servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
         }
         else
-            return scontext.getContextHandler();
+            return context.getContextHandler();
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        // TODO This constitutes the fast path, but we should fall back to using the servlet API when the casts below are not possible.
-        Callback baseCallback = ((ServletContextRequest.ServletApiRequest)req).getRequest().getCallback();
-        Response baseResponse = ((ServletContextResponse.ServletApiResponse)resp).getResponse().getWrapped();
-        Request baseRequest = baseResponse.getRequest();
+        Request request;
+        Response response;
+        int outputBufferSize;
+        if (resp instanceof ServletContextResponse.ServletApiResponse servletApiResponse)
+        {
+            // Fast path: unwrap and use the internal request/response.
+            response = servletApiResponse.getResponse().getWrapped();
+            request = response.getRequest();
+            outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        }
+        else
+        {
+            // Slow path: wrap the servlet API when the internal request/response cannot be accessed.
+            request = new ServletRequest(req);
+            response = new ServletResponse(request, resp);
+            outputBufferSize = resp.getBufferSize();
+        }
 
-        HttpContent content = _resourceService.getContentFactory().getContent(req.getServletPath(), baseRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+        HttpContent content = _resourceService.getContentFactory().getContent(req.getServletPath(), outputBufferSize);
         if (content == null)
         {
             // no content
@@ -77,7 +107,10 @@ public class DefaultServlet extends HttpServlet
             // serve content
             try
             {
-                _resourceService.doGet(baseRequest, baseResponse, baseCallback, content);
+                CountDownLatch latch = new CountDownLatch(1);
+                Callback callback = Callback.from(latch::countDown);
+                _resourceService.doGet(request, response, callback, content);
+                latch.await();
             }
             catch (Exception e)
             {
@@ -91,5 +124,358 @@ public class DefaultServlet extends HttpServlet
     {
         // TODO use service
         super.doHead(req, resp);
+    }
+
+    static class ServletRequest implements Request
+    {
+        private final HttpServletRequest servletRequest;
+
+        public ServletRequest(HttpServletRequest servletRequest)
+        {
+            this.servletRequest = servletRequest;
+        }
+
+        @Override
+        public String getId()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Components getComponents()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return servletRequest.getMethod();
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return HttpURI.from(servletRequest.getRequestURI());
+        }
+
+        @Override
+        public Context getContext()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getPathInContext()
+        {
+            return servletRequest.getServletPath();
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return () ->
+            {
+                // TODO
+                return new Iterator<>()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public HttpField next()
+                    {
+                        return null;
+                    }
+                };
+            };
+        }
+
+        @Override
+        public long getTimeStamp()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return servletRequest.isSecure();
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return servletRequest.getContentLength();
+        }
+
+        @Override
+        public Content readContent()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void demandContent(Runnable onContentAvailable)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean addErrorListener(Predicate<Throwable> onError)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class ServletResponse implements Response
+    {
+        private final Request request;
+        private final HttpServletResponse servletResponse;
+        private final ServletOutputStream outputStream;
+
+        public ServletResponse(Request request, HttpServletResponse servletResponse) throws IOException
+        {
+            this.request = request;
+            this.servletResponse = servletResponse;
+            this.outputStream = servletResponse.getOutputStream();
+        }
+
+        @Override
+        public Request getRequest()
+        {
+            return request;
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return servletResponse.getStatus();
+        }
+
+        @Override
+        public void setStatus(int code)
+        {
+            servletResponse.setStatus(code);
+        }
+
+        @Override
+        public HttpFields.Mutable getHeaders()
+        {
+            return () ->
+            {
+                // TODO
+                return new ListIterator<>() {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public HttpField next()
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean hasPrevious()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public HttpField previous()
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public int nextIndex()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public int previousIndex()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+
+                    }
+
+                    @Override
+                    public void set(HttpField httpField)
+                    {
+
+                    }
+
+                    @Override
+                    public void add(HttpField httpField)
+                    {
+
+                    }
+                };
+            };
+        }
+
+        @Override
+        public HttpFields.Mutable getTrailers()
+        {
+            return () ->
+            {
+                // TODO
+                return new ListIterator<>()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public HttpField next()
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean hasPrevious()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public HttpField previous()
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public int nextIndex()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public int previousIndex()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+
+                    }
+
+                    @Override
+                    public void set(HttpField httpField)
+                    {
+
+                    }
+
+                    @Override
+                    public void add(HttpField httpField)
+                    {
+
+                    }
+                };
+            };
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            try
+            {
+                for (ByteBuffer buffer : content)
+                {
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    outputStream.write(bytes);
+                }
+                if (last)
+                    outputStream.close();
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return servletResponse.isCommitted();
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void reset()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }
