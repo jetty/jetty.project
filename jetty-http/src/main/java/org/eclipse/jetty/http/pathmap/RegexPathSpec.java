@@ -21,8 +21,13 @@ package org.eclipse.jetty.http.pathmap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 public class RegexPathSpec extends AbstractPathSpec
 {
+    private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
+
     private final String _declaration;
     private final PathSpecGroup _group;
     private final int _pathDepth;
@@ -87,11 +92,27 @@ public class RegexPathSpec extends AbstractPathSpec
         _pathDepth = pathDepth;
         _specLength = specLength;
         _pattern = pattern;
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Creating RegexPathSpec[{}] (signature: [{}], group: {})",
+                _declaration, sig, _group);
+        }
     }
 
     protected Matcher getMatcher(String path)
     {
-        return _pattern.matcher(path);
+        int idx = path.indexOf('?');
+        if (idx >= 0)
+        {
+            // match only non-query part
+            return _pattern.matcher(path.substring(0, idx));
+        }
+        else
+        {
+            // match entire path
+            return _pattern.matcher(path);
+        }
     }
 
     @Override
@@ -181,16 +202,84 @@ public class RegexPathSpec extends AbstractPathSpec
     @Override
     public boolean matches(final String path)
     {
-        int idx = path.indexOf('?');
-        if (idx >= 0)
+        return getMatcher(path).matches();
+    }
+
+    @Override
+    public MatchedPath matched(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
         {
-            // match only non-query part
-            return getMatcher(path.substring(0, idx)).matches();
+            return new RegexMatchedPath(this, path, matcher);
         }
-        else
+        return null;
+    }
+
+    public class RegexMatchedPath implements MatchedPath
+    {
+        private final RegexPathSpec pathSpec;
+        private final String path;
+        private final Matcher matcher;
+
+        public RegexMatchedPath(RegexPathSpec regexPathSpec, String path, Matcher matcher)
         {
-            // match entire path
-            return getMatcher(path).matches();
+            this.pathSpec = regexPathSpec;
+            this.path = path;
+            this.matcher = matcher;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return this.path;
+        }
+
+        @Override
+        public String getPathMatch()
+        {
+            String p = matcher.group("name");
+            if (p != null)
+            {
+                return p;
+            }
+
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                int idx = matcher.start(1);
+                if (idx > 0)
+                {
+                    if (this.path.charAt(idx - 1) == '/')
+                        idx--;
+                    return this.path.substring(0, idx);
+                }
+            }
+
+            // default is the full path
+            return this.path;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            String p = matcher.group("info");
+            if (p != null)
+            {
+                return p;
+            }
+
+            // Path Info only valid for PREFIX_GLOB
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                String pathInfo = matcher.group(1);
+                if ("".equals(pathInfo))
+                    return "/";
+                else
+                    return pathInfo;
+            }
+
+            // default is null
+            return null;
         }
     }
 }

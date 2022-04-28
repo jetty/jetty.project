@@ -128,6 +128,12 @@ public class ServletPathSpec extends AbstractPathSpec
         _specLength = specLength;
         _prefix = prefix;
         _suffix = suffix;
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Creating ServletPathSpec[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
+                _declaration, _group, _prefix, _suffix);
+        }
     }
 
     private static void assertValidServletPathSpec(String servletPathSpec)
@@ -194,6 +200,10 @@ public class ServletPathSpec extends AbstractPathSpec
         return _pathDepth;
     }
 
+    /**
+     * @deprecated use {@link #matched(String)}#{@link MatchedPath#getPathInfo()} instead.
+     */
+    @Deprecated
     @Override
     public String getPathInfo(String path)
     {
@@ -212,6 +222,10 @@ public class ServletPathSpec extends AbstractPathSpec
         }
     }
 
+    /**
+     * @deprecated use {@link #matched(String)}#{@link MatchedPath#getPathMatch()} instead.
+     */
+    @Deprecated
     @Override
     public String getPathMatch(String path)
     {
@@ -271,6 +285,44 @@ public class ServletPathSpec extends AbstractPathSpec
     }
 
     @Override
+    public MatchedPath matched(String path)
+    {
+        switch (_group)
+        {
+            case EXACT:
+                if (_declaration.equals(path))
+                    return new ServletMatchedPath(path, path, null);
+                break;
+            case PREFIX_GLOB:
+                if (isWildcardMatch(path))
+                {
+                    String pathMatch = path;
+                    String pathInfo = null;
+                    if (path.length() != (_specLength - 2))
+                    {
+                        pathMatch = path.substring(0, _specLength - 2);
+                        pathInfo = path.substring(_specLength - 2);
+                    }
+                    return new ServletMatchedPath(path, pathMatch, pathInfo);
+                }
+                break;
+            case SUFFIX_GLOB:
+                if (path.regionMatches((path.length() - _specLength) + 1, _declaration, 1, _specLength - 1))
+                    return new ServletMatchedPath(path, path, null);
+                break;
+            case ROOT:
+                // Only "/" matches
+                if ("/".equals(path))
+                    return new ServletMatchedPath(path, "", path);
+                break;
+            case DEFAULT:
+                // If we reached this point, then everything matches
+                return new ServletMatchedPath(path, path, null);
+        }
+        return null;
+    }
+
+    @Override
     public boolean matches(String path)
     {
         switch (_group)
@@ -289,6 +341,38 @@ public class ServletPathSpec extends AbstractPathSpec
                 return true;
             default:
                 return false;
+        }
+    }
+
+    public static class ServletMatchedPath implements MatchedPath
+    {
+        private final String path;
+        private final String servletName;
+        private final String pathInfo;
+
+        public ServletMatchedPath(String inputPath, String servletName, String pathInfo)
+        {
+            this.path = inputPath;
+            this.servletName = servletName;
+            this.pathInfo = pathInfo;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return this.path;
+        }
+
+        @Override
+        public String getPathMatch()
+        {
+            return this.servletName;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            return this.pathInfo;
         }
     }
 }

@@ -202,6 +202,12 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         _pattern = pattern;
         _variables = variables;
         _logicalDeclaration = logicalSignature.toString();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Creating UriTemplatePathSpec[{}] (regex: \"{}\", signature: [{}], group: {}, variables: [{}])",
+                _declaration, regex, sig, _group, String.join(", ", _variables));
+        }
     }
 
     /**
@@ -301,7 +307,9 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             Map<String, String> ret = new HashMap<>();
             int groupCount = matcher.groupCount();
             for (int i = 1; i <= groupCount; i++)
+            {
                 ret.put(_variables[i - 1], matcher.group(i));
+            }
             return ret;
         }
         return null;
@@ -309,7 +317,17 @@ public class UriTemplatePathSpec extends AbstractPathSpec
 
     protected Matcher getMatcher(String path)
     {
-        return _pattern.matcher(path);
+        int idx = path.indexOf('?');
+        if (idx >= 0)
+        {
+            // match only non-query part
+            return _pattern.matcher(path.substring(0, idx));
+        }
+        else
+        {
+            // match entire path
+            return _pattern.matcher(path);
+        }
     }
 
     @Override
@@ -399,17 +417,18 @@ public class UriTemplatePathSpec extends AbstractPathSpec
     @Override
     public boolean matches(final String path)
     {
-        int idx = path.indexOf('?');
-        if (idx >= 0)
+        return getMatcher(path).matches();
+    }
+
+    @Override
+    public MatchedPath matched(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
         {
-            // match only non-query part
-            return getMatcher(path.substring(0, idx)).matches();
+            return new UriTemplatePathSpec.UriTemplateMatchedPath(this, path, matcher);
         }
-        else
-        {
-            // match entire path
-            return getMatcher(path).matches();
-        }
+        return null;
     }
 
     public int getVariableCount()
@@ -420,5 +439,59 @@ public class UriTemplatePathSpec extends AbstractPathSpec
     public String[] getVariables()
     {
         return _variables;
+    }
+
+    public static class UriTemplateMatchedPath implements MatchedPath
+    {
+        private final UriTemplatePathSpec pathSpec;
+        private final String path;
+        private final Matcher matcher;
+
+        public UriTemplateMatchedPath(UriTemplatePathSpec uriTemplatePathSpec, String path, Matcher matcher)
+        {
+            this.pathSpec = uriTemplatePathSpec;
+            this.path = path;
+            this.matcher = matcher;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return this.path;
+        }
+
+        @Override
+        public String getPathMatch()
+        {
+            // TODO: UriTemplatePathSpec has no concept of prefix/suffix, this should be simplified
+            // TODO: Treat all UriTemplatePathSpec matches as exact when it comes to pathMatch/pathInfo
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                int idx = matcher.start(1);
+                if (idx > 0)
+                {
+                    if (path.charAt(idx - 1) == '/')
+                        idx--;
+                    return path.substring(0, idx);
+                }
+            }
+            return path;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            // TODO: UriTemplatePathSpec has no concept of prefix/suffix, this should be simplified
+            // TODO: Treat all UriTemplatePathSpec matches as exact when it comes to pathMatch/pathInfo
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                String pathInfo = matcher.group(1);
+                if ("".equals(pathInfo))
+                    return "/";
+                else
+                    return pathInfo;
+            }
+            return null;
+        }
     }
 }

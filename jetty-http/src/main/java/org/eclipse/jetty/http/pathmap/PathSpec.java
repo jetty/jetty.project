@@ -53,7 +53,9 @@ public interface PathSpec extends Comparable<PathSpec>
      *
      * @param path the path to match against
      * @return the path info portion of the string
+     * @deprecated use {@link #matched(String)} instead
      */
+    @Deprecated
     String getPathInfo(String path);
 
     /**
@@ -61,7 +63,9 @@ public interface PathSpec extends Comparable<PathSpec>
      *
      * @param path the path to match against
      * @return the match, or null if no match at all
+     * @deprecated use {@link #matched(String)} instead
      */
+    @Deprecated
     String getPathMatch(String path);
 
     /**
@@ -90,6 +94,15 @@ public interface PathSpec extends Comparable<PathSpec>
      *
      * @param path the path to test
      * @return true if the path matches this path spec, false otherwise
+     * @deprecated use {@link #matched(String)} instead
      */
+    @Deprecated
     boolean matches(String path);
+
+    /**
+     * Get the complete matched details of the provided path.
+     * @param path the path to test
+     * @return the matched details, if a match was possible, or null if not able to be matched.
+     */
+    MatchedPath matched(String path);
 }
