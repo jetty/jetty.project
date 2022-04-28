@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A pool of {@code zipfs} based {@code java.nio.file.FileSystem} objects to allow reference
  * counting of open FileSystem and proper closure when the last reference count is decremented.
  */
-public class FileSystemPool
+class ZipFsPool
 {
-    private static final FileSystemPool INSTANCE = new FileSystemPool();
+    private static final ZipFsPool INSTANCE = new ZipFsPool();
 
     public static FileSystem acquire(Path jarfile) throws IOException
     {

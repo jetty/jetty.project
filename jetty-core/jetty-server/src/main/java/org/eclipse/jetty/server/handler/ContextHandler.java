@@ -643,7 +643,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @Deprecated(forRemoval = true)
     public void setResourceBase(Path path)
     {
-        setResourceBase(new ResourceBase(new PathCollection(path)));
+        setResourceBase(new ResourceBase(PathCollection.from(path)));
     }
 
     /**

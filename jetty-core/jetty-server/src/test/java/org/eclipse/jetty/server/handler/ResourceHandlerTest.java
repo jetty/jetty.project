@@ -171,7 +171,7 @@ public class ResourceHandlerTest
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
-        _contextHandler.setResourceBase(new ResourceBase(new PathCollection(TEST_PATH)));
+        _contextHandler.setResourceBase(new ResourceBase(PathCollection.from(TEST_PATH)));
 
         _server.setHandler(_contextHandler);
         _server.start();

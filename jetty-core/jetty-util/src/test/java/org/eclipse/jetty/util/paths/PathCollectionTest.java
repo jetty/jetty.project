@@ -51,7 +51,7 @@ public class PathCollectionTest
     @Test
     public void testEmptyPathCollection()
     {
-        PathCollection pathCollection = new PathCollection();
+        PathCollection pathCollection = PathCollection.from();
         assertThat("pathCollection.size", pathCollection.size(), is(0));
         assertTrue(pathCollection.isEmpty());
     }
@@ -63,8 +63,7 @@ public class PathCollectionTest
 
         FS.touch(testPath.resolve("hello.txt"));
 
-        PathCollection pathCollection = new PathCollection();
-        pathCollection.add(testPath);
+        PathCollection pathCollection = PathCollection.from(testPath);
 
         assertThat("pathCollection.size", pathCollection.size(), is(1));
 
@@ -74,9 +73,6 @@ public class PathCollectionTest
         Path missing = pathCollection.resolveFirstExisting("missing.txt");
         assertNull(missing);
     }
-
-    // TODO: test remove (cleanup)
-    // TODO: test replace (cleanup)
 
     @Test
     public void testResolveAll() throws IOException
@@ -93,9 +89,7 @@ public class PathCollectionTest
         FS.touch(bar.resolve("META-INF/services/org.eclipse.jetty.Zed"));
         FS.touch(bar.resolve("META-INF/services/org.cometd.Widget"));
 
-        PathCollection pathCollection = new PathCollection();
-        pathCollection.add(foo);
-        pathCollection.add(bar);
+        PathCollection pathCollection = PathCollection.from(foo, bar);
 
         assertThat("pathCollection.size", pathCollection.size(), is(2));
 
@@ -127,9 +121,7 @@ public class PathCollectionTest
         FS.touch(foo.resolve("org/eclipse/jetty/demo/Extra.class"));
         FS.touch(bar.resolve("org/cometd/Widget.class"));
 
-        PathCollection pathCollection = new PathCollection();
-        pathCollection.add(foo);
-        pathCollection.add(bar);
+        PathCollection pathCollection = PathCollection.from(foo, bar);
 
         assertThat("pathCollection.size", pathCollection.size(), is(2));
 
@@ -165,19 +157,15 @@ public class PathCollectionTest
         FS.touch(foo.resolve("org/eclipse/jetty/demo/Extra.class"));
         FS.touch(bar.resolve("org/cometd/Widget.class"));
 
-        try (PathCollection pathCollection = new PathCollection())
+        Path testA = getTestJar("sub/example.jar");
+        Path testB = getTestJar("jar-file-resource.jar");
+        Path testC = getTestJar("test-base-resource.jar");
+
+        try (PathCollection pathCollection = PathCollection.from(foo, bar, testA, testB, testC))
         {
-            pathCollection.add(foo); // a.jar!/
-            pathCollection.add(bar); // a.jar!/META-INF/resources/
-
-            pathCollection.add(getTestJar("sub/example.jar"));
-            pathCollection.add(getTestJar("jar-file-resource.jar"));
-            pathCollection.add(getTestJar("test-base-resource.jar"));
-
             assertThat("pathCollection.size", pathCollection.size(), is(5));
 
             Stream<Path> classes = pathCollection.find(new ClassFilePredicate());
-            // classes.sorted(new PathComparator()).map(Path::toUri).forEach(System.out::println);
 
             List<String> actual = classes.map(Path::toString).collect(Collectors.toList());
 
@@ -194,7 +182,7 @@ public class PathCollectionTest
             assertThat(actual, not(hasItem(containsString("META-INF"))));
         }
 
-        Map<Path, FileSystemPool.FileSystemRefCount> fsCache = FileSystemPool.getCache();
+        Map<Path, ZipFsPool.FileSystemRefCount> fsCache = ZipFsPool.getCache();
         assertThat("Cache is empty", fsCache.size(), is(0));
     }
 
