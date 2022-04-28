@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -66,6 +67,7 @@ public class ConnectionHeaderTest
         server.stop();
     }
 
+    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
     public void testConnectionKeepAlive(String connectionHeaderValue) throws Exception

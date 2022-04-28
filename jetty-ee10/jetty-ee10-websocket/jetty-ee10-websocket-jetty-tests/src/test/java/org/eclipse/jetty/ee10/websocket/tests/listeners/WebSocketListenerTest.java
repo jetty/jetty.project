@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -89,6 +90,7 @@ public class WebSocketListenerTest
         server.stop();
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("org.eclipse.jetty.websocket.tests.listeners.TextListeners#getTextListeners")
     public void testTextListeners(Class<?> clazz) throws Exception
@@ -109,6 +111,7 @@ public class WebSocketListenerTest
         assertThat(clientEndpoint.closeReason, is("standard close"));
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("org.eclipse.jetty.websocket.tests.listeners.BinaryListeners#getBinaryListeners")
     public void testBinaryListeners(Class<?> clazz) throws Exception
