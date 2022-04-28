@@ -167,11 +167,11 @@ public class ResourceHandlerTest
         _server.setConnectors(new Connector[]{_connector, _local});
 
         _resourceHandler = new ResourceHandler();
-        _resourceHandler.setResourceBase(new ResourceBase(new PathCollection(TEST_PATH)));
         _resourceHandler.setWelcomeFiles(List.of("welcome.txt"));
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
+        _contextHandler.setResourceBase(new ResourceBase(new PathCollection(TEST_PATH)));
 
         _server.setHandler(_contextHandler);
         _server.start();

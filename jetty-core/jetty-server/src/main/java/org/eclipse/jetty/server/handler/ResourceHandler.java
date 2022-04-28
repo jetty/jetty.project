@@ -25,8 +25,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.server.ResourceService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Resource Handler.
@@ -46,8 +44,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourceHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
-
     private final ResourceService _resourceService;
 
     public ResourceHandler()
@@ -58,8 +54,17 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        Context context = ContextHandler.getCurrentContext();
-// TODO        _context = (context == null ? null : context.getContextHandler());
+        if (_resourceService.getResourceBase() == null)
+        {
+            Context context = ContextHandler.getCurrentContext();
+            if (context != null)
+            {
+                ResourceBase resourceBase = context.getResourceBase();
+                if (resourceBase != null)
+                    setResourceBase(resourceBase);
+            }
+        }
+// TODO
 //        if (_mimeTypes == null)
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 

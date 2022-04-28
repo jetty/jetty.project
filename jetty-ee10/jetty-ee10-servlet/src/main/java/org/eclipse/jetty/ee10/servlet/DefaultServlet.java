@@ -55,7 +55,7 @@ public class DefaultServlet extends HttpServlet
                     servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
         }
         else
-            return ContextHandler.getCurrentContext().getContextHandler();
+            return scontext.getContextHandler();
     }
 
     @Override
