@@ -182,8 +182,7 @@ public class PathCollectionTest
             assertThat(actual, not(hasItem(containsString("META-INF"))));
         }
 
-        Map<Path, ZipFsPool.FileSystemRefCount> fsCache = ZipFsPool.getCache();
-        assertThat("Cache is empty", fsCache.size(), is(0));
+        assertThat("Cache is empty", ZipFsPool.size(), is(0));
     }
 
     @Test
