@@ -33,7 +33,7 @@ public class ResourceBase
     {
         if (_pathCollection.size() != 1)
             throw new IllegalStateException("More than one path is registered: " + _pathCollection.size());
-        return _pathCollection.get(0);
+        return _pathCollection.stream().findFirst().orElseThrow();
     }
 
     public Path resolve(String path, String... extraPaths)
