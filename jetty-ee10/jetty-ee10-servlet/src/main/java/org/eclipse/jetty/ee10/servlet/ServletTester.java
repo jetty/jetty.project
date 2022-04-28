@@ -29,6 +29,7 @@ import jakarta.servlet.Servlet;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
@@ -195,14 +196,14 @@ public class ServletTester extends ContainerLifeCycle
         _context.setContextPath(contextPath);
     }
 
-    public Path getResourceBase()
+    public ResourceBase getResourceBase()
     {
         return _context.getResourceBase();
     }
 
-    public void setResourceBase(Path path)
+    public void setResourceBase(ResourceBase resourceBase)
     {
-        _context.setResourceBase(path);
+        _context.setResourceBase(resourceBase);
     }
 
     public ServletTester()

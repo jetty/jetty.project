@@ -74,7 +74,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     protected void initialize()
     {
-        _base = _contextHandler.getResourceBase();
+        // TODO getSinglePath should not be called, figure this out
+        _base = _contextHandler.getResourceBase().getSinglePath();
         if (_base == null)
             return;
 

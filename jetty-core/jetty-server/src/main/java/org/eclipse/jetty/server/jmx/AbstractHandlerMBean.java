@@ -70,8 +70,9 @@ public class AbstractHandlerMBean extends ObjectMBean
                 name = "ROOT";
         }
 
+//        TODO getSinglePath should not be called, figure this out
         if (name == null && context.getResourceBase() != null)
-            name = context.getResourceBase().toFile().getName();
+            name = context.getResourceBase().getSinglePath().toFile().getName();
 
         List<String> vhosts = context.getVirtualHosts();
         if (vhosts.size() > 0)

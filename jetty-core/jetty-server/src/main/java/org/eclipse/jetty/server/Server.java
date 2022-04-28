@@ -723,7 +723,7 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         }
 
         @Override
-        public Path getResourceBase()
+        public ResourceBase getResourceBase()
         {
             return null;
         }

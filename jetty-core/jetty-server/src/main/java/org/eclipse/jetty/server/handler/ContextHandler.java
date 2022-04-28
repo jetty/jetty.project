@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -85,7 +87,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
-    private Path _resourceBase;
+    private ResourceBase _resourceBase;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
@@ -630,17 +632,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * @return Returns the base resource as a string.
      */
     @ManagedAttribute("document root for context")
-    public Path getResourceBase()
+    public ResourceBase getResourceBase()
     {
         return _resourceBase;
     }
 
     /**
+     * TODO remove
+     */
+    @Deprecated(forRemoval = true)
+    public void setResourceBase(Path path)
+    {
+        setResourceBase(new ResourceBase(new PathCollection(path)));
+    }
+
+    /**
      * Set the base resource for this context.
      *
-     * @param resourceBase The Path of the base resource for the context.
+     * @param resourceBase The ResourceBase of the base resource for the context.
      */
-    public void setResourceBase(Path resourceBase)
+    public void setResourceBase(ResourceBase resourceBase)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
@@ -770,7 +781,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Path getResourceBase()
+        public ResourceBase getResourceBase()
         {
             return _resourceBase;
         }

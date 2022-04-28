@@ -28,6 +28,14 @@ public class ResourceBase
         _pathCollection = pathCollection;
     }
 
+    @Deprecated(forRemoval = true)
+    public Path getSinglePath()
+    {
+        if (_pathCollection.size() != 1)
+            throw new IllegalStateException("More than one path is registered: " + _pathCollection.size());
+        return _pathCollection.get(0);
+    }
+
     public Path resolve(String path, String... extraPaths)
     {
         // TODO call alias checker

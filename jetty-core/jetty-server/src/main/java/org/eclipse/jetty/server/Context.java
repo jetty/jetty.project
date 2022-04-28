@@ -41,7 +41,7 @@ public interface Context extends Attributes, Decorator, Executor
 
     ClassLoader getClassLoader();
 
-    Path getResourceBase();
+    ResourceBase getResourceBase();
 
     Request.Processor getErrorProcessor();
 

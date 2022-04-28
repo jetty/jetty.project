@@ -450,9 +450,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         _logger = logger;
     }
 
+    // TODO return a ResourceBase
     public Resource getBaseResource()
     {
-        Path resourceBase = getResourceBase();
+        Path resourceBase = getResourceBase().getSinglePath();
         if (resourceBase == null)
             return null;
         return new PathResource(resourceBase);

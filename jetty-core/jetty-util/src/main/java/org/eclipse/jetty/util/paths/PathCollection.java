@@ -100,6 +100,12 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
     {
     }
 
+    public PathCollection(Collection<Path> paths)
+    {
+        clear();
+        addAll(paths);
+    }
+
     public PathCollection(Path... paths)
     {
         clear();

@@ -800,7 +800,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            Path warPath = getResourceBase();
+            // TODO ee10 should not call getSinglePath, figure out how to adapt this code
+            Path warPath = getResourceBase().getSinglePath();
             if (warPath != null)
                 _war = warPath.toUri().toASCIIString();
         }
@@ -930,7 +931,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else if (getResourceBase() != null)
             {
-                name = getResourceBase().toUri().toASCIIString();
+                name = getResourceBase().toString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
                     name = name.substring(webapps + 8);
