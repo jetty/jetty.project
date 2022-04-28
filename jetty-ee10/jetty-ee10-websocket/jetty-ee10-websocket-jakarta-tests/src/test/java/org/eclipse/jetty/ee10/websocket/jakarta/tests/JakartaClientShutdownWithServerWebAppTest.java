@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,6 +107,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         return app;
     }
 
+    @Disabled
     @Test
     public void websocketProvidedByServer() throws Exception
     {
@@ -146,6 +148,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         assertThat(server.getContainedBeans(WebSocketContainer.class).size(), is(0));
     }
 
+    @Disabled
     @Test
     public void websocketProvidedByWebApp() throws Exception
     {

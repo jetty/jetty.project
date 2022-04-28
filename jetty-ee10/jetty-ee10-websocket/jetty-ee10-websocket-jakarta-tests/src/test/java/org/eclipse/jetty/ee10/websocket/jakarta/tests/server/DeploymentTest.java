@@ -37,6 +37,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -63,6 +64,7 @@ public class DeploymentTest
         server.stop();
     }
 
+    @Disabled
     @Test
     public void testBadPathParamSignature() throws Exception
     {
@@ -94,6 +96,7 @@ public class DeploymentTest
      * @throws Exception if there is an error during the test.
      */
     @Test
+    @Disabled
     @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
     public void testDifferentWebAppsWithSameClassInSignature() throws Exception
     {
