@@ -20,8 +20,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * A pool of {@code zipfs} based {@code java.nio.file.FileSystem} objects to allow reference
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class ZipFsPool
 {
+    private static final AutoLock LOCK = new AutoLock();
     private static final ZipFsPool INSTANCE = new ZipFsPool();
 
     public static FileSystem acquire(Path jarfile) throws IOException
@@ -41,9 +43,12 @@ class ZipFsPool
         return INSTANCE.releaseZipFs(jarfile);
     }
 
-    protected static Map<Path, FileSystemRefCount> getCache()
+    public static int size()
     {
-        return INSTANCE.cache;
+        try (AutoLock ignore = LOCK.lock())
+        {
+            return INSTANCE.cache.size();
+        }
     }
 
     public static class FileSystemRefCount
@@ -53,62 +58,68 @@ class ZipFsPool
         private final AtomicInteger count = new AtomicInteger(0);
     }
 
-    private final Map<Path, FileSystemRefCount> cache = new ConcurrentHashMap<>();
+    private final Map<Path, FileSystemRefCount> cache = new HashMap<>();
 
     public FileSystem acquireZipFs(Path jarFile, String multiRelease) throws IOException
     {
-        FileSystemRefCount refCount = cache.get(jarFile);
-        if (refCount == null)
+        try (AutoLock ignore = LOCK.lock())
         {
-            Map<String, String> env = new HashMap<>();
-            env.put("multi-release", multiRelease);
+            FileSystemRefCount refCount = cache.get(jarFile);
+            if (refCount == null)
+            {
+                Map<String, String> env = new HashMap<>();
+                env.put("multi-release", multiRelease);
 
-            URI uri = URI.create("jar:" + jarFile.toUri().toASCIIString());
-            refCount = new FileSystemRefCount();
-            refCount.fileSystem = FileSystems.newFileSystem(uri, env);
-            refCount.rootPath = refCount.fileSystem.getPath("/");
-            cache.put(jarFile, refCount);
+                URI uri = URI.create("jar:" + jarFile.toUri().toASCIIString());
+                refCount = new FileSystemRefCount();
+                refCount.fileSystem = FileSystems.newFileSystem(uri, env);
+                refCount.rootPath = refCount.fileSystem.getPath("/");
+                cache.put(jarFile, refCount);
+            }
+
+            refCount.count.incrementAndGet();
+            return refCount.fileSystem;
         }
-
-        refCount.count.incrementAndGet();
-        return refCount.fileSystem;
     }
 
     public boolean releaseZipFs(Path jarFile) throws IOException
     {
-        Path key = jarFile;
-        FileSystemRefCount refCount = cache.get(jarFile);
-        if (refCount == null)
+        try (AutoLock ignore = LOCK.lock())
         {
-            FileSystem jarFs = jarFile.getFileSystem();
-            // find via zipfs FileSystem type only
-            if ("jar".equals(jarFs.provider().getScheme()))
+            Path key = jarFile;
+            FileSystemRefCount refCount = cache.get(jarFile);
+            if (refCount == null)
             {
-                for (Map.Entry<Path, FileSystemRefCount> entry : cache.entrySet())
+                FileSystem jarFs = jarFile.getFileSystem();
+                // find via zipfs FileSystem type only
+                if ("jar".equals(jarFs.provider().getScheme()))
                 {
-                    FileSystem fs = entry.getValue().fileSystem;
-                    if (fs.equals(jarFs))
+                    for (Map.Entry<Path, FileSystemRefCount> entry : cache.entrySet())
                     {
-                        key = entry.getKey();
-                        refCount = entry.getValue();
-                        break;
+                        FileSystem fs = entry.getValue().fileSystem;
+                        if (fs.equals(jarFs))
+                        {
+                            key = entry.getKey();
+                            refCount = entry.getValue();
+                            break;
+                        }
                     }
                 }
             }
+
+            if (refCount == null)
+                return true;
+
+            int count = refCount.count.decrementAndGet();
+            if (count <= 0)
+            {
+                cache.remove(key);
+                // Close the filesystem
+                refCount.fileSystem.close();
+                return true;
+            }
+
+            return false;
         }
-
-        if (refCount == null)
-            return true;
-
-        int count = refCount.count.decrementAndGet();
-        if (count <= 0)
-        {
-            cache.remove(key);
-            // Close the filesystem
-            refCount.fileSystem.close();
-            return true;
-        }
-
-        return false;
     }
 }
