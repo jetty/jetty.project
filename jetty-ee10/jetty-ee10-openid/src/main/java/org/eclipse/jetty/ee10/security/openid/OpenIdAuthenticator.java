@@ -203,7 +203,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         UserIdentity user = super.login(username, credentials, request);
         if (user != null)
         {
-            HttpSession session = ((HttpServletRequest)request).getSession();
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            HttpSession session = servletContextRequest.getHttpServletRequest().getSession();
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
             synchronized (session)
             {
@@ -220,7 +221,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public void logout(Request request)
     {
         super.logout(request);
-        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        HttpServletRequest httpRequest = servletContextRequest.getHttpServletRequest();
         HttpSession session = httpRequest.getSession(false);
 
         if (session == null)
@@ -517,8 +519,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         final StringBuffer redirectUri = new StringBuffer(128);
         URIUtil.appendSchemeHostPort(redirectUri, request.getHttpURI().getScheme(),
             Request.getServerName(request), Request.getServerPort(request));
-        redirectUri.append(request.getContext().getContextPath());
-        redirectUri.append(_redirectPath);
+        redirectUri.append(URIUtil.addPaths(request.getContext().getContextPath(), _redirectPath));
         return redirectUri.toString();
     }
 
@@ -534,8 +535,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     protected String getChallengeUri(Request request)
     {
-        // TODO
-        HttpSession session = null; //request.getSession();
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        HttpSession session = servletContextRequest.getServletApiRequest().getSession();
         String antiForgeryToken;
         synchronized (session)
         {

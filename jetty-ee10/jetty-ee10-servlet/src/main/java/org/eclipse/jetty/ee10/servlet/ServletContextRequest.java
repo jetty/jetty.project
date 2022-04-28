@@ -121,6 +121,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     ServletContextResponse _response;
     final HttpInput _httpInput;
     final String _pathInContext;
+    Charset _queryEncoding;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
@@ -187,6 +188,19 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public boolean isHead()
     {
         return HttpMethod.HEAD.is(getMethod());
+    }
+
+    /**
+     * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
+     * getParameter methods.
+     *
+     * The request attribute "org.eclipse.jetty.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
+     *
+     * @param queryEncoding the URI query character encoding
+     */
+    public void setQueryEncoding(String queryEncoding)
+    {
+        _queryEncoding = Charset.forName(queryEncoding);
     }
 
     @Override
@@ -972,7 +986,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             {
                 try
                 {
-                    _queryParameters = Request.extractQueryParameters(ServletContextRequest.this);
+                    _queryParameters = Request.extractQueryParameters(ServletContextRequest.this, _queryEncoding);
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
@@ -1105,6 +1119,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public void setAttribute(String name, Object attribute)
         {
             Object oldValue = ServletContextRequest.this.setAttribute(name, attribute);
+
+            if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
+                setQueryEncoding(attribute == null ? null : attribute.toString());
 
             if (!_requestAttributeListeners.isEmpty())
             {

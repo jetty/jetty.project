@@ -5,7 +5,7 @@
 Configure and deploy the test web application
 ===================================================================== -->
 
-<Configure id="testWebapp" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="testWebapp" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->

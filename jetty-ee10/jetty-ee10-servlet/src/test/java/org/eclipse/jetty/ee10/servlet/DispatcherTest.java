@@ -47,6 +47,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -93,7 +95,7 @@ public class DispatcherTest
         _contextHandler.setContextPath("/context");
         _contextCollection.addHandler(_contextHandler);
         _resourceHandler = new ResourceHandler();
-        _resourceHandler.setBaseResource(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").toPath().toAbsolutePath());
+        _resourceHandler.setResourceBase(new ResourceBase(PathCollection.from(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").toPath())));
         _resourceHandler.setPathInfoOnly(true);
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(_resourceHandler);
@@ -130,7 +132,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testForwardNonUTF8() throws Exception
     {
         _contextHandler.addServlet(ForwardNonUTF8Servlet.class, "/ForwardServlet/*");
@@ -148,7 +149,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testForwardWithParam() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
@@ -157,11 +157,11 @@ public class DispatcherTest
         String expected =
             "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
-                "Content-Length: 54\r\n" +
+                "Content-Length: 56\r\n" +
                 "\r\n" +
                 "/context\r\n" +
                 "/EchoURI\r\n" +
-                "/x x\r\n" +
+                "/x%20x\r\n" +
                 "/context/EchoURI/x%20x;a=1\r\n";
 
         String responses = _connector.getResponse("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.0\n\n");
@@ -170,7 +170,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testNamedForward() throws Exception
     {
         _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");

@@ -98,7 +98,7 @@ public class JavaxWebSocketCdiTest
         _server.start();
 
         // Configure the Client with the same DecoratedObjectFactory from the server.
-        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context.getServletContext());
+        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context);
         _client = new JakartaWebSocketClientContainer(components);
         LifeCycle.start(_client);
     }

@@ -129,6 +129,7 @@ public class DeploymentManager extends ContainerLifeCycle
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
+    private String _defaultEnvironment = "ee9"; // TODO null or ee10?
 
     /**
      * Receive an app for processing.
@@ -223,6 +224,16 @@ public class DeploymentManager extends ContainerLifeCycle
         Node toNode = _lifecycle.getNodeByName(existingToNodeName);
         Edge edge = new Edge(fromNode, toNode);
         _lifecycle.insertNode(edge, insertedNodeName);
+    }
+
+    public String getDefaultEnvironment()
+    {
+        return _defaultEnvironment;
+    }
+
+    public void setDefaultEnvironment(String defaultEnvironment)
+    {
+        _defaultEnvironment = defaultEnvironment;
     }
 
     @Override

@@ -4,16 +4,16 @@
 <!-- =============================================================== -->
 <!-- Configure the test-jndi webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
-  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
     <Arg>
       <New class="com.acme.MockUserTransaction"/>
     </Arg>
   </New>
 
   <!-- Define an env entry with Server scope for java:comp/env                   -->
-  <New id="woggle"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="woggle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Property name='server'/></Arg>
     <Arg>woggle</Arg>
     <Arg type="java.lang.Integer">4000</Arg>
@@ -21,7 +21,7 @@
   </New>
 
   <!-- Define an env entry with webapp scope for java:comp/env                   -->
-  <New id="wiggle"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="wiggle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>wiggle</Arg>
     <Arg type="java.lang.Double">100</Arg>
@@ -29,7 +29,7 @@
   </New>
 
   <!-- A mock DataSource                                           -->
-  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+  <New id="mydatasource" class="org.eclipse.jetty.ee10.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>

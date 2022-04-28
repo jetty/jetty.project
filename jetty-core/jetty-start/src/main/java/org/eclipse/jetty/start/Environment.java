@@ -13,27 +13,20 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Environment
 {
     private final BaseHome _baseHome;
-
+    private final String _name;
     private final Props _properties = new Props();
 
     /**
@@ -52,15 +45,6 @@ public class Environment
     private final List<Path> _xmls = new ArrayList<>();
 
     /**
-     * List of all active [jpms] sections for enabled modules
-     */
-    private final Set<String> _jmodAdds = new LinkedHashSet<>();
-    private final Map<String, Set<String>> _jmodPatch = new LinkedHashMap<>();
-    private final Map<String, Set<String>> _jmodOpens = new LinkedHashMap<>();
-    private final Map<String, Set<String>> _jmodExports = new LinkedHashMap<>();
-    private final Map<String, Set<String>> _jmodReads = new LinkedHashMap<>();
-
-    /**
      * List of all xml references found directly on command line or start.ini
      */
 
@@ -73,9 +57,10 @@ public class Environment
 
     private final List<String> _libRefs = new ArrayList<>();
 
-    Environment(BaseHome baseHome)
+    Environment(String name, BaseHome baseHome)
     {
-        this._baseHome = baseHome;
+        _name = name;
+        _baseHome = baseHome;
     }
 
     public void addLibRef(String lib)
@@ -130,8 +115,8 @@ public class Environment
     public void dumpActiveXmls(PrintStream out)
     {
         out.println();
-        out.println("Jetty Active XMLs:");
-        out.println("------------------");
+        out.printf("Active XMLs: %s%n", _name);
+        out.printf("-------------%s%n", "-".repeat(_name.length()));
         if (getXmlFiles().isEmpty())
         {
             out.println(" (no xml files specified)");
@@ -147,8 +132,8 @@ public class Environment
     public void dumpProperties(PrintStream out)
     {
         out.println();
-        out.println("Properties:");
-        out.println("-----------");
+        out.printf("Properties: %s%n", _name);
+        out.printf("--------------%n", "-".repeat(_name.length()));
 
         List<String> sortedKeys = new ArrayList<>();
         for (Props.Prop prop : _properties)
@@ -204,6 +189,11 @@ public class Environment
         return _classpath;
     }
 
+    public String getName()
+    {
+        return _name;
+    }
+
     public Props getProperties()
     {
         return _properties;
@@ -214,13 +204,10 @@ public class Environment
         return _xmls;
     }
 
-    public void resolve(List<Module> activeModules) throws IOException
+    public void resolve() throws IOException
     {
         // 6) Resolve Extra XMLs
         resolveExtraXmls();
-
-        // 7) JPMS Expansion
-        resolveJPMS(activeModules);
 
         // 8) Resolve Property Files
         resolvePropertyFiles();
@@ -295,102 +282,14 @@ public class Environment
         }
     }
 
-    protected void generateJpmsArgs(CommandLineBuilder cmd)
-    {
-        if (!_jmodAdds.isEmpty())
-        {
-            cmd.addRawArg("--add-modules");
-            cmd.addRawArg(String.join(",", _jmodAdds));
-        }
-        for (Map.Entry<String, Set<String>> entry : _jmodPatch.entrySet())
-        {
-            cmd.addRawArg("--patch-module");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
-        }
-        for (Map.Entry<String, Set<String>> entry : _jmodOpens.entrySet())
-        {
-            cmd.addRawArg("--add-opens");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-        }
-        for (Map.Entry<String, Set<String>> entry : _jmodExports.entrySet())
-        {
-            cmd.addRawArg("--add-exports");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-        }
-        for (Map.Entry<String, Set<String>> entry : _jmodReads.entrySet())
-        {
-            cmd.addRawArg("--add-reads");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-        }
-    }
-
     protected List<Path> getPropertyFiles()
     {
         return _propertyFiles;
     }
 
-    private void resolveJPMS(List<Module> activeModules) throws IOException
+    @Override
+    public String toString()
     {
-        for (Module module : activeModules)
-        {
-            for (String line : module.getJPMS())
-            {
-                line = _properties.expand(line);
-                String directive;
-                if (line.startsWith(directive = "add-modules:"))
-                {
-                    String[] names = line.substring(directive.length()).split(",");
-                    Arrays.stream(names).map(String::trim).collect(Collectors.toCollection(() -> _jmodAdds));
-                }
-                else if (line.startsWith(directive = "patch-module:"))
-                {
-                    parseJPMSKeyValue(module, line, directive, true, _jmodPatch);
-                }
-                else if (line.startsWith(directive = "add-opens:"))
-                {
-                    parseJPMSKeyValue(module, line, directive, false, _jmodOpens);
-                }
-                else if (line.startsWith(directive = "add-exports:"))
-                {
-                    parseJPMSKeyValue(module, line, directive, false, _jmodExports);
-                }
-                else if (line.startsWith(directive = "add-reads:"))
-                {
-                    parseJPMSKeyValue(module, line, directive, false, _jmodReads);
-                }
-                else
-                {
-                    throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
-                }
-            }
-        }
-        _jmodAdds.add("ALL-MODULE-PATH");
-        StartLog.debug("Expanded JPMS directives:%n  add-modules: %s%n  patch-modules: %s%n  add-opens: %s%n  add-exports: %s%n  add-reads: %s",
-            _jmodAdds, _jmodPatch, _jmodOpens, _jmodExports, _jmodReads);
-    }
-
-    private void parseJPMSKeyValue(Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output) throws IOException
-    {
-        String valueString = line.substring(directive.length());
-        int equals = valueString.indexOf('=');
-        if (equals <= 0)
-            throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
-        String delimiter = valueIsFile ? File.pathSeparator : ",";
-        String key = valueString.substring(0, equals).trim();
-        String[] values = valueString.substring(equals + 1).split(delimiter);
-        Set<String> result = output.computeIfAbsent(key, k -> new LinkedHashSet<>());
-        for (String value : values)
-        {
-            value = value.trim();
-            if (valueIsFile)
-            {
-                List<Path> paths = _baseHome.getPaths(value);
-                paths.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toCollection(() -> result));
-            }
-            else
-            {
-                result.add(value);
-            }
-        }
+        return "%s@%x{%s,%s,%s,%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getName(), getClasspath(), getXmlFiles(), getProperties(), getPropertyFiles());
     }
 }

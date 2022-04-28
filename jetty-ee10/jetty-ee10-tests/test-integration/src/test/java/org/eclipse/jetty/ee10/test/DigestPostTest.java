@@ -37,20 +37,20 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.client.util.StringRequestContent;
-import org.eclipse.jetty.ee10.security.AbstractLoginService;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.RolePrincipal;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
-import org.eclipse.jetty.ee10.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.security.AbstractLoginService;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -141,7 +141,7 @@ public class DigestPostTest
 
             security.setConstraintMappings(Collections.singletonList(mapping));
 
-            _server.setHandler(new HandlerList(context, new DefaultHandler()));
+            _server.setHandler(new Handler.Collection(context, new DefaultHandler()));
 
             _server.start();
         }

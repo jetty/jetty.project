@@ -149,7 +149,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String TEMPDIR = ServletContext.TEMPDIR;
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
-    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
@@ -800,7 +800,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            Path warPath = getResourceBase();
+            // TODO ee10 should not call getSinglePath, figure out how to adapt this code
+            Path warPath = getResourceBase().getSinglePath();
             if (warPath != null)
                 _war = warPath.toUri().toASCIIString();
         }
@@ -930,7 +931,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else if (getResourceBase() != null)
             {
-                name = getResourceBase().toUri().toASCIIString();
+                name = getResourceBase().toString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
                     name = name.substring(webapps + 8);

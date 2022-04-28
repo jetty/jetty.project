@@ -75,6 +75,6 @@ public class SecuredHelloHandlerTest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("<h1>Hello World</h1>"));
+        assertThat("Response Content", responseBody, containsString("<h1>Hello World from HelloServlet</h1>"));
     }
 }

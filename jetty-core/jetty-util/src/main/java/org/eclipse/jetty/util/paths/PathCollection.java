@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -36,8 +37,49 @@ import org.eclipse.jetty.util.StringUtil;
  * This fits in the same space as the ResourceCollection of past Jetty versions.
  * </p>
  */
-public class PathCollection extends ArrayList<Path> implements AutoCloseable
+public final class PathCollection implements AutoCloseable
 {
+    private final List<Path> paths = new ArrayList<>();
+
+    private PathCollection(Collection<Path> paths)
+    {
+        addAll(paths);
+        // TODO: reject empty path collection?
+    }
+
+    private PathCollection(Path... paths)
+    {
+        addAll(List.of(paths));
+        // TODO: reject empty path collection?
+    }
+
+    public PathCollection(Collection<Path> pathListA, Collection<Path> pathListB)
+    {
+        addAll(pathListA);
+        addAll(pathListB);
+        // TODO: reject empty path collection?
+    }
+
+    public static PathCollection from(Path... paths)
+    {
+        return new PathCollection(paths);
+    }
+
+    public static PathCollection from(Collection<Path> pathList, Path... paths)
+    {
+        return new PathCollection(pathList, List.of(paths));
+    }
+
+    public static PathCollection from(Collection<Path> pathListA, Collection<Path> pathListB)
+    {
+        return new PathCollection(pathListA, pathListB);
+    }
+
+    public static PathCollection from(Stream<Path> paths)
+    {
+        return new PathCollection(paths.collect(Collectors.toList()));
+    }
+
     /**
      * Parse a delimited String of resource references and
      * return a PathCollection it represents.
@@ -75,135 +117,35 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
                 if (Files.isDirectory(path))
                 {
                     // To obtain the list of entries
-                    Files.list(path)
-                        .sorted(PathCollators.byName(true))
-                        .forEach((entry) ->
+                    Files.list(path).sorted(PathCollators.byName(true)).forEach((entry) ->
+                    {
+                        if (!Files.isDirectory(entry) || globDirs)
                         {
-                            if (!Files.isDirectory(entry) || globDirs)
-                            {
-                                paths.add(entry);
-                            }
-                        });
+                            paths.paths.add(paths.toSmartPath(entry));
+                        }
+                    });
                 }
             }
             else
             {
                 // Simple reference, add as-is
-                paths.add(Paths.get(token));
+                paths.paths.add(paths.toSmartPath(Paths.get(token)));
             }
         }
 
         return paths;
     }
 
-    public PathCollection()
-    {
-    }
-
-    public PathCollection(Path... paths)
-    {
-        clear();
-        addAll(List.of(paths));
-    }
-
-    public void setPaths(Path... paths)
-    {
-        clear();
-        addAll(List.of(paths));
-    }
-
-    private Path toSmartPath(Path path)
-    {
-        if (Files.isDirectory(path))
-            return path;
-
-        if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
-        {
-            try
-            {
-                FileSystem fs = FileSystemPool.acquire(path);
-                return fs.getPath("/");
-            }
-            catch (IOException e)
-            {
-                throw new IllegalStateException("ZipFs failure: " + path, e);
-            }
-        }
-
-        throw new IllegalArgumentException("Unsupported Path: " + path);
-    }
-
-    @Override
-    public boolean add(Path element)
-    {
-        return super.add(toSmartPath(element));
-    }
-
-    @Override
-    public void add(int index, Path element)
-    {
-        super.add(index, toSmartPath(element));
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends Path> c)
-    {
-        boolean ret = false;
-        for (Path p : c)
-        {
-            ret |= add(p);
-        }
-        return ret;
-    }
-
-    @Override
-    public boolean addAll(int index, Collection<? extends Path> c)
-    {
-        int idx = index;
-        for (Path p : c)
-        {
-            add(idx++, p);
-        }
-        return true;
-    }
-
     @Override
     public void close() throws Exception
     {
-        clear();
-    }
-
-    @Override
-    public void trimToSize()
-    {
-        throw new UnsupportedOperationException("Not supported by pathCollection");
-    }
-
-    @Override
-    public Path set(int index, Path element)
-    {
-        Path old = super.set(index, toSmartPath(element));
-        try
-        {
-            FileSystemPool.release(old);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Unable to release old path: " + old);
-        }
-        return old;
-    }
-
-    @Override
-    public void clear()
-    {
         RuntimeException error = null;
 
-        for (Path path : this)
+        for (Path path : paths)
         {
             try
             {
-                FileSystemPool.release(path);
+                ZipFsPool.release(path);
             }
             catch (IOException e)
             {
@@ -217,53 +159,6 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
     }
 
     /**
-     * Resolve the first path that exists against the collection of paths.
-     *
-     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
-     * @see Path#resolve(String)
-     */
-    public Path resolveFirstExisting(String other)
-    {
-        return resolveFirst(other, Files::exists);
-    }
-
-    /**
-     * Resolve the first path that matches the predicate.
-     *
-     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
-     * @param pathPredicate the predicate of {@code Path} to evaluate for first valid hit.
-     */
-    public Path resolveFirst(String other, Predicate<Path> pathPredicate)
-    {
-        for (Path path : this)
-        {
-            Path dest = path.resolve(other);
-            if (dest.startsWith(path) && pathPredicate.test(dest))
-                return dest;
-        }
-        return null;
-    }
-
-    /**
-     * Resolve all paths across the path collection that matches the provided other.
-     *
-     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
-     * @param pathPredicate the predicate of {@code Path} to evaluate for valid hit.
-     * @return the list of {@link Path} objects that satisfy the combination of {@code other} and {@code Predicate<Path>}
-     */
-    public List<Path> resolveAll(String other, Predicate<Path> pathPredicate)
-    {
-        List<Path> ret = new ArrayList<>();
-        for (Path path : this)
-        {
-            Path dest = path.resolve(other);
-            if (dest.startsWith(path) && pathPredicate.test(dest))
-                ret.add(dest);
-        }
-        return ret;
-    }
-
-    /**
      * Find all files (up to 300 levels deep) in the path collection that match the provided {@link BiPredicate}
      * of &lt;{@link Path}, {@link BasicFileAttributes}&gt;
      *
@@ -274,7 +169,7 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
     {
         Stream<Path> ret = Stream.of();
 
-        for (Path path : this)
+        for (Path path : paths)
         {
             try
             {
@@ -287,5 +182,96 @@ public class PathCollection extends ArrayList<Path> implements AutoCloseable
             }
         }
         return ret;
+    }
+
+    public boolean isEmpty()
+    {
+        return paths.isEmpty();
+    }
+
+    public Stream<Path> stream()
+    {
+        return paths.stream();
+    }
+
+    /**
+     * Resolve all paths across the path collection that matches the provided other.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @param pathPredicate the predicate of {@code Path} to evaluate for valid hit.
+     * @return the list of {@link Path} objects that satisfy the combination of {@code other} and {@code Predicate<Path>}
+     */
+    public List<Path> resolveAll(String other, Predicate<Path> pathPredicate)
+    {
+        List<Path> ret = new ArrayList<>();
+        for (Path path : paths)
+        {
+            Path dest = path.resolve(other);
+            if (dest.startsWith(path) && pathPredicate.test(dest))
+                ret.add(dest);
+        }
+        return ret;
+    }
+
+    /**
+     * Resolve the first path that matches the predicate.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @param pathPredicate the predicate of {@code Path} to evaluate for first valid hit.
+     */
+    public Path resolveFirst(String other, Predicate<Path> pathPredicate)
+    {
+        for (Path path : paths)
+        {
+            Path dest = path.resolve(other);
+            if (dest.startsWith(path) && pathPredicate.test(dest))
+                return dest;
+        }
+        return null;
+    }
+
+    /**
+     * Resolve the first path that exists against the collection of paths.
+     *
+     * @param other the other path to resolve against, assumes a String in unix format, that is already URI decoded from URI space.
+     * @see Path#resolve(String)
+     */
+    public Path resolveFirstExisting(String other)
+    {
+        return resolveFirst(other, Files::exists);
+    }
+
+    public int size()
+    {
+        return paths.size();
+    }
+
+    private void addAll(Collection<Path> c)
+    {
+        for (Path p : c)
+        {
+            this.paths.add(toSmartPath(p));
+        }
+    }
+
+    private Path toSmartPath(Path path)
+    {
+        if (Files.isDirectory(path))
+            return path;
+
+        if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
+        {
+            try
+            {
+                FileSystem fs = ZipFsPool.acquire(path);
+                return fs.getPath("/");
+            }
+            catch (IOException e)
+            {
+                throw new IllegalStateException("ZipFs failure: " + path, e);
+            }
+        }
+
+        throw new IllegalArgumentException("Unsupported Path: " + path);
     }
 }

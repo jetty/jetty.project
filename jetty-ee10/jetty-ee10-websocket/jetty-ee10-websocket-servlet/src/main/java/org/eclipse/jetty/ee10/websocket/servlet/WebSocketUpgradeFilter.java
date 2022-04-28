@@ -162,7 +162,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         // provide a null default customizer the customizer will be on the negotiator in the mapping
         try (Blocking.Callback callback = Blocking.callback())
         {
-            if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, null))
+            if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
             {
                 callback.block();
                 return;

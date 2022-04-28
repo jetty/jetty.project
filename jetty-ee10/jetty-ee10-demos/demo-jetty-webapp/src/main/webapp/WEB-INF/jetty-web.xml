@@ -5,16 +5,16 @@
 This is the jetty specific web application configuration file.  When starting
 a Web Application, the WEB-INF/jetty-web.xml file is looked for and if found, treated
 as a org.eclipse.jetty.server.server.xml.XmlConfiguration file and is applied to the
-org.eclipse.jetty.ee9.servlet.WebApplicationContext object
+org.eclipse.jetty.ee10.servlet.WebApplicationContext object
 -->
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
   <Get name="ServerClassMatcher">
     <Call name="exclude">
       <Arg>
         <Array type="String">
 	  <Item>org.eclipse.jetty.util.</Item>
-	  <Item>org.eclipse.jetty.ee9.servlets.</Item>
+	  <Item>org.eclipse.jetty.ee10.servlets.</Item>
 	</Array>
       </Arg>
     </Call>

@@ -50,6 +50,8 @@ public class HttpSpiContextHandler extends ContextHandler
         this._httpHandler = httpHandler;
     }
 
+    //TODO needs rewriting
+    /*
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
     {
@@ -57,7 +59,7 @@ public class HttpSpiContextHandler extends ContextHandler
         {
             return;
         }
-
+    
         HttpExchange jettyHttpExchange;
         if (baseRequest.isSecure())
         {
@@ -67,9 +69,9 @@ public class HttpSpiContextHandler extends ContextHandler
         {
             jettyHttpExchange = new JettyHttpExchange(_httpContext, req, resp);
         }
-
+    
         // TODO: add filters processing
-
+    
         try
         {
             Authenticator auth = _httpContext.getAuthenticator();
@@ -86,21 +88,21 @@ public class HttpSpiContextHandler extends ContextHandler
         {
             LOG.debug("Failed to handle", ex);
             PrintWriter writer = new PrintWriter(jettyHttpExchange.getResponseBody());
-
+    
             resp.setStatus(500);
             writer.println("<h2>HTTP ERROR: 500</h2>");
             writer.println("<pre>INTERNAL_SERVER_ERROR</pre>");
             writer.println("<p>RequestURI=" + StringUtil.sanitizeXmlString(req.getRequestURI()) + "</p>");
-
+    
             if (LOG.isDebugEnabled())
             {
                 writer.println("<pre>");
                 ex.printStackTrace(writer);
                 writer.println("</pre>");
             }
-
+    
             baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer, "<p>", "</p>");
-
+    
             writer.close();
         }
         finally
@@ -108,7 +110,7 @@ public class HttpSpiContextHandler extends ContextHandler
             baseRequest.setHandled(true);
         }
     }
-
+*/
     private void handleAuthentication(HttpServletResponse resp, HttpExchange httpExchange, Authenticator auth) throws IOException
     {
         Result result = auth.authenticate(httpExchange);

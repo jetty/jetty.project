@@ -117,12 +117,6 @@
       <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <type>zip</type>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <plugins>

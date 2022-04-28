@@ -16,16 +16,16 @@
     </Array>
   </Set>
 
-  <New id="context" class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
+  <New id="context" class="org.eclipse.jetty.ee10.servlet.ServletContextHandler">
     <Set name="contextPath">/hello</Set>
     <Call name="addServlet">
-      <Arg>org.eclipse.jetty.demos.HelloServlet</Arg>
+      <Arg>org.eclipse.jetty.ee10.demos.HelloServlet</Arg>
       <Arg>/</Arg>
     </Call>
   </New>
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.server.handler.HandlerList">
+    <New class="org.eclipse.jetty.server.Handler$Collection">
       <Set name="handlers">
         <Array type="org.eclipse.jetty.server.Handler">
           <Item>

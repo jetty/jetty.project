@@ -61,7 +61,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     protected void initialize()
     {
-        _base = _contextHandler.getCoreContextHandler().getResourceBase();
+        _base = _contextHandler.getCoreContextHandler().getResourceBase().getSinglePath();
         if (_base == null)
             return;
 

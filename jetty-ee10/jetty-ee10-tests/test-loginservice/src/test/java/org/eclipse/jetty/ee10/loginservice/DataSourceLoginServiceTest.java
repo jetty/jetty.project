@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee10.loginservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -91,7 +91,7 @@ public class DataSourceLoginServiceTest
         loginService.setName(REALM_NAME);
         loginService.setServer(__testServer.getServer());
         
-        __testServer.setResourceBase(__docRoot.getAbsolutePath()); 
+        __testServer.setResourceBase(__docRoot.toPath()); 
         __testServer.setLoginService(loginService);
         __testServer.start();
         __baseUri = __testServer.getBaseUri();

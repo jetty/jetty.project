@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
 
  <!-- Add an override for a global EnvEntry                           -->
-  <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="maxAmount"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>maxAmount</Arg>
     <Arg type="java.lang.Double">55.0</Arg>
@@ -22,7 +22,7 @@
   <!-- =============================================================== -->
 
 
-  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
    <Arg>
      <New class="org.example.MockUserTransaction"/>
    </Arg>
@@ -30,7 +30,7 @@
 
 
 
-  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+  <New id="mydatasource" class="org.eclipse.jetty.ee10.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>

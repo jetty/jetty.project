@@ -22,7 +22,7 @@
       </resource>
       <resource>
         <directory>src/main/config/etc</directory>
-        <targetPath>org/eclipse/jetty/webapp</targetPath>
+        <targetPath>org/eclipse/jetty/ee10/webapp</targetPath>
         <filtering>false</filtering>
         <includes>
           <include>webdefault.xml</include>

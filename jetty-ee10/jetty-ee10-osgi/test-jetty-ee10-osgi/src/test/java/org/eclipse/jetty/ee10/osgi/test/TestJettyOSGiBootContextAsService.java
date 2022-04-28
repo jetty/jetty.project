@@ -21,6 +21,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -43,7 +44,8 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  *
  * Tests the ServiceContextProvider.
  */
-@RunWith(PaxExam.class)
+@Disabled //TODO
+//@RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
     @Inject

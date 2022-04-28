@@ -9,7 +9,7 @@
 <!-- Add the custom filter first. -->
   <filter>
     <filter-name>wsuf-alt</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <init-param>
       <param-name>idleTimeout</param-name>
       <param-value>5999</param-value>
@@ -22,11 +22,11 @@
 
   <!-- The default filter is overridden so it is tried after. -->
   <filter>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-class>
   </filter>
   <filter-mapping>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-name>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 </web-app>

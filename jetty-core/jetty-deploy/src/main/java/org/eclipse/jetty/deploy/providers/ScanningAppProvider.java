@@ -124,7 +124,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      */
     protected App createApp(String filename)
     {
-        return new App(_deploymentManager, this, filename);
+        // TODO otherways to work out the environment????
+        String environment = getDeploymentManager().getDefaultEnvironment();
+
+        return new App(_deploymentManager, this, environment, filename);
     }
 
     @Override

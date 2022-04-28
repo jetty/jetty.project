@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -225,7 +224,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testQueryAggregatesWithFormByForwardWithoutQuery() throws Exception
     {
         // 1. request /one?a=1 + content a=2
@@ -282,7 +280,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testQueryAggregatesWithFormReplacedByForwardWithQuery() throws Exception
     {
         // 1. request /one?a=1 + content a=2
@@ -340,7 +337,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testQueryAggregatesWithFormMergedByForwardWithQuery() throws Exception
     {
         // 1. request /one?a=1 + content b=2
@@ -396,7 +392,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testQueryAggregatesWithFormBeforeAndAfterForward() throws Exception
     {
         // 1. request /one?a=1 + content b=2

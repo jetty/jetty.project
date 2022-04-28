@@ -27,7 +27,7 @@
   </Call>
   <Call name="addBean">
     <Arg>
-      <New id="OpenIdConfiguration" class="org.eclipse.jetty.ee9.security.openid.OpenIdConfiguration">
+      <New id="OpenIdConfiguration" class="org.eclipse.jetty.ee10.security.openid.OpenIdConfiguration">
         <Arg name="issuer"><Property name="jetty.openid.provider" deprecated="jetty.openid.openIdProvider"/></Arg>
         <Arg name="authorizationEndpoint"><Property name="jetty.openid.provider.authorizationEndpoint"/></Arg>
         <Arg name="tokenEndpoint"><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>

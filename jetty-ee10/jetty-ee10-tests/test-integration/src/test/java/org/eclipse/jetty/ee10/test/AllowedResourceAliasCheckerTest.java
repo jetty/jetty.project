@@ -79,7 +79,7 @@ public class AllowedResourceAliasCheckerTest
         _baseDir = getResourceDir().resolve("baseDir").toFile();
         _baseDir.deleteOnExit();
         assertFalse(_baseDir.exists());
-        _context.setResourceBase(_baseDir.getAbsolutePath());
+        _context.setResourceBase(_baseDir.toPath());
     }
 
     @AfterAll

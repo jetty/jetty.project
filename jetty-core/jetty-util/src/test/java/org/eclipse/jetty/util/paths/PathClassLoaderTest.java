@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.paths;
 
+import java.nio.file.Path;
+
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -28,9 +30,9 @@ public class PathClassLoaderTest
     @Test
     public void testLoadClass() throws Exception
     {
-        try (PathCollection pathCollection = new PathCollection())
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        try (PathCollection pathCollection = PathCollection.from(exampleJar))
         {
-            pathCollection.add(MavenTestingUtils.getTestResourcePathFile("example.jar"));
             PathClassLoader classLoader = new PathClassLoader(pathCollection);
             Class<?> clazz = classLoader.loadClass("org.example.InBoth");
             assertNotNull(clazz);

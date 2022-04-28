@@ -162,6 +162,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable 2 modules
         modules.enable("base", TEST_SOURCE);
@@ -273,6 +274,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable module
         modules.enable("bar", TEST_SOURCE);
@@ -323,6 +325,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable module
         modules.enable("bar", TEST_SOURCE);

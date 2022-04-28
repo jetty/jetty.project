@@ -11,19 +11,19 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.security.HashLoginService">
+      <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
         <Set name="name">Test Realm</Set>        
         <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-standard-realm.properties</Set>
       </New>
     </Set>
     <Set name="authenticator">
-      <New class="org.eclipse.jetty.security.authentication.FormAuthenticator">
+      <New class="org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator">
         <Set name="alwaysSaveUri">true</Set>
       </New>
     </Set>

@@ -21,9 +21,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -103,9 +107,9 @@ public class StartArgs
     private final BaseHome baseHome;
 
     /**
-     * List of enabled modules
+     * Set of enabled modules
      */
-    private final List<String> modules = new ArrayList<>();
+    private final Set<String> modules = new HashSet<>();
 
     /**
      * List of modules to skip [files] section validation
@@ -115,7 +119,7 @@ public class StartArgs
     /**
      * Map of enabled modules to the source of where that activation occurred
      */
-    Map<String, List<String>> sources = new HashMap<>();
+    Map<String, Set<String>> sources = new HashMap<>();
 
     /**
      * List of all active [files] sections from enabled modules
@@ -129,11 +133,22 @@ public class StartArgs
 
     private final Map<String, String> systemPropertySource = new HashMap<>();
 
+    private static final Map<String, Environment> _environments = new HashMap<>();
+
     // jetty.base - build out commands
     /**
      * --add-module=[module,[module]]
      */
     private final List<String> startModules = new ArrayList<>();
+
+    /**
+     * List of all active [jpms] sections for enabled modules
+     */
+    private final Set<String> _jmodAdds = new LinkedHashSet<>();
+    private final Map<String, Set<String>> _jmodPatch = new LinkedHashMap<>();
+    private final Map<String, Set<String>> _jmodOpens = new LinkedHashMap<>();
+    private final Map<String, Set<String>> _jmodExports = new LinkedHashMap<>();
+    private final Map<String, Set<String>> _jmodReads = new LinkedHashMap<>();
 
     // module inspection commands
     /**
@@ -182,13 +197,11 @@ public class StartArgs
     public StartArgs(BaseHome baseHome)
     {
         this.baseHome = baseHome;
-        coreEnvironment = new Environment(baseHome);
+        coreEnvironment = new Environment("Core", baseHome);
     }
 
     public void expandEnvironments(List<Module> activeModules) throws IOException
     {
-        // TODO all environments
-
         // 5) Lib & XML Expansion / Resolution
         expandSystemProperties();
         coreEnvironment.resolveLibs();
@@ -197,12 +210,32 @@ public class StartArgs
         // 6) Resolve Extra XMLs
         // 7) JPMS Expansion
         // 8) Resolve Property Files
-        coreEnvironment.resolve(activeModules);
+        coreEnvironment.resolve();
+
+        // 7) JPMS Expansion
+        resolveJPMS(activeModules); // TODO we need layers
+
+        for (Environment environment : _environments.values())
+        {
+            environment.resolveLibs();
+            environment.resolve();
+            // JPMS???
+        }
     }
 
     public Environment getCoreEnvironment()
     {
         return coreEnvironment;
+    }
+
+    public Collection<Environment> getEnvironments()
+    {
+        return _environments.values();
+    }
+
+    public Environment getEnvironment(String envName)
+    {
+        return _environments.computeIfAbsent(envName, k -> new Environment(k, baseHome));
     }
 
     private void addFile(Module module, String uriLocation)
@@ -213,12 +246,17 @@ public class StartArgs
             return;
         }
 
-        Environment environment = getCoreEnvironment(); // TODO environment from module
+        Environment environment = getEnvironment(module);
         FileArg arg = new FileArg(module, environment.getProperties().expand(uriLocation));
         if (!files.contains(arg))
-        {
             files.add(arg);
-        }
+    }
+
+    private Environment getEnvironment(Module module)
+    {
+        String envName = module == null ? null : module.getEnvironment();
+        Environment environment = envName == null ? getCoreEnvironment() : getEnvironment(envName);
+        return environment;
     }
 
     public void dumpJavaEnvironment(PrintStream out)
@@ -241,14 +279,14 @@ public class StartArgs
 
         // Jetty Environment
         out.println();
-        out.println("Jetty Environment:");
-        out.println("------------------");
-        Environment environment = getCoreEnvironment(); // TODO all environments
-        environment.dumpProperty(out, JETTY_VERSION_KEY);
-        environment.dumpProperty(out, JETTY_TAG_NAME_KEY);
-        environment.dumpProperty(out, JETTY_BUILDNUM_KEY);
-        environment.dumpProperty(out, "jetty.home");
-        environment.dumpProperty(out, "jetty.base");
+        out.println("Jetty Core Environment:");
+        out.println("-----------------------");
+        Environment coreEnvironment = getCoreEnvironment();
+        coreEnvironment.dumpProperty(out, JETTY_VERSION_KEY);
+        coreEnvironment.dumpProperty(out, JETTY_TAG_NAME_KEY);
+        coreEnvironment.dumpProperty(out, JETTY_BUILDNUM_KEY);
+        coreEnvironment.dumpProperty(out, "jetty.home");
+        coreEnvironment.dumpProperty(out, "jetty.base");
 
         // Jetty Configuration Environment
         out.println();
@@ -374,7 +412,7 @@ public class StartArgs
         StartLog.debug("Expanding Modules");
         for (Module module : activeModules)
         {
-            Environment environment = getCoreEnvironment(); // TODO env from module
+            Environment environment = getEnvironment(module);
 
             // Find and Expand Libraries
             for (String rawlibref : module.getLibs())
@@ -424,7 +462,7 @@ public class StartArgs
         return allModules;
     }
 
-    public List<String> getEnabledModules()
+    public Set<String> getEnabledModules()
     {
         return this.modules;
     }
@@ -511,7 +549,7 @@ public class StartArgs
                     cmd.addRawArg(directories);
                 }
 
-                environment.generateJpmsArgs(cmd);
+                generateJpmsArgs(cmd);
             }
             else
             {
@@ -567,6 +605,101 @@ public class StartArgs
         }
 
         return cmd;
+    }
+
+    private void resolveJPMS(List<Module> activeModules) throws IOException
+    {
+        // TODO does this need to do layer stuff for Environments?
+        for (Module module : activeModules)
+        {
+            for (String line : module.getJPMS())
+            {
+                line = getCoreEnvironment().getProperties().expand(line);
+                String directive;
+                if (line.startsWith(directive = "add-modules:"))
+                {
+                    String[] names = line.substring(directive.length()).split(",");
+                    Arrays.stream(names).map(String::trim).collect(Collectors.toCollection(() -> _jmodAdds));
+                }
+                else if (line.startsWith(directive = "patch-module:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, true, _jmodPatch);
+                }
+                else if (line.startsWith(directive = "add-opens:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, false, _jmodOpens);
+                }
+                else if (line.startsWith(directive = "add-exports:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, false, _jmodExports);
+                }
+                else if (line.startsWith(directive = "add-reads:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, false, _jmodReads);
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+                }
+            }
+        }
+        _jmodAdds.add("ALL-MODULE-PATH");
+        StartLog.debug("Expanded JPMS directives:%n  add-modules: %s%n  patch-modules: %s%n  add-opens: %s%n  add-exports: %s%n  add-reads: %s",
+            _jmodAdds, _jmodPatch, _jmodOpens, _jmodExports, _jmodReads);
+    }
+
+    private void parseJPMSKeyValue(Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output) throws IOException
+    {
+        String valueString = line.substring(directive.length());
+        int equals = valueString.indexOf('=');
+        if (equals <= 0)
+            throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+        String delimiter = valueIsFile ? File.pathSeparator : ",";
+        String key = valueString.substring(0, equals).trim();
+        String[] values = valueString.substring(equals + 1).split(delimiter);
+        Set<String> result = output.computeIfAbsent(key, k -> new LinkedHashSet<>());
+        for (String value : values)
+        {
+            value = value.trim();
+            if (valueIsFile)
+            {
+                List<Path> paths = baseHome.getPaths(value);
+                paths.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toCollection(() -> result));
+            }
+            else
+            {
+                result.add(value);
+            }
+        }
+    }
+
+    private void generateJpmsArgs(CommandLineBuilder cmd)
+    {
+        if (!_jmodAdds.isEmpty())
+        {
+            cmd.addRawArg("--add-modules");
+            cmd.addRawArg(String.join(",", _jmodAdds));
+        }
+        for (Map.Entry<String, Set<String>> entry : _jmodPatch.entrySet())
+        {
+            cmd.addRawArg("--patch-module");
+            cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
+        }
+        for (Map.Entry<String, Set<String>> entry : _jmodOpens.entrySet())
+        {
+            cmd.addRawArg("--add-opens");
+            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+        }
+        for (Map.Entry<String, Set<String>> entry : _jmodExports.entrySet())
+        {
+            cmd.addRawArg("--add-exports");
+            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+        }
+        for (Map.Entry<String, Set<String>> entry : _jmodReads.entrySet())
+        {
+            cmd.addRawArg("--add-reads");
+            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+        }
     }
 
     public String getMainClassname()
@@ -634,7 +767,7 @@ public class StartArgs
         return skipFileValidationModules;
     }
 
-    public List<String> getSources(String module)
+    public Set<String> getSources(String module)
     {
         return sources.get(module);
     }
@@ -1022,7 +1155,9 @@ public class StartArgs
         {
             List<String> moduleNames = Props.getValues(arg);
             enableModules(source, moduleNames);
-            return environment;
+            Module module = getAllModules().get(moduleNames.get(moduleNames.size() - 1));
+            String envName = module.getEnvironment();
+            return envName == null ? environment : getEnvironment(envName);
         }
 
         // Skip [files] validation on a module
@@ -1179,8 +1314,8 @@ public class StartArgs
         for (String moduleName : moduleNames)
         {
             modules.add(moduleName);
-            List<String> list = sources.computeIfAbsent(moduleName, k -> new ArrayList<>());
-            list.add(source);
+            Set<String> set = sources.computeIfAbsent(moduleName, k -> new HashSet<>());
+            set.add(source);
         }
     }
 

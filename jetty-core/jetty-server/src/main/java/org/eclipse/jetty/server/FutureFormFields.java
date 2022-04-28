@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
+
 /**
  * A {@link CompletableFuture} that is completed once a {@link org.eclipse.jetty.http.MimeTypes.Type#FORM_ENCODED}
  * content has been parsed asynchronously from the {@link Content.Reader}.
@@ -79,6 +81,8 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
     private final int _maxSize;
     private String _name;
     private int _size;
+    private int _percent = 0;
+    private byte _percentCode;
 
     public FutureFormFields(Content.Reader reader)
     {
@@ -149,32 +153,53 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
     protected Fields.Field parse(ByteBuffer buffer, boolean last) throws CharacterCodingException
     {
         String value = null;
+        loop:
         while (BufferUtil.hasContent(buffer))
         {
             byte b = buffer.get();
+            switch (_percent)
+            {
+                case 1 ->
+                {
+                    _percentCode = b;
+                    _percent++;
+                    continue;
+                }
+                case 2 ->
+                {
+                    _builder.append(decodeHexByte((char)_percentCode, (char)b));
+                    _percent = 0;
+                    continue;
+                }
+            }
+
             if (_name == null)
             {
-                if (b == '=')
+                switch (b)
                 {
-                    _name = _builder.takeString();
-                    checkSize(_name);
-                }
-                else
-                {
-                    _builder.append(b);
+                    case '=' ->
+                    {
+                        _name = _builder.takeString();
+                        checkSize(_name);
+                    }
+                    case '+' -> _builder.append((byte)' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
             }
             else
             {
-                if (b == '&')
+                switch (b)
                 {
-                    value = _builder.takeString();
-                    checkSize(value);
-                    break;
-                }
-                else
-                {
-                    _builder.append(b);
+                    case '&' ->
+                    {
+                        value = _builder.takeString();
+                        checkSize(value);
+                        break loop;
+                    }
+                    case '+' -> _builder.append((byte)' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
             }
         }
@@ -183,6 +208,11 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
         {
             if (value == null && last)
             {
+                if (_percent > 0)
+                {
+                    _builder.append((byte)'%');
+                    _builder.append(_percentCode);
+                }
                 value = _builder.takeString();
                 checkSize(value);
             }

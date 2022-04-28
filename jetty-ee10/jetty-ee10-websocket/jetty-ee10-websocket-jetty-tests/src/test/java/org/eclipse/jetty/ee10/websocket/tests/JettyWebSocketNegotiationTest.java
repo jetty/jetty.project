@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -111,6 +112,7 @@ public class JettyWebSocketNegotiationTest
         }
     }
 
+    @Disabled
     @Test
     public void testManualNegotiationInCreator() throws Exception
     {

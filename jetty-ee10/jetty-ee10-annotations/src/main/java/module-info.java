@@ -25,6 +25,8 @@ module org.eclipse.jetty.ee10.annotations
 
     exports org.eclipse.jetty.ee10.annotations;
 
+    uses jakarta.servlet.ServletContainerInitializer;
+
     provides Configuration with
         AnnotationConfiguration;
 }

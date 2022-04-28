@@ -16,12 +16,17 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,10 +44,14 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -52,7 +61,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Server extends Handler.Wrapper implements Attributes
+public class Server extends Handler.Wrapper implements Attributes, Environment.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
@@ -61,6 +70,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
+    private final Map<String, Environment> _environments = new HashMap<>();
     private final AutoLock _dateLock = new AutoLock();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
@@ -72,15 +82,6 @@ public class Server extends Handler.Wrapper implements Attributes
     private volatile DateField _dateField;
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
-
-    interface Environment extends Attributes
-    {
-        String getName();
-
-        Server getServer();
-
-        ClassLoader getClassLoader();
-    }
 
     public Server()
     {
@@ -124,6 +125,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+        _environments.put("Server", new ServerEnvironment());
     }
 
     public String getServerInfo()
@@ -139,6 +141,30 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
+    }
+
+    @Override
+    public java.util.Collection<Environment> getEnvironments()
+    {
+        return _environments.values();
+    }
+
+    @Override
+    public Environment getEnvironment(String name)
+    {
+        String key = StringUtil.isBlank(name) ? "server" : name.toLowerCase();
+
+        Environment environment = _environments.get(key);
+        if (environment != null)
+            return environment;
+
+        environment = new NamedEnvironment(name);
+        Environment existing = _environments.putIfAbsent(key, environment);
+        if (existing != null)
+            return existing;
+
+        addBean(environment);
+        return environment;
     }
 
     @Override
@@ -697,7 +723,7 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public Path getResourceBase()
+        public ResourceBase getResourceBase()
         {
             return null;
         }
@@ -749,6 +775,97 @@ public class Server extends Handler.Wrapper implements Attributes
             DecoratedObjectFactory factory = Server.this.getBean(DecoratedObjectFactory.class);
             if (factory != null)
                 factory.destroy(o);
+        }
+    }
+
+    private class ServerEnvironment extends Attributes.Wrapper implements Environment
+    {
+        private ServerEnvironment()
+        {
+            super(Server.this);
+        }
+
+        @Override
+        public String getName()
+        {
+            return "Server";
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return Server.class.getClassLoader();
+        }
+
+        @Override
+        public void addClassPath(Path path)
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private class NamedEnvironment extends Attributes.Layer implements Environment, Dumpable
+    {
+        private final String _name;
+        private final EnvClassLoader _classLoader;
+
+        private NamedEnvironment(String name)
+        {
+            super(Server.this);
+            _name = name;
+            _classLoader = new EnvClassLoader(name, Server.class.getClassLoader());
+        }
+
+        @Override
+        public String getName()
+        {
+            return _name;
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return _classLoader;
+        }
+
+        @Override
+        public void addClassPath(Path path)
+        {
+            try
+            {
+                _classLoader.addURL(path.toUri().toURL());
+            }
+            catch (MalformedURLException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // TODO replace with PathClassLoader?
+        private static class EnvClassLoader extends URLClassLoader
+        {
+            public EnvClassLoader(String name, ClassLoader parent)
+            {
+                super(name, new URL[0], parent);
+            }
+
+            @Override
+            protected void addURL(URL url)
+            {
+                super.addURL(url);
+            }
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            dumpObjects(out, indent, new ClassLoaderDump(getClassLoader()));
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%s{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
         }
     }
 }

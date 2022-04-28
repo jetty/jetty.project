@@ -24,6 +24,8 @@ import java.util.Locale;
 
 public class PathCollators
 {
+    private static Comparator<? super Path> BY_URI_ASCENDING = Comparator.comparing(Path::toUri);
+
     private static Comparator<? super Path> BY_NAME_ASCENDING =
         new Comparator<>()
         {

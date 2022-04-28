@@ -36,7 +36,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.server.ResourceBase;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -310,25 +312,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
-        {
-            if (resources.size() == 1)
-                context.setResourceBase(resources.stream().findFirst().get().getPath());
-            else
-            {
-                throw new UnsupportedOperationException();
-                /* TODO
-                Resource[] collection = new Resource[resources.size() + 1];
-                int i = 0;
-                collection[i++] = context.getBaseResource();
-                for (Resource resource : resources)
-                {
-                    collection[i++] = resource;
-                }
-                context.setBaseResource(new ResourceCollection(collection));
-
-                 */
-            }
-        }
+            context.setResourceBase(new ResourceBase(PathCollection.from(resources.stream().map(Resource::getPath))));
     }
 
     protected void scanJars(WebAppContext context) throws Exception

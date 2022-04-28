@@ -17,6 +17,8 @@ import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.Collections;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
@@ -52,6 +54,9 @@ public class SecuredHelloHandler
         LoginService loginService = new HashLoginService("MyRealm",
             realmProps.toExternalForm());
         server.addBean(loginService);
+        
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
 
         // A security handler is a jetty handler that secures content behind a
         // particular portion of a url space. The ConstraintSecurityHandler is a
@@ -60,7 +65,7 @@ public class SecuredHelloHandler
         // effectively applying these constraints to all subsequent handlers in
         // the chain.
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        server.setHandler(security);
+        context.setSecurityHandler(security);
 
         // This constraint requires authentication and in addition that an
         // authenticated user be a member of a given set of roles for
@@ -87,13 +92,9 @@ public class SecuredHelloHandler
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
 
-        // The Hello Handler is the handler we are securing so we create one,
-        // and then set it as the handler on the
-        // security handler to complain the simple handler chain.
-        HelloHandler hh = new HelloHandler();
-
-        // chain the hello handler into the security handler
-        security.setHandler(hh);
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(new HelloServlet("Hello World"));
+        context.getServletHandler().addServletWithMapping(holder, "/");
 
         return server;
     }

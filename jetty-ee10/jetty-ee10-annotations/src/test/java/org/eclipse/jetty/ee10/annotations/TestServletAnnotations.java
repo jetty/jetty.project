@@ -62,7 +62,7 @@ public class TestServletAnnotations
     public void testServletAnnotation() throws Exception
     {
         List<String> classes = new ArrayList<String>();
-        classes.add("org.eclipse.jetty.annotations.ServletC");
+        classes.add("org.eclipse.jetty.ee10.annotations.ServletC");
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
@@ -105,7 +105,7 @@ public class TestServletAnnotations
 
         WebAppContext wac = new WebAppContext();
         ServletHolder defaultServlet = new ServletHolder();
-        defaultServlet.setClassName("org.eclipse.jetty.servlet.DefaultServlet");
+        defaultServlet.setClassName("org.eclipse.jetty.ee10.servlet.DefaultServlet");
         defaultServlet.setName("default");
         wac.getServletHandler().addServlet(defaultServlet);
 
@@ -115,7 +115,7 @@ public class TestServletAnnotations
         m.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee10.annotations.ServletD", null);
         annotation.apply();
 
         //test that as the original servlet mapping had only 1 pathspec, then the whole
@@ -138,7 +138,7 @@ public class TestServletAnnotations
         //DO allow the annotation to replace the mapping.
         WebAppContext wac = new WebAppContext();
         ServletHolder defaultServlet = new ServletHolder();
-        defaultServlet.setClassName("org.eclipse.jetty.servlet.DefaultServlet");
+        defaultServlet.setClassName("org.eclipse.jetty.ee10.servlet.DefaultServlet");
         defaultServlet.setName("default");
         wac.getServletHandler().addServlet(defaultServlet);
 
@@ -154,7 +154,7 @@ public class TestServletAnnotations
         m2.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee10.annotations.ServletD", null);
         annotation.apply();
 
         //test that only the mapping for "/" was removed from the mappings to the default servlet
@@ -189,7 +189,7 @@ public class TestServletAnnotations
         //DO NOT allow the annotation to replace the mapping
         WebAppContext wac = new WebAppContext();
         ServletHolder servlet = new ServletHolder();
-        servlet.setClassName("org.eclipse.jetty.servlet.FooServlet");
+        servlet.setClassName("org.eclipse.jetty.ee10.servlet.FooServlet");
         servlet.setName("foo");
         wac.getServletHandler().addServlet(servlet);
         ServletMapping m = new ServletMapping();
@@ -197,7 +197,7 @@ public class TestServletAnnotations
         m.setServletName("foo");
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee10.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -224,7 +224,7 @@ public class TestServletAnnotations
         //any of the url mappings in the annotation
         WebAppContext wac = new WebAppContext();
         ServletHolder servlet = new ServletHolder();
-        servlet.setClassName("org.eclipse.jetty.servlet.OtherDServlet");
+        servlet.setClassName("org.eclipse.jetty.ee10.servlet.OtherDServlet");
         servlet.setName("DServlet");
         wac.getServletHandler().addServlet(servlet);
 
@@ -239,7 +239,7 @@ public class TestServletAnnotations
         m2.setServletName("DServlet");
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee10.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -263,7 +263,7 @@ public class TestServletAnnotations
         servlet.setName("foo");
         wac.getServletHandler().addServlet(servlet);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee10.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();

@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,6 +57,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
         LifeCycle.stop(server);
     }
 
+    @Disabled //TODO
     @Test
     public void testGetTest() throws Exception
     {
@@ -72,6 +74,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
         assertThat("Response Content", responseBody, containsString("Hello"));
     }
 
+    @Disabled //TODO
     @Test
     public void testGetTestSsl() throws Exception
     {

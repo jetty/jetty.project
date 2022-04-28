@@ -20,7 +20,7 @@
 
   <filter>
     <filter-name>PushFilter</filter-name>
-    <filter-class>org.eclipse.jetty.ee9.servlets.PushCacheFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.PushCacheFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>  
   <filter-mapping>
@@ -30,7 +30,7 @@
 
   <filter>
     <filter-name>QoSFilter</filter-name>
-    <filter-class>org.eclipse.jetty.ee9.servlets.QoSFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.QoSFilter</filter-class>
     <async-supported>true</async-supported>
     <init-param>
       <param-name>maxRequests</param-name>
@@ -123,7 +123,7 @@
   
   <servlet>
     <servlet-name>CGI</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee9.servlets.CGI</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee10.servlets.CGI</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
