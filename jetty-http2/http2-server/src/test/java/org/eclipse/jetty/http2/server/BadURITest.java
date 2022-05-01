@@ -82,11 +82,8 @@ public class BadURITest
         });
 
         // Remove existing ErrorHandlers.
-        while (true)
+        for (ErrorHandler errorHandler : server.getBeans(ErrorHandler.class))
         {
-            ErrorHandler errorHandler = server.getBean(ErrorHandler.class);
-            if (errorHandler == null)
-                break;
             server.removeBean(errorHandler);
         }
 
@@ -95,7 +92,6 @@ public class BadURITest
             @Override
             public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
             {
-                // TODO: flow control should be enough.
                 // Return a very large buffer that will cause HTTP/2 flow control exhaustion and/or TCP congestion.
                 return ByteBuffer.allocateDirect(128 * 1024 * 1024);
             }
