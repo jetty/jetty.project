@@ -230,12 +230,6 @@ public class RegexPathSpec extends AbstractPathSpec
         }
 
         @Override
-        public String getPath()
-        {
-            return this.path;
-        }
-
-        @Override
         public String getPathMatch()
         {
             String p = matcher.group("name");

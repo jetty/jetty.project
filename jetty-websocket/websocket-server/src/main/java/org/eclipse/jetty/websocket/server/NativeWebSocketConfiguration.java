@@ -82,7 +82,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      */
     public MappedResource<WebSocketCreator> getMatch(String target)
     {
-        return this.mappings.getMatch(target);
+        return this.mappings.getMatched(target).getMappedResource();
     }
 
     /**

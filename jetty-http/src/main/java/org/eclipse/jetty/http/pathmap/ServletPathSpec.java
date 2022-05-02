@@ -291,7 +291,7 @@ public class ServletPathSpec extends AbstractPathSpec
         {
             case EXACT:
                 if (_declaration.equals(path))
-                    return new ServletMatchedPath(path, path, null);
+                    return new ServletMatchedPath(path, null); // TODO: return final matchedpath
                 break;
             case PREFIX_GLOB:
                 if (isWildcardMatch(path))
@@ -303,21 +303,21 @@ public class ServletPathSpec extends AbstractPathSpec
                         pathMatch = path.substring(0, _specLength - 2);
                         pathInfo = path.substring(_specLength - 2);
                     }
-                    return new ServletMatchedPath(path, pathMatch, pathInfo);
+                    return new ServletMatchedPath(pathMatch, pathInfo);
                 }
                 break;
             case SUFFIX_GLOB:
                 if (path.regionMatches((path.length() - _specLength) + 1, _declaration, 1, _specLength - 1))
-                    return new ServletMatchedPath(path, path, null);
+                    return new ServletMatchedPath(path, null);
                 break;
             case ROOT:
                 // Only "/" matches
                 if ("/".equals(path))
-                    return new ServletMatchedPath(path, "", path);
+                    return new ServletMatchedPath("", path); // TODO: review this
                 break;
             case DEFAULT:
                 // If we reached this point, then everything matches
-                return new ServletMatchedPath(path, path, null);
+                return new ServletMatchedPath(path, null);
         }
         return null;
     }
@@ -346,21 +346,13 @@ public class ServletPathSpec extends AbstractPathSpec
 
     public static class ServletMatchedPath implements MatchedPath
     {
-        private final String path;
         private final String servletName;
         private final String pathInfo;
 
-        public ServletMatchedPath(String inputPath, String servletName, String pathInfo)
+        public ServletMatchedPath(String servletName, String pathInfo)
         {
-            this.path = inputPath;
             this.servletName = servletName;
             this.pathInfo = pathInfo;
-        }
-
-        @Override
-        public String getPath()
-        {
-            return this.path;
         }
 
         @Override

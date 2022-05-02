@@ -120,8 +120,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return ret;
     }
 
-    public MappedResource<E> getMatch(String path)
+    public MatchedResource<E> getMatched(String path)
     {
+        MatchedPath matchedPath = null;
         PathSpecGroup lastGroup = null;
 
         // Search all the mappings
@@ -142,8 +143,10 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             MappedResource<E> candidate = exact_map.getBest(path, 0, i);
                             if (candidate == null)
                                 break;
-                            if (candidate.getPathSpec().matches(path))
-                                return candidate;
+
+                            matchedPath = candidate.getPathSpec().matched(path);
+                            if (matchedPath != null)
+                                return new MatchedResource<>(candidate, matchedPath);
                             i = candidate.getPathSpec().getPrefix().length() - 1;
                         }
                         break;
@@ -158,8 +161,10 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             MappedResource<E> candidate = prefix_map.getBest(path, 0, i);
                             if (candidate == null)
                                 break;
-                            if (candidate.getPathSpec().matches(path))
-                                return candidate;
+
+                            matchedPath = candidate.getPathSpec().matched(path);
+                            if (matchedPath != null)
+                                return new MatchedResource<>(candidate, matchedPath);
                             i = candidate.getPathSpec().getPrefix().length() - 1;
                         }
                         break;
@@ -172,8 +177,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         while ((i = path.indexOf('.', i + 1)) > 0)
                         {
                             MappedResource<E> candidate = suffix_map.get(path, i + 1, path.length() - i - 1);
-                            if (candidate != null && candidate.getPathSpec().matches(path))
-                                return candidate;
+                            if (candidate == null)
+                                break;
+
+                            matchedPath = candidate.getPathSpec().matched(path);
+                            if (matchedPath != null)
+                                return new MatchedResource<>(candidate, matchedPath);
                         }
                         break;
                     }
@@ -182,13 +191,23 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                 }
             }
 
-            if (mr.getPathSpec().matches(path))
-                return mr;
+            matchedPath = mr.getPathSpec().matched(path);
+            if (matchedPath != null)
+                return new MatchedResource<>(mr, matchedPath);
 
             lastGroup = group;
         }
 
         return null;
+    }
+
+    /**
+     * @deprecated use {@link #getMatched(String)} instead
+     */
+    @Deprecated
+    public MappedResource<E> getMatch(String path)
+    {
+        return getMatched(path).getMappedResource();
     }
 
     @Override

@@ -455,12 +455,6 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         }
 
         @Override
-        public String getPath()
-        {
-            return this.path;
-        }
-
-        @Override
         public String getPathMatch()
         {
             // TODO: UriTemplatePathSpec has no concept of prefix/suffix, this should be simplified

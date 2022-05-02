@@ -18,34 +18,34 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-public interface MatchedPath
+public class MatchedResource<E>
 {
-    MatchedPath EMPTY = new MatchedPath()
+    private final MappedResource<E> mappedResource;
+    private final MatchedPath matchedPath;
+
+    public MatchedResource(MappedResource<E> resource, MatchedPath matchedPath)
     {
-        @Override
-        public String getPathMatch()
-        {
-            return null;
-        }
+        this.mappedResource = resource;
+        this.matchedPath = matchedPath;
+    }
 
-        @Override
-        public String getPathInfo()
-        {
-            return null;
-        }
-    };
+    public MappedResource<E> getMappedResource()
+    {
+        return this.mappedResource;
+    }
 
-    /**
-     * Return the portion of the path that matches a path spec.
-     *
-     * @return the path name portion of the match.
-     */
-    String getPathMatch();
+    public PathSpec getPathSpec()
+    {
+        return mappedResource.getPathSpec();
+    }
 
-    /**
-     * Return the portion of the path that is after the path spec.
-     *
-     * @return the path info portion of the match, or null if there is no portion after the {@link #getPathMatch()}
-     */
-    String getPathInfo();
+    public E getResource()
+    {
+        return mappedResource.getResource();
+    }
+
+    public MatchedPath getMatchedPath()
+    {
+        return matchedPath;
+    }
 }

@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http.pathmap;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -26,24 +28,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletPathSpecTest
 {
-    private void assertBadServletPathSpec(String pathSpec)
-    {
-        try
-        {
-            new ServletPathSpec(pathSpec);
-            fail("Expected IllegalArgumentException for a bad servlet pathspec on: " + pathSpec);
-        }
-        catch (IllegalArgumentException e)
-        {
-            // expected path
-            System.out.println(e);
-        }
-    }
-
     private void assertMatches(ServletPathSpec spec, String path)
     {
         String msg = String.format("Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
@@ -56,34 +46,21 @@ public class ServletPathSpecTest
         assertThat(msg, spec.matched(path), is(nullValue()));
     }
 
-    @Test
-    public void testBadServletPathSpecA()
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "foo",
+        "/foo/*.do",
+        "foo/*.do",
+        "foo/*.*do",
+        "*",
+        "*do",
+        "/foo/*/bar",
+        "*/foo",
+        "*.foo/*"
+    })
+    public void testBadPathSpecs(String str)
     {
-        assertBadServletPathSpec("foo");
-    }
-
-    @Test
-    public void testBadServletPathSpecB()
-    {
-        assertBadServletPathSpec("/foo/*.do");
-    }
-
-    @Test
-    public void testBadServletPathSpecC()
-    {
-        assertBadServletPathSpec("foo/*.do");
-    }
-
-    @Test
-    public void testBadServletPathSpecD()
-    {
-        assertBadServletPathSpec("foo/*.*do");
-    }
-
-    @Test
-    public void testBadServletPathSpecE()
-    {
-        assertBadServletPathSpec("*do");
+        assertThrows(IllegalArgumentException.class, () -> new ServletPathSpec(str));
     }
 
     @Test
@@ -113,35 +90,25 @@ public class ServletPathSpecTest
     @Test
     public void testGetPathInfo()
     {
-        // assertEquals(null, new ServletPathSpec("/Foo/bar").getPathInfo("/Foo/bar"), "pathInfo exact");
         ServletPathSpec spec = new ServletPathSpec("/Foo/bar");
         assertThat("PathInfo exact", spec.matched("/Foo/bar").getPathInfo(), is(nullValue()));
 
-        // assertEquals("/bar", new ServletPathSpec("/Foo/*").getPathInfo("/Foo/bar"), "pathInfo prefix");
-        // assertEquals("/*", new ServletPathSpec("/Foo/*").getPathInfo("/Foo/*"), "pathInfo prefix");
-        // assertEquals("/", new ServletPathSpec("/Foo/*").getPathInfo("/Foo/"), "pathInfo prefix");
-        // assertEquals(null, new ServletPathSpec("/Foo/*").getPathInfo("/Foo"), "pathInfo prefix");
         spec = new ServletPathSpec("/Foo/*");
         assertThat("PathInfo prefix", spec.matched("/Foo/bar").getPathInfo(), is("/bar"));
         assertThat("PathInfo prefix", spec.matched("/Foo/*").getPathInfo(), is("/*"));
         assertThat("PathInfo prefix", spec.matched("/Foo/").getPathInfo(), is("/"));
         assertThat("PathInfo prefix", spec.matched("/Foo").getPathInfo(), is(nullValue()));
 
-        // assertEquals(null, new ServletPathSpec("*.ext").getPathInfo("/Foo/bar.ext"), "pathInfo suffix");
         spec = new ServletPathSpec("*.ext");
         assertThat("PathInfo suffix", spec.matched("/Foo/bar.ext").getPathInfo(), is(nullValue()));
 
-        // assertEquals(null, new ServletPathSpec("/").getPathInfo("/Foo/bar.ext"), "pathInfo default");
         spec = new ServletPathSpec("/");
         assertThat("PathInfo default", spec.matched("/Foo/bar.ext").getPathInfo(), is(nullValue()));
 
-        // assertEquals("/", new ServletPathSpec("").getPathInfo("/"), "pathInfo root");
-        // assertEquals("", new ServletPathSpec("").getPathInfo(""), "pathInfo root");
         spec = new ServletPathSpec("");
         assertThat("PathInfo root", spec.matched("/").getPathInfo(), is("/"));
         assertThat("PathInfo root", spec.matched(""), is(nullValue())); // does not match // TODO: verify with greg
 
-        // assertEquals("/xxx/zzz", new ServletPathSpec("/*").getPathInfo("/xxx/zzz"), "pathInfo default");
         spec = new ServletPathSpec("/*");
         assertThat("PathInfo default", spec.matched("/xxx/zzz").getPathInfo(), is("/xxx/zzz"));
     }
@@ -165,33 +132,24 @@ public class ServletPathSpecTest
     @Test
     public void testPathMatch()
     {
-        // assertEquals("/Foo/bar", new ServletPathSpec("/Foo/bar").getPathMatch("/Foo/bar"), "pathMatch exact");
         ServletPathSpec spec = new ServletPathSpec("/Foo/bar");
         assertThat("PathMatch exact", spec.matched("/Foo/bar").getPathMatch(), is("/Foo/bar"));
 
-        // assertEquals("/Foo", new ServletPathSpec("/Foo/*").getPathMatch("/Foo/bar"), "pathMatch prefix");
-        // assertEquals("/Foo", new ServletPathSpec("/Foo/*").getPathMatch("/Foo/"), "pathMatch prefix");
-        // assertEquals("/Foo", new ServletPathSpec("/Foo/*").getPathMatch("/Foo"), "pathMatch prefix");
         spec = new ServletPathSpec("/Foo/*");
         assertThat("PathMatch prefix", spec.matched("/Foo/bar").getPathMatch(), is("/Foo"));
         assertThat("PathMatch prefix", spec.matched("/Foo/").getPathMatch(), is("/Foo"));
         assertThat("PathMatch prefix", spec.matched("/Foo").getPathMatch(), is("/Foo"));
 
-        // assertEquals("/Foo/bar.ext", new ServletPathSpec("*.ext").getPathMatch("/Foo/bar.ext"), "pathMatch suffix");
         spec = new ServletPathSpec("*.ext");
         assertThat("PathMatch suffix", spec.matched("/Foo/bar.ext").getPathMatch(), is("/Foo/bar.ext"));
 
-        // assertEquals("/Foo/bar.ext", new ServletPathSpec("/").getPathMatch("/Foo/bar.ext"), "pathMatch default");
         spec = new ServletPathSpec("/");
         assertThat("PathMatch default", spec.matched("/Foo/bar.ext").getPathMatch(), is("/Foo/bar.ext"));
 
-        // assertEquals("", new ServletPathSpec("").getPathMatch("/"), "pathInfo root");
-        // assertEquals("", new ServletPathSpec("").getPathMatch(""), "pathInfo root");
         spec = new ServletPathSpec("");
         assertThat("PathMatch root", spec.matched("/").getPathMatch(), is(""));
         assertThat("PathMatch root", spec.matched(""), is(nullValue())); // does not match // TODO: verify with greg
 
-        // assertEquals("", new ServletPathSpec("/*").getPathMatch("/xxx/zzz"), "pathMatch default");
         spec = new ServletPathSpec("/*");
         assertThat("PathMatch default", spec.matched("/xxx/zzz").getPathMatch(), is(""));
     }
@@ -221,6 +179,28 @@ public class ServletPathSpecTest
         matched = spec.matched("/downloads/dist/9.0/distribution.tar.gz");
         assertThat("matched.pathMatch", matched.getPathMatch(), is("/downloads"));
         assertThat("matched.pathInfo", matched.getPathInfo(), is("/dist/9.0/distribution.tar.gz"));
+    }
+
+    @Test
+    public void testMatches()
+    {
+        assertTrue(new ServletPathSpec("/").matches("/anything"), "match /");
+        assertTrue(new ServletPathSpec("/*").matches("/anything"), "match /*");
+        assertTrue(new ServletPathSpec("/foo").matches("/foo"), "match /foo");
+        assertFalse(new ServletPathSpec("/foo").matches("/bar"), "!match /foo");
+        assertTrue(new ServletPathSpec("/foo/*").matches("/foo"), "match /foo/*");
+        assertTrue(new ServletPathSpec("/foo/*").matches("/foo/"), "match /foo/*");
+        assertTrue(new ServletPathSpec("/foo/*").matches("/foo/anything"), "match /foo/*");
+        assertFalse(new ServletPathSpec("/foo/*").matches("/bar"), "!match /foo/*");
+        assertFalse(new ServletPathSpec("/foo/*").matches("/bar/"), "!match /foo/*");
+        assertFalse(new ServletPathSpec("/foo/*").matches("/bar/anything"), "!match /foo/*");
+        assertTrue(new ServletPathSpec("*.foo").matches("anything.foo"), "match *.foo");
+        assertFalse(new ServletPathSpec("*.foo").matches("anything.bar"), "!match *.foo");
+        assertTrue(new ServletPathSpec("/On*").matches("/On*"), "match /On*");
+        assertFalse(new ServletPathSpec("/On*").matches("/One"), "!match /One");
+
+        assertTrue(new ServletPathSpec("").matches("/"), "match \"\"");
+
     }
 
     @Test
