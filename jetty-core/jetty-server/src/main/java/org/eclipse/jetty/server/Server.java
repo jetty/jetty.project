@@ -16,10 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -61,7 +59,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Server extends Handler.Wrapper implements Attributes, Environment.Factory
+public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
@@ -143,13 +141,21 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         return _serverContext;
     }
 
-    @Override
     public java.util.Collection<Environment> getEnvironments()
     {
         return _environments.values();
     }
 
-    @Override
+    public void addEnvironment(Environment environment)
+    {
+        Objects.requireNonNull(environment);
+        String key = environment.getName();
+        if (StringUtil.isBlank(key))
+            throw new IllegalArgumentException("No environment name");
+        key = key.toLowerCase();
+        _environments.put(key, environment);
+    }
+
     public Environment getEnvironment(String name)
     {
         String key = StringUtil.isBlank(name) ? "server" : name.toLowerCase();
@@ -157,14 +163,7 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         Environment environment = _environments.get(key);
         if (environment != null)
             return environment;
-
-        environment = new NamedEnvironment(name);
-        Environment existing = _environments.putIfAbsent(key, environment);
-        if (existing != null)
-            return existing;
-
-        addBean(environment);
-        return environment;
+        throw new RuntimeException("Unknown environment: " + name);
     }
 
     @Override
@@ -796,24 +795,18 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         {
             return Server.class.getClassLoader();
         }
-
-        @Override
-        public void addClassPath(Path path)
-        {
-            throw new UnsupportedOperationException();
-        }
     }
 
     private class NamedEnvironment extends Attributes.Layer implements Environment, Dumpable
     {
         private final String _name;
-        private final EnvClassLoader _classLoader;
+        private final ClassLoader _classLoader;
 
-        private NamedEnvironment(String name)
+        private NamedEnvironment(String name, ClassLoader classLoader)
         {
             super(Server.this);
             _name = name;
-            _classLoader = new EnvClassLoader(name, Server.class.getClassLoader());
+            _classLoader = classLoader;
         }
 
         @Override
@@ -826,34 +819,6 @@ public class Server extends Handler.Wrapper implements Attributes, Environment.F
         public ClassLoader getClassLoader()
         {
             return _classLoader;
-        }
-
-        @Override
-        public void addClassPath(Path path)
-        {
-            try
-            {
-                _classLoader.addURL(path.toUri().toURL());
-            }
-            catch (MalformedURLException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        // TODO replace with PathClassLoader?
-        private static class EnvClassLoader extends URLClassLoader
-        {
-            public EnvClassLoader(String name, ClassLoader parent)
-            {
-                super(name, new URL[0], parent);
-            }
-
-            @Override
-            protected void addURL(URL url)
-            {
-                super.addURL(url);
-            }
         }
 
         @Override

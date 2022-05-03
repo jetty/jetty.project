@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.nio.file.Path;
-import java.util.Collection;
-
 import org.eclipse.jetty.util.Attributes;
 
 public interface Environment extends Attributes
@@ -23,8 +20,6 @@ public interface Environment extends Attributes
     String getName();
 
     ClassLoader getClassLoader();
-
-    void addClassPath(Path path);
 
     default void run(Runnable runnable)
     {
@@ -38,12 +33,5 @@ public interface Environment extends Attributes
         {
             Thread.currentThread().setContextClassLoader(old);
         }
-    }
-
-    interface Factory
-    {
-        Collection<Environment> getEnvironments();
-
-        Environment getEnvironment(String name);
     }
 }
