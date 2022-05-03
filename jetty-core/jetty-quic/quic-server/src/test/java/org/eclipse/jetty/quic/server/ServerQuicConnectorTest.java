@@ -13,18 +13,14 @@
 
 package org.eclipse.jetty.quic.server;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -49,18 +45,18 @@ public class ServerQuicConnectorTest
         connector.setPort(8443);
         server.addConnector(connector);
 
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                PrintWriter writer = response.getWriter();
-                writer.println("<html>\n" +
-                    "\t<body>\n" +
-                    "\t\tRequest served\n" +
-                    "\t</body>\n" +
-                    "</html>");
+                response.write(true, callback, """
+                    <html>
+                      <body>
+                        Request served
+                      </body>
+                    </html>
+                    """);
             }
         });
 
@@ -90,17 +86,15 @@ public class ServerQuicConnectorTest
         connector.setPort(8443);
         server.addConnector(connector);
 
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
                 int contentLength = 16 * 1024 * 1024;
                 response.setContentLength(contentLength);
                 response.setContentType("text/plain");
-                ServletOutputStream outputStream = response.getOutputStream();
-                outputStream.println("0".repeat(contentLength));
+                response.write(true, callback, "0".repeat(contentLength));
             }
         });
 

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -27,10 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -40,13 +36,16 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,7 +58,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGETResponseWithoutContent() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         for (int i = 0; i < 2; ++i)
         {
@@ -73,13 +79,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testGETResponseWithContent() throws Exception
     {
         byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getOutputStream().write(data);
-                baseRequest.setHandled(true);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
@@ -101,17 +106,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         byte[] data = new byte[16 * 1024 * 1024];
         new Random().nextBytes(data);
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Setting the Content-Length triggers the HTTP
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
                 response.setContentLength(data.length);
-                response.getOutputStream().write(data);
-                baseRequest.setHandled(true);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
@@ -130,30 +134,29 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName1 = "a";
         String paramName2 = "b";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.setCharacterEncoding("UTF-8");
-                ServletOutputStream output = response.getOutputStream();
-                String paramValue1 = request.getParameter(paramName1);
-                output.write(paramValue1.getBytes(StandardCharsets.UTF_8));
-                String paramValue2 = request.getParameter(paramName2);
+                response.setContentType("text/plain;charset=utf-8");
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                String paramValue1 = fields.getValue(paramName1);
+                org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
+                String paramValue2 = fields.getValue(paramName2);
                 assertEquals("", paramValue2);
-                output.write("empty".getBytes(StandardCharsets.UTF_8));
-                baseRequest.setHandled(true);
+                org.eclipse.jetty.server.Response.write(response, true, UTF_8.encode("empty"));
             }
         });
 
         String value1 = "\u20AC";
-        String paramValue1 = URLEncoder.encode(value1, StandardCharsets.UTF_8);
+        String paramValue1 = URLEncoder.encode(value1, UTF_8);
         String query = paramName1 + "=" + paramValue1 + "&" + paramName2;
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), StandardCharsets.UTF_8);
+        String content = new String(response.getContent(), UTF_8);
         assertEquals(value1 + "empty", content);
     }
 
@@ -162,36 +165,35 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName1 = "a";
         String paramName2 = "b";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.setCharacterEncoding("UTF-8");
-                ServletOutputStream output = response.getOutputStream();
-                String[] paramValues1 = request.getParameterValues(paramName1);
+                response.setContentType("text/plain;charset=utf-8");
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                List<String> paramValues1 = fields.getValues(paramName1);
                 for (String paramValue : paramValues1)
                 {
-                    output.write(paramValue.getBytes(StandardCharsets.UTF_8));
+                    org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue));
                 }
-                String paramValue2 = request.getParameter(paramName2);
-                output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
-                baseRequest.setHandled(true);
+                String paramValue2 = fields.getValue(paramName2);
+                org.eclipse.jetty.server.Response.write(response, true, UTF_8.encode(paramValue2));
             }
         });
 
         String value11 = "\u20AC";
         String value12 = "\u20AA";
         String value2 = "&";
-        String paramValue11 = URLEncoder.encode(value11, StandardCharsets.UTF_8);
-        String paramValue12 = URLEncoder.encode(value12, StandardCharsets.UTF_8);
-        String paramValue2 = URLEncoder.encode(value2, StandardCharsets.UTF_8);
+        String paramValue11 = URLEncoder.encode(value11, UTF_8);
+        String paramValue12 = URLEncoder.encode(value12, UTF_8);
+        String paramValue2 = URLEncoder.encode(value2, UTF_8);
         String query = paramName1 + "=" + paramValue11 + "&" + paramName1 + "=" + paramValue12 + "&" + paramName2 + "=" + paramValue2;
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), StandardCharsets.UTF_8);
+        String content = new String(response.getContent(), UTF_8);
         assertEquals(value11 + value12 + value2, content);
     }
 
@@ -200,18 +202,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                String value = request.getParameter(paramName);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setCharacterEncoding("UTF-8");
-                    response.setContentType("text/plain");
-                    response.getOutputStream().print(value);
+                    response.setContentType("text/plain;charset=utf-8");
+                    response.write(true, callback, value);
                 }
             }
         });
@@ -223,7 +224,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
+        assertEquals(paramValue, new String(response.getContent(), UTF_8));
     }
 
     @Test
@@ -231,31 +232,30 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                String value = request.getParameter(paramName);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setCharacterEncoding("UTF-8");
-                    response.setContentType("text/plain");
-                    response.getOutputStream().print(value);
+                    response.setContentType("text/plain;charset=utf-8");
+                    response.write(true, callback, value);
                 }
             }
         });
 
         String uri = scheme + "://localhost:" + connector.getLocalPort() +
-            "/?" + paramName + "=" + URLEncoder.encode(paramValue, StandardCharsets.UTF_8);
+            "/?" + paramName + "=" + URLEncoder.encode(paramValue, UTF_8);
         ContentResponse response = client.POST(uri)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
+        assertEquals(paramValue, new String(response.getContent(), UTF_8));
     }
 
     @Test
@@ -263,18 +263,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                String value = request.getParameter(paramName);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setCharacterEncoding("UTF-8");
-                    response.setContentType("text/plain");
-                    response.getOutputStream().print(value);
+                    response.setContentType("text/plain;charset=utf-8");
+                    response.write(true, callback, value);
                 }
             }
         });
@@ -287,7 +286,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
+        assertEquals(paramValue, new String(response.getContent(), UTF_8));
     }
 
     @Test
@@ -296,18 +295,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         byte[] content = {0, 1, 2, 3};
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                String value = request.getParameter(paramName);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setCharacterEncoding("UTF-8");
                     response.setContentType("application/octet-stream");
-                    IO.copy(request.getInputStream(), response.getOutputStream());
+                    Content.copy(request, response, callback);
                 }
             }
         });
@@ -330,7 +328,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testPOSTWithContentNotifiesRequestContentListener() throws Exception
     {
         byte[] content = {0, 1, 2, 3};
-        start(new EmptyServerHandler());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
             .onRequestContent((request, buffer) ->
@@ -351,7 +356,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithContentTracksProgress() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
@@ -382,16 +394,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         clientBufferPool = new MappedByteBufferPool.Tagged();
 
         byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setHeader("Content-Encoding", "gzip");
-                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
+                response.getHeaders().put("Content-Encoding", "gzip");
+                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                GZIPOutputStream gzipOutput = new GZIPOutputStream(outputStream);
                 gzipOutput.write(data);
                 gzipOutput.finish();
+                callback.succeeded();
             }
         });
 
@@ -408,20 +421,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testConnectionIdleTimeout() throws Exception
     {
         long idleTimeout = 1000;
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                callback.succeeded();
             }
         });
 
@@ -453,7 +459,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testSendToIPv6Address() throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        start(new EmptyServerHandler());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
             .scheme(scheme)
@@ -468,13 +481,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testHEADWithResponseContentLength() throws Exception
     {
         int length = 1024;
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().write(new byte[length]);
+                response.write(true, callback, ByteBuffer.wrap(new byte[length]));
             }
         });
 
@@ -505,14 +517,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                request.startAsync();
                 latch.countDown();
+                // Do not complete the callback.
             }
         });
 
@@ -536,20 +547,19 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testEarlyEOF() throws Exception
     {
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 // Promise some content, then flush the headers, then fail to send the content.
                 response.setContentLength(16);
-                response.flushBuffer();
+                org.eclipse.jetty.server.Response.write(response, false);
                 throw new NullPointerException("Explicitly thrown by test");
             }
         });
 
-        try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             assertThrows(ExecutionException.class, () ->
                 client.newRequest("localhost", connector.getLocalPort())
@@ -575,14 +585,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         byte[] data = new byte[length];
         new Random().nextBytes(data);
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.setHeader("Connection", "close");
-                response.getOutputStream().write(data);
+                response.getHeaders().put("Connection", "close");
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
@@ -605,15 +614,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSmallAsyncContent() throws Exception
     {
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                ServletOutputStream output = response.getOutputStream();
-                output.write(65);
-                output.flush();
-                output.write(66);
+                org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode("A"));
+                org.eclipse.jetty.server.Response.write(response, true, UTF_8.encode("B"));
             }
         });
 

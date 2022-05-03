@@ -157,7 +157,7 @@ public abstract class CookieCutter
 
                                 try
                                 {
-                                    if (name.startsWith("$"))
+                                    if (name != null && name.startsWith("$"))
                                     {
                                         if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
                                         {
@@ -165,20 +165,10 @@ public abstract class CookieCutter
                                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                                             switch (lowercaseName)
                                             {
-                                                case "$path":
-                                                    cookiePath = value;
-                                                    break;
-                                                case "$domain":
-                                                    cookieDomain = value;
-                                                    break;
-                                                case "$port":
-                                                    cookieComment = "$port=" + value;
-                                                    break;
-                                                case "$version":
-                                                    cookieVersion = Integer.parseInt(value);
-                                                    break;
-                                                default:
-                                                    break;
+                                                case "$path" -> cookiePath = value;
+                                                case "$domain" -> cookieDomain = value;
+                                                case "$port" -> cookieComment = "$port=" + value;
+                                                case "$version" -> cookieVersion = Integer.parseInt(value);
                                             }
                                         }
                                     }
@@ -188,10 +178,7 @@ public abstract class CookieCutter
                                         if (cookieName != null)
                                         {
                                             if (!reject)
-                                            {
                                                 addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                                                reject = false;
-                                            }
                                             cookieDomain = null;
                                             cookiePath = null;
                                             cookieComment = null;

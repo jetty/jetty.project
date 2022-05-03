@@ -37,14 +37,14 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -200,12 +200,12 @@ public class XmlConfiguredJetty
         return Collections.unmodifiableList(_xmlConfigurations);
     }
 
-    public void assertNoWebAppContexts()
+    public void assertNoContextHandlers()
     {
-        List<WebAppContext> contexts = getWebAppContexts();
+        List<ContextHandler> contexts = getContextHandlers();
         if (contexts.size() > 0)
         {
-            for (WebAppContext context : contexts)
+            for (ContextHandler context : contexts)
             {
                 System.err.println("WebAppContext should not exist:\n" + context);
             }
@@ -238,9 +238,9 @@ public class XmlConfiguredJetty
         assertThat(content, containsString(needle));
     }
 
-    public void assertWebAppContextsExists(String... expectedContextPaths)
+    public void assertContextHandlerExists(String... expectedContextPaths)
     {
-        List<WebAppContext> contexts = getWebAppContexts();
+        List<ContextHandler> contexts = getContextHandlers();
         if (expectedContextPaths.length != contexts.size())
         {
             System.err.println("## Expected Contexts");
@@ -249,7 +249,7 @@ public class XmlConfiguredJetty
                 System.err.println(expected);
             }
             System.err.println("## Actual Contexts");
-            for (WebAppContext context : contexts)
+            for (ContextHandler context : contexts)
             {
                 System.err.printf("%s ## %s%n", context.getContextPath(), context);
             }
@@ -259,7 +259,7 @@ public class XmlConfiguredJetty
         for (String expectedPath : expectedContextPaths)
         {
             boolean found = false;
-            for (WebAppContext context : contexts)
+            for (ContextHandler context : contexts)
             {
                 if (context.getContextPath().equals(expectedPath))
                 {
@@ -352,17 +352,17 @@ public class XmlConfiguredJetty
         return URI.create(uri.toString());
     }
 
-    public List<WebAppContext> getWebAppContexts()
+    public List<ContextHandler> getContextHandlers()
     {
-        List<WebAppContext> contexts = new ArrayList<>();
-        HandlerCollection handlers = (HandlerCollection)_server.getHandler();
-        Handler[] children = handlers.getChildHandlers();
+        List<ContextHandler> contexts = new ArrayList<>();
+        ContextHandlerCollection handlers = (ContextHandlerCollection)_server.getHandler();
+        List<Handler> children = handlers.getHandlers();
 
         for (Handler handler : children)
         {
-            if (handler instanceof WebAppContext)
+            if (handler instanceof ContextHandler)
             {
-                WebAppContext context = (WebAppContext)handler;
+                ContextHandler context = (ContextHandler)handler;
                 contexts.add(context);
             }
         }

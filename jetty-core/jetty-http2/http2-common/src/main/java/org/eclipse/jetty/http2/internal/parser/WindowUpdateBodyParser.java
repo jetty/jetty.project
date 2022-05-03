@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.http2.internal.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
 
 public class WindowUpdateBodyParser extends BodyParser
 {

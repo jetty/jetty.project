@@ -27,7 +27,7 @@ checkingRemoteSessionIdEncoding::
 Boolean, default `false`.
 This controls whether or not the `javax.servlet.http.Response.encodeURL(String)` method will include the session id as a path parameter when the URL is destined for a remote node.
 This can also be configured by:
-* setting the `org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding` context init paramter
+* setting the `org.eclipse.jetty.ee9.servlet.CheckingRemoteSessionIdEncoding` context init paramter
 
 setMaxInactiveInterval::
 Integer, seconds.
@@ -69,14 +69,14 @@ This is the name of the session cookie.
 It can alternatively be configured by:
 
 * using `javax.servlet.SessionCookieConfig.setName(String)` method
-* setting the `org.eclipse.jetty.servlet.SessionCookie` context init parameter.
+* setting the `org.eclipse.jetty.ee9.servlet.SessionCookie` context init parameter.
 
 sessionIdPathParameterName::
 String, default is `jsessionid`.
 This is the name of the path parameter used to transmit the session id on request URLs, and on encoded URLS in responses.
 It can alternatively be configured by:
 
-* setting the `org.eclipse.jetty.servlet.SessionIdPathParameterName` context init parameter
+* setting the `org.eclipse.jetty.ee9.servlet.SessionIdPathParameterName` context init parameter
 
 sessionTrackingModes::
 `Set<javax.servlet.SessionTrackingMode>`.
@@ -99,7 +99,7 @@ This can also be configured by:
 There are also a few session settings that do not have SessionHandler setters, but can be configured with context init parameters:
 
 [[pg-server-session-handler-maxAge]]
-org.eclipse.jetty.servlet.MaxAge::
+org.eclipse.jetty.ee9.servlet.MaxAge::
 This is the maximum number of seconds that the session cookie will be considered to be valid.
 By default, the cookie has no maximum validity time.
 See also xref:pg-server-session-handler-refreshcookie[refreshing the session cookie].
@@ -107,7 +107,7 @@ The value can also be configured by:
 
 * calling the `SessionCookieConfig.setMaxAge(int)` method.
 
-org.eclipse.jetty.servlet.SessionDomain::
+org.eclipse.jetty.ee9.servlet.SessionDomain::
 String, default `null`.
 This is the domain of the session cookie.
 This can also be configured by:
@@ -115,7 +115,7 @@ This can also be configured by:
 * using the `javax.servlet.SessionCookieConfig.setDomain(String)` method
 * defining the `<session-config><cookie-config><domain/></cookie-config></session-config>` element in `web.xml`
 
-org.eclipse.jetty.servlet.SessionPath::
+org.eclipse.jetty.ee9.servlet.SessionPath::
 String, default `null`.
 This is used when creating a new session cookie.
 If nothing is configured, the context path is used instead, defaulting to `/`.

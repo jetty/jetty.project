@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,11 +20,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -101,7 +101,7 @@ public class SessionFailureTest extends AbstractTest
         });
 
         final CountDownLatch clientFailureLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onFailure(Session session, Throwable failure)

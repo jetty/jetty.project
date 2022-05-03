@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
 
 public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {

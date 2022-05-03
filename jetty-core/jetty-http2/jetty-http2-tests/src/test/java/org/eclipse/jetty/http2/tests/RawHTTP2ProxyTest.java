@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -335,7 +336,7 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS queueing {} for {} on {}", frame, stream, stream.getSession());
             boolean connected;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -352,14 +353,14 @@ public class RawHTTP2ProxyTest
             InetSocketAddress address = new InetSocketAddress(host, port);
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS connecting to {}", address);
-            client.connect(address, new ServerToProxySessionListener(), new Promise<Session>()
+            client.connect(address, new ServerToProxySessionListener(), new Promise<>()
             {
                 @Override
                 public void succeeded(Session result)
                 {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("CPS connected to {} with {}", address, result);
-                    try (AutoLock l = lock.lock())
+                    try (AutoLock ignored = lock.lock())
                     {
                         proxyToServerSession = result;
                     }
@@ -381,7 +382,7 @@ public class RawHTTP2ProxyTest
         {
             Stream proxyToServerStream = null;
             Session proxyToServerSession = null;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -406,12 +407,12 @@ public class RawHTTP2ProxyTest
             {
                 HeadersFrame clientToProxyFrame = (HeadersFrame)frameInfo.frame;
                 HeadersFrame proxyToServerFrame = new HeadersFrame(clientToProxyFrame.getMetaData(), clientToProxyFrame.getPriority(), clientToProxyFrame.isEndStream());
-                proxyToServerSession.newStream(proxyToServerFrame, new Promise<Stream>()
+                proxyToServerSession.newStream(proxyToServerFrame, new Promise<>()
                 {
                     @Override
                     public void succeeded(Stream result)
                     {
-                        try (AutoLock l = lock.lock())
+                        try (AutoLock ignored = lock.lock())
                         {
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("CPS created {}", result);
@@ -436,27 +437,24 @@ public class RawHTTP2ProxyTest
             {
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CPS forwarding {} from {} to {}", frameInfo, clientToProxyStream, proxyToServerStream);
-                switch (frameInfo.frame.getType())
+                return switch (frameInfo.frame.getType())
                 {
-                    case HEADERS:
+                    case HEADERS ->
                     {
                         HeadersFrame clientToProxyFrame = (HeadersFrame)frameInfo.frame;
                         HeadersFrame proxyToServerFrame = new HeadersFrame(proxyToServerStream.getId(), clientToProxyFrame.getMetaData(), clientToProxyFrame.getPriority(), clientToProxyFrame.isEndStream());
                         proxyToServerStream.headers(proxyToServerFrame, this);
-                        return Action.SCHEDULED;
+                        yield Action.SCHEDULED;
                     }
-                    case DATA:
+                    case DATA ->
                     {
                         DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
                         DataFrame proxyToServerFrame = new DataFrame(proxyToServerStream.getId(), clientToProxyFrame.getData(), clientToProxyFrame.isEndStream());
                         proxyToServerStream.data(proxyToServerFrame, this);
-                        return Action.SCHEDULED;
+                        yield Action.SCHEDULED;
                     }
-                    default:
-                    {
-                        throw new IllegalStateException();
-                    }
-                }
+                    default -> throw new IllegalStateException();
+                };
             }
         }
 
@@ -555,7 +553,7 @@ public class RawHTTP2ProxyTest
         protected Action process() throws Throwable
         {
             Stream proxyToClientStream = null;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -580,32 +578,26 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC forwarding {} for {} to {}", frameInfo, serverToProxyStream, proxyToClientStream);
 
-            switch (frameInfo.frame.getType())
+            return switch (frameInfo.frame.getType())
             {
-                case HEADERS:
+                case HEADERS ->
                 {
                     HeadersFrame serverToProxyFrame = (HeadersFrame)frameInfo.frame;
                     HeadersFrame proxyToClientFrame = new HeadersFrame(proxyToClientStream.getId(), serverToProxyFrame.getMetaData(), serverToProxyFrame.getPriority(), serverToProxyFrame.isEndStream());
                     proxyToClientStream.headers(proxyToClientFrame, this);
-                    return Action.SCHEDULED;
+                    yield Action.SCHEDULED;
                 }
-                case DATA:
+                case DATA ->
                 {
                     DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
                     DataFrame proxyToServerFrame = new DataFrame(serverToProxyStream.getId(), clientToProxyFrame.getData(), clientToProxyFrame.isEndStream());
                     proxyToClientStream.data(proxyToServerFrame, this);
-                    return Action.SCHEDULED;
+                    yield Action.SCHEDULED;
                 }
-                case PUSH_PROMISE:
-                {
-                    // TODO
-                    throw new UnsupportedOperationException();
-                }
-                default:
-                {
-                    throw new IllegalStateException();
-                }
-            }
+                // TODO
+                case PUSH_PROMISE -> throw new UnsupportedOperationException();
+                default -> throw new IllegalStateException();
+            };
         }
 
         @Override
@@ -626,7 +618,7 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC queueing {} for {} on {}", frame, stream, stream.getSession());
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -678,7 +670,7 @@ public class RawHTTP2ProxyTest
 
         private void link(Stream proxyToServerStream, Stream clientToProxyStream)
         {
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 streams.put(proxyToServerStream, clientToProxyStream);
             }

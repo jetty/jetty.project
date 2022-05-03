@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,15 +19,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ResourceHandler;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
@@ -75,9 +75,12 @@ public class AliasedConstraintTest
         context.setContextPath("/ctx");
         context.setResourceBase(MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath());
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.addHandler(context);
+        handlers.addHandler(new DefaultHandler());
+        server.setHandler(handlers);
+
         context.setHandler(session);
-        // context.addAliasCheck(new AllowSymLinkAliasChecker());
 
         server.addBean(loginService);
 

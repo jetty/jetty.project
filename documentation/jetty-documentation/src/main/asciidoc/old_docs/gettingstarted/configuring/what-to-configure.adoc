@@ -201,7 +201,7 @@ To set the contextPath from within the WAR file, you can include a `WEB-INF/jett
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
     <Set name="contextPath">/contextpath</Set>
 </Configure>
 ----
@@ -214,7 +214,7 @@ Instead of allowing the WAR file to be discovered by the deployer, an IoC XML fi
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test.war</Set>
   <Set name="contextPath">/test</Set>
 </Configure>

@@ -22,7 +22,7 @@ Below is an example of how you could configure a the xref:og-session-filesystem[
 
 [source,xml]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Call id="sh" name="getSessionHandler">
     <Set name="sessionCache">
       <New class="org.eclipse.jetty.server.session.DefaultSessionCache">

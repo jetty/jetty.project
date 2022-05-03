@@ -13,19 +13,15 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
@@ -36,12 +32,20 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  * and the current thread name is updated with information that will link
  * to the details in that output.
  */
-public class DebugHandler extends HandlerWrapper implements Connection.Listener
+public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 {
     private DateCache _date = new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;
     private PrintStream _print;
 
+    @Override
+    public Request.Processor handle(Request request) throws Exception
+    {
+        // TODO
+        return super.handle(request);
+    }
+
+    /*
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -100,7 +104,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
                 print(name, "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());
         }
     }
-
+    */
     private void print(String name, String message)
     {
         long now = System.currentTimeMillis();

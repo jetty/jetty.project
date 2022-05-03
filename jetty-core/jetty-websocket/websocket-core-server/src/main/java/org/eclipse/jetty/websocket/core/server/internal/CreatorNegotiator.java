@@ -16,9 +16,7 @@ package org.eclipse.jetty.websocket.core.server.internal;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
@@ -52,29 +50,25 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
     @Override
     public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
     {
-        ServletContext servletContext = negotiation.getRequest().getServletContext();
-        if (servletContext == null)
-            throw new IllegalStateException("null servletContext from request");
-
+        Context context = negotiation.getRequest().getContext();
         ServerUpgradeRequest upgradeRequest = new ServerUpgradeRequest(negotiation);
         ServerUpgradeResponse upgradeResponse = new ServerUpgradeResponse(negotiation);
 
-        AtomicReference<Object> result = new AtomicReference<>();
-        ((ContextHandler.Context)servletContext).getContextHandler().handle(() ->
-            result.set(creator.createWebSocket(upgradeRequest, upgradeResponse)));
-        Object websocketPojo = result.get();
-
-        // Handling for response forbidden (and similar paths)
-        if (upgradeResponse.isCommitted())
-            return null;
-
-        if (websocketPojo == null)
+        Object websocketPojo;
+        try
         {
-            // no creation, sorry
-            upgradeResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
+            AtomicReference<Object> result = new AtomicReference<>();
+            context.run(() -> result.set(creator.createWebSocket(upgradeRequest, upgradeResponse, negotiation.getCallback())));
+            websocketPojo = result.get();
+        }
+        catch (Throwable t)
+        {
+            negotiation.getCallback().failed(t);
             return null;
         }
 
+        if (websocketPojo == null)
+            return null;
         return factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
     }
 

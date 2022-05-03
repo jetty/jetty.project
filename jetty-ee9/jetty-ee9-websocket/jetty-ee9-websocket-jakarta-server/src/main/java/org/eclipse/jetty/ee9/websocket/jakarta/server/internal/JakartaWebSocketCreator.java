@@ -11,11 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,17 +22,22 @@ import java.util.Objects;
 import jakarta.websocket.Extension;
 import jakarta.websocket.Extension.Parameter;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ConfiguredEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketExtension;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketExtension;
-import org.eclipse.jetty.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +60,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
+    public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback)
     {
         final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
         final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
@@ -80,25 +83,17 @@ public class JakartaWebSocketCreator implements WebSocketCreator
         // it is not JSR api breaking.  A few users on #jetty and a few from cometd
         // have asked for access to this information.
         Map<String, Object> userProperties = config.getUserProperties();
-        userProperties.put(PROP_LOCAL_ADDRESS, req.getLocalSocketAddress());
-        userProperties.put(PROP_REMOTE_ADDRESS, req.getRemoteSocketAddress());
-        userProperties.put(PROP_LOCALES, Collections.list(req.getLocales()));
+        userProperties.put(PROP_LOCAL_ADDRESS, req.getConnectionMetaData().getLocalSocketAddress());
+        userProperties.put(PROP_REMOTE_ADDRESS, req.getConnectionMetaData().getRemoteSocketAddress());
+        userProperties.put(PROP_LOCALES, Request.getLocales(req));
 
         // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
         // [JSR] Step 1: check origin
-        if (!configurator.checkOrigin(req.getOrigin()))
+        if (!configurator.checkOrigin(req.getHeaders().get(HttpHeader.ORIGIN)))
         {
-            try
-            {
-                resp.sendForbidden("Origin mismatch");
-            }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to send error response", e);
-            }
+            Response.writeError(req, resp, callback, HttpStatus.FORBIDDEN_403, "Origin mismatch");
             return null;
         }
 
@@ -144,7 +139,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
         {
             // We can get path params from PathSpec and Request Path.
             UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)pathSpecObject;
-            Map<String, String> pathParams = pathSpec.getPathParams(req.getRequestPath());
+            Map<String, String> pathParams = pathSpec.getPathParams(req.getPathInContext());
 
             // Wrap the config with the path spec information.
             config = new PathParamServerEndpointConfig(config, pathParams);

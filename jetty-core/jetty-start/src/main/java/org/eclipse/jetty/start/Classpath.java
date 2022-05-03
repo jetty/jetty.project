@@ -73,10 +73,10 @@ public class Classpath implements Iterable<File>
         return added;
     }
 
-    public boolean addComponent(File path)
+    public boolean addComponent(File file)
     {
-        StartLog.debug("Adding classpath component: %s", path);
-        if ((path == null) || (!path.exists()))
+        StartLog.debug("Adding classpath component: %s", file);
+        if ((file == null) || (!file.exists()))
         {
             // not a valid component
             return false;
@@ -84,7 +84,7 @@ public class Classpath implements Iterable<File>
 
         try
         {
-            File key = path.getCanonicalFile();
+            File key = file.getCanonicalFile();
             if (!elements.contains(key))
             {
                 elements.add(key);

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.proxy;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Objects;
@@ -22,16 +21,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -69,7 +66,7 @@ public class WebSocketProxyTest
     private Configuration.ConfigurationCustomizer defaultCustomizer;
     private URI proxyUri;
 
-    private static class TestHandler extends AbstractHandler
+    private static class TestHandler extends Handler.Abstract
     {
         public void blockServerUpgradeRequests()
         {
@@ -79,16 +76,17 @@ public class WebSocketProxyTest
         public boolean blockServerUpgradeRequests = false;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public Request.Processor handle(Request request)
         {
-            if (baseRequest.getHeader("Upgrade") != null)
+            if (request.getHeaders().get("Upgrade") != null)
             {
-                if (blockServerUpgradeRequests && target.startsWith("/server/"))
+                if (blockServerUpgradeRequests && request.getPathInContext().startsWith("/server"))
                 {
-                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                    baseRequest.setHandled(true);
+                    return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
             }
+
+            return null;
         }
     }
 
@@ -99,7 +97,7 @@ public class WebSocketProxyTest
         ServerConnector connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 

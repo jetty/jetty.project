@@ -11,8 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.http2.tests;
 
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;

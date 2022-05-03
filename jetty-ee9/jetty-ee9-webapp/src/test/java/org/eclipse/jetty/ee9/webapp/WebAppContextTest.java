@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.net.URL;
@@ -28,17 +28,17 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -179,14 +180,14 @@ public class WebAppContextTest
         JmxConfiguration jmx = new JmxConfiguration();
         if (jmx.isAvailable()) // depending on JVM runtime, this might not be available when this test is run
         {
-            expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
+            expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JmxConfiguration");
         }
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.FragmentConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebAppConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration");
 
         assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }
@@ -227,10 +228,11 @@ public class WebAppContextTest
      * @throws Exception on test failure
      */
     @Test
+    @Disabled // No cross context dispatch
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
@@ -292,14 +294,17 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
+        server.setHandler(handlers);
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
+        handlers.addHandler(contexts);
+
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -353,14 +358,16 @@ public class WebAppContextTest
         server.addConnector(connector);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
+        server.setHandler(handlers);
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
+        handlers.addHandler(contexts);
+
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
         contexts.addHandler(context);
 
         server.start();
@@ -374,14 +381,17 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
+        server.setHandler(handlers);
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
+        handlers.addHandler(contexts);
+
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
+
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -399,16 +409,17 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
+        server.setHandler(handlers);
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
+        handlers.addHandler(contexts);
+
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
-
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
-        server.setHandler(handlers);
-        handlers.addHandler(contexts);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);

@@ -24,9 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -80,34 +78,38 @@ public class ProxyCustomizerTest
     }
 
     @BeforeEach
-    void setUp() throws Exception
+    public void setUp() throws Exception
     {
-        Handler handler = new AbstractHandler()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
-                ArrayList<String> attributeNames = Collections.list(request.getAttributeNames());
+                ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNameSet());
                 Collections.sort(attributeNames);
                 response.addHeader("attributeNames", String.join(",", attributeNames));
 
-                response.addHeader("localAddress", request.getLocalAddr() + ":" + request.getLocalPort());
-                response.addHeader("remoteAddress", request.getRemoteAddr() + ":" + request.getRemotePort());
+                response.addHeader("localAddress", request.getConnectionMetaData().getLocalSocketAddress().toString());
+                response.addHeader("remoteAddress", request.getConnectionMetaData().getRemoteSocketAddress().toString());
                 Object localAddress = request.getAttribute(ProxyCustomizer.LOCAL_ADDRESS_ATTRIBUTE_NAME);
                 if (localAddress != null)
-                    response.addHeader("proxyLocalAddress", localAddress.toString() + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
+                    response.addHeader("proxyLocalAddress", localAddress + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
                 Object remoteAddress = request.getAttribute(ProxyCustomizer.REMOTE_ADDRESS_ATTRIBUTE_NAME);
                 if (remoteAddress != null)
-                    response.addHeader("proxyRemoteAddress", remoteAddress.toString() + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
+                    response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         };
 
         server = new Server();
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.addCustomizer((connector, channelConfig, request) -> request.setAttribute("some.attribute", "some value"));
+        httpConfiguration.addCustomizer((request, response) ->
+        {
+            request.setAttribute("some.attribute", "some value");
+            return request;
+        });
         httpConfiguration.addCustomizer(new ProxyCustomizer());
         ServerConnector connector = new ServerConnector(server, new ProxyConnectionFactory(), new HttpConnectionFactory(httpConfiguration));
         server.addConnector(connector);
@@ -116,7 +118,7 @@ public class ProxyCustomizerTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         server.stop();
         server = null;
@@ -145,8 +147,8 @@ public class ProxyCustomizerTest
 
         ProxyResponse response = sendProxyRequest(proxy, http);
 
-        assertThat(response.httpResponse, Matchers.containsString("localAddress: 1.1.0.254:8080"));
-        assertThat(response.httpResponse, Matchers.containsString("remoteAddress: 1.1.0.1:12345"));
+        assertThat(response.httpResponse, Matchers.containsString("localAddress: /1.1.0.254:8080"));
+        assertThat(response.httpResponse, Matchers.containsString("remoteAddress: /1.1.0.1:12345"));
         assertThat(response.httpResponse, Matchers.containsString("proxyLocalAddress: " + response.remoteSocketAddress.getAddress().getHostAddress() + ":" + response.remoteSocketAddress.getPort()));
         assertThat(response.httpResponse, Matchers.containsString("proxyRemoteAddress: " + response.localSocketAddress.getAddress().getHostAddress() + ":" + response.localSocketAddress.getPort()));
         assertThat(response.httpResponse, Matchers.containsString("preexisting.attribute: some value"));
@@ -163,8 +165,8 @@ public class ProxyCustomizerTest
 
         ProxyResponse response = sendProxyRequest(proxy, http);
 
-        assertThat(response.httpResponse, Matchers.containsString("localAddress: " + response.remoteSocketAddress.getAddress().getHostAddress() + ":" + response.remoteSocketAddress.getPort()));
-        assertThat(response.httpResponse, Matchers.containsString("remoteAddress: " + response.localSocketAddress.getAddress().getHostAddress() + ":" + response.localSocketAddress.getPort()));
+        assertThat(response.httpResponse, Matchers.containsString("localAddress: /" + response.remoteSocketAddress.getAddress().getHostAddress() + ":" + response.remoteSocketAddress.getPort()));
+        assertThat(response.httpResponse, Matchers.containsString("remoteAddress: /" + response.localSocketAddress.getAddress().getHostAddress() + ":" + response.localSocketAddress.getPort()));
         assertThat(response.httpResponse, Matchers.not(Matchers.containsString("proxyLocalAddress: ")));
         assertThat(response.httpResponse, Matchers.not(Matchers.containsString("proxyRemoteAddress: ")));
         assertThat(response.httpResponse, Matchers.containsString("preexisting.attribute: some value"));

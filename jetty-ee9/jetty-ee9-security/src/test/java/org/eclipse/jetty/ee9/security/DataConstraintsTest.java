@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -20,20 +20,19 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -62,14 +61,23 @@ public class DataConstraintsTest
         _connector.setIdleTimeout(300000);
 
         HttpConnectionFactory https = new HttpConnectionFactory();
-        https.getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
+        https.getHttpConfiguration().addCustomizer((request, responseHeaders) ->
         {
-            @Override
-            public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+            HttpURI uri = HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS);
+            return new org.eclipse.jetty.server.Request.Wrapper(request)
             {
-                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
-                request.setSecure(true);
-            }
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return uri;
+                }
+
+                @Override
+                public boolean isSecure()
+                {
+                    return true;
+                }
+            };
         });
 
         _connectorS = new LocalConnector(_server, https);

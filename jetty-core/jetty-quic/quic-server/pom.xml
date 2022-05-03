@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
-    <artifactId>quic-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>quic</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>quic-server</artifactId>
-  <name>Jetty :: QUIC :: Server</name>
+  <name>Jetty Core :: QUIC :: Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

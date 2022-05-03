@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -27,15 +27,15 @@ import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -298,7 +298,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         throws Exception
     {
         // copy security init parameters
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        APIContext context = ContextHandler.getCurrentContext();
         if (context != null)
         {
             Enumeration<String> names = context.getInitParameterNames();
@@ -442,7 +442,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
-     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     * @see Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {
@@ -598,7 +598,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     public static SecurityHandler getCurrentSecurityHandler()
     {
-        Context context = ContextHandler.getCurrentContext();
+        APIContext context = ContextHandler.getCurrentContext();
         if (context == null)
             return null;
 

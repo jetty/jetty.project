@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -51,7 +51,7 @@ public class PreDestroyCallback extends LifeCycleCallback
      * - no checked exceptions
      * - not static
      *
-     * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
+     * @see LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
     @Override
     public void validate(Class<?> clazz, Method method)

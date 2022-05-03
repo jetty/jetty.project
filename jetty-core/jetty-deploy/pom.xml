@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>jetty-core</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-deploy</artifactId>
-  <name>Jetty :: Deployers</name>
+  <name>Jetty Core :: Deployers</name>
   <description>Jetty deployers</description>
 
   <properties>
@@ -21,7 +21,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules org.eclipse.jetty.jmx --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http,jetty.servlet.api
+            @{argLine} ${jetty.surefire.argLine} --add-modules org.eclipse.jetty.jmx --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http
           </argLine>
         </configuration>
       </plugin>
@@ -31,7 +31,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

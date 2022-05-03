@@ -13,21 +13,14 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -49,14 +42,7 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseBegin(new Response.BeginListener()
-            {
-                @Override
-                public void onBegin(Response response)
-                {
-                    abort(response);
-                }
-            })
+            .onResponseBegin(this::abort)
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
@@ -72,14 +58,10 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseHeader(new Response.HeaderListener()
+            .onResponseHeader((response, field) ->
             {
-                @Override
-                public boolean onHeader(Response response, HttpField field)
-                {
-                    abort(response);
-                    return true;
-                }
+                abort(response);
+                return true;
             })
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
@@ -96,14 +78,7 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseHeaders(new Response.HeadersListener()
-            {
-                @Override
-                public void onHeaders(Response response)
-                {
-                    abort(response);
-                }
-            })
+            .onResponseHeaders(this::abort)
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
@@ -115,28 +90,18 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnContent(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                baseRequest.setHandled(true);
-                OutputStream output = response.getOutputStream();
-                output.write(1);
-                output.flush();
+                org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
             }
         });
 
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContent(new Response.ContentListener()
-            {
-                @Override
-                public void onContent(Response response, ByteBuffer content)
-                {
-                    abort(response);
-                }
-            })
+            .onResponseContent((response, content) -> abort(response))
             .send(new TestResponseListener());
         assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));

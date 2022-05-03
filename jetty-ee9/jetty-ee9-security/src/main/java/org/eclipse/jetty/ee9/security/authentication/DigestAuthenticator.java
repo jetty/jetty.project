@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,14 +29,14 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;

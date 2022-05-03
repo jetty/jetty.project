@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http.spi;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -24,12 +22,11 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +37,7 @@ public class HttpSpiContextHandler extends ContextHandler
 {
     public static final Logger LOG = LoggerFactory.getLogger(HttpSpiContextHandler.class);
 
-    private HttpContext _httpContext;
+    private final HttpContext _httpContext;
 
     private HttpHandler _httpHandler;
 
@@ -48,68 +45,43 @@ public class HttpSpiContextHandler extends ContextHandler
     {
         this._httpContext = httpContext;
         this._httpHandler = httpHandler;
+        super.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                try (HttpExchange jettyHttpExchange = request.isSecure()
+                    ? new JettyHttpsExchange(_httpContext, request, response)
+                    : new JettyHttpExchange(_httpContext, request, response))
+                {
+                    Authenticator auth = _httpContext.getAuthenticator();
+                    if (auth != null && handleAuthentication(request, response, callback, jettyHttpExchange, auth))
+                        return;
+
+                    _httpHandler.handle(jettyHttpExchange);
+                    callback.succeeded();
+                }
+                catch (Exception ex)
+                {
+                    LOG.debug("Failed to handle", ex);
+                    Response.writeError(request, response, callback, 500, null, ex);
+                }
+            }
+        });
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+    public void setHandler(Handler handler)
     {
-        if (!target.startsWith(getContextPath()))
-        {
-            return;
-        }
-
-        HttpExchange jettyHttpExchange;
-        if (baseRequest.isSecure())
-        {
-            jettyHttpExchange = new JettyHttpsExchange(_httpContext, req, resp);
-        }
-        else
-        {
-            jettyHttpExchange = new JettyHttpExchange(_httpContext, req, resp);
-        }
-
-        // TODO: add filters processing
-
-        try
-        {
-            Authenticator auth = _httpContext.getAuthenticator();
-            if (auth != null)
-            {
-                handleAuthentication(resp, jettyHttpExchange, auth);
-            }
-            else
-            {
-                _httpHandler.handle(jettyHttpExchange);
-            }
-        }
-        catch (Exception ex)
-        {
-            LOG.debug("Failed to handle", ex);
-            PrintWriter writer = new PrintWriter(jettyHttpExchange.getResponseBody());
-
-            resp.setStatus(500);
-            writer.println("<h2>HTTP ERROR: 500</h2>");
-            writer.println("<pre>INTERNAL_SERVER_ERROR</pre>");
-            writer.println("<p>RequestURI=" + StringUtil.sanitizeXmlString(req.getRequestURI()) + "</p>");
-
-            if (LOG.isDebugEnabled())
-            {
-                writer.println("<pre>");
-                ex.printStackTrace(writer);
-                writer.println("</pre>");
-            }
-
-            baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer, "<p>", "</p>");
-
-            writer.close();
-        }
-        finally
-        {
-            baseRequest.setHandled(true);
-        }
+        throw new UnsupportedOperationException();
     }
 
-    private void handleAuthentication(HttpServletResponse resp, HttpExchange httpExchange, Authenticator auth) throws IOException
+    private boolean handleAuthentication(
+        Request request,
+        Response response,
+        Callback callback,
+        HttpExchange httpExchange,
+        Authenticator auth)
     {
         Result result = auth.authenticate(httpExchange);
         if (result instanceof Authenticator.Failure)
@@ -118,31 +90,35 @@ public class HttpSpiContextHandler extends ContextHandler
             for (Map.Entry<String, List<String>> header : httpExchange.getResponseHeaders().entrySet())
             {
                 for (String value : header.getValue())
-                {
-                    resp.addHeader(header.getKey(), value);
-                }
+                    response.addHeader(header.getKey(), value);
             }
-            resp.sendError(rc);
+            Response.writeError(request, response, callback, rc);
+            return true;
         }
-        else if (result instanceof Authenticator.Retry)
+
+        if (result instanceof Authenticator.Retry)
         {
             int rc = ((Authenticator.Retry)result).getResponseCode();
             for (Map.Entry<String, List<String>> header : httpExchange.getResponseHeaders().entrySet())
             {
                 for (String value : header.getValue())
                 {
-                    resp.addHeader(header.getKey(), value);
+                    response.addHeader(header.getKey(), value);
                 }
             }
-            resp.setStatus(rc);
-            resp.flushBuffer();
+            Response.writeError(request, response, callback, rc);
+            return true;
         }
-        else if (result instanceof Authenticator.Success)
+
+        if (result instanceof Authenticator.Success)
         {
             HttpPrincipal principal = ((Authenticator.Success)result).getPrincipal();
             ((JettyExchange)httpExchange).setPrincipal(principal);
-            _httpHandler.handle(httpExchange);
+            return false;
         }
+
+        Response.writeError(request, response, callback, 500);
+        return true;
     }
 
     public HttpHandler getHttpHandler()

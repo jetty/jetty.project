@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.util;
+package org.eclipse.jetty.ee9.websocket.tests.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

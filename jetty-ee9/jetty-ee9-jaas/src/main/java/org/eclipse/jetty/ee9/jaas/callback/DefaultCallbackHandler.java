@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas.callback;
+package org.eclipse.jetty.ee9.jaas.callback;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
-import org.eclipse.jetty.server.Request;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * DefaultCallbackHandler
@@ -30,9 +30,9 @@ import org.eclipse.jetty.server.Request;
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
-    private Request _request;
+    private HttpServletRequest _request;
 
-    public void setRequest(Request request)
+    public void setRequest(HttpServletRequest request)
     {
         _request = request;
     }

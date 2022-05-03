@@ -5,7 +5,7 @@
   <Ref refid="DeploymentManager">
     <Call name="addLifeCycleBinding">
       <Arg>
-        <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
+        <New class="org.eclipse.jetty.ee10.deployer.GlobalWebappConfigBinding">
           <Set name="jettyXml"><Property name="jetty.home" default="." />/etc/jetty-web-decorate.xml
           </Set>
         </New>

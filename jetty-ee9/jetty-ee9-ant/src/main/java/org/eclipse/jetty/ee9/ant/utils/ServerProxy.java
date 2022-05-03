@@ -11,9 +11,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant.utils;
+package org.eclipse.jetty.ee9.ant.utils;
 
-import org.eclipse.jetty.ant.AntWebAppContext;
+import org.eclipse.jetty.ee9.ant.AntWebAppContext;
 
 public interface ServerProxy
 {

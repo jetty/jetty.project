@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
@@ -22,9 +21,8 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
@@ -43,12 +41,34 @@ public class DoSFilterTest extends AbstractDoSFilterTest
 {
     public WorkDir workDir;
 
-    private static class RemoteAddressRequest extends Request
+    private static class RemoteAddressRequest extends org.eclipse.jetty.ee9.nested.Request
     {
+        private String remoteAddr;
+        private int remotePort;
+
         public RemoteAddressRequest(String remoteHost, int remotePort)
         {
             super(null, null);
-            setRemoteAddr(new InetSocketAddress(remoteHost, remotePort));
+            this.remoteAddr = remoteHost;
+            this.remotePort = remotePort;
+        }
+
+        @Override
+        public String getRemoteAddr()
+        {
+            return this.remoteAddr;
+        }
+
+        @Override
+        public String getRemoteHost()
+        {
+            return this.remoteAddr;
+        }
+
+        @Override
+        public int getRemotePort()
+        {
+            return this.remotePort;
         }
     }
 
@@ -168,7 +188,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException
     {
         boolean exceeded = false;
-        ServletContext context = new ContextHandler.StaticContext();
+        ContextHandler contextHandler = new ContextHandler();
+        ServletContext context = contextHandler.getServletContext();
         RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2", DoSFilter.RateType.UNKNOWN, 4);
 
         for (int i = 0; i < 5; i++)

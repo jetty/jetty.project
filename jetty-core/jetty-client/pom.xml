@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>jetty-core</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-client</artifactId>
-  <name>Jetty :: Asynchronous HTTP Client</name>
+  <name>Jetty Core :: Asynchronous HTTP Client</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
@@ -110,20 +110,9 @@
       <artifactId>jetty-jmx</artifactId>
       <optional>true</optional>
     </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -149,11 +138,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

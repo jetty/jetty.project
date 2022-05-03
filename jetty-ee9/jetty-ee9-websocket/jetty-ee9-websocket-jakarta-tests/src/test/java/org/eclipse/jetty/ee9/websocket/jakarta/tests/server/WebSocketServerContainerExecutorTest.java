@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,16 +36,16 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSURI;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jakarta.tests.WSURI;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
+import static org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;

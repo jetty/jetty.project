@@ -68,7 +68,7 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        String platformProperty = args.getProperties().getString("java.version.platform");
+        String platformProperty = args.getCoreEnvironment().getProperties().getString("java.version.platform");
         assertThat("java.version.platform", Integer.parseInt(platformProperty), greaterThanOrEqualTo(8));
 
         List<String> moduleNames = new ArrayList<>();
@@ -162,6 +162,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable 2 modules
         modules.enable("base", TEST_SOURCE);
@@ -245,7 +246,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is(nullValue()));
     }
 
@@ -273,6 +274,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable module
         modules.enable("bar", TEST_SOURCE);
@@ -295,7 +297,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dive"));
     }
 
@@ -323,6 +325,7 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
+        args.setAllModules(modules);
 
         // Enable module
         modules.enable("bar", TEST_SOURCE);
@@ -345,7 +348,7 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getProperties();
+        Props props = args.getCoreEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dynamic"));
     }
 

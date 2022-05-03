@@ -13,22 +13,12 @@
 
 package org.eclipse.jetty.jndi.factories;
 
-import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import javax.naming.Context;
 import javax.naming.Name;
-import javax.naming.RefAddr;
 import javax.naming.Reference;
-import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
-
-import jakarta.mail.Authenticator;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import org.eclipse.jetty.util.security.Password;
 
 /**
  * MailSessionReference
@@ -43,8 +33,8 @@ import org.eclipse.jetty.util.security.Password;
  */
 public class MailSessionReference extends Reference implements ObjectFactory
 {
-
-    public static class PasswordAuthenticator extends Authenticator
+    // FIXME: Move to appropriate EE9 tree
+    /*public static class PasswordAuthenticator extends Authenticator
     {
         PasswordAuthentication passwordAuthentication;
         private String user;
@@ -87,12 +77,13 @@ public class MailSessionReference extends Reference implements ObjectFactory
         }
     }
 
-    ;
+    */
 
     public MailSessionReference()
     {
         super("javax.jakarta.Session", MailSessionReference.class.getName(), null);
     }
+
 
     /**
      * Create a javax.mail.Session instance based on the information passed in the Reference
@@ -108,7 +99,8 @@ public class MailSessionReference extends Reference implements ObjectFactory
     @Override
     public Object getObjectInstance(Object ref, Name arg1, Context arg2, Hashtable arg3) throws Exception
     {
-        if (ref == null)
+        return null;
+        /*if (ref == null)
             return null;
 
         Reference reference = (Reference)ref;
@@ -134,29 +126,34 @@ public class MailSessionReference extends Reference implements ObjectFactory
         if (password == null)
             return Session.getInstance(props);
         else
-            return Session.getInstance(props, new PasswordAuthenticator(user, password));
+            return Session.getInstance(props, new PasswordAuthenticator(user, password));*/
     }
 
     public void setUser(String user)
     {
+    /*
         StringRefAddr addr = (StringRefAddr)get("user");
         if (addr != null)
         {
             throw new RuntimeException("user already set on SessionReference, can't be changed");
         }
         add(new StringRefAddr("user", user));
+     */
     }
 
     public void setPassword(String password)
     {
+        /*
         StringRefAddr addr = (StringRefAddr)get("pwd");
         if (addr != null)
             throw new RuntimeException("password already set on SessionReference, can't be changed");
         add(new StringRefAddr("pwd", password));
+        */
     }
 
     public void setProperties(Properties properties)
     {
+        /*
         Iterator entries = properties.entrySet().iterator();
         while (entries.hasNext())
         {
@@ -166,5 +163,6 @@ public class MailSessionReference extends Reference implements ObjectFactory
                 throw new RuntimeException("property " + e.getKey() + " already set on Session reference, can't be changed");
             add(new StringRefAddr((String)e.getKey(), (String)e.getValue()));
         }
+        */
     }
 }

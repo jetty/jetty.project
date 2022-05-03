@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -21,10 +21,10 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
-import org.eclipse.jetty.security.AbstractUserAuthentication;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.AbstractUserAuthentication;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

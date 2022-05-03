@@ -15,8 +15,11 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -27,36 +30,41 @@ public class ResponsePatternRule extends PatternRule
     private int _code;
     private String _message;
 
-    public ResponsePatternRule()
-    {
-        this(null, null, null);
-    }
-
-    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("message") String message)
+    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
     {
         super(pattern);
-        _handling = true;
-        _terminating = true;
-        setCode(code);
-        setMessage(message);
+        _code = code;
+        _message = message;
     }
 
-    /**
-     * Sets the response status code.
-     *
-     * @param code response code
-     */
-    public void setCode(String code)
+    @Override
+    public boolean isTerminating()
     {
-        _code = code == null ? 0 : Integer.parseInt(code);
+        return true;
+    }
+
+    public int getCode()
+    {
+        return _code;
     }
 
     /**
-     * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
-     * Reasons will only reflect
-     * if the code value is greater or equal to 400.
+     * @param code the response code
+     */
+    public void setCode(int code)
+    {
+        _code = code;
+    }
+
+    public String getMessage()
+    {
+        return _message;
+    }
+
+    /**
+     * <p>Sets the message for the response body (if the response code may have a body).</p>
      *
-     * @param message the reason
+     * @param message the response message
      */
     public void setMessage(String message)
     {
@@ -64,25 +72,33 @@ public class ResponsePatternRule extends PatternRule
     }
 
     @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
-        // status code 400 and up are error codes
-        if (_code > 0)
+        if (getCode() < HttpStatus.CONTINUE_100)
+            return null;
+
+        return new Request.WrapperProcessor(input)
         {
-            if (_message != null && !_message.isEmpty())
-                response.sendError(_code, _message);
-            else
-                response.setStatus(_code);
-        }
-        return target;
+            @Override
+            public void process(Request ignored, Response response, Callback callback)
+            {
+                String message = getMessage();
+                if (StringUtil.isBlank(message))
+                {
+                    response.setStatus(getCode());
+                    callback.succeeded();
+                }
+                else
+                {
+                    Response.writeError(this, response, callback, getCode(), message);
+                }
+            }
+        };
     }
 
-    /**
-     * Returns the code and reason string.
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _code + "," + _message + "]";
+        return "%s[response:%d>%s]".formatted(super.toString(), getCode(), getMessage());
     }
 }

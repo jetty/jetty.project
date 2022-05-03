@@ -18,8 +18,9 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http2.hpack.internal.Huffman;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -50,7 +51,7 @@ public class HuffmanTest
     @MethodSource("data")
     public void testDecode(String specSection, String hex, String expected) throws Exception
     {
-        byte[] encoded = TypeUtil.fromHexString(hex);
+        byte[] encoded = StringUtil.fromHexString(hex);
         String decoded = Huffman.decode(ByteBuffer.wrap(encoded));
         assertEquals(expected, decoded, specSection);
     }
@@ -63,7 +64,7 @@ public class HuffmanTest
         int pos = BufferUtil.flipToFill(buf);
         Huffman.encode(buf, expected);
         BufferUtil.flipToFlush(buf, pos);
-        String encoded = TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase(Locale.ENGLISH);
+        String encoded = StringUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase(Locale.ENGLISH);
         assertEquals(hex, encoded, specSection);
         assertEquals(hex.length() / 2, Huffman.octetsNeeded(expected));
     }

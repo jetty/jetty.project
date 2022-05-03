@@ -13,20 +13,20 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -68,19 +68,19 @@ public class HttpClientIdleTimeoutTest
         start(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response)
             {
-                Cookie[] cookies = request.getCookies();
-                if (cookies == null || cookies.length == 0)
+                List<HttpCookie> cookies = Request.getCookies(request);
+                if (cookies == null || cookies.size() == 0)
                 {
                     // Send a cookie in the first response.
-                    response.addCookie(new Cookie("name", "value"));
+                    Response.addCookie(response, new HttpCookie("name", "value"));
                 }
                 else
                 {
                     // Verify that there is only one cookie, i.e.
                     // that the request has not been normalized twice.
-                    assertEquals(1, cookies.length);
+                    assertEquals(1, cookies.size());
                 }
             }
         });

@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +27,6 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -35,7 +34,9 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -139,7 +140,7 @@ public class CloseTest extends AbstractServerTest
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
-        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
+        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes(StandardCharsets.UTF_8)));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {

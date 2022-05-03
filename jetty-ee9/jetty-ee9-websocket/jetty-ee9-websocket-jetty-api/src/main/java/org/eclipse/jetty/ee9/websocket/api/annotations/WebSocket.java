@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.annotations;
+package org.eclipse.jetty.ee9.websocket.api.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -19,8 +19,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 
 /**
  * Tags a POJO as being a WebSocket class.

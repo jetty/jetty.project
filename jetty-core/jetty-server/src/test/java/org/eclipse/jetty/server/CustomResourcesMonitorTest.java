@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -76,6 +77,7 @@ public class CustomResourcesMonitorTest
     @Test
     public void testFileOnDirectoryMonitor() throws Exception
     {
+        // TODO this test is too slow
         int monitorPeriod = _lowResourceMonitor.getPeriod();
         int lowResourcesIdleTimeout = _lowResourceMonitor.getLowResourcesIdleTimeout();
         assertThat(lowResourcesIdleTimeout, Matchers.lessThanOrEqualTo(monitorPeriod));

@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.listeners;
+package org.eclipse.jetty.ee9.websocket.tests.listeners;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
 
 public class AbstractListener implements WebSocketConnectionListener
 {

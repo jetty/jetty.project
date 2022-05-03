@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -32,12 +32,12 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;
-import org.eclipse.jetty.security.DefaultIdentityService;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
+import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.DefaultIdentityService;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -55,7 +55,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
 {
     private static final Logger LOG = LoggerFactory.getLogger(JAASLoginService.class);
 
-    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
+    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.ee9.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
     public static final ThreadLocal<JAASLoginService> INSTANCE = new ThreadLocal<>();
     
@@ -198,8 +198,8 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             if (callbackHandler instanceof DefaultCallbackHandler)
             {
                 DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                if (request instanceof Request)
-                    dch.setRequest((Request)request);
+                if (request instanceof HttpServletRequest httpServletRequest)
+                    dch.setRequest(httpServletRequest);
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }

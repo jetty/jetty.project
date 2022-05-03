@@ -14,17 +14,14 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -95,19 +92,15 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnContent(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response)
             {
                 try
                 {
-                    baseRequest.setHandled(true);
-                    OutputStream output = response.getOutputStream();
-                    output.write(1);
-                    output.flush();
-                    output.write(2);
-                    output.flush();
+                    Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
+                    Response.write(response, false, ByteBuffer.wrap(new byte[]{2}));
                 }
                 catch (IOException ignored)
                 {
@@ -132,19 +125,15 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnContentBeforeRequestTermination(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response)
             {
                 try
                 {
-                    baseRequest.setHandled(true);
-                    OutputStream output = response.getOutputStream();
-                    output.write(1);
-                    output.flush();
-                    output.write(2);
-                    output.flush();
+                    Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
+                    Response.write(response, false, ByteBuffer.wrap(new byte[]{2}));
                 }
                 catch (IOException ignored)
                 {

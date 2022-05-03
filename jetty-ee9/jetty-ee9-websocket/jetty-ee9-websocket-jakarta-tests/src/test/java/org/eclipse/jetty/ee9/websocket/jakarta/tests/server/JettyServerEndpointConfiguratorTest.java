@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

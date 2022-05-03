@@ -125,7 +125,7 @@ For example:
 +
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg> <!-- reference to WebAppContext -->
     <Arg>jms/connectionFactory</Arg>

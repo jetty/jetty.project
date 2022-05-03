@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-core</artifactId>
+  <name>Jetty Core :: Parent</name>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>jetty-alpn</module>
+    <module>jetty-bom</module>
+    <module>jetty-client</module>
+    <module>jetty-deploy</module>
+    <module>jetty-fcgi</module>
+    <module>jetty-http</module>
+    <module>jetty-http2</module>
+    <module>jetty-http3</module>
+    <module>jetty-http-spi</module>
+    <module>jetty-http-tools</module>
+    <module>jetty-io</module>
+    <module>jetty-jmx</module>
+    <module>jetty-jndi</module>
+    <module>jetty-keystore</module>
+    <module>jetty-quic</module>
+    <module>jetty-rewrite</module>
+    <module>jetty-server</module>
+    <module>jetty-session</module>
+    <module>jetty-slf4j-impl</module>
+    <module>jetty-start</module>
+    <module>jetty-unixdomain-server</module>
+    <module>jetty-util</module>
+    <module>jetty-util-ajax</module>
+    <module>jetty-websocket</module>
+    <module>jetty-xml</module>
+  </modules>
+
+  <!-- FIXME: Remove once Servlet API usage is totally removed from jetty-core -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-jakarta-servlet-api</artifactId>
+        <version>5.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

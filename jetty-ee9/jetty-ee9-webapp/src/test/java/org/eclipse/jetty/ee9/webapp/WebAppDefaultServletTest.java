@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +88,9 @@ public class WebAppDefaultServletTest
             output.write("standard hash dir welcome".getBytes(StandardCharsets.UTF_8));
         }
 
-        WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(new PathResource(directoryPath));
+        context.setContextPath("/");
         server.setHandler(context);
         server.start();
 
@@ -127,11 +130,12 @@ public class WebAppDefaultServletTest
     @MethodSource("argumentsStream")
     public void testResourceService(String uri, String[] contains) throws Exception
     {
-        String request =
-            "GET " + uri + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        String request = """
+            GET %s HTTP/1.1
+            Host: localhost
+            Connection: close
+            
+            """.formatted(uri);
         String response = connector.getResponse(request);
         for (String s : contains)
         {

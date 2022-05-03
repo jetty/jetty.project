@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +62,8 @@ public abstract class LoginAuthenticator implements Authenticator
         if (user != null)
         {
             Request request = Request.getBaseRequest(servletRequest);
-            renewSession(request, request == null ? null : request.getResponse());
+            if (request != null)
+                renewSession(request, request.getResponse());
             return user;
         }
         return null;
@@ -99,7 +100,7 @@ public abstract class LoginAuthenticator implements Authenticator
      * Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.
-     * <li>The {@link org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
+     * <li>The {@link Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
      *
@@ -119,16 +120,16 @@ public abstract class LoginAuthenticator implements Authenticator
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
                 if (httpSession.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
-                    if (httpSession instanceof Session)
+                    if (httpSession instanceof Session.APISession apiSession)
                     {
-                        Session s = (Session)httpSession;
-                        String oldId = s.getId();
-                        s.renewId(request);
-                        s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                        if (s.isIdChanged() && (response instanceof Response))
-                            ((Response)response).replaceCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                        Session session = apiSession.getCoreSession();
+                        String oldId = session.getId();
+                        session.renewId(Request.getBaseRequest(request).getHttpChannel().getCoreRequest());
+                        session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+                        if (session.isSetCookieNeeded() && (response instanceof Response))
+                            ((Response)response).replaceCookie(session.getSessionManager().getSessionCookie(session, request.getContextPath(), request.isSecure()));
                         if (LOG.isDebugEnabled())
-                            LOG.debug("renew {}->{}", oldId, s.getId());
+                            LOG.debug("renew {}->{}", oldId, session.getId());
                     }
                     else
                     {

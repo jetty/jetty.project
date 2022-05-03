@@ -39,7 +39,7 @@ Once the temp directory is created, it is retrievable as the value (as a File) o
 ===== The location of the temp directory
 
 By default, Jetty will create this directory inside the directory named by the `java.io.tmpdir` System property.
-You can instruct Jetty to use a different parent directory by setting the context attribute `org.eclipse.jetty.webapp.basetempdir` to the name of the desired parent directory.
+You can instruct Jetty to use a different parent directory by setting the context attribute `org.eclipse.jetty.ee9.webapp.basetempdir` to the name of the desired parent directory.
 The directory named by this attribute _must_ exist and be __writeable__.
 
 As usual with Jetty, you can either set this attribute in a context xml file, or you can do it in code.
@@ -48,13 +48,13 @@ Here's an example of setting it in an xml file:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
   <Set name="war">foo.war</Set>
 
   <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.webapp.basetempdir</Arg>
+    <Arg>org.eclipse.jetty.ee9.webapp.basetempdir</Arg>
     <Arg>/home/my/foo</Arg>
   </Call>
 </Configure>
@@ -67,7 +67,7 @@ The equivalent in code is:
 WebAppContext context = new WebAppContext();
 context.setContextPath("/test");
 context.setWar("foo.war");
-context.setAttribute("org.eclipse.jetty.webapp.basetempdir", "/tmp/foo");
+context.setAttribute("org.eclipse.jetty.ee9.webapp.basetempdir", "/tmp/foo");
 ----
 
 ==== Setting a Specific Temp Directory
@@ -80,7 +80,7 @@ Here is an example of setting the temp directory in XML:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
   <Set name="war">foo.war</Set>
@@ -105,7 +105,7 @@ Again, you can do this in XML:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
   <Set name="war">foo.war</Set>

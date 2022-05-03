@@ -73,4 +73,4 @@ Other uses for a `JettyWebSocketCreator`:
 * Obtaining the Servlet HttpSession object (if it exists)
 * Specifying a response status code and reason
 
-If you don't want to accept the upgrade, simply return null from the link:{JDURL}/org/eclipse/jetty/websocket/servlet/JettyWebSocketCreator.html#createWebSocket(org.eclipse.jetty.websocket.api.UpgradeRequest,org.eclipse.jetty.websocket.api.UpgradeResponse)[`JettyWebSocketCreator.createWebSocket(UpgradeRequest req, UpgradeResponse resp)`] method.
+If you don't want to accept the upgrade, simply return null from the link:{JDURL}/org/eclipse/jetty/websocket/servlet/JettyWebSocketCreator.html#createWebSocket(org.eclipse.jetty.ee9.websocket.api.UpgradeRequest,org.eclipse.jetty.ee9.websocket.api.UpgradeResponse)[`JettyWebSocketCreator.createWebSocket(UpgradeRequest req, UpgradeResponse resp)`] method.

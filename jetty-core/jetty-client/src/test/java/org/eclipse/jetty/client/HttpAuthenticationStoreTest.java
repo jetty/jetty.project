@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class HttpAuthenticationStoreTest
 {
     @Test
-    public void testFindAuthenticationWithDefaultHTTPPort() throws Exception
+    public void testFindAuthenticationWithDefaultHTTPPort()
     {
         AuthenticationStore store = new HttpAuthenticationStore();
 
@@ -50,7 +50,7 @@ public class HttpAuthenticationStoreTest
     }
 
     @Test
-    public void testFindAuthenticationResultWithDefaultHTTPPort() throws Exception
+    public void testFindAuthenticationResultWithDefaultHTTPPort()
     {
         AuthenticationStore store = new HttpAuthenticationStore();
 

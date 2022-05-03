@@ -15,17 +15,13 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URL;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * }
  * </pre>
  */
-public class ShutdownHandler extends HandlerWrapper
+public class ShutdownHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownHandler.class);
 
@@ -95,8 +91,11 @@ public class ShutdownHandler extends HandlerWrapper
     public ShutdownHandler(String shutdownToken, boolean exitJVM, boolean sendShutdownAtStart)
     {
         this._shutdownToken = shutdownToken;
+        /* TODO
         setExitJvm(exitJVM);
         setSendShutdownAtStart(sendShutdownAtStart);
+
+         */
     }
 
     public void sendShutdown() throws IOException
@@ -148,8 +147,9 @@ public class ShutdownHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
+        /* TODO
         if (!target.equals("/shutdown"))
         {
             super.handle(target, baseRequest, request, response);
@@ -176,8 +176,12 @@ public class ShutdownHandler extends HandlerWrapper
 
         LOG.info("Shutting down by request from {}", request.getRemoteAddr());
         doShutdown(baseRequest, response);
+
+         */
+        return null;
     }
 
+    /* TODO
     protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException
     {
         for (Connector connector : getServer().getConnectors())
@@ -263,4 +267,6 @@ public class ShutdownHandler extends HandlerWrapper
     {
         return _exitJvm;
     }
+
+     */
 }

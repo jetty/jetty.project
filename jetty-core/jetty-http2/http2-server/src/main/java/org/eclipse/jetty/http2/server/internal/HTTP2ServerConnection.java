@@ -11,28 +11,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.http2.server.internal;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayDeque;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.Executor;
+import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Channel;
-import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -40,73 +36,48 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.http2.parser.SettingsBodyParser;
+import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.parser.ServerParser;
+import org.eclipse.jetty.http2.internal.parser.SettingsBodyParser;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 
-public class HTTP2ServerConnection extends HTTP2Connection
+public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
 {
-    /**
-     * @param protocol An HTTP2 protocol variant
-     * @return True if the protocol version is supported
-     */
-    public static boolean isSupportedProtocol(String protocol)
-    {
-        switch (protocol)
-        {
-            case "h2":
-            case "h2-17":
-            case "h2-16":
-            case "h2-15":
-            case "h2-14":
-            case "h2c":
-            case "h2c-17":
-            case "h2c-16":
-            case "h2c-15":
-            case "h2c-14":
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private final AutoLock lock = new AutoLock();
-    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    private final Attributes attributes = new Lazy();
     private final List<Frame> upgradeFrames = new ArrayList<>();
+    private final Connector connector;
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private boolean recycleHttpChannels = true;
+    private final String id;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        super(retainableByteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
+        this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
+        this.id = StringUtil.randomAlphaNumeric(16);
     }
 
     @Override
     protected ServerParser getParser()
     {
         return (ServerParser)super.getParser();
-    }
-
-    public boolean isRecycleHttpChannels()
-    {
-        return recycleHttpChannels;
-    }
-
-    public void setRecycleHttpChannels(boolean recycleHttpChannels)
-    {
-        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -134,12 +105,16 @@ public class HTTP2ServerConnection extends HTTP2Connection
         }
     }
 
-    public void onNewStream(Connector connector, IStream stream, HeadersFrame frame)
+    public void onNewStream(IStream stream, HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
-        Runnable task = channel.onRequest(frame);
+
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
+        httpChannel.setHttpStream(httpStream);
+        stream.setAttachment(httpStream);
+        Runnable task = httpStream.onRequest(frame);
         if (task != null)
             offerTask(task, false);
     }
@@ -148,6 +123,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
+
         HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
@@ -227,14 +203,32 @@ public class HTTP2ServerConnection extends HTTP2Connection
         callback.succeeded();
     }
 
-    public void push(Connector connector, IStream stream, MetaData.Request request)
+    public void push(IStream stream, MetaData.Request request)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
-        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
-        Runnable task = channel.onPushRequest(request);
+
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
+        httpChannel.setHttpStream(httpStream);
+        Runnable task = httpStream.onPushRequest(request);
         if (task != null)
-            offerTask(task, true);
+            offerTask(task, false);
+    }
+
+/*
+    private final AutoLock lock = new AutoLock();
+    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
+    private boolean recycleHttpChannels = true;
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
@@ -289,6 +283,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             return null;
         }
     }
+*/
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
@@ -305,7 +300,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} {}: {}", this, HttpHeader.HTTP2_SETTINGS, TypeUtil.toHexString(settings));
+                LOG.debug("{} {}: {}", this, HttpHeader.HTTP2_SETTINGS, StringUtil.toHexString(settings));
 
             SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
             if (settingsFrame == null)
@@ -331,6 +326,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
         return true;
     }
 
+/*
     protected class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements Closeable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
@@ -376,5 +372,102 @@ public class HTTP2ServerConnection extends HTTP2Connection
             // avoid stalling the session flow control.
             consumeInput();
         }
+    }
+*/
+
+    @Override
+    public String getId()
+    {
+        return id;
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfig;
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_2;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return getHttpVersion().asString();
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return this;
+    }
+
+    @Override
+    public Connector getConnector()
+    {
+        return connector;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        return ConnectionMetaData.getServerAuthority(httpConfig, this);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return attributes.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
     }
 }

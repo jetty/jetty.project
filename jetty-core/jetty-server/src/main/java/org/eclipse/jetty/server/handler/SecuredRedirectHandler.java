@@ -13,15 +13,12 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -29,9 +26,9 @@ import org.eclipse.jetty.util.URIUtil;
  * <p>SecuredRedirectHandler uses the information present in {@link HttpConfiguration}
  * attempting to redirect to the {@link HttpConfiguration#getSecureScheme()} and
  * {@link HttpConfiguration#getSecurePort()} for any request that
- * {@link HttpServletRequest#isSecure()} is false.</p>
+ * {@link Request#isSecure()} is false.</p>
  */
-public class SecuredRedirectHandler extends HandlerWrapper
+public class SecuredRedirectHandler extends Handler.Wrapper
 {
     /**
      * The redirect code to send in response.
@@ -43,7 +40,7 @@ public class SecuredRedirectHandler extends HandlerWrapper
      */
     public SecuredRedirectHandler()
     {
-        this(HttpServletResponse.SC_MOVED_TEMPORARILY);
+        this(HttpStatus.MOVED_TEMPORARILY_302);
     }
 
     /**
@@ -60,36 +57,31 @@ public class SecuredRedirectHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        HttpChannel channel = baseRequest.getHttpChannel();
-        if (baseRequest.isSecure() || channel == null)
+        if (request.isSecure())
         {
             // Nothing to do here.
-            super.handle(target, baseRequest, request, response);
-            return;
+            return super.handle(request);
         }
 
-        baseRequest.setHandled(true);
+        return (rq, rs, cb) ->
+        {
+            HttpConfiguration httpConfig = rq.getConnectionMetaData().getHttpConfiguration();
 
-        HttpConfiguration httpConfig = channel.getHttpConfiguration();
-        if (httpConfig == null)
-        {
-            response.sendError(HttpStatus.FORBIDDEN_403, "Missing HttpConfiguration");
-            return;
-        }
-
-        int securePort = httpConfig.getSecurePort();
-        if (securePort > 0)
-        {
-            String secureScheme = httpConfig.getSecureScheme();
-            String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
-            response.setContentLength(0);
-            baseRequest.getResponse().sendRedirect(_redirectCode, url, true);
-        }
-        else
-        {
-            response.sendError(HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
-        }
+            int securePort = httpConfig.getSecurePort();
+            if (securePort > 0)
+            {
+                String secureScheme = httpConfig.getSecureScheme();
+                String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+                rs.setHeader(HttpHeader.LOCATION, url); // TODO need a utility for this
+                rs.setStatus(_redirectCode);
+                rs.write(true, cb);
+            }
+            else
+            {
+                Response.writeError(rq, rs, cb, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
+            }
+        };
     }
 }

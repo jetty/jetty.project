@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.annotations;
+package org.eclipse.jetty.ee9.osgi.annotations;
 
 import java.io.File;
 import java.io.InputStream;
@@ -24,7 +24,7 @@ import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
@@ -33,7 +33,7 @@ import org.osgi.framework.Constants;
 /**
  *
  */
-public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
+public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.AnnotationParser
 {
     private Set<URI> _alreadyParsed = ConcurrentHashMap.newKeySet();
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.util.Enumeration;
@@ -19,7 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -29,8 +31,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.Configurations;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**

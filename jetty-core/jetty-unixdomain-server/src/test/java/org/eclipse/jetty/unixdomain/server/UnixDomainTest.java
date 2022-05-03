@@ -19,8 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -34,9 +32,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -109,17 +108,15 @@ public class UnixDomainTest
     public void testHTTPOverUnixDomain() throws Exception
     {
         String uri = "http://localhost:1234/path";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
-
                 // Verify the URI is preserved.
-                assertEquals(uri, request.getRequestURL().toString());
+                assertEquals(uri, request.getHttpURI().asString());
 
-                EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
 
                 // Verify the SocketAddresses.
                 SocketAddress local = endPoint.getLocalSocketAddress();
@@ -134,6 +131,8 @@ public class UnixDomainTest
                 assertNull(remote);
 
                 assertDoesNotThrow(endPoint::toString);
+
+                callback.succeeded();
             }
         });
 
@@ -159,16 +158,16 @@ public class UnixDomainTest
     {
         int fakeProxyPort = 4567;
         int fakeServerPort = 5678;
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
                 // Proxied requests must have an absolute URI.
-                HttpURI uri = jettyRequest.getMetaData().getURI();
+                HttpURI uri = request.getHttpURI();
                 assertNotNull(uri.getScheme());
                 assertEquals(fakeServerPort, uri.getPort());
+                callback.succeeded();
             }
         });
 
@@ -197,16 +196,16 @@ public class UnixDomainTest
         String srcAddr = "/proxySrcAddr";
         String dstAddr = "/proxyDstAddr";
         factories = new ConnectionFactory[]{new ProxyConnectionFactory(), new HttpConnectionFactory()};
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
-                EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
                 assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
+                String target = request.getPathInContext();
                 if ("/v1".equals(target))
                 {
                     // As PROXYv1 does not support UNIX, the wrapped EndPoint data is used.
@@ -222,6 +221,7 @@ public class UnixDomainTest
                 {
                     Assertions.fail("Invalid PROXY protocol version " + target);
                 }
+                callback.succeeded();
             }
         });
 

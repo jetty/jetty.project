@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.config;
+package org.eclipse.jetty.ee9.websocket.server.config;
 
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppConfiguration;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the {@code org.eclipse.jetty.websocket.api}, {@code org.eclipse.jetty.websocket.server} and
+ * be able to see the {@code org.eclipse.jetty.ee9.websocket.api}, {@code org.eclipse.jetty.websocket.server} and
  * {@code org.eclipse.jetty.websocket.servlet} packages.</p>
  */
 public class JettyWebSocketConfiguration extends AbstractConfiguration
@@ -35,9 +35,9 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
     public JettyWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        addDependents("org.eclipse.jetty.ee9.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
-        protectAndExpose("org.eclipse.jetty.websocket.api.");
+        protectAndExpose("org.eclipse.jetty.ee9.websocket.api.");
         protectAndExpose("org.eclipse.jetty.websocket.server.");
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
         hide("org.eclipse.jetty.server.internal.");

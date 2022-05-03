@@ -17,8 +17,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -27,10 +27,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
-import org.eclipse.jetty.server.HttpConfiguration.Customizer;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -47,7 +50,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <li>{@code X-Forwarded-Proto}</li>
  * <li>{@code X-Proxied-Https}</li>
  * </ul>
- * <p>If these headers are present, then the {@link Request} object is updated
+ * <p>If these headers are present, then the {@link Request} object is wrapped
  * so that the proxy is not seen as the other end point of the connection on which
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
@@ -138,8 +141,10 @@ import static java.lang.invoke.MethodType.methodType;
  * @see <a href="http://en.wikipedia.org/wiki/X-Forwarded-For">Wikipedia: X-Forwarded-For</a>
  * @see <a href="https://tools.ietf.org/html/rfc7239">RFC 7239: Forwarded HTTP Extension</a>
  */
-public class ForwardedRequestCustomizer implements Customizer
+public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
+
     private HostPortHttpField _forcedHost;
     private boolean _proxyAsAuthority = false;
     private boolean _forwardedPortAsAuthority = true;
@@ -226,7 +231,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
+     * Set a forced valued for the host header.
      *
      * @param hostAndPort The value of the host header to force.
      */
@@ -452,12 +457,13 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     @Override
-    public void customize(Connector connector, HttpConfiguration config, Request request)
+    public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
-        HttpFields httpFields = request.getHttpFields();
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
+        HttpFields httpFields = request.getHeaders();
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
-        Forwarded forwarded = new Forwarded(request, config);
+        Forwarded forwarded = new Forwarded(request, httpConfig);
         boolean match = false;
         for (HttpField field : httpFields)
         {
@@ -476,71 +482,156 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
-        if (match)
+        if (!match)
+            return request;
+
+        HttpURI uri;
+        boolean secure;
+        HostPortHttpField authority;
+        InetSocketAddress remote;
+
+        HttpURI.Mutable builder = HttpURI.build(request.getHttpURI());
+        boolean httpUriChanged = false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("forwarded {} {}", builder, forwarded);
+
+        // Is secure status configured from headers?
+        secure = forwarded.isSecure();
+
+        // Set Scheme from configured protocol
+        if (forwarded._proto != null)
         {
-            HttpURI.Mutable builder = HttpURI.build(request.getHttpURI());
-            boolean httpUriChanged = false;
+            builder.scheme(forwarded._proto);
+            httpUriChanged = true;
+        }
+        // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
+        else if (forwarded._secureScheme)
+        {
+            builder.scheme(httpConfig.getSecureScheme());
+            httpUriChanged = true;
+        }
 
-            // Is secure status configured from headers?
-            if (forwarded.isSecure())
+        // Use authority from headers, if configured.
+        if (forwarded._authority != null)
+        {
+            String host = forwarded._authority._host;
+            int port = forwarded._authority._port;
+
+            // Fall back to request metadata if needed.
+            if (host == null)
             {
-                request.setSecure(true);
+                host = builder.getHost();
             }
 
-            // Set Scheme from configured protocol
-            if (forwarded._proto != null)
+            if (port == MutableHostPort.UNSET) // is unset by headers
             {
-                builder.scheme(forwarded._proto);
+                port = builder.getPort();
+            }
+
+            // Don't change port if port == IMPLIED.
+            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE.get(httpConfig.getSecureScheme()).getDefaultPort())
+                port = 0;
+
+            // Update authority if different from metadata
+            if (!host.equalsIgnoreCase(builder.getHost()) ||
+                port != builder.getPort())
+            {
+                authority = new HostPortHttpField(host, port);
+                builder.authority(host, port);
                 httpUriChanged = true;
             }
-            // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
-            else if (forwarded._secureScheme)
+            else
             {
-                builder.scheme(config.getSecureScheme());
-                httpUriChanged = true;
-            }
-
-            // Use authority from headers, if configured.
-            if (forwarded._authority != null)
-            {
-                String host = forwarded._authority._host;
-                int port = forwarded._authority._port;
-
-                // Fall back to request metadata if needed.
-                if (host == null)
-                {
-                    host = builder.getHost();
-                }
-
-                if (port == MutableHostPort.UNSET) // is unset by headers
-                {
-                    port = builder.getPort();
-                }
-
-                // Don't change port if port == IMPLIED.
-
-                // Update authority if different from metadata
-                if (!host.equalsIgnoreCase(builder.getHost()) ||
-                    port != builder.getPort())
-                {
-                    request.setHttpFields(HttpFields.build(httpFields, new HostPortHttpField(host, port)));
-                    builder.authority(host, port);
-                    httpUriChanged = true;
-                }
-            }
-
-            if (httpUriChanged)
-            {
-                request.setHttpURI(builder);
-            }
-
-            // Set Remote Address
-            if (forwarded.hasFor())
-            {
-                int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
-                request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
+                authority = null;
             }
         }
+        else
+        {
+            authority = null;
+        }
+
+        uri = httpUriChanged ? builder.asImmutable() : request.getHttpURI();
+
+        // Set Remote Address
+        if (forwarded.hasFor())
+        {
+            int forPort = forwarded._for._port;
+            if (forPort <= 0)
+            {
+                // TODO utility methods for this would be nice.
+                SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
+                if (addr instanceof InetSocketAddress)
+                    forPort = ((InetSocketAddress)addr).getPort();
+            }
+            remote = InetSocketAddress.createUnresolved(forwarded._for._host, forPort);
+        }
+        else
+        {
+            remote = null;
+        }
+
+        ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
+        {
+            @Override
+            public SocketAddress getRemoteSocketAddress()
+            {
+                return remote != null ? remote : super.getRemoteSocketAddress();
+            }
+
+            @Override
+            public HostPort getServerAuthority()
+            {
+                if (authority != null)
+                    return authority.getHostPort();
+
+                return super.getServerAuthority();
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x{id=%s,remote=%s,authority=%s,%s}".formatted(
+                    TypeUtil.toShortName(this.getClass()),
+                    hashCode(),
+                    getId(),
+                    remote,
+                    authority,
+                    getWrappedConnectionMetaData()
+                );
+            }
+        };
+
+        HttpFields headers = authority == null
+            ? request.getHeaders()
+            : HttpFields.build(request.getHeaders(), authority);
+
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return uri;
+            }
+
+            @Override
+            public HttpFields getHeaders()
+            {
+                return headers;
+            }
+
+            @Override
+            public boolean isSecure()
+            {
+                return secure || super.isSecure();
+            }
+
+            @Override
+            public ConnectionMetaData getConnectionMetaData()
+            {
+                return connectionMetaData;
+            }
+        };
     }
 
     protected static int getSecurePort(HttpConfiguration config)
@@ -582,7 +673,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
+     * Set a forced valued for the host header.
      *
      * @param hostHeader The value of the host header to force.
      */
@@ -951,6 +1042,19 @@ public class ForwardedRequestCustomizer implements Customizer
                     _secure = true;
                 }
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Forwarded@%x[req=%s,auth=%s,for=%s,proto=%s,sec=%s/%s]",
+                hashCode(),
+                _request,
+                _authority,
+                _for,
+                _proto,
+                _secure,
+                _secureScheme);
         }
     }
 }

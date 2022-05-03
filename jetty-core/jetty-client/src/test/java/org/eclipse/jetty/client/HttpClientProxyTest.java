@@ -13,23 +13,21 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -43,18 +41,17 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         final String serverHost = "server";
         final int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
-                    response.setStatus(HttpServletResponse.SC_USE_PROXY);
-                else if (serverHost.equals(request.getServerName()))
+                if (!URI.create(request.getHttpURI().toString()).isAbsolute())
+                    response.setStatus(HttpStatus.USE_PROXY_305);
+                else if (serverHost.equals(org.eclipse.jetty.server.Request.getServerName(request)))
                     response.setStatus(status);
                 else
-                    response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+                    response.setStatus(HttpStatus.NOT_ACCEPTABLE_406);
             }
         });
 
@@ -80,17 +77,16 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         final String serverHost = "server";
         final String realm = "test_realm";
         final int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                 }
                 else
                 {
@@ -162,19 +158,20 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         int serverPort = HttpScheme.HTTP.is(scenario.getScheme()) ? 80 : 443;
         String realm = "test_realm";
         int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                String target = request.getPathInContext();
                 if (target.startsWith("/proxy"))
                 {
-                    String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                    String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                        response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        callback.succeeded();
                     }
                     else
                     {
@@ -185,18 +182,21 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                             if (credentials.equals(attempt))
                             {
                                 // Change also the host, to verify that proxy authentication works in this case too.
-                                response.sendRedirect(scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
+                                Response.sendRedirect(request, response, callback, scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
+                                return;
                             }
                         }
+                        callback.succeeded();
                     }
                 }
                 else if (target.startsWith("/server"))
                 {
                     response.setStatus(status);
+                    callback.succeeded();
                 }
                 else
                 {
-                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
             }
         });
@@ -254,25 +254,24 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String proxyRealm = "proxyRealm";
         String serverRealm = "serverRealm";
         int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + proxyRealm + "\"");
                 }
                 else
                 {
-                    authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                    authorization = request.getHeaders().get(HttpHeader.AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + serverRealm + "\"");
+                        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"" + serverRealm + "\"");
                     }
                     else
                     {
@@ -327,25 +326,24 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String proxyRealm = "proxyRealm";
         String serverRealm = "serverRealm";
         int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + proxyRealm + "\"");
                 }
                 else
                 {
-                    authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                    authorization = request.getHeaders().get(HttpHeader.AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + serverRealm + "\"");
+                        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"" + serverRealm + "\"");
                     }
                     else
                     {

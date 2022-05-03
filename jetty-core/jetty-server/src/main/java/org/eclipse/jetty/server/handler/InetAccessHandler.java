@@ -16,13 +16,10 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
@@ -41,7 +38,7 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends HandlerWrapper
+public class InetAccessHandler extends Handler.Wrapper
 {
     private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
@@ -205,41 +202,27 @@ public class InetAccessHandler extends HandlerWrapper
         }
     }
 
-    /**
-     * Checks the incoming request against the whitelist and blacklist
-     */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpChannel channel = baseRequest.getHttpChannel();
-        if (channel != null)
-        {
-            InetSocketAddress address = channel.getRemoteAddress();
-            if (address != null && !isAllowed(address.getAddress(), baseRequest, request))
-            {
-                response.sendError(HttpStatus.FORBIDDEN_403);
-                baseRequest.setHandled(true);
-                return;
-            }
-        }
-
-        getHandler().handle(target, baseRequest, request, response);
+        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
+            !isAllowed(inetSocketAddress.getAddress(), request))
+            return null;
+        return super.handle(request);
     }
 
     /**
      * Checks if specified address and request are allowed by current InetAddress rules.
      *
      * @param addr the inetAddress to check
-     * @param baseRequest the base request to check
      * @param request the HttpServletRequest request to check
      * @return true if inetAddress and request are allowed
      */
-    protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
+    protected boolean isAllowed(InetAddress addr, Request request)
     {
-        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-        String path = baseRequest.getMetaData().getURI().getDecodedPath();
+        String connectorName = request.getConnectionMetaData().getConnector().getName();
+        String path = request.getPathInContext();
         return _set.test(new AccessTuple(connectorName, addr, path));
     }
 

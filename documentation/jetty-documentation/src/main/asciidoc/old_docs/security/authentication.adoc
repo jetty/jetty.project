@@ -149,7 +149,7 @@ Here's an example of doing both of these, using a link:#deployable-descriptor-fi
 [source, xml, subs="{sub-order}"]
 ----
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
  <Get name="securityHandler">
    <!-- Either: -->
    <Set name="loginService">
@@ -174,7 +174,7 @@ Here's how to define the same HashLoginService, but inside a link:#deployable-de
 [source, xml, subs="{sub-order}"]
 ----
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/test</Set>
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test</Set>
   <Get name="securityHandler">
@@ -467,7 +467,7 @@ In the example below, a `HashLoginService` is defined with authorization being g
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id="testWebapp" class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id="testWebapp" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Get name="securityHandler">
     <Set name="realmName">Test Realm</Set>
     <Set name="authMethod">BASIC</Set>

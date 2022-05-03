@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -32,19 +29,20 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // Sibling of ConnectionPoolTest, but using H2 to multiplex connections.
 public class MultiplexedConnectionPoolTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MultiplexedConnectionPoolTest.class);
     private static final int MAX_MULTIPLEX = 2;
 
     private Server server;
@@ -132,30 +129,19 @@ public class MultiplexedConnectionPoolTest
         CountDownLatch[] reqExecutingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
         CountDownLatch[] reqExecutedLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
         CountDownLatch[] reqFinishingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                int req = Integer.parseInt(target.substring(1));
-                try
-                {
-                    LOG.debug("req {} is executing", req);
-                    reqExecutingLatches[req].countDown();
-                    Thread.sleep(250);
-                    reqExecutedLatches[req].countDown();
-                    LOG.debug("req {} executed", req);
+                int req = Integer.parseInt(request.getPathInContext().substring(1));
+                reqExecutingLatches[req].countDown();
+                Thread.sleep(250);
+                reqExecutedLatches[req].countDown();
 
-                    assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
+                assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
 
-                    response.getWriter().println("req " + req + " executed");
-                    response.getWriter().flush();
-                    LOG.debug("req {} successful", req);
-                }
-                catch (Exception e)
-                {
-                    throw new ServletException(e);
-                }
+                response.write(true, callback, "req " + req + " executed");
             }
         });
 
@@ -170,19 +156,15 @@ public class MultiplexedConnectionPoolTest
         sendRequest(reqClientSuccessLatches, 0);
         // wait until handler is executing
         assertTrue(reqExecutingLatches[0].await(5, TimeUnit.SECONDS));
-        LOG.debug("req 0 executing");
 
         sendRequest(reqClientSuccessLatches, 1);
         // wait until handler executed sleep
         assertTrue(reqExecutedLatches[1].await(5, TimeUnit.SECONDS));
-        LOG.debug("req 1 executed");
 
         // Now the pool contains one connection that is expired but in use by 2 threads.
 
         sendRequest(reqClientSuccessLatches, 2);
-        LOG.debug("req2 sent");
         assertTrue(reqExecutingLatches[2].await(5, TimeUnit.SECONDS));
-        LOG.debug("req2 executing");
 
         // The 3rd request has tried the expired request and marked it as closed as it has expired, then used a 2nd one.
 
@@ -243,21 +225,13 @@ public class MultiplexedConnectionPoolTest
             return pool;
         });
 
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                int req = Integer.parseInt(target.substring(1));
-                try
-                {
-                    response.getWriter().println("req " + req + " executed");
-                    response.getWriter().flush();
-                }
-                catch (Exception e)
-                {
-                    throw new ServletException(e);
-                }
+                int req = Integer.parseInt(request.getPathInContext().substring(1));
+                response.write(true, callback, "req " + req + " executed");
             }
         }, 64, 1L);
 
@@ -331,7 +305,14 @@ public class MultiplexedConnectionPoolTest
             return connectionPool;
         });
 
-        startServer(new EmptyServerHandler());
+        startServer(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         HttpClientTransport transport = new HttpClientTransportOverHTTP2(new HTTP2Client());
         transport.setConnectionPoolFactory(factory.factory);
@@ -393,24 +374,17 @@ public class MultiplexedConnectionPoolTest
 
         Semaphore handlerSignalingSemaphore = new Semaphore(0);
         Semaphore handlerWaitingSemaphore = new Semaphore(0);
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                if (!target.equals("/block"))
-                    return;
-
-                handlerSignalingSemaphore.release();
-
-                try
+                if (request.getPathInContext().equals("/block"))
                 {
+                    handlerSignalingSemaphore.release();
                     handlerWaitingSemaphore.acquire();
                 }
-                catch (Exception e)
-                {
-                    throw new ServletException(e);
-                }
+                callback.succeeded();
             }
         });
 

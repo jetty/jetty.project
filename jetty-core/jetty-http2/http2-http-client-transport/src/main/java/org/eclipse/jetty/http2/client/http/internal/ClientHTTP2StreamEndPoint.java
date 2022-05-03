@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client.http.internal;
 
-import org.eclipse.jetty.http2.HTTP2Channel;
-import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2StreamEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;

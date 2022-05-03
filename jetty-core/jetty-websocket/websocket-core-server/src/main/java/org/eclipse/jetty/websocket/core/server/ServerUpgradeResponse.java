@@ -13,156 +13,51 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.internal.WebSocketHttpFieldsWrapper;
 
 /**
  * Upgrade response used for websocket negotiation.
  * Allows setting of extensions and subprotocol without using headers directly.
  */
-public class ServerUpgradeResponse
+public class ServerUpgradeResponse extends Response.Wrapper
 {
-    private final HttpServletResponse response;
+    private final Response response;
     private final WebSocketNegotiation negotiation;
+    private final HttpFields.Mutable fields;
 
     public ServerUpgradeResponse(WebSocketNegotiation negotiation)
     {
+        super(negotiation.getRequest(), negotiation.getResponse());
         this.negotiation = negotiation;
         this.response = negotiation.getResponse();
-        Objects.requireNonNull(response, "HttpServletResponse must not be null");
+        this.fields = new WebSocketHttpFieldsWrapper(response.getHeaders(), this, negotiation);
     }
 
-    public void addHeader(String name, String value)
+    @Override
+    public HttpFields.Mutable getHeaders()
     {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-        {
-            setAcceptedSubProtocol(value);
-            return;
-        }
-
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            addExtensions(ExtensionConfig.parseList(value));
-            return;
-        }
-
-        response.addHeader(name, value);
-    }
-
-    public void setHeader(String name, String value)
-    {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-        {
-            setAcceptedSubProtocol(value);
-            return;
-        }
-
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            setExtensions(ExtensionConfig.parseList(value));
-            return;
-        }
-
-        response.setHeader(name, value);
-    }
-
-    public void setHeader(String name, List<String> values)
-    {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-        {
-            if (values == null || values.isEmpty())
-                setAcceptedSubProtocol(null);
-            else if (values.size() == 1)
-                setAcceptedSubProtocol(values.get(0));
-            else
-                throw new IllegalArgumentException("multiple subprotocols");
-        }
-
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            List<ExtensionConfig> extensions = Collections.emptyList();
-            if (values != null)
-            {
-                extensions = values.stream()
-                    .flatMap(s -> ExtensionConfig.parseList(s).stream())
-                    .collect(Collectors.toList());
-            }
-
-            setExtensions(extensions);
-            return;
-        }
-
-        response.setHeader(name, null);
-        if (values != null)
-            values.forEach(value -> response.addHeader(name, value));
+        return fields;
     }
 
     public String getAcceptedSubProtocol()
     {
-        return getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
-    }
-
-    public List<ExtensionConfig> getExtensions()
-    {
-        return negotiation.getNegotiatedExtensions();
-    }
-
-    public String getHeader(String name)
-    {
-        return response.getHeader(name);
-    }
-
-    public Set<String> getHeaderNames()
-    {
-        return Set.copyOf(response.getHeaderNames());
-    }
-
-    public Map<String, List<String>> getHeadersMap()
-    {
-        Map<String, List<String>> headers = response.getHeaderNames().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(response.getHeaders(name))));
-        return Collections.unmodifiableMap(headers);
-    }
-
-    public List<String> getHeaders(String name)
-    {
-        return List.copyOf(response.getHeaders(name));
-    }
-
-    public int getStatusCode()
-    {
-        return response.getStatus();
-    }
-
-    public boolean isCommitted()
-    {
-        return response.isCommitted();
-    }
-
-    public void sendError(int statusCode, String message) throws IOException
-    {
-        response.sendError(statusCode, message);
-        response.flushBuffer();
-    }
-
-    public void sendForbidden(String message) throws IOException
-    {
-        sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        return negotiation.getSubprotocol();
     }
 
     public void setAcceptedSubProtocol(String protocol)
     {
         negotiation.setSubprotocol(protocol);
+    }
+
+    public List<ExtensionConfig> getExtensions()
+    {
+        return negotiation.getNegotiatedExtensions();
     }
 
     public void addExtensions(List<ExtensionConfig> configs)
@@ -191,11 +86,6 @@ public class ServerUpgradeResponse
         }
 
         negotiation.setNegotiatedExtensions(configs);
-    }
-
-    public void setStatusCode(int statusCode)
-    {
-        response.setStatus(statusCode);
     }
 
     public String toString()

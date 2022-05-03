@@ -11,7 +11,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant.types;
+package org.eclipse.jetty.ee9.ant.types;
 
 import java.io.File;
 import java.util.ArrayList;

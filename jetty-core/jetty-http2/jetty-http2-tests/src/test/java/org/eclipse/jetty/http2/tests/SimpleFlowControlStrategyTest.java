@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.SimpleFlowControlStrategy;

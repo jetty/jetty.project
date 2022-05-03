@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,10 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,14 +41,14 @@ public class TestAnnotationInheritance
 {
     List<String> classNames = new ArrayList<String>();
 
-    class SampleHandler extends AbstractHandler
+    class SampleHandler extends AnnotationParser.AbstractHandler
     {
         public final List<String> annotatedClassNames = new ArrayList<String>();
         public final List<String> annotatedMethods = new ArrayList<String>();
         public final List<String> annotatedFields = new ArrayList<String>();
 
         @Override
-        public void handle(ClassInfo info, String annotation)
+        public void handle(AnnotationParser.ClassInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                 return;
@@ -61,7 +57,7 @@ public class TestAnnotationInheritance
         }
 
         @Override
-        public void handle(FieldInfo info, String annotation)
+        public void handle(AnnotationParser.FieldInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                 return;
@@ -69,7 +65,7 @@ public class TestAnnotationInheritance
         }
 
         @Override
-        public void handle(MethodInfo info, String annotation)
+        public void handle(AnnotationParser.MethodInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                 return;

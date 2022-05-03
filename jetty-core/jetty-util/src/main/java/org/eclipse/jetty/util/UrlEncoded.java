@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +141,14 @@ public class UrlEncoded
         return result.toString();
     }
 
+    public static MultiMap<String> decodeQuery(String query)
+    {
+        MultiMap<String> map = new MultiMap<>();
+        if (StringUtil.isNotBlank(query))
+            decodeUtf8To(query, 0, query.length(), map);
+        return map;
+    }
+
     /**
      * Decoded parameters to Map.
      *
@@ -163,7 +172,7 @@ public class UrlEncoded
      */
     public static void decodeTo(String content, MultiMap<String> map, Charset charset)
     {
-        decodeTo(content, map, charset, -1);
+        decodeTo(content, map::add, charset);
     }
 
     /**
@@ -175,12 +184,28 @@ public class UrlEncoded
      */
     public static void decodeTo(String content, MultiMap<String> map, Charset charset, int maxKeys)
     {
+        decodeTo(content, (key, val) ->
+        {
+            map.add(key, val);
+            checkMaxKeys(map, maxKeys);
+        }, charset);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param content the string containing the encoded parameters
+     * @param adder a {@link BiConsumer} to accept the name/value pairs.
+     * @param charset the charset to use for decoding
+     */
+    public static void decodeTo(String content, BiConsumer<String, String> adder, Charset charset)
+    {
         if (charset == null)
             charset = ENCODING;
 
         if (StandardCharsets.UTF_8.equals(charset))
         {
-            decodeUtf8To(content, 0, content.length(), map);
+            decodeUtf8To(content, 0, content.length(), adder);
             return;
         }
 
@@ -200,13 +225,12 @@ public class UrlEncoded
                     encoded = false;
                     if (key != null)
                     {
-                        map.add(key, value);
+                        adder.accept(key, value);
                     }
                     else if (value != null && value.length() > 0)
                     {
-                        map.add(value, "");
+                        adder.accept(value, "");
                     }
-                    checkMaxKeys(map, maxKeys);
                     key = null;
                     value = null;
                     break;
@@ -228,8 +252,7 @@ public class UrlEncoded
         {
             int l = content.length() - mark - 1;
             value = l == 0 ? "" : (encoded ? decodeString(content, mark + 1, l, charset) : content.substring(mark + 1));
-            map.add(key, value);
-            checkMaxKeys(map, maxKeys);
+            adder.accept(key, value);
         }
         else if (mark < content.length())
         {
@@ -238,15 +261,31 @@ public class UrlEncoded
                 : content.substring(mark + 1);
             if (key != null && key.length() > 0)
             {
-                map.add(key, "");
-                checkMaxKeys(map, maxKeys);
+                adder.accept(key, "");
             }
         }
     }
 
+    /**
+     * @param query the URI query string.
+     * @param map the {@code MultiMap} to store the fields.
+     * @deprecated use {@link #decodeUtf8To(String, Fields)} instead.
+     */
+    @Deprecated
     public static void decodeUtf8To(String query, MultiMap<String> map)
     {
         decodeUtf8To(query, 0, query.length(), map);
+    }
+
+    /**
+     * <p>Decodes URI query parameters into a {@link Fields} instance.</p>
+     *
+     * @param query the URI query string.
+     * @param fields the Fields to store the parameters.
+     */
+    public static void decodeUtf8To(String query, Fields fields)
+    {
+        decodeUtf8To(query, 0, query.length(), fields);
     }
 
     /**
@@ -256,8 +295,28 @@ public class UrlEncoded
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
      * @param map the {@link MultiMap} to populate
+     * @deprecated use {@link #decodeUtf8To(String, int, int, Fields)} instead.
      */
+    @Deprecated
     public static void decodeUtf8To(String query, int offset, int length, MultiMap<String> map)
+    {
+        decodeUtf8To(query, offset, length, map::add);
+    }
+
+    /**
+     * <p>Decodes URI query parameters into a {@link Fields} instance.</p>
+     *
+     * @param uri the URI string.
+     * @param offset the offset at which query parameters start.
+     * @param length the length of query parameters string to parse.
+     * @param fields the Fields to store the parameters.
+     */
+    public static void decodeUtf8To(String uri, int offset, int length, Fields fields)
+    {
+        decodeUtf8To(uri, offset, length, fields::add);
+    }
+
+    private static void decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder)
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         String key = null;
@@ -274,11 +333,11 @@ public class UrlEncoded
                     buffer.reset();
                     if (key != null)
                     {
-                        map.add(key, value);
+                        adder.accept(key, value);
                     }
                     else if (value != null && value.length() > 0)
                     {
-                        map.add(value, "");
+                        adder.accept(value, "");
                     }
                     key = null;
                     break;
@@ -320,13 +379,12 @@ public class UrlEncoded
         {
             value = buffer.toReplacedString();
             buffer.reset();
-            map.add(key, value);
+            adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toReplacedString(), "");
+            adder.accept(buffer.toReplacedString(), "");
         }
-
     }
 
     /**
@@ -831,7 +889,7 @@ public class UrlEncoded
         }
     }
 
-    private static byte decodeHexByte(char hi, char lo)
+    public static byte decodeHexByte(char hi, char lo)
     {
         try
         {

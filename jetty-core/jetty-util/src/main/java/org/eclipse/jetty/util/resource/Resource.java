@@ -55,6 +55,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
+//TODO remove
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
@@ -298,6 +299,18 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static boolean isContainedIn(Resource r, Resource containingResource) throws MalformedURLException
     {
         return r.isContainedIn(containingResource);
+    }
+
+    public Path getPath()
+    {
+        try
+        {
+            return getFile().toPath();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public abstract boolean isContainedIn(Resource r) throws MalformedURLException;

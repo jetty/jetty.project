@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.warurl;
+package org.eclipse.jetty.ee9.osgi.boot.warurl;
 
 import java.util.Dictionary;
 import java.util.Hashtable;

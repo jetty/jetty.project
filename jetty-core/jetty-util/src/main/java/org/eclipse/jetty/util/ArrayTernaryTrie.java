@@ -295,7 +295,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (t == 0)
                         break loop;
 
-                    // if this node is a match, recurse to remember 
+                    // if this node is a match, recurse to remember
                     if (_key[t] != null)
                     {
                         node = t;
@@ -352,7 +352,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (t == 0)
                         break loop;
 
-                    // if this node is a match, recurse to remember 
+                    // if this node is a match, recurse to remember
                     if (_key[t] != null)
                     {
                         node = t;
@@ -398,7 +398,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (t == 0)
                         break loop;
 
-                    // if this node is a match, recurse to remember 
+                    // if this node is a match, recurse to remember
                     if (_key[t] != null)
                     {
                         node = t;

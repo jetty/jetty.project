@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.webapp;
+package org.eclipse.jetty.ee9.osgi.boot.internal.webapp;
 
 import java.io.File;
 import java.net.MalformedURLException;

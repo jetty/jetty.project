@@ -1,16 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>jetty-core</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http-spi</artifactId>
-  <name>Jetty :: Http Service Provider Interface</name>
+  <name>EE9 :: Jetty :: Http Service Provider Interface</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
-    <jacoco.skip>true</jacoco.skip>
   </properties>
   <dependencies>
     <dependency>
@@ -43,15 +42,6 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.xml.ws</groupId>
-      <artifactId>jaxws-rt</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -73,6 +63,13 @@
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=com.sun.net.httpserver.spi.HttpServerProvider</Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>

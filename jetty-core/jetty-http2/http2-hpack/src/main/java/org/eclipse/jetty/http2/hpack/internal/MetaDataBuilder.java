@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http2.hpack.internal;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
@@ -42,7 +43,7 @@ public class MetaDataBuilder
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
      */
-    protected MetaDataBuilder(int maxHeadersSize)
+    public MetaDataBuilder(int maxHeadersSize)
     {
         _maxSize = maxHeadersSize;
     }
@@ -79,9 +80,8 @@ public class MetaDataBuilder
         if (_size > _maxSize)
             throw new HpackException.SessionException("Header size %d > %d", _size, _maxSize);
 
-        if (field instanceof StaticTableHttpField)
+        if (field instanceof StaticTableHttpField staticField)
         {
-            StaticTableHttpField staticField = (StaticTableHttpField)field;
             switch (header)
             {
                 case C_STATUS:
@@ -196,7 +196,7 @@ public class MetaDataBuilder
         }
     }
 
-    protected void streamException(String messageFormat, Object... args)
+    public void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
         if (_streamException == null)

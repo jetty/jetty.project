@@ -11,15 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Result;
@@ -35,8 +33,9 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -80,7 +79,7 @@ public class PushedResourcesTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
             .pushListener((mainRequest, pushedRequest) -> null)
             .timeout(5, TimeUnit.SECONDS)
@@ -103,36 +102,34 @@ public class PushedResourcesTest extends AbstractTest
 
         String path1 = "/secondary1";
         String path2 = "/secondary2";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                String target = request.getPathInContext();
                 if (target.equals(path1))
                 {
-                    response.getOutputStream().write(pushBytes1);
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes1));
                 }
                 else if (target.equals(path2))
                 {
-                    response.getOutputStream().write(pushBytes2);
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes2));
                 }
                 else
                 {
-                    baseRequest.newPushBuilder()
-                        .path(path1)
-                        .push();
-                    baseRequest.newPushBuilder()
-                        .path(path2)
-                        .push();
-                    response.getOutputStream().write(bytes);
+                    MetaData.Request push1 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    request.push(push1);
+                    MetaData.Request push2 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    request.push(push2);
+                    response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
         });
 
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
             .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
             {
@@ -170,23 +167,30 @@ public class PushedResourcesTest extends AbstractTest
 
         String oldPath = "/old";
         String newPath = "/new";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                String target = request.getPathInContext();
                 if (target.equals(oldPath))
-                    response.sendRedirect(newPath);
+                {
+                    Response.sendRedirect(request, response, callback, newPath);
+                }
                 else if (target.equals(newPath))
-                    response.getOutputStream().write(pushBytes);
+                {
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes));
+                }
                 else
-                    baseRequest.newPushBuilder().path(oldPath).push();
+                {
+                    request.push(new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                    callback.succeeded();
+                }
             }
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
             .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
             {

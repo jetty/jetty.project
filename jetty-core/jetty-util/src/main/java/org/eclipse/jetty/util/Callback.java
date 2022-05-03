@@ -30,12 +30,18 @@ public interface Callback extends Invocable
      * Instance of Adapter that can be used when the callback methods need an empty
      * implementation without incurring in the cost of allocating a new Adapter object.
      */
-    static Callback NOOP = new Callback()
+    Callback NOOP = new Callback()
     {
         @Override
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Callback.NOOP";
         }
     };
 

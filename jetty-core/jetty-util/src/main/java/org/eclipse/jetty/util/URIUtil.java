@@ -44,6 +44,141 @@ public class URIUtil
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
+    /**
+     * The characters that are supported by the URI class and that can be decoded by {@link #normalizePath(String)}
+     */
+    public static final boolean[] __uriSupportedCharacters = new boolean[]
+    {
+        false, // 0x00 is illegal
+        false, // 0x01 is illegal
+        false, // 0x02 is illegal
+        false, // 0x03 is illegal
+        false, // 0x04 is illegal
+        false, // 0x05 is illegal
+        false, // 0x06 is illegal
+        false, // 0x07 is illegal
+        false, // 0x08 is illegal
+        false, // 0x09 is illegal
+        false, // 0x0a is illegal
+        false, // 0x0b is illegal
+        false, // 0x0c is illegal
+        false, // 0x0d is illegal
+        false, // 0x0e is illegal
+        false, // 0x0f is illegal
+        false, // 0x10 is illegal
+        false, // 0x11 is illegal
+        false, // 0x12 is illegal
+        false, // 0x13 is illegal
+        false, // 0x14 is illegal
+        false, // 0x15 is illegal
+        false, // 0x16 is illegal
+        false, // 0x17 is illegal
+        false, // 0x18 is illegal
+        false, // 0x19 is illegal
+        false, // 0x1a is illegal
+        false, // 0x1b is illegal
+        false, // 0x1c is illegal
+        false, // 0x1d is illegal
+        false, // 0x1e is illegal
+        false, // 0x1f is illegal
+        false, // 0x20 is illegal
+        true,  // 0x21
+        false, // 0x22 is illegal
+        false, // # is special
+        true,  // 0x24
+        false, // % must remain encoded
+        true,  // 0x26
+        true,  // 0x27
+        true,  // 0x28
+        true,  // 0x29
+        true,  // 0x2a
+        true,  // 0x2b
+        true,  // 0x2c
+        true,  // 0x2d
+        true,  // 0x2e
+        false, // / is a delimiter
+        true,  // 0x30
+        true,  // 0x31
+        true,  // 0x32
+        true,  // 0x33
+        true,  // 0x34
+        true,  // 0x35
+        true,  // 0x36
+        true,  // 0x37
+        true,  // 0x38
+        true,  // 0x39
+        true,  // 0x3a
+        false, // ; is path parameter
+        false, // 0x3c is illegal
+        true,  // 0x3d
+        false, // 0x3e is illegal
+        false, // ? is special
+        true,  // 0x40
+        true,  // 0x41
+        true,  // 0x42
+        true,  // 0x43
+        true,  // 0x44
+        true,  // 0x45
+        true,  // 0x46
+        true,  // 0x47
+        true,  // 0x48
+        true,  // 0x49
+        true,  // 0x4a
+        true,  // 0x4b
+        true,  // 0x4c
+        true,  // 0x4d
+        true,  // 0x4e
+        true,  // 0x4f
+        true,  // 0x50
+        true,  // 0x51
+        true,  // 0x52
+        true,  // 0x53
+        true,  // 0x54
+        true,  // 0x55
+        true,  // 0x56
+        true,  // 0x57
+        true,  // 0x58
+        true,  // 0x59
+        true,  // 0x5a
+        false, // 0x5b is illegal
+        false, // 0x5c is illegal
+        false, // 0x5d is illegal
+        false, // 0x5e is illegal
+        true,  // 0x5f
+        false, // 0x60 is illegal
+        true,  // 0x61
+        true,  // 0x62
+        true,  // 0x63
+        true,  // 0x64
+        true,  // 0x65
+        true,  // 0x66
+        true,  // 0x67
+        true,  // 0x68
+        true,  // 0x69
+        true,  // 0x6a
+        true,  // 0x6b
+        true,  // 0x6c
+        true,  // 0x6d
+        true,  // 0x6e
+        true,  // 0x6f
+        true,  // 0x70
+        true,  // 0x71
+        true,  // 0x72
+        true,  // 0x73
+        true,  // 0x74
+        true,  // 0x75
+        true,  // 0x76
+        true,  // 0x77
+        true,  // 0x78
+        true,  // 0x79
+        true,  // 0x7a
+        false, // 0x7b is illegal
+        false, // 0x7c is illegal
+        false, // 0x7d is illegal
+        true,  // 0x7e
+        false, // 0x7f is illegal
+    };
+
     private URIUtil()
     {
     }
@@ -439,14 +574,20 @@ public class URIUtil
         return buf;
     }
 
-    /* Decode a URI path and strip parameters
+    /**
+     * Decode a URI path and strip parameters
+     * @see #normalizePath(String)
+     * @see #canonicalPath(String)
      */
     public static String decodePath(String path)
     {
         return decodePath(path, 0, path.length());
     }
 
-    /* Decode a URI path and strip parameters of UTF-8 path
+    /**
+     * Decode a URI path and strip parameters of UTF-8 path
+     * @see #normalizePath(String, int, int)
+     * @see #canonicalPath(String)
      */
     public static String decodePath(String path, int offset, int length)
     {
@@ -524,6 +665,167 @@ public class URIUtil
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
             return decodeISO88591Path(path, offset, length);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("cannot decode URI", e);
+        }
+    }
+
+    private static boolean isSafe(int code)
+    {
+        return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
+    }
+
+    /**
+     * @param code the character code to check
+     * @param builder The builder to encode into
+     * @return True if the character is safe and not encoded into the buffer
+     */
+    private static boolean isSafeElseEncode(int code, Utf8StringBuilder builder)
+    {
+        if (isSafe(code))
+            return true;
+
+        builder.append('%');
+        int d = (0xF0 & code) >> 4;
+        builder.append((char)('0' + d));
+        d = 0xF & code;
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+        return false;
+    }
+
+    /**
+     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
+     * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * <p>
+     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     *
+     * @see #decodePath(String)
+     * @see #canonicalPath(String)
+     * @see URI
+     */
+    public static String normalizePath(String path)
+    {
+        return normalizePath(path, 0, path.length());
+    }
+
+    /**
+     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
+     * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * <p>
+     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     *
+     * @see #decodePath(String, int, int)
+     * @see #canonicalPath(String)
+     * @see URI
+     */
+    public static String normalizePath(String path, int offset, int length)
+    {
+        try
+        {
+            Utf8StringBuilder builder = null;
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+            {
+                char c = path.charAt(i);
+                switch (c)
+                {
+                    case '%':
+                        if (builder == null)
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+                        if ((i + 2) < end)
+                        {
+                            char u = path.charAt(i + 1);
+                            if (u == 'u')
+                            {
+                                // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
+                                int code = TypeUtil.parseInt(path, i + 2, 4, 16);
+                                if (isSafeElseEncode(code, builder))
+                                {
+                                    char[] chars = Character.toChars(code);
+                                    for (char ch : chars)
+                                        builder.append(ch);
+                                }
+                                i += 5;
+                            }
+                            else
+                            {
+                                int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2));
+                                if (isSafeElseEncode(code, builder))
+                                    builder.append((byte)(0xff & code));
+                                i += 2;
+                            }
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("Bad URI % encoding");
+                        }
+                        break;
+
+                    case ';':
+                        if (builder == null)
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+
+                        while (++i < end)
+                        {
+                            if (path.charAt(i) == '/')
+                            {
+                                builder.append('/');
+                                break;
+                            }
+                        }
+                        break;
+
+                    case '/':
+                        if (builder != null)
+                            builder.append(c);
+                        break;
+
+                    default:
+                        if (builder == null && !isSafe(c))
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+
+                        if (builder != null && isSafeElseEncode(c, builder))
+                            builder.append(c);
+                        break;
+                }
+            }
+
+            if (builder != null)
+                return builder.toString();
+            if (offset == 0 && length == path.length())
+                return path;
+            return path.substring(offset, end);
+        }
+        catch (NotUtf8Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
+            throw e;
         }
         catch (IllegalArgumentException e)
         {
@@ -906,6 +1208,8 @@ public class URIUtil
      * the path segments.
      * @return the canonical path, or null if path traversal above root.
      * @see #canonicalURI(String)
+     * @see #normalizePath(String)
+     * @see #decodePath(String)
      */
     public static String canonicalPath(String path)
     {

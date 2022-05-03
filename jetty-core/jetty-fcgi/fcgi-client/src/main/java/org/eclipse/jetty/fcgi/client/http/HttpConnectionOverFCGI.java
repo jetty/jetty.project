@@ -317,7 +317,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private int acquireRequest()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             int last = requests.getLast();
             int request = last + 1;
@@ -328,7 +328,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void releaseRequest(int request)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             requests.removeFirstOccurrence(request);
         }
@@ -445,7 +445,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             switch (stream)
             {
-                case STD_OUT:
+                case STD_OUT ->
                 {
                     HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
                     if (channel != null)
@@ -457,17 +457,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                     {
                         noChannel(request);
                     }
-                    break;
                 }
-                case STD_ERR:
-                {
-                    LOG.info(BufferUtil.toUTF8String(buffer));
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalArgumentException();
-                }
+                case STD_ERR -> LOG.info(BufferUtil.toUTF8String(buffer));
+                default -> throw new IllegalArgumentException();
             }
             return false;
         }

@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.http2.internal.parser;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;

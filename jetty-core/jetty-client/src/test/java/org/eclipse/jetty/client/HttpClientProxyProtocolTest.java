@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.http.HttpHeader;
@@ -32,8 +29,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -86,13 +85,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV1() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -124,13 +123,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV2() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -165,21 +164,21 @@ public class HttpClientProxyProtocolTest
         int typeTLS = 0x20;
         String tlsVersion = "TLSv1.3";
         byte[] tlsVersionBytes = tlsVersion.getBytes(StandardCharsets.US_ASCII);
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                if (target.equals("/tls_version"))
+                if (request.getPathInContext().equals("/tls_version"))
                 {
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -219,13 +218,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testProxyProtocolWrappingHTTPProxy() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();

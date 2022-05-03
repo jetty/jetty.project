@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;

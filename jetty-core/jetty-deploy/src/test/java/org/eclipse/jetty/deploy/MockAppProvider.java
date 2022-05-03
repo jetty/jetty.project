@@ -20,8 +20,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
@@ -42,17 +40,16 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
     public void findWebapp(String name)
     {
-        App app = new App(deployMan, this, "mock-" + name);
+        App app = new App(deployMan, this, null, "mock-" + name);
         this.deployMan.addApp(app);
     }
 
     @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
-        WebAppContext context = new WebAppContext();
+        ContextHandler contextHandler = new ContextHandler();
 
         File war = new File(webappsDir, app.getOriginId().substring(5));
-        context.setWar(Resource.newResource(Resource.toURL(war)).toString());
 
         String path = war.getName();
 
@@ -74,8 +71,8 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         if (path.endsWith("/") && path.length() > 0)
             path = path.substring(0, path.length() - 1);
 
-        context.setDefaultContextPath(path);
+        contextHandler.setContextPath(path);
 
-        return context;
+        return contextHandler;
     }
 }

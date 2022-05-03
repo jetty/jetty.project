@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Arrays;
 import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;
@@ -26,8 +27,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class WebAppProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            Resource resource = Resource.newResource(new File(dir, name));
+            Resource resource = Resource.newResource(new File(dir, name)); // TODO use paths
             if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
 
@@ -205,7 +206,7 @@ public class WebAppProvider extends ScanningAppProvider
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations == null ? null : (String[])configurations.clone();
+        _configurationClasses = configurations == null ? null : configurations.clone();
     }
 
     @ManagedAttribute("configuration classes for webapps to be processed through")
@@ -237,8 +238,9 @@ public class WebAppProvider extends ScanningAppProvider
         return _tempDirectory;
     }
 
-    protected void initializeWebAppContextDefaults(WebAppContext webapp)
+    protected void initializeWebAppContextDefaults(ContextHandler webapp)
     {
+        /* TODO
         if (_defaultsDescriptor != null)
             webapp.setDefaultsDescriptor(_defaultsDescriptor);
         webapp.setExtractWAR(_extractWars);
@@ -248,76 +250,89 @@ public class WebAppProvider extends ScanningAppProvider
 
         if (_tempDirectory != null)
         {
-            /* Since the Temp Dir is really a context base temp directory,
-             * Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
-             * instead of setting the WebAppContext.setTempDirectory(File).
-             * If we used .setTempDirectory(File) all webapps will wind up in the
-             * same temp / work directory, overwriting each others work.
-             */
+            // Since the Temp Dir is really a context base temp directory,
+            // Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
+            // instead of setting the WebAppContext.setTempDirectory(File).
+            // If we used .setTempDirectory(File) all webapps will wind up in the
+            // same temp / work directory, overwriting each others work.
             webapp.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
         }
+        */
     }
 
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Resource resource = Resource.newResource(app.getOriginId());
-        File file = resource.getFile();
-        if (!resource.exists())
-            throw new IllegalStateException("App resource does not exist " + resource);
+        Environment environment = getDeploymentManager().getServer().getEnvironment(app.getEnvironment());
 
-        final String contextName = file.getName();
+        if (LOG.isDebugEnabled())
+            LOG.debug("createContextHandler {} in {}", app, environment);
 
-        // Resource aliases (after getting name) to ensure baseResource is not an alias
-        if (resource.isAlias())
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try
         {
-            file = new File(resource.getAlias()).toPath().toRealPath().toFile();
-            resource = Resource.newResource(file);
+            Thread.currentThread().setContextClassLoader(environment.getClassLoader());
+
+            Resource resource = Resource.newResource(app.getOriginId());
+            File file = resource.getFile();
             if (!resource.exists())
                 throw new IllegalStateException("App resource does not exist " + resource);
-        }
 
-        // Handle a context XML file
-        if (resource.exists() && FileID.isXmlFile(file))
-        {
-            XmlConfiguration xmlc = new XmlConfiguration(resource)
+            final String contextName = file.getName();
+
+            // Resource aliases (after getting name) to ensure baseResource is not an alias
+            if (resource.isAlias())
             {
-                @Override
-                public void initializeDefaults(Object context)
+                file = new File(resource.getAlias()).toPath().toRealPath().toFile();
+                resource = Resource.newResource(file);
+                if (!resource.exists())
+                    throw new IllegalStateException("App resource does not exist " + resource);
+            }
+
+            // Handle a context XML file
+            if (resource.exists() && FileID.isXmlFile(file))
+            {
+                XmlConfiguration xmlc = new XmlConfiguration(resource)
                 {
-                    super.initializeDefaults(context);
+                    @Override
+                    public void initializeDefaults(Object context)
+                    {
+                        super.initializeDefaults(context);
 
-                    // If the XML created object is a ContextHandler
-                    if (context instanceof ContextHandler)
-                        // Initialize the context path prior to running context XML
-                        initializeContextPath((ContextHandler)context, contextName, true);
+                        // If the XML created object is a ContextHandler
+                        if (context instanceof ContextHandler)
+                            // Initialize the context path prior to running context XML
+                            initializeContextPath((ContextHandler)context, contextName, true);
 
-                    // If it is a webapp
-                    if (context instanceof WebAppContext)
-                        // initialize other defaults prior to running context XML
-                        initializeWebAppContextDefaults((WebAppContext)context);
-                }
-            };
+                        if (context instanceof ContextHandler contextHandler)
+                            initializeWebAppContextDefaults(contextHandler);
+                    }
+                };
 
-            getDeploymentManager().scope(xmlc, resource);
+                xmlc.getIdMap().put("Environment", environment);
+                getDeploymentManager().scope(xmlc, resource);
+                if (getConfigurationManager() != null)
+                    xmlc.getProperties().putAll(getConfigurationManager().getProperties());
+                return (ContextHandler)xmlc.configure();
+            }
+            // Otherwise it must be a directory or an archive
+            else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
+            {
+                throw new IllegalStateException("unable to create ContextHandler for " + app);
+            }
 
-            if (getConfigurationManager() != null)
-                xmlc.getProperties().putAll(getConfigurationManager().getProperties());
-            return (ContextHandler)xmlc.configure();
+            // Build the web application
+            ContextHandler webAppContext = null; // TODO new WebAppContext();
+            webAppContext.setResourceBase(file.getAbsoluteFile().toPath());
+            initializeContextPath(webAppContext, contextName, !file.isDirectory());
+            initializeWebAppContextDefaults(webAppContext);
+
+            return webAppContext;
         }
-        // Otherwise it must be a directory or an archive
-        else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
+        finally
         {
-            throw new IllegalStateException("unable to create ContextHandler for " + app);
+            Thread.currentThread().setContextClassLoader(old);
         }
-
-        // Build the web application
-        WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setWar(file.getAbsolutePath());
-        initializeContextPath(webAppContext, contextName, !file.isDirectory());
-        initializeWebAppContextDefaults(webAppContext);
-
-        return webAppContext;
     }
 
     protected void initializeContextPath(ContextHandler context, String contextName, boolean stripExtension)
@@ -342,7 +357,7 @@ public class WebAppProvider extends ScanningAppProvider
         {
             int dash = contextPath.indexOf('-');
             String virtual = contextPath.substring(dash + 1);
-            context.setVirtualHosts(virtual.split(","));
+            context.setVirtualHosts(Arrays.asList(virtual.split(",")));
             contextPath = URIUtil.SLASH;
         }
 
@@ -352,15 +367,7 @@ public class WebAppProvider extends ScanningAppProvider
 
         // Set the display name and context Path
         context.setDisplayName(contextName);
-        if (context instanceof WebAppContext)
-        {
-            WebAppContext webAppContext = (WebAppContext)context;
-            webAppContext.setDefaultContextPath(contextPath);
-        }
-        else
-        {
-            context.setContextPath(contextPath);
-        }
+        context.setContextPath(contextPath);
     }
 
     @Override

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.security.Principal;
 import java.security.cert.X509Certificate;
@@ -22,18 +22,20 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * CLIENT-CERT authenticator.
  *
- * <p>This {@link org.eclipse.jetty.security.Authenticator} implements client certificate authentication.
+ * <p>This {@link Authenticator} implements client certificate authentication.
  * The client certificates available in the request will be verified against the configured {@link SslContextFactory} instance
  * </p>
  */
@@ -61,7 +63,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
+        X509Certificate[] certs = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
 
         try
         {

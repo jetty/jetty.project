@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -26,9 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
@@ -40,6 +38,8 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -74,7 +74,7 @@ public class GoAwayTest extends AbstractTest
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
@@ -134,7 +134,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -218,7 +218,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -304,7 +304,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -422,7 +422,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -525,7 +525,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -607,7 +607,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -717,7 +717,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -773,7 +773,7 @@ public class GoAwayTest extends AbstractTest
             }
         });
 
-        Session clientSession = newClient(new Session.Listener.Adapter());
+        Session clientSession = newClientSession(new Session.Listener.Adapter());
         // TODO: get rid of sleep!
         // Wait for the SETTINGS frames to be exchanged.
         Thread.sleep(500);
@@ -804,7 +804,7 @@ public class GoAwayTest extends AbstractTest
             }
         });
 
-        newClient(new Session.Listener.Adapter()
+        newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -858,7 +858,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -920,7 +920,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -1000,7 +1000,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -1063,7 +1063,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)

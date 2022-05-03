@@ -156,12 +156,9 @@ The dynamic transport, however, has been implemented to support multiple transpo
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2]
 ----
 
-NOTE: The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
-
-IMPORTANT: When using TLS (i.e. URIs with the `https` scheme), the application protocol is _negotiated_ between client and server via ALPN, and it is the server that decides what is the application protocol to use for the communication, regardless of the client preference.
-
-When clear-text communication is used (i.e. URIs with the `http` scheme) there is no application protocol negotiation, and therefore the application must know _a priori_ whether the server supports the protocol or not.
-For example, if the server only supports clear-text HTTP/2, and `HttpClientTransportDynamic` is configured as in the example above, the client will send, by default, a clear-text HTTP/1.1 request to a clear-text HTTP/2 only server, which will result in a communication failure.
+IMPORTANT: The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
+If the protocol is negotiated via ALPN, it is the server that decides what is the protocol to use for the communication, regardless of the client preference.
+If the protocol is not negotiated, the client preference is honored.
 
 Provided that the server supports both HTTP/1.1 and HTTP/2 clear-text, client applications can explicitly hint the version they want to use:
 
@@ -170,13 +167,13 @@ Provided that the server supports both HTTP/1.1 and HTTP/2 clear-text, client ap
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicClearText]
 ----
 
-In case of TLS encrypted communication using the `https` scheme, things are a little more complicated.
+In case of TLS encrypted communication using the HTTPS scheme, things are a little more complicated.
 
-If the client application explicitly specifies the HTTP version, then ALPN is not used by the client.
+If the client application explicitly specifies the HTTP version, then ALPN is not used on the client.
 By specifying the HTTP version explicitly, the client application has prior-knowledge of what HTTP version the server supports, and therefore ALPN is not needed.
 If the server does not support the HTTP version chosen by the client, then the communication will fail.
 
-If the client application does not explicitly specify the HTTP version, then ALPN will be used by the client.
+If the client application does not explicitly specify the HTTP version, then ALPN will be used on the client.
 If the server also supports ALPN, then the protocol will be negotiated via ALPN and the server will choose the protocol to use.
 If the server does not support ALPN, the client will try to use the first protocol configured in `HttpClientTransportDynamic`, and the communication may succeed or fail depending on whether the server supports the protocol chosen by the client.
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -36,21 +36,22 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Session;
-import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;

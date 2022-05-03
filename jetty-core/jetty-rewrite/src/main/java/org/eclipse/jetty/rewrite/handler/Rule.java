@@ -15,76 +15,36 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 
 /**
- * An abstract rule for creating rewrite rules.
+ * <p>An abstract rule that, upon matching a certain condition, may wrap
+ * the {@code Request} or the {@code Processor} to execute custom logic.</p>
  */
 public abstract class Rule
 {
-    /**
-     * Interface used to apply a changed target if {@link RuleContainer#setRewriteRequestURI(boolean)} is true.
-     */
-    public interface ApplyURI
-    {
-        void applyURI(Request request, String oldURI, String newURI) throws IOException;
-    }
-
-    protected boolean _terminating;
-    protected boolean _handling;
+    private boolean _terminating;
 
     /**
-     * This method calls tests the rule against the request/response pair and if the Rule
-     * applies, then the rule's action is triggered.
+     * <p>Tests whether the given {@code Request} should apply, and if so the rule logic is triggered.</p>
      *
-     * @param target The target of the request
-     * @param request the request
-     * @param response the response
-     * @return The new target if the rule has matched, else null
-     * @throws IOException if unable to match the rule
+     * @param input the input {@code Request} and {@code Processor}
+     * @return the possibly wrapped {@code Request} and {@code Processor}, or {@code null} if the rule did not match
+     * @throws IOException if applying the rule failed
      */
-    public abstract String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    public abstract Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException;
 
     /**
-     * Sets terminating to true or false.
-     *
-     * @param terminating If true, this rule will terminate the loop if this rule has been applied.
-     */
-    public void setTerminating(boolean terminating)
-    {
-        _terminating = terminating;
-    }
-
-    /**
-     * Returns the terminating flag value.
-     *
-     * @return <code>true</code> if the rule needs to terminate; <code>false</code> otherwise.
+     * @return when {@code true}, rules after this one are not processed
      */
     public boolean isTerminating()
     {
         return _terminating;
     }
 
-    /**
-     * Returns the handling flag value.
-     *
-     * @return <code>true</code> if the rule handles the request and nested handlers should not be called.
-     */
-    public boolean isHandling()
+    public void setTerminating(boolean value)
     {
-        return _handling;
-    }
-
-    /**
-     * Set the handling flag value.
-     *
-     * @param handling true if the rule handles the request and nested handlers should not be called.
-     */
-    public void setHandling(boolean handling)
-    {
-        _handling = handling;
+        _terminating = value;
     }
 
     /**
@@ -93,6 +53,6 @@ public abstract class Rule
     @Override
     public String toString()
     {
-        return this.getClass().getName() + (_handling ? "[H" : "[h") + (_terminating ? "T]" : "t]");
+        return "%s@%x[terminating=%b]".formatted(getClass().getSimpleName(), hashCode(), isTerminating());
     }
 }

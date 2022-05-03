@@ -76,7 +76,7 @@ Calling `JettyWebSocketServletContainerInitializer.configure(\...)` must be done
 
 Once you have xref:pg-server-websocket-jetty-container[setup] the `JettyWebSocketServerContainer`, you can configure your xref:pg-websocket-endpoints[WebSocket endpoints].
 
-Differently from the xref:pg-server-websocket-standard-endpoints[configuration of standard WebSocket endpoints], WebSocket endpoint classes may be annotated with Jetty WebSocket API annotations, or extend the `org.eclipse.jetty.websocket.api.WebSocketListener` interface, but they are not automatically discovered, not even when deploying web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`].
+Differently from the xref:pg-server-websocket-standard-endpoints[configuration of standard WebSocket endpoints], WebSocket endpoint classes may be annotated with Jetty WebSocket API annotations, or extend the `org.eclipse.jetty.ee9.websocket.api.WebSocketListener` interface, but they are not automatically discovered, not even when deploying web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`].
 
 [IMPORTANT]
 ====

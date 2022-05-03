@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.util.Collections;
 import java.util.List;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 
-import org.eclipse.jetty.jaas.callback.ServletRequestCallback;
-import org.eclipse.jetty.jaas.spi.AbstractLoginModule;
-import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.ee9.jaas.callback.ServletRequestCallback;
+import org.eclipse.jetty.ee9.jaas.spi.AbstractLoginModule;
+import org.eclipse.jetty.ee9.security.UserPrincipal;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.security.Password;
 

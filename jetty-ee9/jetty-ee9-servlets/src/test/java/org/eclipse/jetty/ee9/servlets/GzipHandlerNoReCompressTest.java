@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -20,14 +20,14 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
@@ -98,9 +98,9 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
         servletContextHandler.setContextPath("/context");
         servletContextHandler.setBaseResource(new PathResource(contextDir));
         servletContextHandler.addServlet(TestStaticMimeTypeServlet.class, "/*");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         Path testResource = MavenTestingUtils.getTestResourcePath(fileName);

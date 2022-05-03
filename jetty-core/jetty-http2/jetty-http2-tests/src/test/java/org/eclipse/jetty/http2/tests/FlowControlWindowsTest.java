@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;

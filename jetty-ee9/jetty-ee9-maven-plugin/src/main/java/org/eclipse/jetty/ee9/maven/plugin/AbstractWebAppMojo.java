@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,8 +47,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.codehaus.plexus.util.StringUtils;
-import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.maven.plugin.utils.MavenProjectHelper;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -109,7 +109,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected String[] excludedGoals;
     
     /**
-     * An instance of org.eclipse.jetty.webapp.WebAppContext that represents the webapp.
+     * An instance of org.eclipse.jetty.ee9.webapp.WebAppContext that represents the webapp.
      * Use any of its setters to configure the webapp. This is the preferred and most
      * flexible method of configuration, rather than using the (deprecated) individual
      * parameters like "tmpDirectory", "contextPath" etc.

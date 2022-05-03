@@ -13,18 +13,29 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Set;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.HostPort;
 
-public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
+public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implements ConnectionMetaData
 {
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    private final Attributes attributes = new Attributes.Lazy();
     private final Connector connector;
     private final HttpConfiguration httpConfiguration;
     private final ServerHTTP3Session session;
@@ -45,33 +56,138 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
-        HttpTransportOverHTTP3 transport = new HttpTransportOverHTTP3(stream);
-        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
-        stream.setAttachment(channel);
-        return channel.onRequest(frame);
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
+        httpChannel.setHttpStream(httpStream);
+        stream.setAttachment(httpStream);
+        return httpStream.onRequest(frame);
     }
 
     public Runnable onDataAvailable(HTTP3Stream stream)
     {
-        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        return channel.onDataAvailable();
+        HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+        return httpStream.onDataAvailable();
     }
 
     public Runnable onTrailer(HTTP3Stream stream, HeadersFrame frame)
     {
-        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        return channel.onTrailer(frame);
+        HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+        return httpStream.onTrailer(frame);
     }
 
     public boolean onIdleTimeout(HTTP3Stream stream, Throwable failure, Consumer<Runnable> consumer)
     {
-        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        return channel.onIdleTimeout(failure, consumer);
+        HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+        return httpStream.onIdleTimeout(failure, consumer);
     }
 
     public Runnable onFailure(HTTP3Stream stream, Throwable failure)
     {
-        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        return channel.onFailure(failure);
+        HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+        return httpStream.onFailure(failure);
+    }
+
+    @Override
+    public String getId()
+    {
+        return session.getQuicSession().getConnectionId().toString();
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfiguration;
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_3;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return getHttpVersion().asString();
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return getEndPoint().getConnection();
+    }
+
+    @Override
+    public Connector getConnector()
+    {
+        return connector;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return true;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        HostPort override = httpConfiguration.getServerAuthority();
+        if (override != null)
+            return override;
+
+        // TODO cache the HostPort?
+        SocketAddress addr = getLocalSocketAddress();
+        if (addr instanceof InetSocketAddress inet)
+            return new HostPort(inet.getHostString(), inet.getPort());
+        return new HostPort(addr.toString(), -1);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return attributes.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
     }
 }

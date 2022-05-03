@@ -34,7 +34,7 @@ import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -125,10 +125,11 @@ public class DeploymentManager extends ContainerLifeCycle
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
-    private AttributesMap _contextAttributes = new AttributesMap();
+    private Attributes.Mapped _contextAttributes = new Attributes.Mapped();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
+    private String _defaultEnvironment = "ee9"; // TODO null or ee10?
 
     /**
      * Receive an app for processing.
@@ -223,6 +224,16 @@ public class DeploymentManager extends ContainerLifeCycle
         Node toNode = _lifecycle.getNodeByName(existingToNodeName);
         Edge edge = new Edge(fromNode, toNode);
         _lifecycle.insertNode(edge, insertedNodeName);
+    }
+
+    public String getDefaultEnvironment()
+    {
+        return _defaultEnvironment;
+    }
+
+    public void setDefaultEnvironment(String defaultEnvironment)
+    {
+        _defaultEnvironment = defaultEnvironment;
     }
 
     @Override
@@ -384,7 +395,7 @@ public class DeploymentManager extends ContainerLifeCycle
         return _contextAttributes.getAttribute(name);
     }
 
-    public AttributesMap getContextAttributes()
+    public Attributes.Mapped getContextAttributes()
     {
         return _contextAttributes;
     }
@@ -582,9 +593,10 @@ public class DeploymentManager extends ContainerLifeCycle
         _contextAttributes.setAttribute(name, value);
     }
 
-    public void setContextAttributes(AttributesMap contextAttributes)
+    public void setContextAttributes(Attributes contextAttributes)
     {
-        this._contextAttributes = contextAttributes;
+        this._contextAttributes.clearAttributes();
+        this._contextAttributes.addAll(contextAttributes);
     }
 
     public void setContexts(ContextHandlerCollection contexts)

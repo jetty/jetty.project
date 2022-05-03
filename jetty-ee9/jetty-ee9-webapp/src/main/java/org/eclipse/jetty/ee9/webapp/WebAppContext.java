@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,23 +38,23 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.ManagedAttributeListener;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.ManagedAttributeListener;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -72,11 +72,11 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
- * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
- * and {@link org.eclipse.jetty.servlet.ServletHandler}.
+ * {@link ConstraintSecurityHandler}, {@link SessionHandler}
+ * and {@link ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
- * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
- * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
+ * the default being  {@link WebXmlConfiguration} and
+ * {@link JettyWebXmlConfiguration}.
  *
  *
  * <p>
@@ -152,11 +152,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String TEMPDIR = ServletContext.TEMPDIR;
-    public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
-    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
+    public static final String BASETEMPDIR = "org.eclipse.jetty.ee9.webapp.basetempdir";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
-    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.ee9.webapp.systemClasses";
+    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.ee9.webapp.serverClasses";
 
     private static String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
@@ -213,7 +213,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static WebAppContext getCurrentWebAppContext()
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        ContextHandler.APIContext context = ContextHandler.getCurrentContext();
         if (context != null)
         {
             ContextHandler handler = context.getContextHandler();
@@ -253,7 +253,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
      */
-    public WebAppContext(HandlerContainer parent, String webApp, String contextPath)
+    public WebAppContext(Handler.Container parent, String webApp, String contextPath)
     {
         this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWar(webApp);
@@ -264,7 +264,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param contextPath The context path
      * @param webApp The webapp directory or war file.
      */
-    public WebAppContext(HandlerContainer parent, Resource webApp, String contextPath)
+    public WebAppContext(Handler.Container parent, Resource webApp, String contextPath)
     {
         this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWarResource(webApp);
@@ -294,28 +294,28 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param errorHandler ErrorHandler for this web app
      * @param options the options ({@link ServletContextHandler#SESSIONS} and/or {@link ServletContextHandler#SECURITY})
      */
-    public WebAppContext(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public WebAppContext(Handler.Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
-        _scontext = new Context();
+        _apiContext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
-            setParent(parent);
+            parent.addHandler(this);
     }
 
     /**
-     * @param servletContextName The servletContextName to set.
+     * @param displayName The servletContextName to set.
      */
     @Override
-    public void setDisplayName(String servletContextName)
+    public void setDisplayName(String displayName)
     {
-        super.setDisplayName(servletContextName);
+        super.setDisplayName(displayName);
         ClassLoader cl = getClassLoader();
-        if (cl instanceof WebAppClassLoader && servletContextName != null)
-            ((WebAppClassLoader)cl).setName(servletContextName);
+        if (cl instanceof WebAppClassLoader && displayName != null)
+            ((WebAppClassLoader)cl).setName(displayName);
     }
 
     /**
@@ -948,7 +948,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().getAttributeNameSet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1139,10 +1139,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
+     * check when a servlet called {@link ServletContextHandler.ServletAPIContext#getContext(String)}, validating that the uriInPath
      * for the given webapp has been declaratively allows access to the context.
      *
-     * @param contextWhiteList the whitelist of contexts for {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)}
+     * @param contextWhiteList the whitelist of contexts for {@link ServletContextHandler.ServletAPIContext#getContext(String)}
      */
     public void setContextWhiteList(String... contextWhiteList)
     {
@@ -1410,7 +1410,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return unchangedURLMappings;
     }
 
-    public class Context extends ServletContextHandler.Context
+    public class Context extends ServletContextHandler.ServletAPIContext
     {
         @Override
         public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
@@ -1421,18 +1421,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (IllegalArgumentException e)
             {
-                //not one of the standard servlet listeners, check our extended session listener types
-                boolean ok = false;
-                for (Class<?> l : SessionHandler.SESSION_LISTENER_TYPES)
-                {
-                    if (l.isAssignableFrom(listener))
-                    {
-                        ok = true;
-                        break;
-                    }
-                }
-                if (!ok)
-                    throw new IllegalArgumentException("Inappropriate listener type " + listener.getName());
+                // not one of the standard servlet listeners, check our extended session listener types
+                throw new IllegalArgumentException("Inappropriate listener type " + listener.getName());
             }
         }
 

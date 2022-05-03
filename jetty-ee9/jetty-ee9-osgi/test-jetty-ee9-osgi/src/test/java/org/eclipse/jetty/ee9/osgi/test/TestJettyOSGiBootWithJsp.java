@@ -11,10 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.ArrayList;
-import java.util.List;
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -34,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
- * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
+ * Pax-Exam to make sure the jetty-ee9-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */

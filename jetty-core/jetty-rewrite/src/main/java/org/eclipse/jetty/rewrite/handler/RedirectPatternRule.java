@@ -15,39 +15,41 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Issues a (3xx) Redirect response whenever the rule finds a match.
- * <p>
- * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4"><code>3xx Redirection</code> status code set</a>.
- * <p>
- * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3"><code>302 Found</code></a>
+ * <p>Issues a (3xx) redirect response whenever the rule finds a request path Servlet pattern match.</p>
+ * <p>All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4">{@code 3xx Redirection} status code set</a>.</p>
+ * <p>Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3">{@code 302 Found}</a>.</p>
  */
 public class RedirectPatternRule extends PatternRule
 {
     private String _location;
     private int _statusCode = HttpStatus.FOUND_302;
 
-    public RedirectPatternRule()
-    {
-        this(null, null);
-    }
-
     public RedirectPatternRule(@Name("pattern") String pattern, @Name("location") String location)
     {
         super(pattern);
-        _handling = true;
-        _terminating = true;
         _location = location;
     }
 
+    @Override
+    public boolean isTerminating()
+    {
+        return true;
+    }
+
+    public String getLocation()
+    {
+        return _location;
+    }
+
     /**
-     * Sets the redirect location.
-     *
      * @param value the location to redirect.
      */
     public void setLocation(String value)
@@ -55,45 +57,40 @@ public class RedirectPatternRule extends PatternRule
         _location = value;
     }
 
+    public int getStatusCode()
+    {
+        return _statusCode;
+    }
+
     /**
-     * Sets the redirect status code.
-     *
      * @param statusCode the 3xx redirect status code
      */
     public void setStatusCode(int statusCode)
     {
-        if ((300 <= statusCode) || (statusCode >= 399))
-        {
-            _statusCode = statusCode;
-        }
-        else
-        {
+        if (!HttpStatus.isRedirection(statusCode))
             throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
-        }
+        _statusCode = statusCode;
     }
 
     @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
-        String location = response.encodeRedirectURL(_location);
-        response.setHeader("Location", RedirectUtil.toRedirectURL(request, location));
-        response.setStatus(_statusCode);
-        response.getOutputStream().flush(); // no output / content
-        response.getOutputStream().close();
-        return target;
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public void process(Request ignored, Response response, Callback callback)
+            {
+                String location = getLocation();
+                response.setStatus(getStatusCode());
+                response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
+                callback.succeeded();
+            }
+        };
     }
 
-    /**
-     * Returns the redirect status code and location.
-     */
     @Override
     public String toString()
     {
-        StringBuilder str = new StringBuilder();
-        str.append(super.toString());
-        str.append('[').append(_statusCode);
-        str.append('>').append(_location);
-        str.append(']');
-        return str.toString();
+        return "%s[redirect:%d>%s]".formatted(super.toString(), getStatusCode(), getLocation());
     }
 }

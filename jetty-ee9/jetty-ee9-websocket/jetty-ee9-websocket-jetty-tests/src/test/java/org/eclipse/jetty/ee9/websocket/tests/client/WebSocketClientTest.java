@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client;
+package org.eclipse.jetty.ee9.websocket.tests.client;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -25,24 +25,24 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
+import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.tests.AnnoMaxMessageEndpoint;
+import org.eclipse.jetty.ee9.websocket.tests.CloseTrackingEndpoint;
+import org.eclipse.jetty.ee9.websocket.tests.ConnectMessageEndpoint;
+import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
+import org.eclipse.jetty.ee9.websocket.tests.ParamsEndpoint;
+import org.eclipse.jetty.ee9.websocket.tests.util.FutureWriteCallback;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.tests.AnnoMaxMessageEndpoint;
-import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.ConnectMessageEndpoint;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
-import org.eclipse.jetty.websocket.tests.ParamsEndpoint;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

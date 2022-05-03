@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.encoders;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.encoders;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.util.function.Consumer;
 
@@ -51,10 +51,17 @@ public interface HTTP2Channel
 
         public Runnable onTrailer(HeadersFrame frame);
 
+        // TODO: review the signature because the serialization done by HttpChannel.onError()
+        //  is now failing the callback which fails the HttpStream, which should decide whether
+        //  to reset the HTTP/2 stream, so we may not need the boolean return type.
         public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer);
 
+        // TODO: can it be simplified? The callback seems to only be succeeded, which
+        //  means it can be converted into a Runnable which may just be the return type
+        //  so we can get rid of the Callback parameter.
         public Runnable onFailure(Throwable failure, Callback callback);
 
+        // TODO: is this needed?
         public boolean isIdle();
     }
 }

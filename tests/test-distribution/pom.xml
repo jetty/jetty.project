@@ -1,13 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>tests-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>tests</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-distribution</artifactId>
-  <name>Jetty Tests :: Distribution Tests</name>
   <packaging>jar</packaging>
 
   <properties>
@@ -91,8 +90,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -111,8 +111,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -125,18 +126,8 @@
       <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixsocket-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixsocket-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -145,13 +136,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-api</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-openid</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-openid</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -162,14 +153,14 @@
       <type>war</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>test-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>war</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>test-bad-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

@@ -11,24 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,223 +40,178 @@ import org.slf4j.LoggerFactory;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends AbstractHandler
+public class DumpHandler extends Handler.Processor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
-    String label = "Dump HttpHandler";
+    private final Blocking.Shared _blocker = new Blocking.Shared(); 
+    private final String _label;
 
     public DumpHandler()
     {
+        this("Dump Handler");
     }
 
     public DumpHandler(String label)
     {
-        this.label = label;
+        super(InvocationType.BLOCKING);
+        _label = label;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        if (!isStarted())
-            return;
+        if (LOG.isDebugEnabled())
+            LOG.debug("dump {}", request);
+        HttpURI httpURI = request.getHttpURI();
 
-        if (Boolean.parseBoolean(request.getParameter("flush")))
-            response.flushBuffer();
+        MultiMap<String> params = UrlEncoded.decodeQuery(httpURI.getQuery());
 
-        if (Boolean.parseBoolean(request.getParameter("empty")))
+        if (Boolean.parseBoolean(params.getValue("flush")))
         {
-            baseRequest.setHandled(true);
-            response.setStatus(200);
-            return;
-        }
-
-        StringBuilder read = null;
-        if (request.getParameter("read") != null)
-        {
-            read = new StringBuilder();
-            int len = Integer.parseInt(request.getParameter("read"));
-            Reader in = request.getReader();
-            for (int i = len; i-- > 0; )
+            try (Blocking.Callback blocker = _blocker.callback())
             {
-                read.append((char)in.read());
+                response.write(false, blocker);
+                blocker.block();
             }
         }
 
-        if (request.getParameter("date") != null)
-            response.setHeader("Date", request.getParameter("date"));
-
-        if (request.getParameter("ISE") != null)
+        if (Boolean.parseBoolean(params.getValue("empty")))
         {
-            throw new IllegalStateException("Testing ISE");
-        }
-
-        if (request.getParameter("error") != null)
-        {
-            response.sendError(Integer.parseInt(request.getParameter("error")));
+            response.setStatus(200);
+            callback.succeeded();
             return;
         }
 
-        baseRequest.setHandled(true);
-        response.setHeader(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Type.TEXT_HTML.asString());
+        Utf8StringBuilder read = null;
+        if (params.getValue("read") != null)
+        {
+            read = new Utf8StringBuilder();
+            int len = Integer.parseInt(params.getValue("read"));
+            byte[] buffer = new byte[8192];
 
-        OutputStream out = response.getOutputStream();
+            Content content = null;
+            while (len > 0)
+            {
+                if (content == null)
+                {
+                    content = request.readContent();
+                    if (content == null)
+                    {
+                        try (Blocking.Runnable blocker = _blocker.runnable())
+                        {
+                            request.demandContent(blocker);
+                            blocker.block();
+                        }
+                        continue;
+                    }
+                }
+
+                if (content instanceof Content.Error)
+                {
+                    callback.failed(((Content.Error)content).getCause());
+                    return;
+                }
+
+                int l = Math.min(buffer.length, Math.min(len, content.remaining()));
+                content.fill(buffer, 0, l);
+                read.append(buffer, 0, l);
+                len -= l;
+
+                if (content.isEmpty())
+                {
+                    content.release();
+                    if (content.isLast())
+                        break;
+                    if (!content.isSpecial())
+                        content = null;
+                }
+            }
+            if (content != null)
+                content.release();
+        }
+
+        if (params.getValue("date") != null)
+            response.getHeaders().put("Date", params.getValue("date"));
+
+        if (params.getValue("ISE") != null)
+            throw new IllegalStateException("Testing ISE");
+
+        if (params.getValue("error") != null)
+        {
+            response.setStatus(Integer.parseInt(params.getValue("error")));
+            callback.succeeded();
+            return;
+        }
+
+        response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);
-        writer.write("<html><h1>" + label + "</h1>");
-        writer.write("<pre>\npathInfo=" + request.getPathInfo() + "\n</pre>\n");
-        writer.write("<pre>\ncontentType=" + request.getContentType() + "\n</pre>\n");
-        writer.write("<pre>\nencoding=" + request.getCharacterEncoding() + "\n</pre>\n");
-        writer.write("<pre>\nservername=" + request.getServerName() + "\n</pre>\n");
-        writer.write("<pre>\nserverport=" + request.getServerPort() + "\n</pre>\n");
-        writer.write("<pre>\nlocalname=" + request.getLocalName() + "\n</pre>\n");
-        writer.write("<pre>\nlocal=" + request.getLocalAddr() + ":" + request.getLocalPort() + "\n</pre>\n");
-        writer.write("<pre>\nremote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\n</pre>\n");
+        writer.write("<html><h1>" + _label + "</h1>\n");
+        writer.write("<pre>httpURI=" + httpURI + "</pre><br/>\n");
+        writer.write("<pre>httpURI.path=" + httpURI.getPath() + "</pre><br/>\n");
+        writer.write("<pre>httpURI.query=" + httpURI.getQuery() + "</pre><br/>\n");
+        writer.write("<pre>httpURI.pathQuery=" + httpURI.getPathQuery() + "</pre><br/>\n");
+        writer.write("<pre>pathInContext=" + request.getPathInContext() + "</pre><br/>\n");
+        writer.write("<pre>contentType=" + request.getHeaders().get(HttpHeader.CONTENT_TYPE) + "</pre><br/>\n");
+        writer.write("<pre>servername=" + Request.getServerName(request) + "</pre><br/>\n");
+        writer.write("<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");
+        writer.write("<pre>remote=" + Request.getRemoteAddr(request) + ":" + Request.getRemotePort(request) + "</pre><br/>\n");
         writer.write("<h3>Header:</h3><pre>");
-        writer.write(String.format("%4s %s %s\n", request.getMethod(), request.getRequestURI(), request.getProtocol()));
-        Enumeration<String> headers = request.getHeaderNames();
-        while (headers.hasMoreElements())
+        writer.write(String.format("%4s %s %s\n", request.getMethod(), httpURI.getPathQuery(), request.getConnectionMetaData().getProtocol()));
+        for (HttpField field : request.getHeaders())
         {
-            String name = headers.nextElement();
+            String name = field.getName();
             writer.write(name);
             writer.write(": ");
-            String value = request.getHeader(name);
+            String value = field.getValue();
             writer.write(value == null ? "" : value);
             writer.write("\n");
         }
-        writer.write("</pre>\n<h3>Parameters:</h3>\n<pre>");
-        Enumeration<String> names = request.getParameterNames();
-        while (names.hasMoreElements())
-        {
-            String name = names.nextElement();
-            String[] values = request.getParameterValues(name);
-            if (values == null || values.length == 0)
-            {
-                writer.write(name);
-                writer.write("=\n");
-            }
-            else if (values.length == 1)
-            {
-                writer.write(name);
-                writer.write("=");
-                writer.write(values[0]);
-                writer.write("\n");
-            }
-            else
-            {
-                for (int i = 0; i < values.length; i++)
-                {
-                    writer.write(name);
-                    writer.write("[" + i + "]=");
-                    writer.write(values[i]);
-                    writer.write("\n");
-                }
-            }
-        }
-
-        String cookieName = request.getParameter("CookieName");
-        if (cookieName != null && cookieName.trim().length() > 0)
-        {
-            String cookieAction = request.getParameter("Button");
-            try
-            {
-                String val = request.getParameter("CookieVal");
-                val = val.replaceAll("[ \n\r=<>]", "?");
-                Cookie cookie =
-                    new Cookie(cookieName.trim(), val);
-                if ("Clear Cookie".equals(cookieAction))
-                    cookie.setMaxAge(0);
-                response.addCookie(cookie);
-            }
-            catch (IllegalArgumentException e)
-            {
-                writer.write("</pre>\n<h3>BAD Set-Cookie:</h3>\n<pre>");
-                writer.write(e.toString());
-            }
-        }
-
-        writer.write("</pre>\n<h3>Cookies:</h3>\n<pre>");
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length > 0)
-        {
-            for (int c = 0; c < cookies.length; c++)
-            {
-                Cookie cookie = cookies[c];
-                writer.write(cookie.getName());
-                writer.write("=");
-                writer.write(cookie.getValue());
-                writer.write("\n");
-            }
-        }
 
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
-        Enumeration<String> attributes = request.getAttributeNames();
-        if (attributes != null && attributes.hasMoreElements())
+        for (String attr : request.getAttributeNameSet())
         {
-            while (attributes.hasMoreElements())
-            {
-                String attr = attributes.nextElement().toString();
-                writer.write(attr);
-                writer.write("=");
-                writer.write(request.getAttribute(attr).toString());
-                writer.write("\n");
-            }
+            writer.write(attr);
+            writer.write("=");
+            writer.write(request.getAttribute(attr).toString());
+            writer.write("\n");
         }
 
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
-
         if (read != null)
-        {
             writer.write(read.toString());
-        }
         else
-        {
-            char[] content = new char[4096];
-            int len;
-            try
-            {
-                Reader in = request.getReader();
-                while ((len = in.read(content)) >= 0)
-                {
-                    writer.write(new String(content, 0, len));
-                }
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Failed to copy request content", e);
-                writer.write(e.toString());
-            }
-        }
+            writer.write(Content.readAll(request));
 
         writer.write("</pre>\n");
         writer.write("</html>\n");
         writer.flush();
 
         // commit now
-        if (!Boolean.parseBoolean(request.getParameter("no-content-length")))
+        if (!Boolean.parseBoolean(params.getValue("no-content-length")))
             response.setContentLength(buf.size() + 1000);
-        response.addHeader("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
-        buf.writeTo(out);
-        out.flush();
+
+        response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
+
+
+        try (Blocking.Callback blocker = _blocker.callback())
+        {
+            response.write(false, blocker, BufferUtil.toBuffer(buf.toByteArray()));
+            blocker.block();
+        }
         response.addHeader("After-Flush", "These headers should not be seen in the response!!!");
         response.addHeader("After-Flush", response.isCommitted() ? "Committed" : "Not Committed?");
 
         // write remaining content after commit
-        try
+        String padding = "ABCDEFGHIJ".repeat(99) + "ABCDEFGH\r\n";
+
+        try (Blocking.Callback blocker = _blocker.callback())
         {
-            buf.reset();
-            writer.flush();
-            for (int pad = 998; pad-- > 0; )
-            {
-                writer.write(" ");
-            }
-            writer.write("\r\n");
-            writer.flush();
-            buf.writeTo(out);
+            response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
         }
-        catch (Exception e)
-        {
-            LOG.trace("IGNORED", e);
-        }
+
+        callback.succeeded();
     }
 }

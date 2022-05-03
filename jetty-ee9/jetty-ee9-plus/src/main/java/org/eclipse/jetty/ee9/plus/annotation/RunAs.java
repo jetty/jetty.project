@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 
 /**
  * RunAs

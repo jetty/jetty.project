@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.exceptions;
+package org.eclipse.jetty.ee9.websocket.api.exceptions;
 
-import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 
 /**
  * Exception when a violation of policy occurs and should trigger a connection close.

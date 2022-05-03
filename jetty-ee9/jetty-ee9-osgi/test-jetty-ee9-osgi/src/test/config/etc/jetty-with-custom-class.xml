@@ -19,7 +19,7 @@
       <Set name="maxThreads">200</Set>
     </Get>
 
-	<New class="org.eclipse.jetty.osgi.test.SomeCustomBean" id="mycustombean"></New>
+	<New class="org.eclipse.jetty.ee9.osgi.test.SomeCustomBean" id="mycustombean"></New>
 
 
     <!-- =========================================================== -->
@@ -64,25 +64,25 @@
     <!-- =========================================================== -->
     <!-- Set up the list of default configuration classes            -->
     <!-- =========================================================== -->    
-    <Call class="org.eclipse.jetty.webapp.Configurations" name="setKnown">
+    <Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setKnown">
       <Arg>
         <Array type="String">
-         <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.WebAppConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.ServletsConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.JspConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.JaasConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.JndiConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.FragmentConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.WebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.WebAppConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.ServletsConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.JspConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.JaasConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.JndiConfiguration</Item>
          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.webapp.JmxConfiguration</Item>
          <Item>org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration</Item>
          <Item>org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration</Item>
-         <Item>org.eclipse.jetty.osgi.annotations.AnnotationConfiguration</Item>
-         <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
-         <Item>org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.osgi.annotations.AnnotationConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.osgi.boot.OSGiWebInfConfiguration</Item>
+         <Item>org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration</Item>
         </Array>
       </Arg>
     </Call>

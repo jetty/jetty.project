@@ -19,14 +19,15 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.client.internal.HTTP2ClientSession;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;

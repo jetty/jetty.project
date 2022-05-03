@@ -11,11 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -23,10 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
@@ -36,11 +30,13 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -57,13 +53,13 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     private final AtomicLong requestIds = new AtomicLong();
 
     @Override
-    protected void customizeContext(ServletContextHandler context)
+    protected void prepareServer(ConnectionFactory... connectionFactories)
     {
-        QueuedThreadPool serverThreads = (QueuedThreadPool)context.getServer().getThreadPool();
+        super.prepareServer(connectionFactories);
+        QueuedThreadPool serverThreads = (QueuedThreadPool)server.getThreadPool();
         serverThreads.setDetailedDump(true);
         serverThreads.setMaxThreads(5);
         serverThreads.setLowThreadsThreshold(1);
-
         AbstractHTTP2ServerConnectionFactory h2 = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
         h2.setInitialSessionRecvWindow(Integer.MAX_VALUE);
     }
@@ -71,10 +67,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     @Test
     public void testConcurrentWithSmallServerThreadPool() throws Exception
     {
-        start(new LoadServlet());
+        start(new LoadHandler());
 
         // Only one connection to the server.
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         int runs = 10;
         int iterations = 512;
@@ -96,10 +92,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
 
             // Dumps the state of the client if the test takes too long.
             Thread testThread = Thread.currentThread();
-            Scheduler.Task task = client.getScheduler().schedule(() ->
+            Scheduler.Task task = http2Client.getScheduler().schedule(() ->
             {
                 logger.warn("Interrupting test, it is taking too long - \nServer: \n" +
-                    server.dump() + "\nClient: \n" + client.dump());
+                    server.dump() + "\nClient: \n" + http2Client.dump());
                 testThread.interrupt();
             }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -184,32 +180,28 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             latch.countDown();
         else
             logger.warn("Request {} took too long - \nServer: \n" +
-                server.dump() + "\nClient: \n" + client.dump(), requestId);
+                server.dump() + "\nClient: \n" + http2Client.dump(), requestId);
         return !reset.get();
     }
 
-    private static class LoadServlet extends HttpServlet
+    private static class LoadHandler extends Handler.Processor
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String method = request.getMethod().toUpperCase(Locale.ENGLISH);
-            switch (method)
+            switch (HttpMethod.fromString(request.getMethod()))
             {
-                case "GET":
+                case GET ->
                 {
-                    int contentLength = request.getIntHeader("X-Download");
+                    int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
-                        response.getOutputStream().write(new byte[contentLength]);
-                    break;
+                        response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
+                    else
+                        callback.succeeded();
                 }
-                case "POST":
+                case POST ->
                 {
-                    int contentLength = request.getContentLength();
-                    ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(contentLength > 0 ? contentLength : 16 * 1024);
-                    IO.copy(request.getInputStream(), bout);
-                    response.getOutputStream().write(bout.getBuf(), 0, bout.getCount());
-                    break;
+                    Content.copy(request, response, callback);
                 }
             }
         }

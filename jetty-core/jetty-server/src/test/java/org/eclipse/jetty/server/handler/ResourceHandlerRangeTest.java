@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@Disabled("Unfixed range bug - Issue #107")
+@Disabled("Unfixed range bug - Issue #107") // TODO long disabled!?!?!?
 public class ResourceHandlerRangeTest
 {
     private static Server server;
@@ -60,7 +60,7 @@ public class ResourceHandlerRangeTest
 
         ContextHandler contextHandler = new ContextHandler();
         ResourceHandler contentResourceHandler = new ResourceHandler();
-        contextHandler.setBaseResource(Resource.newResource(dir.getAbsolutePath()));
+        contextHandler.setResourceBase(Resource.newResource(dir.getAbsolutePath()).getFile().toPath());
         contextHandler.setHandler(contentResourceHandler);
         contextHandler.setContextPath("/");
 

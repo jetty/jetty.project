@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -32,10 +32,10 @@ public class ServletsConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class);
         addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose();
-        protect("org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
-            "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
+        protect("org.eclipse.jetty.ee9.servlets.PushCacheFilter", //must be loaded by container classpath
+            "org.eclipse.jetty.ee9.servlets.PushSessionCacheFilter" //must be loaded by container classpath
         );
-        expose("org.eclipse.jetty.servlets."); // don't hide jetty servlets
+        expose("org.eclipse.jetty.ee9.servlets."); // don't hide jetty servlets
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ServletsConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.servlets.PushCacheFilter") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee9.servlets.PushCacheFilter") != null;
         }
         catch (Throwable e)
         {

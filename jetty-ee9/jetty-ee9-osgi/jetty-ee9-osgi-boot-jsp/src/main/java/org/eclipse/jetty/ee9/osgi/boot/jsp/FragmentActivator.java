@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.jsp;
+package org.eclipse.jetty.ee9.osgi.boot.jsp;
 
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.osgi.boot.jasper.ContainerTldBundleDiscoverer;
+import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.ee9.osgi.boot.jasper.ContainerTldBundleDiscoverer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -25,7 +25,7 @@ import org.osgi.framework.BundleContext;
  * into the osgi environment.
  * <p>
  * Note that as this is part of a bundle fragment, this activator is NOT
- * called by the OSGi environment. Instead, the org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminTracker
+ * called by the OSGi environment. Instead, the org.eclipse.jetty.ee9.osgi.boot.utils.internal.PackageAdminTracker
  * simulates fragment activation and causes this class's start() method to
  * be called.
  * </p>

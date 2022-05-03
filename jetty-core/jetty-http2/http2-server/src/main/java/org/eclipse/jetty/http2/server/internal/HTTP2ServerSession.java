@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.http2.server.internal;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,9 +19,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -32,8 +30,10 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;

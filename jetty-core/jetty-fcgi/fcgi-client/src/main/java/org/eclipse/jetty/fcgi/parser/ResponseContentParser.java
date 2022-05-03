@@ -82,7 +82,7 @@ public class ResponseContentParser extends StreamContentParser
     private static class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields.Mutable fields = HttpFields.build();
-        private ClientParser.Listener listener;
+        private final ClientParser.Listener listener;
         private final int request;
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;

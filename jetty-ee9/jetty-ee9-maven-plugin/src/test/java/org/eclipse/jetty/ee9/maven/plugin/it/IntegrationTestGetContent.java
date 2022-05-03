@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin.it;
+package org.eclipse.jetty.ee9.maven.plugin.it;
 
 import java.io.LineNumberReader;
 import java.io.Reader;
@@ -61,7 +61,6 @@ public class IntegrationTestGetContent
             }
             String contentCheck = System.getProperty("contentCheck");
             String pathToCheck = System.getProperty("pathToCheck");
-            System.out.println("contentCheck: " + contentCheck);
             if (StringUtils.isNotBlank(contentCheck))
             {
                 String url = "http://localhost:" + port + contextPath;

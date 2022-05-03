@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -24,7 +24,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +42,7 @@ public class TestJettyEmbedder
     {
         Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        webApp.setBaseResource(new PathResource(baseResource));
+        webApp.setResourceBase(baseResource);
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
 

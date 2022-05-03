@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.security.auth.Subject;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

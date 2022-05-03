@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http2.hpack.internal;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 
-/**
- *
- */
 public class AuthorityHttpField extends HostPortHttpField
 {
     public static final String AUTHORITY = HpackContext.STATIC_TABLE[1][0];

@@ -15,15 +15,13 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Request;
 
 public class ForceRequestHeaderValueRule extends Rule
 {
     private String headerName;
-    private String forcedValue;
+    private String headerValue;
 
     public String getHeaderName()
     {
@@ -35,40 +33,40 @@ public class ForceRequestHeaderValueRule extends Rule
         this.headerName = headerName;
     }
 
-    public String getForcedValue()
+    public String getHeaderValue()
     {
-        return forcedValue;
+        return headerValue;
     }
 
-    public void setForcedValue(String forcedValue)
+    public void setHeaderValue(String headerValue)
     {
-        this.forcedValue = forcedValue;
+        this.headerValue = headerValue;
     }
 
     @Override
-    public String matchAndApply(String target, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        String existingValue = httpServletRequest.getHeader(headerName);
+        HttpFields headers = input.getHeaders();
+        String existingValue = headers.get(headerName);
+
+        // No hit, skip this rule.
         if (existingValue == null)
+            return null;
+
+        // Already what we expect, skip this rule.
+        if (existingValue.equals(headerValue))
+            return null;
+
+        HttpFields.Mutable newHeaders = HttpFields.build(headers);
+        newHeaders.remove(headerName);
+        newHeaders.add(headerName, headerValue);
+        return new Request.WrapperProcessor(input)
         {
-            // no hit, skip this rule.
-            return null;
-        }
-
-        if (existingValue.equals(forcedValue))
-        {
-            // already what we expect, skip this rule.
-            return null;
-        }
-
-        Request baseRequest = Request.getBaseRequest(httpServletRequest);
-        if (baseRequest == null)
-            return null;
-
-        HttpFields.Mutable replacement = HttpFields.build(baseRequest.getHttpFields())
-            .remove(headerName)
-            .add(headerName, forcedValue);
-        baseRequest.setHttpFields(replacement);
-        return target;
+            @Override
+            public HttpFields getHeaders()
+            {
+                return newHeaders;
+            }
+        };
     }
 }

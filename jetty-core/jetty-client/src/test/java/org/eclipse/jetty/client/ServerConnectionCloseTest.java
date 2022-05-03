@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -130,7 +131,7 @@ public class ServerConnectionCloseTest
                     serverResponse += content;
                 }
 
-                output.write(serverResponse.getBytes("UTF-8"));
+                output.write(serverResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
                 if (shutdownOutput)
                     socket.shutdownOutput();

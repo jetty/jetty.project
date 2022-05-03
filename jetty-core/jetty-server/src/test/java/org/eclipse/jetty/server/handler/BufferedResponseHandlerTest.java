@@ -13,17 +13,18 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,9 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-/**
- * Resource Handler test
- */
 public class BufferedResponseHandlerTest
 {
     private static Server _server;
@@ -86,7 +84,6 @@ public class BufferedResponseHandlerTest
         _test._content[_test._content.length - 1] = '\n';
         _test._writes = 10;
         _test._flush = false;
-        _test._close = false;
         _test._reset = false;
     }
 
@@ -96,9 +93,8 @@ public class BufferedResponseHandlerTest
         String response = _local.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 7"));
         assertThat(response, not(containsString("Content-Length: ")));
-        assertThat(response, not(containsString("Write: 8")));
+        assertThat(response, not(containsString("Write: 1")));
         assertThat(response, not(containsString("Write: 9")));
         assertThat(response, not(containsString("Written: true")));
     }
@@ -119,9 +115,8 @@ public class BufferedResponseHandlerTest
         String response = _local.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 7"));
         assertThat(response, not(containsString("Content-Length: ")));
-        assertThat(response, not(containsString("Write: 8")));
+        assertThat(response, not(containsString("Write: 1")));
         assertThat(response, not(containsString("Write: 9")));
         assertThat(response, not(containsString("Written: true")));
     }
@@ -133,9 +128,9 @@ public class BufferedResponseHandlerTest
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 7"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
         assertThat(response, not(containsString("Content-Length: ")));
-        assertThat(response, not(containsString("Write: 8")));
+        assertThat(response, not(containsString("Write: 1")));
         assertThat(response, not(containsString("Write: 9")));
         assertThat(response, not(containsString("Written: true")));
     }
@@ -152,25 +147,17 @@ public class BufferedResponseHandlerTest
     }
 
     @Test
-    public void testClosed() throws Exception
-    {
-        _test._close = true;
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
-        assertThat(response, containsString(" 200 OK"));
-        assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 9"));
-        assertThat(response, not(containsString("Written: true")));
-    }
-
-    @Test
     public void testBufferSizeSmall() throws Exception
     {
         _test._bufferSize = 16;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 9"));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
+        assertThat(response, not(containsString("Content-Length: ")));
+        assertThat(response, not(containsString("Write: 1")));
+        assertThat(response, not(containsString("Write: 9")));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
@@ -202,7 +189,6 @@ public class BufferedResponseHandlerTest
     {
         _test._writes = 1;
         _test._flush = true;
-        _test._close = false;
         _test._content = new byte[0];
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
@@ -224,44 +210,38 @@ public class BufferedResponseHandlerTest
         assertThat(response, not(containsString("RESET")));
     }
 
-    public static class TestHandler extends AbstractHandler
+    public static class TestHandler extends Handler.Processor
     {
         int _bufferSize;
         String _mimeType;
         byte[] _content;
         int _writes;
         boolean _flush;
-        boolean _close;
         boolean _reset;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
+            response.setStatus(200);
 
             if (_bufferSize > 0)
-                response.setBufferSize(_bufferSize);
+                request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
             if (_mimeType != null)
                 response.setContentType(_mimeType);
 
-            if (_reset)
+            try (OutputStream outputStream = Content.asOutputStream(response))
             {
-                response.getOutputStream().print("THIS WILL BE RESET");
-                response.getOutputStream().flush();
-                response.getOutputStream().print("THIS WILL BE RESET");
-                response.resetBuffer();
-            }
-            for (int i = 0; i < _writes; i++)
-            {
-                response.addHeader("Write", Integer.toString(i));
-                response.getOutputStream().write(_content);
-                if (_flush)
-                    response.getOutputStream().flush();
+                for (int i = 0; i < _writes; i++)
+                {
+                    response.addHeader("Write", Integer.toString(i));
+                    outputStream.write(_content);
+                    if (_flush)
+                        outputStream.flush();
+                }
             }
 
-            if (_close)
-                response.getOutputStream().close();
             response.addHeader("Written", "true");
+            callback.succeeded();
         }
     }
 }

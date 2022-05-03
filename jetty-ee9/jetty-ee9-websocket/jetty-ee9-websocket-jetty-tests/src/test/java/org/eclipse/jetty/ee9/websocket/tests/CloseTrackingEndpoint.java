@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -20,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.ee9.websocket.common.WebSocketSession;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matcher;

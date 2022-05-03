@@ -11,40 +11,53 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.fcgi.server;
+package org.eclipse.jetty.fcgi.server.internal;
 
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
+import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerFCGIConnection extends AbstractConnection
+public class ServerFCGIConnection extends AbstractConnection implements ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    private final Attributes attributes = new Lazy();
     private final Connector connector;
     private final RetainableByteBufferPool networkByteBufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
     private final HttpConfiguration configuration;
     private final ServerParser parser;
+    private final String id;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
     private RetainableByteBuffer networkBuffer;
-    private HttpChannelOverFCGI channel;
+    private HttpStreamOverFCGI stream;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -55,6 +68,12 @@ public class ServerFCGIConnection extends AbstractConnection
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
+        this.id = StringUtil.randomAlphaNumeric(16);
+    }
+
+    Flusher getFlusher()
+    {
+        return flusher;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -75,6 +94,102 @@ public class ServerFCGIConnection extends AbstractConnection
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @Override
+    public String getId()
+    {
+        return id;
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return configuration;
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_1_1;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return "fcgi/1.0";
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return this;
+    }
+
+    @Override
+    public Connector getConnector()
+    {
+        return connector;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return false;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        return ConnectionMetaData.getServerAuthority(configuration, this);
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return attributes.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
     }
 
     @Override
@@ -135,12 +250,12 @@ public class ServerFCGIConnection extends AbstractConnection
             LOG.debug("parseAndFill {}", this);
         // This loop must run only until the request is completed.
         // See also HttpConnection.parseAndFillForContent().
-        while (channel != null)
+        while (stream != null)
         {
             if (parse(networkBuffer.getBuffer()))
                 return;
             // Check if the request was completed by the parsing.
-            if (channel == null)
+            if (stream == null)
                 return;
             if (fillInputBuffer() <= 0)
                 break;
@@ -179,8 +294,8 @@ public class ServerFCGIConnection extends AbstractConnection
     @Override
     protected boolean onReadTimeout(Throwable timeout)
     {
-        if (channel != null)
-            return channel.onIdleTimeout(timeout);
+        if (stream != null)
+            return stream.onIdleTimeout(timeout);
         return true;
     }
 
@@ -200,11 +315,13 @@ public class ServerFCGIConnection extends AbstractConnection
         flusher.shutdown();
     }
 
-    void onCompleted(boolean fillMore)
+    void onCompleted(Throwable failure)
     {
         releaseInputBuffer();
-        if (getEndPoint().isOpen() && fillMore)
+        if (failure == null)
             fillInterested();
+        else
+            getFlusher().shutdown();
     }
 
     private class ServerListener implements ServerParser.Listener
@@ -213,10 +330,12 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onStart(int request, FCGI.Role role, int flags)
         {
             // TODO: handle flags
-            if (channel != null)
+            if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
-            channel = new HttpChannelOverFCGI(ServerFCGIConnection.this, connector, configuration, getEndPoint(),
-                new HttpTransportOverFCGI(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200, flusher, request));
+            HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
+            ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
+            stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
+            channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} start on {}", request, channel);
         }
@@ -225,34 +344,34 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onHeader(int request, HttpField field)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} header {} on {}", request, field, channel);
-            if (channel != null)
-                channel.header(field);
+                LOG.debug("Request {} header {} on {}", request, field, stream);
+            if (stream != null)
+                stream.onHeader(field);
         }
 
         @Override
         public boolean onHeaders(int request)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} headers on {}", request, channel);
-            if (channel != null)
+                LOG.debug("Request {} headers on {}", request, stream);
+            if (stream != null)
             {
-                channel.onRequest();
-                channel.dispatch();
-                // We have dispatched to the application, so we must stop the fill & parse loop.
+                stream.onHeaders();
+                // We have dispatched to the application,
+                // so we must stop the fill & parse loop.
                 return true;
             }
             return false;
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType streamType, ByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
-            if (channel != null)
+                LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
+            if (stream != null)
             {
-                channel.onContent(new FastCGIContent(buffer));
+                stream.onContent(new FastCGIContent(buffer, false));
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }
@@ -263,14 +382,13 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onEnd(int request)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} end on {}", request, channel);
-            if (channel != null)
+                LOG.debug("Request {} end on {}", request, stream);
+            if (stream != null)
             {
-                channel.onContentComplete();
-                channel.onRequestComplete();
-                // Nulling out the channel signals that the
+                stream.onComplete();
+                // Nulling out the stream signals that the
                 // request is complete, see also parseAndFill().
-                channel = null;
+                stream = null;
             }
         }
 
@@ -278,33 +396,31 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} failure on {}: {}", request, channel, failure);
-            if (channel != null)
-                channel.onBadMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
-            channel = null;
+                LOG.debug("Request {} failure on {}: {}", request, stream, failure);
+            if (stream != null)
+                stream.getHttpChannel().onFailure(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
+            stream = null;
         }
 
-        private class FastCGIContent extends HttpInput.Content
+        private class FastCGIContent extends Content.Abstract
         {
-            public FastCGIContent(ByteBuffer content)
+            private final ByteBuffer content;
+
+            public FastCGIContent(ByteBuffer content, boolean last)
             {
-                super(content);
+                super(false, last);
+                this.content = content;
                 networkBuffer.retain();
             }
 
             @Override
-            public void succeeded()
+            public ByteBuffer getByteBuffer()
             {
-                release();
+                return content;
             }
 
             @Override
-            public void failed(Throwable x)
-            {
-                release();
-            }
-
-            private void release()
+            public void release()
             {
                 networkBuffer.release();
             }

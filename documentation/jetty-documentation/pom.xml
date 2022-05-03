@@ -2,14 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
-    <artifactId>documentation-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>documentation</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
+  <properties>
+    <ee.version>ee9</ee.version>
+  </properties>
 
   <build>
     <plugins>
@@ -136,6 +139,18 @@
     </plugins>
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.${ee.version}</groupId>
+        <artifactId>jetty-${ee.version}-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -162,20 +177,20 @@
       <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlets</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
@@ -215,16 +230,16 @@
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>

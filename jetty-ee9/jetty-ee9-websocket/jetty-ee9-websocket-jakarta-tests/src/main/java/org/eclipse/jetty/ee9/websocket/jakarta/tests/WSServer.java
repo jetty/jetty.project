@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -29,9 +31,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,8 +99,8 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             // Configure the WebAppContext.
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
-            context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-            context.setBaseResource(new PathResource(contextDir));
+            context.setInitParameter("org.eclipse.jetty.ee9.servlet.Default.dirAllowed", "false");
+            context.setResourceBase(contextDir);
             context.setAttribute("org.eclipse.jetty.websocket.jakarta", Boolean.TRUE);
             context.addConfiguration(new JakartaWebSocketConfiguration());
         }

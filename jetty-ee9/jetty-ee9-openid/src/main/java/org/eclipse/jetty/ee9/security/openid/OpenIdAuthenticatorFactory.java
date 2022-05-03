@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
 import java.util.Collection;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 

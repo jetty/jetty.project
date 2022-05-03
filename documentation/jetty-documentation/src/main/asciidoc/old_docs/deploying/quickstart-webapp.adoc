@@ -59,9 +59,9 @@ In a Maven project you add a dependency on the artifact `jetty-quickstart`.
 
 ===== Configuration
 
-Webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`.
+Webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.ee9.webapp.WebAppContext`.
 
-`org.eclipse.jetty.quickstart.QuickStartWebApp` instances offer the same setters as the familiar `org.eclipse.jetty.webapp.WebAppContext`, with the addition of:
+`org.eclipse.jetty.quickstart.QuickStartWebApp` instances offer the same setters as the familiar `org.eclipse.jetty.ee9.webapp.WebAppContext`, with the addition of:
 
 autoPreconfigure:: 
                    (true/false). 
@@ -108,7 +108,7 @@ Otherwise, create a context xml file with the following information (in addition
 
 ====== In Code
 
-Create an instance of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`. You then use the QuickStartWebApp instance in exactly the same way that you would a WebAppContext.
+Create an instance of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.ee9.webapp.WebAppContext`. You then use the QuickStartWebApp instance in exactly the same way that you would a WebAppContext.
 
 Here's a snippet:
 

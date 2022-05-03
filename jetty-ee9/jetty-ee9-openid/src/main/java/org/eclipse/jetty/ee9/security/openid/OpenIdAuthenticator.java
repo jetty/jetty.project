@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -27,19 +27,20 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.security.authentication.SessionAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -111,7 +112,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration authConfig)
+    public void setConfiguration(Authenticator.AuthConfiguration authConfig)
     {
         if (_openIdConfiguration == null)
         {

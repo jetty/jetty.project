@@ -14,13 +14,12 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,36 +28,37 @@ import org.slf4j.LoggerFactory;
  * Base container to group rules. Can be extended so that the contained rules
  * will only be applied under certain conditions
  */
-public class RuleContainer extends Rule implements Dumpable
+public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
 {
     public static final String ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX = ".QUERYSTRING";
     private static final Logger LOG = LoggerFactory.getLogger(RuleContainer.class);
 
-    protected Rule[] _rules;
+    private final List<Rule> _rules = new ArrayList<>();
 
-    protected String _originalPathAttribute;
-    protected String _originalQueryStringAttribute;
-    protected boolean _rewriteRequestURI = true;
-    protected boolean _rewritePathInfo = true;
+    private String _originalPathAttribute;
+    private String _originalQueryStringAttribute;
 
     /**
-     * Returns the list of rules.
-     *
-     * @return an array of {@link Rule}.
+     * @return the list of {@code Rule}s
      */
-    public Rule[] getRules()
+    public List<Rule> getRules()
     {
         return _rules;
     }
 
     /**
-     * Assigns the rules to process.
-     *
-     * @param rules an array of {@link Rule}.
+     * @param rules the list of {@link Rule}.
      */
-    public void setRules(Rule[] rules)
+    public void setRules(List<Rule> rules)
     {
-        _rules = rules;
+        _rules.clear();
+        _rules.addAll(rules);
+    }
+
+    @Override
+    public Iterator<Rule> iterator()
+    {
+        return _rules.iterator();
     }
 
     /**
@@ -68,43 +68,7 @@ public class RuleContainer extends Rule implements Dumpable
      */
     public void addRule(Rule rule)
     {
-        _rules = ArrayUtil.addToArray(_rules, rule, Rule.class);
-    }
-
-    /**
-     * @return the rewriteRequestURI If true, this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getRequestURI()}.
-     */
-    public boolean isRewriteRequestURI()
-    {
-        return _rewriteRequestURI;
-    }
-
-    /**
-     * @param rewriteRequestURI true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getRequestURI()}.
-     */
-    public void setRewriteRequestURI(boolean rewriteRequestURI)
-    {
-        _rewriteRequestURI = rewriteRequestURI;
-    }
-
-    /**
-     * @return true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getPathInfo()}.
-     */
-    public boolean isRewritePathInfo()
-    {
-        return _rewritePathInfo;
-    }
-
-    /**
-     * @param rewritePathInfo true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getPathInfo()}.
-     */
-    public void setRewritePathInfo(boolean rewritePathInfo)
-    {
-        _rewritePathInfo = rewritePathInfo;
+        _rules.add(rule);
     }
 
     /**
@@ -117,98 +81,64 @@ public class RuleContainer extends Rule implements Dumpable
     }
 
     /**
-     * @param originalPathAttribte If non null, this string will be used
+     * @param originalPathAttribute If non null, this string will be used
      * as the attribute name to store the original request path.
      */
-    public void setOriginalPathAttribute(String originalPathAttribte)
+    public void setOriginalPathAttribute(String originalPathAttribute)
     {
-        _originalPathAttribute = originalPathAttribte;
-        _originalQueryStringAttribute = originalPathAttribte + ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX;
+        _originalPathAttribute = originalPathAttribute;
+        _originalQueryStringAttribute = originalPathAttribute + ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX;
     }
 
     /**
-     * Process the contained rules
+     * <p>Processes the rules.</p>
      *
-     * @param target target field to pass on to the contained rules
-     * @param request request object to pass on to the contained rules
-     * @param response response object to pass on to the contained rules
+     * @param input the input {@code Request} and {@code Processor}
+     * @return a {@code Request} and {@code Processor}, possibly wrapped by rules to implement the rule's logic,
+     * or {@code null} if no rule matched
      */
     @Override
-    public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        return apply(target, request, response);
-    }
+        if (_originalPathAttribute != null)
+        {
+            HttpURI httpURI = input.getHttpURI();
+            input.setAttribute(_originalPathAttribute, httpURI.getPath());
+            if (_originalQueryStringAttribute != null)
+                input.setAttribute(_originalQueryStringAttribute, httpURI.getQuery());
+        }
 
-    /**
-     * Process the contained rules (called by matchAndApply)
-     *
-     * @param target target field to pass on to the contained rules
-     * @param request request object to pass on to the contained rules
-     * @param response response object to pass on to the contained rules
-     * @return the target
-     * @throws IOException if unable to apply the rule
-     */
-    protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        boolean originalSet = _originalPathAttribute == null;
-
-        if (_rules == null)
-            return target;
-
+        boolean match = false;
         for (Rule rule : _rules)
         {
-            String applied = rule.matchAndApply(target, request, response);
-            if (applied != null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("applying {}", rule);
+            Request.WrapperProcessor output = rule.matchAndApply(input);
+            if (output == null)
             {
-                LOG.debug("applied {}", rule);
-                LOG.debug("rewrote {} to {}", target, applied);
-                if (!originalSet)
-                {
-                    originalSet = true;
-                    request.setAttribute(_originalPathAttribute, target);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("no match {}", rule);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("match {}", rule);
 
-                    String query = request.getQueryString();
-                    if (query != null)
-                        request.setAttribute(_originalQueryStringAttribute, query);
-                }
+                match = true;
 
-                // Ugly hack, we should just pass baseRequest into the API from RewriteHandler itself.
-                Request baseRequest = Request.getBaseRequest(request);
-
-                if (_rewriteRequestURI)
-                {
-                    String encoded = URIUtil.encodePath(applied);
-                    if (rule instanceof Rule.ApplyURI)
-                        ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
-                    else
-                    {
-                        HttpURI baseUri = baseRequest.getHttpURI();
-                        baseRequest.setHttpURI(HttpURI.build(baseUri, encoded)
-                            .param(baseUri.getParam())
-                            .query(baseUri.getQuery()));
-                    }
-                }
-
-                if (_rewritePathInfo)
-                    baseRequest.setContext(baseRequest.getContext(), applied);
-
-                target = applied;
-
-                if (rule.isHandling())
-                {
-                    LOG.debug("handling {}", rule);
-                    baseRequest.setHandled(true);
-                }
+                // Chain the rules.
+                input = output;
 
                 if (rule.isTerminating())
                 {
-                    LOG.debug("terminating {}", rule);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("terminating {}", rule);
                     break;
                 }
             }
         }
 
-        return target;
+        return match ? input : null;
     }
 
     @Override

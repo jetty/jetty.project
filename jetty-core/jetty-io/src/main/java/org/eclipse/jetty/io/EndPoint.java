@@ -89,10 +89,10 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface EndPoint extends Closeable
 {
-    /** 
+    /**
      * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
-    public interface Wrapper 
+    public interface Wrapper
     {
         /**
          * @return The wrapped {@code EndPoint}

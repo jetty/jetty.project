@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.start.BaseHome;
+import org.eclipse.jetty.start.Environment;
 import org.eclipse.jetty.start.Main;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartArgs;
@@ -155,7 +157,7 @@ public abstract class AbstractUseCase
 
         public List<String> getXmls()
         {
-            return startArgs.getXmlFiles().stream()
+            return startArgs.getCoreEnvironment().getXmlFiles().stream()
                 .map(p -> baseHome.toShortForm(p))
                 .collect(Collectors.toList());
         }
@@ -163,14 +165,24 @@ public abstract class AbstractUseCase
         public List<String> getLibs()
         {
             return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getClasspath().iterator(), Spliterator.ORDERED), false)
+                Spliterators.spliteratorUnknownSize(startArgs.getCoreEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }
 
+        public Collection<Environment> getEnvironments()
+        {
+            return startArgs.getEnvironments();
+        }
+
+        public Environment getEnvironment(String name)
+        {
+            return startArgs.getEnvironment(name);
+        }
+
         public List<String> getProperties()
         {
-            Props props = startArgs.getProperties();
+            Props props = startArgs.getCoreEnvironment().getProperties();
 
             Predicate<Props.Prop> propPredicate = (p) ->
             {

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.memcached</groupId>
+    <artifactId>jetty-memcached</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-memcached-sessions</artifactId>
+  <name>Jetty :: Memcached :: Sessions</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.xmemcached</groupId>
+      <artifactId>xmemcached</artifactId>
+      <version>${xmemcached.version}</version>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
+  </properties>
+
+</project>

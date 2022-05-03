@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.listeners;
+package org.eclipse.jetty.ee9.websocket.tests.listeners;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 
 @WebSocket
 public class AbstractAnnotatedListener

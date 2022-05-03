@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -58,12 +58,12 @@ public class ConcurrentStreamCreationTest extends AbstractTest
             }
         }, h2 -> h2.setMaxConcurrentStreams(total));
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         CyclicBarrier barrier = new CyclicBarrier(threads);
         CountDownLatch clientLatch = new CountDownLatch(total);
         CountDownLatch responseLatch = new CountDownLatch(runs);
-        Promise<Stream> promise = new Promise.Adapter<Stream>()
+        Promise<Stream> promise = new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)

@@ -21,6 +21,8 @@ package org.eclipse.jetty.io;
  */
 public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
 {
+    // TODO test this class and use it!
+
     /**
      * Creates a new ByteBufferPool with a default configuration.
      */

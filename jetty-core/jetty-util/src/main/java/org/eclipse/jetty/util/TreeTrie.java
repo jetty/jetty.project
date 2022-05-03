@@ -79,7 +79,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             return null;
         return trie;
     }
-    
+
     private static class Node<V>
     {
         private final Node<V>[] _nextIndex;
@@ -96,23 +96,23 @@ class TreeTrie<V> extends AbstractTrie<V>
             this._c = c;
         }
     }
-    
+
     private final int[] _lookup;
     private final Node<V> _root;
-    
+
     @SuppressWarnings("unchecked")
     TreeTrie()
     {
         this(false);
     }
-    
+
     TreeTrie(boolean caseSensitive)
     {
         super(caseSensitive);
         _lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
         _root = new Node<V>((char)0);
     }
-    
+
     @Override
     public void clear()
     {

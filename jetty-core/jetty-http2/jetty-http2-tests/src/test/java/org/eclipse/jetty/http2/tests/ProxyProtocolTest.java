@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -21,9 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -31,6 +27,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,13 +35,13 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -84,24 +81,16 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV1() throws Exception
     {
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                try
-                {
-                    assertEquals("1.2.3.4", request.getRemoteAddr());
-                    assertEquals(1111, request.getRemotePort());
-                    assertEquals("5.6.7.8", request.getLocalAddr());
-                    assertEquals(2222, request.getLocalPort());
-                }
-                catch (Throwable th)
-                {
-                    th.printStackTrace();
-                    response.setStatus(500);
-                }
-                baseRequest.setHandled(true);
+                assertEquals("1.2.3.4", Request.getRemoteAddr(request));
+                assertEquals(1111, Request.getRemotePort(request));
+                assertEquals("5.6.7.8", Request.getLocalAddr(request));
+                assertEquals(2222, Request.getLocalPort(request));
+                callback.succeeded();
             }
         });
 
@@ -135,28 +124,20 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV2() throws Exception
     {
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                try
-                {
-                    assertEquals("10.0.0.4", request.getRemoteAddr());
-                    assertEquals(33824, request.getRemotePort());
-                    assertEquals("10.0.0.5", request.getLocalAddr());
-                    assertEquals(8888, request.getLocalPort());
-                    EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
-                    assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
-                    ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                    assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
-                }
-                catch (Throwable th)
-                {
-                    th.printStackTrace();
-                    response.setStatus(500);
-                }
-                baseRequest.setHandled(true);
+                assertEquals("10.0.0.4", Request.getRemoteAddr(request));
+                assertEquals(33824, Request.getRemotePort(request));
+                assertEquals("10.0.0.5", Request.getLocalAddr(request));
+                assertEquals(8888, Request.getLocalPort(request));
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
+                ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
+                assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
+                callback.succeeded();
             }
         });
 
@@ -165,7 +146,7 @@ public class ProxyProtocolTest
         request1 = StringUtil.strip(request1, " ");
         SocketChannel channel = SocketChannel.open();
         channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
-        channel.write(ByteBuffer.wrap(TypeUtil.fromHexString(request1)));
+        channel.write(ByteBuffer.wrap(StringUtil.fromHexString(request1)));
 
         FuturePromise<Session> promise = new FuturePromise<>();
         client.accept(null, channel, new Session.Listener.Adapter(), promise);

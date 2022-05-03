@@ -51,16 +51,8 @@ public class ClientParser extends Parser
         }
     }
 
-    private class EndRequestListener implements Listener
+    private record EndRequestListener(Listener listener, StreamContentParser... streamParsers) implements Listener
     {
-        private final Listener listener;
-        private final StreamContentParser[] streamParsers;
-
-        private EndRequestListener(Listener listener, StreamContentParser... streamParsers)
-        {
-            this.listener = listener;
-            this.streamParsers = streamParsers;
-        }
 
         @Override
         public void onBegin(int request, int code, String reason)

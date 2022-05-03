@@ -38,24 +38,23 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
@@ -96,18 +95,28 @@ public class SniSslConnectionFactoryTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
-        httpConfiguration.addCustomizer((connector, httpConfig, request) ->
+
+        Handler.Wrapper xCertHandler = new Handler.Wrapper()
         {
-            EndPoint endPoint = request.getHttpChannel().getEndPoint();
-            SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-            SslConnection sslConnection = sslEndPoint.getSslConnection();
-            SSLEngine sslEngine = sslConnection.getSSLEngine();
-            SSLSession session = sslEngine.getSession();
-            for (Certificate c : session.getLocalCertificates())
+            @Override
+            public Request.Processor handle(Request request) throws Exception
             {
-                request.getResponse().getHttpFields().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                Request.Processor processor = getHandler().handle(request);
+                if (processor == null)
+                    return null;
+                return (ignored, response, callback) ->
+                {
+                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                    SslConnection sslConnection = sslEndPoint.getSslConnection();
+                    SSLEngine sslEngine = sslConnection.getSSLEngine();
+                    SSLSession session = sslEngine.getSession();
+                    for (Certificate c : session.getLocalCertificates())
+                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                    processor.process(request, response, callback);
+                };
             }
-        });
+        };
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         config.accept(sslContextFactory, secureRequestCustomizer);
@@ -122,16 +131,16 @@ public class SniSslConnectionFactoryTest
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
-
-        _server.setHandler(new AbstractHandler()
+        _server.setHandler(xCertHandler);
+        xCertHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setStatus(200);
-                response.setHeader("X-URL", request.getRequestURI());
-                response.setHeader("X-HOST", request.getServerName());
+                response.getHeaders().put("X-URL", request.getPathInContext());
+                response.getHeaders().put("X-HOST", Request.getServerName(request));
+                callback.succeeded();
             }
         });
 
@@ -329,7 +338,6 @@ public class SniSslConnectionFactoryTest
     public void testSameConnectionRequestsForManyDomains() throws Exception
     {
         start("src/test/resources/keystore_sni.p12");
-        _server.setErrorHandler(new ErrorHandler());
 
         SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
@@ -485,8 +493,8 @@ public class SniSslConnectionFactoryTest
 
         assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
         assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
-        assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
-        assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
+        assertEquals("customize connector class org.eclipse.jetty.server.internal.HttpConnection,true", history.poll());
+        assertEquals("customize http class org.eclipse.jetty.server.internal.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
     }
 

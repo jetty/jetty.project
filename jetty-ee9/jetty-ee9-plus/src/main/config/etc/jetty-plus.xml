@@ -9,20 +9,20 @@
   <!-- =========================================================== -->
   <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
-  <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
+  <Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setServerDefault">
     <Arg><Ref refid="Server" /></Arg>
     <Call name="add">
       <Arg>
         <Array type="String">
-          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+          <Item>org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration</Item>
+          <Item>org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration</Item>
         </Array>
       </Arg>
     </Call>
   </Call>
 
   <Call name="addBean">
-    <Arg><New class="org.eclipse.jetty.plus.jndi.NamingDump"/></Arg>
+    <Arg><New class="org.eclipse.jetty.ee9.plus.jndi.NamingDump"/></Arg>
   </Call>
 
 </Configure>

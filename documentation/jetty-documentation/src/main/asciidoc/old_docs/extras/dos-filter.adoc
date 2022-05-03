@@ -17,7 +17,7 @@
 [[dos-filter-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlets.DoSFilter`
+* Classname: `org.eclipse.jetty.ee9.servlets.DoSFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/DoSFilter.html
 
@@ -53,7 +53,7 @@ This example allow 30 requests at a time:
 ----
 <filter>
    <filter-name>DoSFilter</filter-name>
-   <filter-class>org.eclipse.jetty.servlets.DoSFilter</filter-class>
+   <filter-class>org.eclipse.jetty.ee9.servlets.DoSFilter</filter-class>
    <init-param>
      <param-name>maxRequestsPerSec</param-name>
      <param-value>30</param-value>

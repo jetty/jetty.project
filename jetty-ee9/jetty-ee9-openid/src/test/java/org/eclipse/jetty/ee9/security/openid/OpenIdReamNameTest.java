@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.nested.ContextHandlerCollection;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class OpenIdReamNameTest
@@ -67,7 +67,7 @@ public class OpenIdReamNameTest
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
-            assertThat(((OpenIdLoginService)loginService).getConfiguration(), is(config1));
+            assertThat(((OpenIdLoginService)loginService).getConfiguration(), Matchers.is(config1));
         }
         finally
         {
@@ -98,7 +98,7 @@ public class OpenIdReamNameTest
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
-            assertThat(((OpenIdLoginService)loginService).getConfiguration(), is(config1));
+            assertThat(((OpenIdLoginService)loginService).getConfiguration(), Matchers.is(config1));
         }
         finally
         {
@@ -134,14 +134,14 @@ public class OpenIdReamNameTest
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             LoginService loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
-            assertThat(((OpenIdLoginService)loginService).getConfiguration(), is(config1));
+            assertThat(((OpenIdLoginService)loginService).getConfiguration(), Matchers.is(config1));
 
             // The OpenIdConfiguration from context2 matches to config2.
             authenticator = context2.getSecurityHandler().getAuthenticator();
             assertThat(authenticator, instanceOf(OpenIdAuthenticator.class));
             loginService = ((OpenIdAuthenticator)authenticator).getLoginService();
             assertThat(loginService, instanceOf(OpenIdLoginService.class));
-            assertThat(((OpenIdLoginService)loginService).getConfiguration(), is(config2));
+            assertThat(((OpenIdLoginService)loginService).getConfiguration(), Matchers.is(config2));
         }
         finally
         {

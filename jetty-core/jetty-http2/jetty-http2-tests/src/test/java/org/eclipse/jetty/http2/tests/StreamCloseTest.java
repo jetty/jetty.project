@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -23,9 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
-import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -33,6 +30,9 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -59,7 +59,7 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, null);
@@ -93,7 +93,7 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
@@ -147,7 +147,7 @@ public class StreamCloseTest extends AbstractTest
         });
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
@@ -192,7 +192,7 @@ public class StreamCloseTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", HttpFields.EMPTY));
-                stream.push(pushFrame, new Promise.Adapter<Stream>()
+                stream.push(pushFrame, new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(final Stream pushedStream)
@@ -217,7 +217,7 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         final CountDownLatch clientLatch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -269,7 +269,7 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         final CountDownLatch clientLatch = new CountDownLatch(2);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -333,7 +333,7 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         // First stream will be idle on server.
         HeadersFrame request1 = new HeadersFrame(newRequest("HEAD", HttpFields.EMPTY), null, true);

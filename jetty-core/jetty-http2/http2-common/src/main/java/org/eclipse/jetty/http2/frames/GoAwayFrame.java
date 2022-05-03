@@ -15,7 +15,7 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.internal.ErrorCode;
 
 public class GoAwayFrame extends Frame
 {

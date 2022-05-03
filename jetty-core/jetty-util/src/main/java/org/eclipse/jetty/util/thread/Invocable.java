@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Callable;
-
-import org.eclipse.jetty.util.Callback;
-
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -33,7 +29,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface Invocable
 {
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
      * <p>The behavior of an {@link Invocable} when it is invoked.</p>
@@ -78,6 +74,13 @@ public interface Invocable
      */
     interface Task extends Invocable, Runnable
     {
+    }
+
+    // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    // TODO: there is already java.util.Callable, can we use it?
+    interface Callable extends Invocable
+    {
+        void call() throws Exception;
     }
 
     /**
@@ -131,7 +134,7 @@ public interface Invocable
      * @return True if the task the current thread is running has
      * indicated that it will not block.
      */
-    public static boolean isNonBlockingInvocation()
+    static boolean isNonBlockingInvocation()
     {
         return Boolean.TRUE.equals(__nonBlocking.get());
     }
@@ -142,7 +145,7 @@ public interface Invocable
      *
      * @param task The task to invoke.
      */
-    public static void invokeNonBlocking(Runnable task)
+    static void invokeNonBlocking(Runnable task)
     {
         Boolean wasNonBlocking = __nonBlocking.get();
         try
@@ -156,6 +159,12 @@ public interface Invocable
         }
     }
 
+    /**
+     * Combine two invocation type.
+     * @param it1 A type
+     * @param it2 Another type
+     * @return The combination of both type, where any tendency to block overrules any non blocking.
+     */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
         if (it1 != null && it2 != null)
@@ -177,7 +186,7 @@ public interface Invocable
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.
      */
-    public static InvocationType getInvocationType(Object o)
+    static InvocationType getInvocationType(Object o)
     {
         if (o instanceof Invocable)
             return ((Invocable)o).getInvocationType();

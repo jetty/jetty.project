@@ -13,24 +13,13 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.Collections;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,91 +27,65 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ForceRequestHeaderValueRuleTest
+public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
 {
-    private Server server;
-    private LocalConnector connector;
-    private ForceRequestHeaderValueRule rule;
-
-    @BeforeEach
-    public void setup() throws Exception
+    public void start(ForceRequestHeaderValueRule rule) throws Exception
     {
-        server = new Server();
-        connector = new LocalConnector(server);
-        server.addConnector(connector);
-
-        HandlerList handlers = new HandlerList();
-
-        RewriteHandler rewriteHandler = new RewriteHandler();
-        rule = new ForceRequestHeaderValueRule();
-        rewriteHandler.addRule(rule);
-
-        Handler handler = new AbstractHandler()
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain");
-                response.setCharacterEncoding("utf-8");
-                OutputStream stream = response.getOutputStream();
-                OutputStreamWriter out = new OutputStreamWriter(stream);
-                out.append("Echo\n");
-                for (String headerName : Collections.list(request.getHeaderNames()))
+                response.setContentType("text/plain;charset=utf-8");
+                for (HttpField httpField : request.getHeaders())
                 {
-                    // Combine all values for header into single output on response body
-                    out.append("Request Header[").append(headerName).append("]: [")
-                        .append(request.getHeader(headerName)).append("]\n");
+                    response.write(false, Callback.NOOP, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()));
                 }
-                out.flush();
-                baseRequest.setHandled(true);
+                response.write(true, callback, BufferUtil.EMPTY_BUFFER);
             }
-        };
-
-        handlers.addHandler(rewriteHandler);
-        handlers.addHandler(handler);
-        server.setHandler(handlers);
-        server.start();
-    }
-
-    @AfterEach
-    public void teardown()
-    {
-        LifeCycle.stop(server);
+        });
     }
 
     @Test
     public void testNormalRequest() throws Exception
     {
+        ForceRequestHeaderValueRule rule = new ForceRequestHeaderValueRule();
         rule.setHeaderName("Accept");
-        rule.setForcedValue("*/*");
+        rule.setHeaderValue("*/*");
+        start(rule);
 
-        StringBuilder request = new StringBuilder();
-        request.append("GET /echo/foo HTTP/1.1\r\n");
-        request.append("Host: local\r\n");
-        request.append("Connection: closed\r\n");
-        request.append("\r\n");
+        String request = """
+            GET /echo/foo HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString()));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), not(containsString("[Accept]")));
         assertThat(response.getContent(), containsString("[Host]: [local]"));
-        assertThat(response.getContent(), containsString("[Connection]: [closed]"));
+        assertThat(response.getContent(), containsString("[Connection]: [close]"));
     }
 
     @Test
     public void testOneAcceptHeaderRequest() throws Exception
     {
+        ForceRequestHeaderValueRule rule = new ForceRequestHeaderValueRule();
         rule.setHeaderName("Accept");
-        rule.setForcedValue("*/*");
+        rule.setHeaderValue("*/*");
+        start(rule);
 
-        StringBuilder request = new StringBuilder();
-        request.append("GET /echo/foo HTTP/1.1\r\n");
-        request.append("Host: local\r\n");
-        request.append("Accept: */*\r\n");
-        request.append("Connection: closed\r\n");
-        request.append("\r\n");
+        String request = """
+            GET /echo/foo HTTP/1.1
+            Host: local
+            Accept: */*
+            Connection: closed
+            
+            """;
 
-        String rawResponse = connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [*/*]"));
@@ -133,19 +96,22 @@ public class ForceRequestHeaderValueRuleTest
     @Test
     public void testThreeAcceptHeadersRequest() throws Exception
     {
+        ForceRequestHeaderValueRule rule = new ForceRequestHeaderValueRule();
         rule.setHeaderName("Accept");
-        rule.setForcedValue("text/*");
+        rule.setHeaderValue("text/*");
+        start(rule);
 
-        StringBuilder request = new StringBuilder();
-        request.append("GET /echo/foo HTTP/1.1\r\n");
-        request.append("Host: local\r\n");
-        request.append("Accept: images/jpeg\r\n");
-        request.append("Accept: text/plain\r\n");
-        request.append("Accept: */*\r\n");
-        request.append("Connection: closed\r\n");
-        request.append("\r\n");
+        String request = """
+            GET /echo/foo HTTP/1.1
+            Host: local
+            Accept: images/jpeg
+            Accept: text/plain
+            Accept: */*
+            Connection: closed
+            
+            """;
 
-        String rawResponse = connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [text/*]"));
@@ -156,21 +122,24 @@ public class ForceRequestHeaderValueRuleTest
     @Test
     public void testInterleavedAcceptHeadersRequest() throws Exception
     {
+        ForceRequestHeaderValueRule rule = new ForceRequestHeaderValueRule();
         rule.setHeaderName("Accept");
-        rule.setForcedValue("application/*");
+        rule.setHeaderValue("application/*");
+        start(rule);
 
-        StringBuilder request = new StringBuilder();
-        request.append("GET /echo/foo HTTP/1.1\r\n");
-        request.append("Host: local\r\n");
-        request.append("Accept: images/jpeg\r\n"); // not value intended to be forced
-        request.append("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0\r\n");
-        request.append("accept: text/plain\r\n"); // interleaved with other headers shouldn't matter
-        request.append("Accept-Charset: iso-8859-5, unicode-1-1;q=0.8\r\n");
-        request.append("ACCEPT: */*\r\n"); // case shouldn't matter
-        request.append("Connection: closed\r\n");
-        request.append("\r\n");
+        String request = """
+            GET /echo/foo HTTP/1.1
+            Host: local
+            Accept: images/jpeg
+            Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0
+            accept: text/plain
+            Accept-Charset: iso-8859-5, unicode-1-1;q=0.8
+            ACCEPT: */*
+            Connection: closed
+            
+            """;
 
-        String rawResponse = connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [application/*]"));

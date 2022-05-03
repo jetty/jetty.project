@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi.provider;
+package org.eclipse.jetty.ee9.security.jaspi.provider;
 
 import java.util.Collections;
 import java.util.Map;
@@ -23,7 +23,7 @@ import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.ClientAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.module.ServerAuthModule;
-import org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
+import org.eclipse.jetty.ee9.security.jaspi.JaspiAuthenticatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

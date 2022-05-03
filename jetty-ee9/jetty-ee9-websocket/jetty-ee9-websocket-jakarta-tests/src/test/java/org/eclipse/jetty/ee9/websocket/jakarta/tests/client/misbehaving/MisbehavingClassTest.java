@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client.misbehaving;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client.misbehaving;
 
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.jakarta.tests.CoreServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

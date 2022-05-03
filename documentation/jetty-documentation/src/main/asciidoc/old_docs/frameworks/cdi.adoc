@@ -33,12 +33,12 @@ The Jetty distribution come with several CDI modules.
 These modules do not provide CDI, but instead enable one of more integration mechanisms.
 
 ===== Jetty `cdi` Module
-The `cdi` module supports either two modes of CDI integration which can be selected either by the "org.eclipse.jetty.cdi" context init parameter or the "org.eclipse.jetty.cdi" server attribute (which is initialised from the "jetty.cdi.mode" start property).
+The `cdi` module supports either two modes of CDI integration which can be selected either by the "org.eclipse.jetty.ee9.cdi" context init parameter or the "org.eclipse.jetty.ee9.cdi" server attribute (which is initialised from the "jetty.cdi.mode" start property).
 Supported modes are:
 
  * `CdiSpiDecorator` Jetty will call the CDI SPI within the webapp to decorate objects (default).
 
- * `CdiDecoratingLister` The webapp may register a decorator on the context attribute "org.eclipse.jetty.cdi.decorator".
+ * `CdiDecoratingLister` The webapp may register a decorator on the context attribute "org.eclipse.jetty.ee9.cdi.decorator".
 -------------------------
 cd $JETTY_BASE
 java -jar $JETTY_HOME/start.jar --add-to-start=cdi
@@ -74,7 +74,7 @@ This module is equivalent to directly modifying the class path configuration wit
 -------------------------------------------------------------
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
    <Call name="prependServerClass">
       <Arg>-org.eclipse.jetty.util.Decorator</Arg>
    </Call>
@@ -88,7 +88,7 @@ This module is equivalent to directly modifying the class path configuration wit
       <Arg>-org.eclipse.jetty.server.handler.ContextHandler</Arg>
    </Call>
    <Call name="prependServerClass">
-      <Arg>-org.eclipse.jetty.servlet.ServletContextHandler</Arg>
+      <Arg>-org.eclipse.jetty.ee9.servlet.ServletContextHandler</Arg>
    </Call>
 </Configure>
 -------------------------------------------------------------

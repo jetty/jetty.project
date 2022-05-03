@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,17 +31,17 @@ import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

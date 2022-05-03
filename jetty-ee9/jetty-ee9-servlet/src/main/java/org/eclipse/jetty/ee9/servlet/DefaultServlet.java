@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,17 +24,17 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.CachedContentFactory;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ResourceContentFactory;
+import org.eclipse.jetty.ee9.nested.ResourceHandler;
+import org.eclipse.jetty.ee9.nested.ResourceService;
+import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.CachedContentFactory;
-import org.eclipse.jetty.server.ResourceContentFactory;
-import org.eclipse.jetty.server.ResourceService;
-import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -345,14 +345,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      */
     protected ContextHandler initContextHandler(ServletContext servletContext)
     {
-        ContextHandler.Context scontext = ContextHandler.getCurrentContext();
+        ContextHandler.APIContext scontext = ContextHandler.getCurrentContext();
         if (scontext == null)
         {
-            if (servletContext instanceof ContextHandler.Context)
-                return ((ContextHandler.Context)servletContext).getContextHandler();
+            if (servletContext instanceof ContextHandler.APIContext)
+                return ((ContextHandler.APIContext)servletContext).getContextHandler();
             else
                 throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-                    servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+                    servletContext.getClass().getName() + " is not " + ContextHandler.APIContext.class.getName());
         }
         else
             return ContextHandler.getCurrentContext().getContextHandler();
@@ -413,7 +413,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 if (!_contextHandler.checkAlias(pathInContext, r))
                     r = null;
             }
-            else if (_servletContext instanceof ContextHandler.Context)
+            else if (_servletContext instanceof ContextHandler.APIContext)
             {
                 r = _contextHandler.getResource(pathInContext);
             }

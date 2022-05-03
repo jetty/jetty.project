@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -167,7 +167,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.Context) && ((ContextHandler.Context)context).getContextHandler().isStarted())
+            if ((context instanceof APIContext) && ((APIContext)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
@@ -200,8 +200,8 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             if (ctx == null)
                 return getHeldClass().getDeclaredConstructor().newInstance();
 
-            if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
-                return ((ServletContextHandler.Context)ctx).createInstance(this);
+            if (ServletContextHandler.ServletAPIContext.class.isAssignableFrom(ctx.getClass()))
+                return ((ServletContextHandler.ServletAPIContext)ctx).createInstance(this);
 
             return null;
         }
@@ -219,7 +219,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             return scontext;
 
         //try the ContextHandler next
-        Context ctx = ContextHandler.getCurrentContext();
+        APIContext ctx = ContextHandler.getCurrentContext();
         if (ctx != null)
         {
             ContextHandler contextHandler = ctx.getContextHandler();
@@ -255,7 +255,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         ServletContextHandler contextHandler = getServletHandler().getServletContextHandler();
         if (contextHandler == null)
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            APIContext context = ContextHandler.getCurrentContext();
             contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
         }
 

@@ -34,20 +34,21 @@ import org.eclipse.jetty.util.UrlEncoded;
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
- * {@code http://user@host:port/path;param1/%2e/info;param2?query#fragment}
+ * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar;param2?query#fragment}
  * is split into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path;param1/%2e/info;param2</li>
- * <li>{@link #getDecodedPath()} - /path/info</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/f%6fo%2fbar;param2</li>
+ * <li>{@link #getCanonicalPath()} - /path/foo%2Fbar</li>
+ * <li>{@link #getDecodedPath()} - /path/foo/bar</li>
  * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
  * <p>The path part of the URI is provided in both raw form ({@link #getPath()}) and
- * decoded form ({@link #getDecodedPath}), which has: path parameters removed,
+ * decoded form ({@link #getCanonicalPath}), which has: path parameters removed,
  * percent encoded characters expanded and relative segments resolved.  This approach
  * is somewhat contrary to <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a>
  * which no longer defines path parameters (removed after
@@ -106,6 +107,18 @@ public interface HttpURI
         return new Mutable(uri);
     }
 
+    static Mutable build(String method, String uri)
+    {
+        if (HttpMethod.CONNECT.is(method))
+        {
+            HostPort hostPort = new HostPort(uri);
+            return new Mutable(null, hostPort.getHost(), hostPort.getPort(), null);
+        }
+        if (uri.startsWith("/"))
+            return HttpURI.build().pathQuery(uri);
+        return HttpURI.build(uri);
+    }
+
     static Immutable from(URI uri)
     {
         return new HttpURI.Mutable(uri).asImmutable();
@@ -125,6 +138,11 @@ public interface HttpURI
         return HttpURI.from(uri);
     }
 
+    static Immutable from(String scheme, HostPort hostPort, String pathQuery)
+    {
+        return new Mutable(scheme, hostPort.getHost(), hostPort.getPort(), pathQuery).asImmutable();
+    }
+
     static Immutable from(String scheme, String host, int port, String pathQuery)
     {
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
@@ -138,13 +156,14 @@ public interface HttpURI
 
     String getDecodedPath();
 
+    String getCanonicalPath();
+
     String getFragment();
 
     String getHost();
 
     /**
-     * Get a URI path parameter. Multiple and in segment parameters are ignored and only
-     * the last trailing parameter is returned.
+     * Get a URI path parameter. Only parameters from the last segment are returned.
      * @return The last path parameter or null
      */
     String getParam();
@@ -258,7 +277,7 @@ public interface HttpURI
         private final String _query;
         private final String _fragment;
         private String _uri;
-        private String _decodedPath;
+        private String _canonicalPath;
         private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
 
         private Immutable(Mutable builder)
@@ -272,7 +291,7 @@ public interface HttpURI
             _query = builder._query;
             _fragment = builder._fragment;
             _uri = builder._uri;
-            _decodedPath = builder._decodedPath;
+            _canonicalPath = builder._canonicalPath;
             _violations.addAll(builder._violations);
         }
 
@@ -287,7 +306,7 @@ public interface HttpURI
             _query = null;
             _fragment = null;
             _uri = uri;
-            _decodedPath = null;
+            _canonicalPath = null;
         }
 
         @Override
@@ -355,9 +374,15 @@ public interface HttpURI
         @Override
         public String getDecodedPath()
         {
-            if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
-            return _decodedPath;
+            return URIUtil.decodePath(getCanonicalPath());
+        }
+
+        @Override
+        public String getCanonicalPath()
+        {
+            if (_canonicalPath == null && _path != null)
+                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+            return _canonicalPath;
         }
 
         @Override
@@ -535,7 +560,7 @@ public interface HttpURI
         private String _query;
         private String _fragment;
         private String _uri;
-        private String _decodedPath;
+        private String _canonicalPath;
         private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
         private boolean _emptySegment;
 
@@ -599,6 +624,10 @@ public interface HttpURI
 
         private Mutable(String scheme, String host, int port, String pathQuery)
         {
+            // TODO review if this should be here
+            if (port == HttpScheme.getDefaultPort(scheme))
+                port = 0;
+
             _uri = null;
 
             _scheme = scheme;
@@ -660,7 +689,7 @@ public interface HttpURI
             _query = null;
             _fragment = null;
             _uri = null;
-            _decodedPath = null;
+            _canonicalPath = null;
             _emptySegment = false;
             _violations.clear();
             return this;
@@ -670,7 +699,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = URIUtil.encodePath(path);
-            _decodedPath = path;
+            _canonicalPath = path;
             return this;
         }
 
@@ -701,9 +730,15 @@ public interface HttpURI
         @Override
         public String getDecodedPath()
         {
-            if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
-            return _decodedPath;
+            return URIUtil.decodePath(getCanonicalPath());
+        }
+
+        @Override
+        public String getCanonicalPath()
+        {
+            if (_canonicalPath == null && _path != null)
+                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+            return _canonicalPath;
         }
 
         @Override
@@ -783,7 +818,7 @@ public interface HttpURI
         @Override
         public boolean isAbsolute()
         {
-            return _scheme != null && !_scheme.isEmpty();
+            return StringUtil.isNotBlank(_scheme);
         }
 
         @Override
@@ -824,10 +859,9 @@ public interface HttpURI
         public Mutable param(String param)
         {
             _param = param;
-            if (_path != null && _param != null && !_path.contains(_param))
-            {
+            if (_path != null && _param != null)
                 _path += ";" + _param;
-            }
+
             _uri = null;
             return this;
         }
@@ -840,7 +874,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = path;
-            _decodedPath = null;
+            _canonicalPath = null;
             return this;
         }
 
@@ -848,7 +882,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = null;
-            _decodedPath = null;
+            _canonicalPath = null;
             _param = null;
             _query = null;
             if (pathQuery != null)
@@ -910,7 +944,7 @@ public interface HttpURI
             _param = uri.getParam();
             _query = uri.getQuery();
             _uri = null;
-            _decodedPath = uri.getDecodedPath();
+            _canonicalPath = uri.getCanonicalPath();
             if (uri.hasAmbiguousSeparator())
                 _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
             if (uri.hasAmbiguousSegment())
@@ -1280,7 +1314,6 @@ public interface HttpURI
                                 break;
                             case ';':
                                 // multiple parameters
-                                mark = i + 1;
                                 break;
                             default:
                                 break;
@@ -1356,17 +1389,17 @@ public interface HttpURI
             if (!encodedPath && !dot)
             {
                 if (_param == null)
-                    _decodedPath = _path;
+                    _canonicalPath = _path;
                 else
-                    _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
+                    _canonicalPath = _path.substring(0, _path.length() - _param.length() - 1);
             }
             else if (_path != null)
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
-                String decodedNonCanonical = URIUtil.decodePath(_path);
-                _decodedPath = URIUtil.canonicalPath(decodedNonCanonical);
-                if (_decodedPath == null)
+                String decodedNonCanonical = URIUtil.normalizePath(_path);
+                _canonicalPath = URIUtil.canonicalPath(decodedNonCanonical);
+                if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
         }

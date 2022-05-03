@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,9 +21,9 @@ import java.util.Map;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +98,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         if (error instanceof ServletException && _unwrapServletException)
         {
-            Throwable unwrapped = getFirstNonServletException(error);
+            Throwable unwrapped = ((ServletException)error).getRootCause();
             if (unwrapped != null)
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
@@ -175,20 +175,6 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         }
 
         return errorPage;
-    }
-
-    /**
-     *
-     * @param t the initial exception
-     * @return the first non {@link ServletException} from root cause chain
-     */
-    private Throwable getFirstNonServletException(Throwable t) 
-    {
-        if (t instanceof ServletException && t.getCause() != null) 
-        {
-            return getFirstNonServletException(t.getCause());
-        }
-        return t;
     }
 
     public Map<String, String> getErrorPages()

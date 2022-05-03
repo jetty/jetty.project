@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>11.0.10-SNAPSHOT</version>
+  <version>12.0.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -13,10 +13,9 @@
 
   <properties>
     <!-- build -->
-    <compiler.source>11</compiler.source>
-    <compiler.target>11</compiler.target>
-    <compiler.release>11</compiler.release>
-    <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
+    <compiler.source>17</compiler.source>
+    <compiler.target>17</compiler.target>
+    <compiler.release>17</compiler.release>
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
@@ -25,93 +24,63 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.12</ant.version>
-    <apache.avro.version>1.11.0</apache.avro.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.3</asciidoctorj.version>
-    <asm.version>9.3</asm.version>
-    <awaitility.version>4.2.0</awaitility.version>
+    <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
+    <asm.version>9.2</asm.version>
+    <awaitility.version>4.1.1</awaitility.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.1</checkstyle.version>
+    <checkstyle.version>9.2.1</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
-    <commons.compress.version>1.21</commons.compress.version>
-    <commons.io.version>2.11.0</commons.io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
     <felix.version>7.0.3</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.13.1</google.errorprone.version>
-    <grpc.version>1.45.1</grpc.version>
-    <gson.version>2.9.0</gson.version>
-    <guava.version>31.1-jre</guava.version>
-    <guice.version>5.1.0</guice.version>
+    <google.errorprone.version>2.10.0</google.errorprone.version>
+    <grpc.version>1.43.1</grpc.version>
+    <gson.version>2.8.9</gson.version>
+    <guava.version>31.0.1-jre</guava.version>
+    <guice.version>5.0.1</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.14.5</hawtio.version>
     <hazelcast.version>4.2.4</hazelcast.version>
-    <infinispan.protostream.version>4.4.2.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.15.Final</infinispan.version>
-    <jackson.annotations.version>2.13.2</jackson.annotations.version>
-    <jackson.core.version>2.13.2</jackson.core.version>
-    <jackson.databind.version>2.13.2.2</jackson.databind.version>
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.1.0</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
-    <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
-    <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
-    <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.5.0.Final</jboss.logging.version>
+    <infinispan.version>11.0.11.Final</infinispan.version>
+    <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+    <jackson-databind.version>2.13.0</jackson-databind.version>
+    <jamon.version>2.82</jamon.version>
+    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <jboss-logging.version>2.2.1.Final</jboss-logging.version>
     <jboss-logmanager.version>2.1.18.Final</jboss-logmanager.version>
     <jboss-threads.version>3.1.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
-    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
     <jetty-quiche-native.version>0.12.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>5.9</jetty.test.version>
-    <jmh.version>1.35</jmh.version>
-    <jna.version>5.11.0</jna.version>
+    <jmh.version>1.34</jmh.version>
+    <jna.version>5.10.0</jna.version>
     <jnr-constants.version>0.10.3</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
-    <jnr-ffi.version>2.2.12</jnr-ffi.version>
+    <jnr-ffi.version>2.2.11</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.4.8</json-smart.version>
-    <jsp.impl.version>10.0.14</jsp.impl.version>
+    <json-smart.version>2.4.7</json-smart.version>
+    <jsp.impl.version>10.0.10</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
     <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
-    <log4j2.version>2.17.2</log4j2.version>
-    <logback.version>1.3.0-alpha14</logback.version>
-    <mariadb.version>3.0.4</mariadb.version>
+    <log4j2.version>2.17.1</log4j2.version>
+    <logback.version>1.3.0-alpha12</logback.version>
+    <mariadb.version>2.7.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
+    <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.8.0</maven.resolver.version>
-    <maven.version>3.8.4</maven.version>
+    <maven.resolver.version>1.7.3</maven.resolver.version>
     <mongodb.version>3.2.2</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
-    <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
+    <org.osgi.annotation.version>8.0.1</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
@@ -119,31 +88,29 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.17.1</testcontainers.version>
-    <weld.version>4.0.3.Final</weld.version>
-    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>1.19.0.Final</wildfly.elytron.version>
+    <testcontainers.version>1.16.2</testcontainers.version>
     <xmemcached.version>2.4.7</xmemcached.version>
+    <weld.version>4.0.2.Final</weld.version>
 
     <!-- some maven plugins versions -->
     <appassembler.maven.plugin.version>2.1.0</appassembler.maven.plugin.version>
-    <asciidoctor.maven.plugin.version>2.2.2</asciidoctor.maven.plugin.version>
+    <asciidoctor.maven.plugin.version>2.2.1</asciidoctor.maven.plugin.version>
     <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
     <buildnumber.maven.plugin.version>3.0.0</buildnumber.maven.plugin.version>
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
     <h2spec.maven.plugin.version>1.0.9</h2spec.maven.plugin.version>
-    <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
+    <jacoco.maven.plugin.version>0.8.7</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
-    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
+    <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.4</maven.bundle.plugin.version>
-    <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
+    <maven.clean.plugin.version>3.1.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
-    <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
+    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M2</maven.deploy.plugin.version>
     <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.0.0</maven.enforcer.plugin.version>
@@ -152,20 +119,21 @@
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
-    <maven.jxr.plugin.version>3.2.0</maven.jxr.plugin.version>
+    <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
+    <maven.jxr.plugin.version>3.1.1</maven.jxr.plugin.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.6.2</maven-plugin.plugin.version>
+    <maven.project-info-reports.plugin.version>3.1.2</maven.project-info-reports.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>1.7.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
-    <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
+    <maven.shade.plugin.version>3.2.4</maven.shade.plugin.version>
+    <maven.site.plugin.version>3.10.0</maven.site.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.6.0.0</spotbugs.maven.plugin.version>
-    <versions.maven.plugin.version>2.10.0</versions.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.5.3.0</spotbugs.maven.plugin.version>
+    <versions.maven.plugin.version>2.8.1</versions.maven.plugin.version>
 
     <!-- testing -->
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -198,60 +166,15 @@
   </scm>
 
   <modules>
-    <module>build-resources</module>
-    <module>demos</module>
-    <module>jetty-slf4j-impl</module>
-    <module>jetty-ant</module>
-    <module>jetty-util</module>
-    <module>jetty-jmx</module>
-    <module>jetty-io</module>
-    <module>jetty-quic</module>
-    <module>jetty-http</module>
-    <module>jetty-http2</module>
-    <module>jetty-http3</module>
-    <module>jetty-server</module>
-    <module>jetty-xml</module>
-    <module>jetty-security</module>
-    <module>jetty-openid</module>
-    <module>jetty-servlet</module>
-    <module>jetty-webapp</module>
-    <module>jetty-fcgi</module>
-    <module>jetty-websocket</module>
-    <module>jetty-servlets</module>
-    <module>jetty-util-ajax</module>
-    <module>apache-jsp</module>
-    <module>glassfish-jstl</module>
-    <module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module>
-    <module>jetty-deploy</module>
-    <module>jetty-start</module>
-    <module>jetty-plus</module>
-    <module>jetty-annotations</module>
-    <module>jetty-jndi</module>
-    <module>jetty-jaas</module>
-    <module>jetty-cdi</module>
-    <module>jetty-client</module>
-    <module>jetty-proxy</module>
-    <module>jetty-jaspi</module>
-    <module>jetty-rewrite</module>
-    <module>jetty-nosql</module>
-    <module>jetty-infinispan</module>
-    <module>jetty-gcloud</module>
-    <module>jetty-memcached</module>
-    <module>jetty-hazelcast</module>
-    <module>jetty-unixsocket</module>
-    <module>tests</module>
-    <module>jetty-quickstart</module>
-    <module>jetty-runner</module>
-    <module>jetty-http-spi</module>
-    <module>jetty-osgi</module>
-    <module>jetty-alpn</module>
-    <module>jetty-home</module>
-    <module>jetty-bom</module>
-    <module>documentation</module>
-    <module>jetty-keystore</module>
-    <module>jetty-p2</module>
-    <module>jetty-unixdomain-server</module>
+    <module>build</module>
+<!--    <module>documentation</module>-->
+    <module>jetty-core</module>
+    <module>jetty-ee9</module>
+    <module>jetty-ee10</module>
+<!--    <module>jetty-home</module>-->
+<!--    <module>jetty-integrations</module>-->
+<!--    <module>jetty-p2</module>-->
+<!--    <module>tests</module>-->
   </modules>
 
   <build>
@@ -295,12 +218,12 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.5.0,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.5.0 or newer</message>
+                  <version>[3.8.4,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.8.4 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[11,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 11 or newer</message>
+                  <version>[17,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
@@ -447,19 +370,19 @@
               </includes>
               <excludes>
                 <!-- Sabre Holdings -->
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/AntWebAppContext.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/Connectors.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/ContextHandlers.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/FileMatchingConfiguration.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/LoginServices.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/SystemProperties.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/utils/ServerProxy.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/utils/TaskLog.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/AntWebXmlConfiguration.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/JettyRunTask.java</exclude>
-                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/ServerProxyImpl.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebAppContext.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/Connectors.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/ContextHandlers.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/FileMatchingConfiguration.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/LoginServices.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/SystemProperties.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/ServerProxy.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/TaskLog.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebXmlConfiguration.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/JettyRunTask.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/ServerProxyImpl.java</exclude>
                 <!-- Aki Yoshida -->
-                <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+                <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
                 <!-- Distribution Text (no header, too noisy) -->
                 <exclude>jetty-home/src/main/resources/README.adoc</exclude>
               </excludes>
@@ -613,6 +536,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${maven.surefire.plugin.version}</version>
+          <configuration>
+            <failIfNoTests>false</failIfNoTests>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -632,8 +558,8 @@
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
+            <ignoreFailures>true</ignoreFailures>
             <skipInvocation>${skipTests}</skipInvocation>
-            <streamLogsOnFailures>true</streamLogsOnFailures>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
             </pomIncludes>
@@ -703,6 +629,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>${maven.project-info-reports.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
           <version>${maven.release.plugin.version}</version>
         </plugin>
@@ -723,9 +654,18 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>${maven.shade.plugin.version}</version>
-          <configuration>
-            <createDependencyReducedPom>false</createDependencyReducedPom>
-          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.ow2.asm</groupId>
+              <artifactId>asm</artifactId>
+              <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.ow2.asm</groupId>
+              <artifactId>asm-commons</artifactId>
+              <version>${asm.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -826,7 +766,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2022 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2021 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <Import-Package>
                 ${osgi.slf4j.import.packages},
                 *
@@ -1045,24 +985,9 @@
         <version>${openpojo.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.xml.ws</groupId>
-        <artifactId>jaxws-rt</artifactId>
-        <version>${jakarta.xml.jaxws.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>jakarta.mail</artifactId>
-        <version>${jakarta.mail.api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>${commons.io.version}</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
@@ -1074,91 +999,6 @@
         <artifactId>hawtio-default</artifactId>
         <version>${hawtio.version}</version>
         <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.el</groupId>
-        <artifactId>jakarta.el-api</artifactId>
-        <version>${jakarta.el.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.enterprise</groupId>
-        <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>${jakarta.enterprise.cdi.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.activation</groupId>
-        <artifactId>jakarta.activation-api</artifactId>
-        <version>${jakarta.activation.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.annotation</groupId>
-        <artifactId>jakarta.annotation-api</artifactId>
-        <version>${jakarta.annotation.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.authentication</groupId>
-        <artifactId>jakarta.authentication-api</artifactId>
-        <version>${jakarta.authentication.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.interceptor</groupId>
-        <artifactId>jakarta.interceptor-api</artifactId>
-        <version>${jakarta.interceptor.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.inject</groupId>
-        <artifactId>jakarta.inject-api</artifactId>
-        <version>${jakarta.inject.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.mail</groupId>
-        <artifactId>jakarta.mail-api</artifactId>
-        <version>${jakarta.mail.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>${jakarta.servlet.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp</groupId>
-        <artifactId>jakarta.servlet.jsp-api</artifactId>
-        <version>${jakarta.servlet.jsp.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp.jstl</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>jakarta.el</groupId>
-            <artifactId>jakarta.el-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.transaction</groupId>
-        <artifactId>jakarta.transaction-api</artifactId>
-        <version>${jakarta.transaction-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.ws.rs.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.ws</groupId>
-        <artifactId>jakarta.xml.ws-api</artifactId>
-        <version>${jakarta.xml.ws.api.version}</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1203,12 +1043,12 @@
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-artifact</artifactId>
-        <version>${maven.version}</version>
+        <version>${maven.deps.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-core</artifactId>
-        <version>${maven.version}</version>
+        <version>${maven.deps.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.inject</groupId>
@@ -1222,13 +1062,8 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
-        <artifactId>maven-model</artifactId>
-        <version>${maven.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
         <artifactId>maven-plugin-api</artifactId>
-        <version>${maven.version}</version>
+        <version>${maven.deps.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.enterprise</groupId>
@@ -1239,7 +1074,7 @@
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-resolver-provider</artifactId>
-        <version>${maven.version}</version>
+        <version>${maven.deps.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.inject</groupId>
@@ -1250,7 +1085,7 @@
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-settings</artifactId>
-        <version>${maven.version}</version>
+        <version>${maven.deps.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
@@ -1319,16 +1154,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>glassfish-jstl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1355,21 +1180,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-annotations</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ant</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-cdi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1440,16 +1250,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jaas</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jaspi</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1460,37 +1260,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jspc-maven-plugin</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-keystore</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-openid</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-plus</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-proxy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-quickstart</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1500,27 +1270,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-runner</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
+        <artifactId>jetty-session</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlets</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1565,79 +1320,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-async-rest-jar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-jaas-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-jetty-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-jndi-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-jsp-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-mock-resources</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-proxy-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-spec-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-simple-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>demo-web-fragment</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1746,7 +1429,7 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-tools</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1776,104 +1459,14 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jakarta-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jakarta-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jakarta-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jetty-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jetty-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jetty-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jetty-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-servlet</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>${javax.activation.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>${javax.mail.glassfish.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>${javax.security.auth.message.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
         <version>${jetty.perf-helper.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>${jetty.servlet.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
         <version>${jetty.test.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${jakarta.xml.bind.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.web</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -1893,41 +1486,6 @@
         <version>${infinispan.protostream.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.avro</groupId>
-        <artifactId>avro</artifactId>
-        <version>${apache.avro.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-compress</artifactId>
-        <version>${commons.compress.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${jackson.core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${jackson.databind.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${jackson.annotations.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.common</groupId>
-        <artifactId>wildfly-common</artifactId>
-        <version>${wildfly.common.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.security</groupId>
-        <artifactId>wildfly-elytron</artifactId>
-        <version>${wildfly.elytron.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging</artifactId>
         <version>${jboss.logging.version}</version>
@@ -1935,12 +1493,12 @@
       <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging-annotations</artifactId>
-        <version>${jboss.logging.annotations.version}</version>
+        <version>${jboss-logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging-processor</artifactId>
-        <version>${jboss.logging.processor.version}</version>
+        <version>${jboss-logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.logmanager</groupId>
@@ -2061,6 +1619,7 @@
       <build>
         <pluginManagement>
           <plugins>
+            <!-- FIXME: Not compatible with JDK 17
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-compiler-plugin</artifactId>
@@ -2079,8 +1638,50 @@
                 </annotationProcessorPaths>
               </configuration>
             </plugin>
+             -->
           </plugins>
         </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>checkstyle</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>${maven.project-info-reports.plugin.version}</version>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <reports>
+                  <report>checkstyle</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+        </plugins>
+      </reporting>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-site-plugin</artifactId>
+            <version>${maven.site.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>build-site</id>
+                <goals>
+                  <goal>site</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
       </build>
     </profile>
     <profile>
@@ -2205,29 +1806,12 @@
     <profile>
       <id>eclipse-release</id>
       <modules>
+        <!-- FIXME: Do we want to keep this?
         <module>javadoc</module>
+          -->
       </modules>
       <build>
         <plugins>
-          <plugin>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>enforce-java</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <requireJavaVersion>
-                      <version>[17,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 17 or newer</message>
-                    </requireJavaVersion>
-                  </rules>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <inherited>true</inherited>
             <groupId>org.apache.maven.plugins</groupId>
@@ -2280,7 +1864,9 @@
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
       <modules>
+      <!-- FIXME: Do we want to keep this?
         <module>javadoc</module>
+        -->
       </modules>
       <build>
         <pluginManagement>
@@ -2293,6 +1879,7 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
+              <version>${maven.surefire.plugin.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
                 <systemPropertyVariables>
@@ -2317,15 +1904,26 @@
                   <skip>${spotbugs.skip}</skip>
                   <failOnError>${spotbugs.failOnError}</failOnError>
                   <xmlOutput>true</xmlOutput>
+                  <spotbugsXmlOutput>false</spotbugsXmlOutput>
                   <effort>${spotbugs.effort}</effort>
                   <threshold>${spotbugs.threshold}</threshold>
-                  <fork>false</fork>
                 </configuration>
               </execution>
             </executions>
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <!-- disable plugins known not to work with JDK 17 (yet) -->
+        <spotbugs.skip>true</spotbugs.skip>
+        <jacoco.skip>true</jacoco.skip>
+      </properties>
     </profile>
     <profile>
       <id>update-version</id>

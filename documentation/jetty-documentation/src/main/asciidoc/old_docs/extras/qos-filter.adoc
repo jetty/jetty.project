@@ -17,7 +17,7 @@
 [[qos-filter-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlets.QoSFilter`
+* Classname: `org.eclipse.jetty.ee9.servlets.QoSFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/QoSFilter.html
 
@@ -82,7 +82,7 @@ This example processes fifty requests at a time:
 ----
 <filter>
    <filter-name>QoSFilter</filter-name>
-   <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
+   <filter-class>org.eclipse.jetty.ee9.servlets.QoSFilter</filter-class>
    <init-param>
      <param-name>maxRequests</param-name>
      <param-value>50</param-value>

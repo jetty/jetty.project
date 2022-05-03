@@ -29,7 +29,7 @@ import java.util.Map;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -88,7 +88,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         v2.setMaxProxyHeader(maxProxyHeader);
     }
 
-    private static class ProxyV1ConnectionFactory extends AbstractConnectionFactory implements Detecting
+    private static class ProxyV1ConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
     {
         private static final byte[] SIGNATURE = "PROXY".getBytes(StandardCharsets.US_ASCII);
 
@@ -195,7 +195,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v1 error for {}", getEndPoint(), x);
+                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v1 error", x);
                     releaseAndClose();
                 }
             }
@@ -224,7 +226,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v1 error for {}", getEndPoint(), x);
+                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v1 error", x);
                     releaseAndClose();
                 }
             }
@@ -357,7 +361,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    private static class ProxyV2ConnectionFactory extends AbstractConnectionFactory implements Detecting
+    private static class ProxyV2ConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
     {
         private enum Family
         {
@@ -480,7 +484,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Exception x)
                 {
-                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
+                    LOG.warn("Proxy v2 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v2 error", x);
                     releaseAndClose();
                 }
             }
@@ -539,7 +545,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
+                    LOG.warn("Proxy v2 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v2 error", x);
                     releaseAndClose();
                 }
             }
@@ -755,7 +763,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint extends AttributesMap implements EndPoint, EndPoint.Wrapper
+    public static class ProxyEndPoint extends Attributes.Lazy implements EndPoint, EndPoint.Wrapper
     {
         private static final int PP2_TYPE_NOOP = 0x04;
         private static final int PP2_TYPE_SSL = 0x20;
@@ -981,8 +989,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
             }
-            catch (Throwable ignored)
+            catch (Throwable x)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored", x);
                 return null;
             }
         }
@@ -995,8 +1005,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     return (SocketAddress)unixDomainSocketAddress.getMethod("of", String.class).invoke(null, path);
                 return null;
             }
-            catch (Throwable ignored)
+            catch (Throwable x)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored", x);
                 return null;
             }
         }

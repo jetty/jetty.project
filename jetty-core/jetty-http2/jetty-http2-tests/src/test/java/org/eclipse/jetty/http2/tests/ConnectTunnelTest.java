@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -67,7 +67,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "HELLO".getBytes(StandardCharsets.UTF_8);
@@ -119,7 +119,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "HELLO".getBytes(StandardCharsets.UTF_8);

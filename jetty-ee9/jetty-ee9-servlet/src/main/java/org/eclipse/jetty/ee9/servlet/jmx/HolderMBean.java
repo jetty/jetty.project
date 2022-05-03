@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet.jmx;
+package org.eclipse.jetty.ee9.servlet.jmx;
 
+import org.eclipse.jetty.ee9.servlet.Holder;
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.servlet.Holder;
 
 public class HolderMBean extends ObjectMBean
 {

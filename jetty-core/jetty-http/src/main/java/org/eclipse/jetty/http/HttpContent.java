@@ -14,9 +14,8 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -32,6 +31,8 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
+// TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
+//  are available via the Path API
 public interface HttpContent
 {
     HttpField getContentType();
@@ -58,29 +59,27 @@ public interface HttpContent
 
     String getETagValue();
 
-    ByteBuffer getIndirectBuffer();
+    // TODO rename?
+    Path getPath();
 
-    ByteBuffer getDirectBuffer();
-
+    // TODO getPath() is supposed to replace the following
     Resource getResource();
-
-    InputStream getInputStream() throws IOException;
-
-    ReadableByteChannel getReadableByteChannel() throws IOException;
-
-    void release();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
-    public interface ContentFactory
+    ByteBuffer getBuffer();
+
+    void release();
+
+    interface ContentFactory
     {
         /**
          * @param path The path within the context to the resource
-         * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
-         * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+         * @param maxBuffer The maximum buffer to allocated for this request.
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
+        // TODO maxBuffer is not needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
     }
 }

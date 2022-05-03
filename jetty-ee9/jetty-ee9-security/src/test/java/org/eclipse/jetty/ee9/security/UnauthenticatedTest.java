@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,14 +21,15 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ public class UnauthenticatedTest
     public void beforeEach() throws Exception
     {
         Server server = new Server();
+        ContextHandler context = new ContextHandler(server);
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
@@ -73,7 +75,7 @@ public class UnauthenticatedTest
             }
         });
 
-        server.setHandler(securityHandler);
+        context.setHandler(securityHandler);
         server.start();
     }
 

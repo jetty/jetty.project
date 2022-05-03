@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.BindException;
@@ -30,18 +32,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -63,20 +62,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends AbstractHandler
+    public static class ReuseInfoHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setContentType("text/plain");
 
-            EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
+            EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
             assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
             SocketChannelEndPoint channelEndPoint = (SocketChannelEndPoint)endPoint;
             Socket socket = channelEndPoint.getChannel().socket();
-            ServerConnector connector = (ServerConnector)baseRequest.getHttpChannel().getConnector();
+            ServerConnector connector = (ServerConnector)request.getConnectionMetaData().getConnector();
 
-            PrintWriter out = response.getWriter();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(buffer, StandardCharsets.UTF_8));
             out.printf("connector.getReuseAddress() = %b%n", connector.getReuseAddress());
 
             try
@@ -91,10 +91,9 @@ public class ServerConnectorTest
             {
                 t.printStackTrace(out);
             }
-
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
-
-            baseRequest.setHandled(true);
+            out.flush();
+            response.write(true, callback, BufferUtil.toBuffer(buffer.toByteArray()));
         }
     }
 
@@ -127,8 +126,7 @@ public class ServerConnectorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-
-        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
+        server.setHandler(new ReuseInfoHandler());
 
         try
         {
@@ -159,8 +157,7 @@ public class ServerConnectorTest
         connector.setPort(0);
         connector.setReuseAddress(true);
         server.addConnector(connector);
-
-        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
+        server.setHandler(new ReuseInfoHandler());
 
         try
         {
@@ -192,7 +189,7 @@ public class ServerConnectorTest
         connector.setReuseAddress(false);
         server.addConnector(connector);
 
-        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
+        server.setHandler(new ReuseInfoHandler());
 
         try
         {
@@ -242,12 +239,12 @@ public class ServerConnectorTest
             connector2.setPort(port);
             server.addConnector(connector2);
 
-            server.setHandler(new AbstractHandler()
+            server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+                public void process(Request request, Response response, Callback callback)
                 {
-                    jettyRequest.setHandled(true);
+                    callback.succeeded();
                 }
             });
 
@@ -356,7 +353,7 @@ public class ServerConnectorTest
             connector.setPort(port);
             server.addConnector(connector);
 
-            server.setHandler(new HandlerList(new DefaultHandler()));
+            server.setHandler(new DefaultHandler());
 
             IOException x = assertThrows(IOException.class, server::start);
             assertThat(x.getCause(), instanceOf(BindException.class));

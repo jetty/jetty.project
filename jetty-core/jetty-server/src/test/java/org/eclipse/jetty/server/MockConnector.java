@@ -15,11 +15,19 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-class MockConnector extends AbstractConnector
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+
+public class MockConnector extends AbstractConnector
 {
-    public MockConnector()
+    private static final ByteBufferPool BUFFER_POOL = new NullByteBufferPool();
+    private final Server _server;
+
+    public MockConnector(Server server)
     {
-        super(new Server(), null, null, null, 0);
+        super(server, server.getThreadPool(), server.getBean(Scheduler.class), BUFFER_POOL, 0);
+        _server = server;
     }
 
     @Override
@@ -28,13 +36,22 @@ class MockConnector extends AbstractConnector
     }
 
     @Override
-    public Object getTransport()
+    public Scheduler getScheduler()
     {
-        return null;
+        return _server.getBean(Scheduler.class);
     }
 
     @Override
-    public String dumpSelf()
+    public ByteBufferPool getByteBufferPool()
+    {
+        ByteBufferPool pool = _server.getBean(ByteBufferPool.class);
+        if (pool != null)
+            return pool;
+        return super.getByteBufferPool();
+    }
+
+    @Override
+    public Object getTransport()
     {
         return null;
     }

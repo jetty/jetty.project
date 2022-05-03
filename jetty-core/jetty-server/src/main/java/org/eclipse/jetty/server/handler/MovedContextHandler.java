@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -42,12 +41,13 @@ public class MovedContextHandler extends ContextHandler
     {
         _redirector = new Redirector();
         setHandler(_redirector);
-        setAllowNullPathInfo(true);
+        setAllowNullPathInContext(true);
     }
 
-    public MovedContextHandler(HandlerContainer parent, String contextPath, String newContextURL)
+    public MovedContextHandler(Handler.Collection parent, String contextPath, String newContextURL)
     {
-        super(parent, contextPath);
+        super(contextPath);
+        parent.addHandler(this);
         _newContextURL = newContextURL;
         _redirector = new Redirector();
         setHandler(_redirector);
@@ -93,37 +93,35 @@ public class MovedContextHandler extends ContextHandler
         _discardQuery = discardQuery;
     }
 
-    private class Redirector extends AbstractHandler
+    private class Redirector extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (_newContextURL == null)
                 return;
 
             String path = _newContextURL;
-            if (!_discardPathInfo && request.getPathInfo() != null)
-                path = URIUtil.addPaths(path, request.getPathInfo());
+            if (!_discardPathInfo && request.getPathInContext() != null)
+                path = URIUtil.addPaths(path, request.getPathInContext());
 
-            StringBuilder location = URIUtil.hasScheme(path) ? new StringBuilder() : baseRequest.getRootURL();
+            HttpURI uri = request.getHttpURI();
+            StringBuilder location = new StringBuilder();
+            location.append(uri.getScheme()).append("://").append(uri.getAuthority()).append(path);
 
-            location.append(path);
-            if (!_discardQuery && request.getQueryString() != null)
+            if (!_discardQuery && uri.getQuery() != null)
             {
                 location.append('?');
-                String q = request.getQueryString();
+                String q = uri.getQuery();
                 q = q.replaceAll("\r\n?&=", "!");
                 location.append(q);
             }
 
-            response.setHeader(HttpHeader.LOCATION.asString(), location.toString());
-
+            response.getHeaders().put(HttpHeader.LOCATION, location.toString());
             if (_expires != null)
-                response.setHeader(HttpHeader.EXPIRES.asString(), _expires);
-
-            response.setStatus(_permanent ? HttpServletResponse.SC_MOVED_PERMANENTLY : HttpServletResponse.SC_FOUND);
-            response.setContentLength(0);
-            baseRequest.setHandled(true);
+                response.getHeaders().put(HttpHeader.EXPIRES, _expires);
+            response.setStatus(_permanent ? HttpStatus.MOVED_PERMANENTLY_301 : HttpStatus.FOUND_302);
+            callback.succeeded();
         }
     }
 

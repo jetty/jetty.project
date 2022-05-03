@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.internal;
+package org.eclipse.jetty.ee9.websocket.server.internal;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 
 public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {

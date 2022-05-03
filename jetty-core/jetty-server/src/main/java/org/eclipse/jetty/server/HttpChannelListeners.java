@@ -13,21 +13,17 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
-import java.util.Collection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
- * A {@link HttpChannel.Listener} that holds a collection of
- * other {@link HttpChannel.Listener} instances that are efficiently
+ * A HttpChannel.Listener that holds a collection of
+ * other HttpChannel.Listener instances that are efficiently
  * invoked without iteration.
  * @see AbstractConnector
  */
-public class HttpChannelListeners implements HttpChannel.Listener
+@Deprecated // TODO update or remove
+public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
 {
-    static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    /* TODO
+    static final Logger LOG = LoggerFactory.getLogger(HttpChannelListeners.class);
     public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
 
     private final NotifyRequest onRequestBegin;
@@ -278,4 +274,6 @@ public class HttpChannelListeners implements HttpChannel.Listener
             second.onContent(request, content);
         };
     }
+
+     */
 }

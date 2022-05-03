@@ -13,25 +13,21 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.Arrays;
+import java.util.Iterator;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.server.HttpOutput.Interceptor;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -41,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * A Handler that can apply a {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
+ * A Handler that can apply a
  * mechanism to buffer the entire response content until the output is closed.
  * This allows the commit to be delayed until the response is complete and thus
  * headers and response status can be changed while writing the body.
@@ -57,8 +53,10 @@ import org.slf4j.LoggerFactory;
  * generated can also be unbounded.
  * </p>
  */
-public class BufferedResponseHandler extends HandlerWrapper
+public class BufferedResponseHandler extends Handler.Wrapper
 {
+    public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
+
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
@@ -108,17 +106,16 @@ public class BufferedResponseHandler extends HandlerWrapper
         return _paths.test(requestURI);
     }
 
-    protected boolean shouldBuffer(HttpChannel channel, boolean last)
+    protected boolean shouldBuffer(Response response, boolean last)
     {
         if (last)
             return false;
 
-        Response response = channel.getResponse();
         int status = response.getStatus();
         if (HttpStatus.hasNoBody(status) || HttpStatus.isRedirection(status))
             return false;
 
-        String ct = response.getContentType();
+        String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (ct == null)
             return true;
 
@@ -127,36 +124,23 @@ public class BufferedResponseHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        final ServletContext context = baseRequest.getServletContext();
-        final String path = baseRequest.getPathInContext();
+        Request.Processor processor = super.handle(request);
+        if (processor == null)
+            return null;
+
+        final String path = request.getPathInContext();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} handle {} in {}", this, baseRequest, context);
-
-        // Are we already buffering?
-        HttpOutput out = baseRequest.getResponse().getHttpOutput();
-        HttpOutput.Interceptor interceptor = out.getInterceptor();
-        while (interceptor != null)
-        {
-            if (interceptor instanceof BufferedInterceptor)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} already intercepting {}", this, request);
-                _handler.handle(target, baseRequest, request, response);
-                return;
-            }
-            interceptor = interceptor.getNextInterceptor();
-        }
+            LOG.debug("{} handle {} in {}", this, request, request.getContext());
 
         // If not a supported method this URI is always excluded.
-        if (!_methods.test(baseRequest.getMethod()))
+        if (!_methods.test(request.getMethod()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by method {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
-            return;
+            return processor;
         }
 
         // If not a supported path this URI is always excluded.
@@ -164,12 +148,11 @@ public class BufferedResponseHandler extends HandlerWrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by path {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
-            return;
+            return processor;
         }
 
         // If the mime type is known from the path then apply mime type filtering.
-        String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
+        String mimeType = MimeTypes.getDefaultMimeByExtension(path); // TODO context specicif mimetypes : context.getMimeType(path);
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
@@ -179,151 +162,165 @@ public class BufferedResponseHandler extends HandlerWrapper
                     LOG.debug("{} excluded by path suffix mime type {}", this, request);
 
                 // handle normally without setting vary header
-                _handler.handle(target, baseRequest, request, response);
-                return;
+                return processor;
             }
         }
 
         // Install buffered interceptor and handle.
-        out.setInterceptor(newBufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
-        if (_handler != null)
-            _handler.handle(target, baseRequest, request, response);
-    }
-
-    protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
-    {
-        return new ArrayBufferedInterceptor(httpChannel, interceptor);
-    }
-
-    /**
-     * An {@link HttpOutput.Interceptor} which is created by {@link #newBufferedInterceptor(HttpChannel, Interceptor)}
-     * and is used by the implementation to buffer outgoing content.
-     */
-    protected interface BufferedInterceptor extends HttpOutput.Interceptor
-    {
-    }
-
-    class ArrayBufferedInterceptor implements BufferedInterceptor
-    {
-        private final Interceptor _next;
-        private final HttpChannel _channel;
-        private final Queue<ByteBuffer> _buffers = new ArrayDeque<>();
-        private Boolean _aggregating;
-        private ByteBuffer _aggregate;
-
-        public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
+        return (rq, rs, callback) ->
         {
-            _next = interceptor;
-            _channel = httpChannel;
+            BufferedResponse bufferedResponse = new BufferedResponse(rq, rs, callback);
+            processor.process(rq, bufferedResponse, bufferedResponse);
+        };
+    }
+
+    private class BufferedResponse extends Response.Wrapper implements Callback
+    {
+        private final Callback _callback;
+        private CountingByteBufferAccumulator _accumulator;
+        private boolean _firstWrite = true;
+
+        private BufferedResponse(Request request, Response response, Callback callback)
+        {
+            super(request, response);
+            _callback = callback;
         }
 
         @Override
-        public Interceptor getNextInterceptor()
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-            return _next;
-        }
-
-        @Override
-        public void resetBuffer()
-        {
-            _buffers.clear();
-            _aggregating = null;
-            _aggregate = null;
-            BufferedInterceptor.super.resetBuffer();
-        }
-
-        @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
-
-            // If we are not committed, have to decide if we should aggregate or not.
-            if (_aggregating == null)
-                _aggregating = shouldBuffer(_channel, last);
-
-            // If we are not aggregating, then handle normally.
-            if (!_aggregating)
+            if (_firstWrite)
             {
-                getNextInterceptor().write(content, last, callback);
-                return;
-            }
-
-            if (last)
-            {
-                // Add the current content to the buffer list without a copy.
-                if (BufferUtil.length(content) > 0)
-                    _buffers.offer(content);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} committing {}", this, _buffers.size());
-                commit(callback);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} aggregating", this);
-
-                // Aggregate the content into buffer chain.
-                while (BufferUtil.hasContent(content))
+                if (shouldBuffer(this, last))
                 {
-                    // Do we need a new aggregate buffer.
-                    if (BufferUtil.space(_aggregate) == 0)
-                    {
-                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBufferPool.
-                        int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
-                        _aggregate = BufferUtil.allocate(size);
-                        _buffers.offer(_aggregate);
-                    }
-
-                    BufferUtil.append(_aggregate, content);
+                    ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
+                    ByteBufferPool byteBufferPool = connectionMetaData.getConnector().getByteBufferPool();
+                    boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
+                    _accumulator = new CountingByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
-                callback.succeeded();
+                _firstWrite = false;
             }
-        }
 
-        private void commit(Callback callback)
-        {
-            if (_buffers.size() == 0)
+            if (_accumulator != null)
             {
-                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
-            }
-            else if (_buffers.size() == 1)
-            {
-                getNextInterceptor().write(_buffers.poll(), true, callback);
-            }
-            else
-            {
-                // Create an iterating callback to do the writing.
-                IteratingCallback icb = new IteratingCallback()
+                Iterator<ByteBuffer> iterator = Arrays.stream(buffers).iterator();
+                IteratingCallback iteratingCallback = new IteratingCallback()
                 {
+                    ByteBuffer currentBuffer;
+
                     @Override
                     protected Action process()
                     {
-                        ByteBuffer buffer = _buffers.poll();
-                        if (buffer == null)
-                            return Action.SUCCEEDED;
+                        if (currentBuffer == null)
+                        {
+                            if (!iterator.hasNext())
+                                return Action.SUCCEEDED;
+                            currentBuffer = iterator.next();
+                        }
 
-                        getNextInterceptor().write(buffer, _buffers.isEmpty(), this);
-                        return Action.SCHEDULED;
+                        boolean overflow = _accumulator.copyBuffer(currentBuffer);
+                        if (!currentBuffer.hasRemaining())
+                            currentBuffer = null;
+                        if (overflow)
+                        {
+                            ByteBuffer byteBuffer = _accumulator.takeByteBuffer();
+                            BufferedResponse.super.write(false, this, byteBuffer);
+                            return Action.SCHEDULED;
+                        }
+                        return Action.SUCCEEDED;
                     }
 
                     @Override
                     protected void onCompleteSuccess()
                     {
-                        // Signal last callback.
                         callback.succeeded();
                     }
 
                     @Override
                     protected void onCompleteFailure(Throwable cause)
                     {
-                        // Signal last callback.
                         callback.failed(cause);
                     }
                 };
-                icb.iterate();
+                iteratingCallback.iterate();
             }
+            else
+            {
+                super.write(last, callback, buffers);
+            }
+            // TODO handle last better
+        }
+
+        private int getBufferSize()
+        {
+            Object attribute = getRequest().getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
+            return attribute instanceof Integer ? (int)attribute : Integer.MAX_VALUE;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
+            if (_accumulator != null)
+                super.write(true, Callback.from(_callback, _accumulator::close), _accumulator.takeByteBuffer());
+            else
+                _callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (_accumulator != null)
+                _accumulator.close();
+            else
+                _callback.failed(x);
+        }
+    }
+
+    private static class CountingByteBufferAccumulator implements AutoCloseable
+    {
+        private final ByteBufferAccumulator _accumulator;
+        private final int _maxSize;
+        private int _accumulatedCount;
+
+        public CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
+        {
+            if (maxSize <= 0)
+                throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
+            _maxSize = maxSize;
+            _accumulator = new ByteBufferAccumulator(bufferPool, direct);
+        }
+
+        public boolean copyBuffer(ByteBuffer buffer)
+        {
+            int remainingCapacity = _maxSize - _accumulatedCount;
+            if (buffer.remaining() >= remainingCapacity)
+            {
+                _accumulatedCount += remainingCapacity;
+                int end = buffer.position() + remainingCapacity;
+                _accumulator.copyBuffer(buffer.duplicate().limit(end));
+                buffer.position(end);
+                return true;
+            }
+            else
+            {
+                _accumulatedCount += buffer.remaining();
+                _accumulator.copyBuffer(buffer);
+                return false;
+            }
+        }
+
+        public ByteBuffer takeByteBuffer()
+        {
+            _accumulatedCount = 0;
+            return _accumulator.takeByteBuffer();
+        }
+
+        @Override
+        public void close()
+        {
+            _accumulatedCount = 0;
+            _accumulator.close();
         }
     }
 }

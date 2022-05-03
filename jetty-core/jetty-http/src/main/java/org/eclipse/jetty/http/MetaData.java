@@ -19,6 +19,8 @@ import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
+    private static final long UNKNOWN_CONTENT_LENGTH = Long.MIN_VALUE;
+
     /**
      * <p>Returns whether the given HTTP request method and HTTP response status code
      * identify a successful HTTP CONNECT tunnel.</p>
@@ -52,7 +54,8 @@ public class MetaData implements Iterable<HttpField>
         _httpVersion = version;
         _fields = fields == null ? null : fields.asImmutable();
 
-        _contentLength = contentLength >= 0 ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
+        _contentLength = contentLength > UNKNOWN_CONTENT_LENGTH ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
+
         _trailerSupplier = trailerSupplier;
     }
 
@@ -123,7 +126,7 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields)
         {
-            this(method, uri, version, fields, Long.MIN_VALUE);
+            this(method, uri, version, fields, UNKNOWN_CONTENT_LENGTH);
         }
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength)
@@ -204,7 +207,7 @@ public class MetaData implements Iterable<HttpField>
         {
             super(HttpMethod.CONNECT.asString(),
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
-                HttpVersion.HTTP_2, fields, Long.MIN_VALUE, null);
+                HttpVersion.HTTP_2, fields, UNKNOWN_CONTENT_LENGTH, null);
             _protocol = protocol;
         }
 
@@ -222,7 +225,7 @@ public class MetaData implements Iterable<HttpField>
 
         public Response(HttpVersion version, int status, HttpFields fields)
         {
-            this(version, status, fields, Long.MIN_VALUE);
+            this(version, status, fields, UNKNOWN_CONTENT_LENGTH);
         }
 
         public Response(HttpVersion version, int status, HttpFields fields, long contentLength)

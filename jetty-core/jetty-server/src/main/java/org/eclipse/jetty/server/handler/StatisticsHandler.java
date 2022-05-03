@@ -13,604 +13,419 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.AsyncContextEvent;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@ManagedObject("Request Statistics Gathering")
-public class StatisticsHandler extends HandlerWrapper implements Graceful
+public class StatisticsHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(StatisticsHandler.class);
-    private final AtomicLong _statsStartedAt = new AtomicLong();
-    private final Shutdown _shutdown;
+    private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
+    private final CounterStatistic _handleStats = new CounterStatistic();
+    private final CounterStatistic _processStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
-    private final CounterStatistic _dispatchedStats = new CounterStatistic();
-    private final SampleStatistic _dispatchedTimeStats = new SampleStatistic();
-    private final CounterStatistic _asyncWaitStats = new CounterStatistic();
-
-    private final LongAdder _asyncDispatches = new LongAdder();
-    private final LongAdder _expires = new LongAdder();
-    private final LongAdder _errors = new LongAdder();
+    private final SampleStatistic _handleTimeStats = new SampleStatistic();
+    private final SampleStatistic _processTimeStats = new SampleStatistic();
 
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
     private final LongAdder _responses4xx = new LongAdder();
     private final LongAdder _responses5xx = new LongAdder();
-    private final LongAdder _responsesTotalBytes = new LongAdder();
 
-    private boolean _gracefulShutdownWaitsForRequests = true;
-
-    private final AsyncListener _onCompletion = new AsyncListener()
+    @Override
+    public Request.Processor handle(Request request) throws Exception
     {
-        @Override
-        public void onStartAsync(AsyncEvent event)
+        long beginTimeStamp = System.nanoTime();
+        _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
-            event.getAsyncContext().addListener(this);
-        }
+            // TODO test this with localconnector endpoint that has multiple requests per connection.
+            request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
+            {
+                @Override
+                public void onClosed(Connection connection)
+                {
+                    // complete connections stats
+                    _connectionStats.remove(id);
+                }
+            });
+            return "SomeConnectionStatsObject";
+        });
 
-        @Override
-        public void onTimeout(AsyncEvent event)
-        {
-            _expires.increment();
-        }
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
+        _handleStats.increment();
+        _requestStats.increment();
 
-        @Override
-        public void onError(AsyncEvent event)
-        {
-            _errors.increment();
-        }
-
-        @Override
-        public void onComplete(AsyncEvent event)
-        {
-            Request request = ((AsyncContextEvent)event).getHttpChannelState().getBaseRequest();
-            long elapsed = System.currentTimeMillis() - request.getTimeStamp();
-            _requestStats.decrement();
-            _requestTimeStats.record(elapsed);
-            updateResponse(request);
-            _asyncWaitStats.decrement();
-
-            if (_shutdown.isShutdown())
-                _shutdown.check();
-        }
-    };
-
-    public StatisticsHandler()
-    {
-        _shutdown = new Shutdown(this)
+        // TODO don't need to do this until we see a Processor
+        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
-            public boolean isShutdownDone()
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
-                if (_gracefulShutdownWaitsForRequests)
-                    return _requestStats.getCurrent() == 0;
-                else
-                    return _dispatchedStats.getCurrent() == 0;
-            }
-        };
-    }
-
-    /**
-     * Resets the current request statistics.
-     */
-    @ManagedOperation(value = "resets statistics", impact = "ACTION")
-    public void statsReset()
-    {
-        _statsStartedAt.set(System.currentTimeMillis());
-
-        _requestStats.reset();
-        _requestTimeStats.reset();
-        _dispatchedStats.reset();
-        _dispatchedTimeStats.reset();
-        _asyncWaitStats.reset();
-
-        _asyncDispatches.reset();
-        _expires.reset();
-        _responses1xx.reset();
-        _responses2xx.reset();
-        _responses3xx.reset();
-        _responses4xx.reset();
-        _responses5xx.reset();
-        _responsesTotalBytes.reset();
-    }
-
-    @Override
-    public void handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        Handler handler = getHandler();
-        if (handler == null || !isStarted() || isShutdown())
-        {
-            if (!baseRequest.getResponse().isCommitted())
-                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
-            return;
-        }
-
-        _dispatchedStats.increment();
-
-        final long start;
-        HttpChannelState state = baseRequest.getHttpChannelState();
-        if (state.isInitial())
-        {
-            // new request
-            _requestStats.increment();
-            start = baseRequest.getTimeStamp();
-        }
-        else
-        {
-            // resumed request
-            start = System.currentTimeMillis();
-            _asyncDispatches.increment();
-        }
-
-        try
-        {
-            handler.handle(path, baseRequest, request, response);
-        }
-        finally
-        {
-            final long now = System.currentTimeMillis();
-            final long dispatched = now - start;
-
-            _dispatchedStats.decrement();
-            _dispatchedTimeStats.record(dispatched);
-
-            if (state.isInitial())
-            {
-                if (state.isAsyncStarted())
+                if (response != null)
                 {
-                    state.addListener(_onCompletion);
-                    _asyncWaitStats.increment();
+                    switch (response.getStatus() / 100)
+                    {
+                        case 1 -> _responses1xx.increment();
+                        case 2 -> _responses2xx.increment();
+                        case 3 -> _responses3xx.increment();
+                        case 4 -> _responses4xx.increment();
+                        case 5 -> _responses5xx.increment();
+                        default ->
+                        {
+                        }
+                    }
                 }
-                else
+
+                for (ByteBuffer b : content)
                 {
-                    _requestStats.decrement();
-                    _requestTimeStats.record(dispatched);
-                    updateResponse(baseRequest);
+                    statisticsRequest._bytesWritten.add(b.remaining());
                 }
+
+                super.send(request, response, last, callback, content);
             }
 
-            if (_shutdown.isShutdown())
-                _shutdown.check();
-        }
-    }
-
-    protected void updateResponse(Request request)
-    {
-        Response response = request.getResponse();
-        if (request.isHandled())
-        {
-            switch (response.getStatus() / 100)
+            @Override
+            public Content readContent()
             {
-                case 1:
-                    _responses1xx.increment();
-                    break;
-                case 2:
-                    _responses2xx.increment();
-                    break;
-                case 3:
-                    _responses3xx.increment();
-                    break;
-                case 4:
-                    _responses4xx.increment();
-                    break;
-                case 5:
-                    _responses5xx.increment();
-                    break;
-                default:
-                    break;
+                Content content =  super.readContent();
+                if (content != null)
+                    statisticsRequest._bytesRead.add(content.remaining());
+                return content;
             }
-        }
-        else
+
+            @Override
+            public void succeeded()
+            {
+                super.succeeded();
+                _processStats.decrement();
+                _requestStats.decrement();
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
+                _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                super.failed(x);
+                _processStats.decrement();
+                _requestStats.decrement();
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
+                _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+            }
+        });
+
+        Request.Processor processor = super.handle(statisticsRequest);
+        _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
+        return processor == null ? null : statisticsRequest.wrapProcessor(processor);
+    }
+
+    private class StatisticsRequest extends Request.WrapperProcessor
+    {
+        private final LongAdder _bytesRead = new LongAdder();
+        private final LongAdder _bytesWritten = new LongAdder();
+        private long _processStartTimeStamp;
+
+        private StatisticsRequest(Request request)
         {
-            // will fall through to not found handler
-            _responses4xx.increment();
+            super(request);
         }
 
-        _responsesTotalBytes.add(response.getContentCount());
+        // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
+        @Override
+        public Object getAttribute(String name)
+        {
+            // return hidden attributes for requestLog
+            return switch (name)
+            {
+                // TODO class.getName + extra
+                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead.longValue();
+                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten.longValue();
+                case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
+                case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
+                case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
+                default -> super.getAttribute(name);
+            };
+        }
+
+        private long dataRatePerSecond(long dataCount)
+        {
+            return (long)(dataCount / (spentTimeNs() / 1_000_000_000F));
+        }
+
+        private long spentTimeNs()
+        {
+            return System.nanoTime() - _processStartTimeStamp;
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            _processStats.increment();
+            _processStartTimeStamp = System.nanoTime();
+            super.process(this, response, callback);
+        }
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (getHandler() == null)
-            throw new IllegalStateException("StatisticsHandler has no Wrapped Handler");
-        _shutdown.cancel();
-        super.doStart();
-        statsReset();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        _shutdown.cancel();
-        super.doStop();
-    }
-
-    /**
-     * Set whether the graceful shutdown should wait for all requests to complete including
-     * async requests which are not currently dispatched, or whether it should only wait for all the
-     * actively dispatched requests to complete.
-     * @param gracefulShutdownWaitsForRequests true to wait for async requests on graceful shutdown.
-     */
-    public void setGracefulShutdownWaitsForRequests(boolean gracefulShutdownWaitsForRequests)
-    {
-        _gracefulShutdownWaitsForRequests = gracefulShutdownWaitsForRequests;
-    }
-
-    /**
-     * @return whether the graceful shutdown will wait for all requests to complete including
-     * async requests which are not currently dispatched, or whether it will only wait for all the
-     * actively dispatched requests to complete.
-     * @see #getAsyncDispatches()
-     */
-    @ManagedAttribute("if graceful shutdown will wait for all requests")
-    public boolean getGracefulShutdownWaitsForRequests()
-    {
-        return _gracefulShutdownWaitsForRequests;
-    }
-
-    /**
-     * @return the number of requests handled by this handler
-     * since {@link #statsReset()} was last called, excluding
-     * active requests
-     * @see #getAsyncDispatches()
-     */
     @ManagedAttribute("number of requests")
     public int getRequests()
     {
         return (int)_requestStats.getTotal();
     }
 
-    /**
-     * @return the number of requests currently active.
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests currently active")
     public int getRequestsActive()
     {
         return (int)_requestStats.getCurrent();
     }
 
-    /**
-     * @return the maximum number of active requests
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("maximum number of active requests")
     public int getRequestsActiveMax()
     {
         return (int)_requestStats.getMax();
     }
 
-    /**
-     * @return the maximum time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("maximum time spend handling requests (in ms)")
-    public long getRequestTimeMax()
-    {
-        return _requestTimeStats.getMax();
-    }
-
-    /**
-     * @return the total time (in milliseconds) of requests handling
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("total time spend in all request handling (in ms)")
-    public long getRequestTimeTotal()
-    {
-        return _requestTimeStats.getTotal();
-    }
-
-    /**
-     * @return the mean time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     * @see #getRequestTimeTotal()
-     * @see #getRequests()
-     */
-    @ManagedAttribute("mean time spent handling requests (in ms)")
-    public double getRequestTimeMean()
-    {
-        return _requestTimeStats.getMean();
-    }
-
-    /**
-     * @return the standard deviation of time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     * @see #getRequestTimeTotal()
-     * @see #getRequests()
-     */
-    @ManagedAttribute("standard deviation for request handling (in ms)")
-    public double getRequestTimeStdDev()
-    {
-        return _requestTimeStats.getStdDev();
-    }
-
-    /**
-     * @return the number of dispatches seen by this handler
-     * since {@link #statsReset()} was last called, excluding
-     * active dispatches
-     */
-    @ManagedAttribute("number of dispatches")
-    public int getDispatched()
-    {
-        return (int)_dispatchedStats.getTotal();
-    }
-
-    /**
-     * @return the number of dispatches currently in this handler
-     * since {@link #statsReset()} was last called, including
-     * resumed requests
-     */
-    @ManagedAttribute("number of dispatches currently active")
-    public int getDispatchedActive()
-    {
-        return (int)_dispatchedStats.getCurrent();
-    }
-
-    /**
-     * @return the max number of dispatches currently in this handler
-     * since {@link #statsReset()} was last called, including
-     * resumed requests
-     */
-    @ManagedAttribute("maximum number of active dispatches being handled")
-    public int getDispatchedActiveMax()
-    {
-        return (int)_dispatchedStats.getMax();
-    }
-
-    /**
-     * @return the maximum time (in milliseconds) of request dispatch
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("maximum time spend in dispatch handling")
-    public long getDispatchedTimeMax()
-    {
-        return _dispatchedTimeStats.getMax();
-    }
-
-    /**
-     * @return the total time (in milliseconds) of requests handling
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("total time spent in dispatch handling (in ms)")
-    public long getDispatchedTimeTotal()
-    {
-        return _dispatchedTimeStats.getTotal();
-    }
-
-    /**
-     * @return the mean time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     * @see #getRequestTimeTotal()
-     * @see #getRequests()
-     */
-    @ManagedAttribute("mean time spent in dispatch handling (in ms)")
-    public double getDispatchedTimeMean()
-    {
-        return _dispatchedTimeStats.getMean();
-    }
-
-    /**
-     * @return the standard deviation of time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     * @see #getRequestTimeTotal()
-     * @see #getRequests()
-     */
-    @ManagedAttribute("standard deviation for dispatch handling (in ms)")
-    public double getDispatchedTimeStdDev()
-    {
-        return _dispatchedTimeStats.getStdDev();
-    }
-
-    /**
-     * @return the number of requests handled by this handler
-     * since {@link #statsReset()} was last called, including
-     * resumed requests
-     * @see #getAsyncDispatches()
-     */
-    @ManagedAttribute("total number of async requests")
-    public int getAsyncRequests()
-    {
-        return (int)_asyncWaitStats.getTotal();
-    }
-
-    /**
-     * @return the number of requests currently suspended.
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("currently waiting async requests")
-    public int getAsyncRequestsWaiting()
-    {
-        return (int)_asyncWaitStats.getCurrent();
-    }
-
-    /**
-     * @return the maximum number of current suspended requests
-     * since {@link #statsReset()} was last called.
-     */
-    @ManagedAttribute("maximum number of waiting async requests")
-    public int getAsyncRequestsWaitingMax()
-    {
-        return (int)_asyncWaitStats.getMax();
-    }
-
-    /**
-     * @return the number of requests that have been asynchronously dispatched
-     */
-    @ManagedAttribute("number of requested that have been asynchronously dispatched")
-    public int getAsyncDispatches()
-    {
-        return _asyncDispatches.intValue();
-    }
-
-    /**
-     * @return the number of requests that expired while suspended.
-     * @see #getAsyncDispatches()
-     */
-    @ManagedAttribute("number of async requests requests that have expired")
-    public int getExpires()
-    {
-        return _expires.intValue();
-    }
-
-    /**
-     * @return the number of async errors that occurred.
-     * @see #getAsyncDispatches()
-     */
-    @ManagedAttribute("number of async errors that occurred")
-    public int getErrors()
-    {
-        return _errors.intValue();
-    }
-
-    /**
-     * @return the number of responses with a 1xx status returned by this context
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests with 1xx response status")
     public int getResponses1xx()
     {
         return _responses1xx.intValue();
     }
 
-    /**
-     * @return the number of responses with a 2xx status returned by this context
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests with 2xx response status")
     public int getResponses2xx()
     {
         return _responses2xx.intValue();
     }
 
-    /**
-     * @return the number of responses with a 3xx status returned by this context
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests with 3xx response status")
     public int getResponses3xx()
     {
         return _responses3xx.intValue();
     }
 
-    /**
-     * @return the number of responses with a 4xx status returned by this context
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests with 4xx response status")
     public int getResponses4xx()
     {
         return _responses4xx.intValue();
     }
 
-    /**
-     * @return the number of responses with a 5xx status returned by this context
-     * since {@link #statsReset()} was last called.
-     */
     @ManagedAttribute("number of requests with 5xx response status")
     public int getResponses5xx()
     {
         return _responses5xx.intValue();
     }
 
-    /**
-     * @return the milliseconds since the statistics were started with {@link #statsReset()}.
-     */
-    @ManagedAttribute("time in milliseconds stats have been collected for")
-    public long getStatsOnMs()
+    @ManagedAttribute("")
+    public int getHandlings()
     {
-        return System.currentTimeMillis() - _statsStartedAt.get();
+        return (int)_handleStats.getCurrent();
     }
 
-    /**
-     * @return the total bytes of content sent in responses
-     */
-    @ManagedAttribute("total number of bytes across all responses")
-    public long getResponsesBytesTotal()
+    @ManagedAttribute("")
+    public int getProcessings()
     {
-        return _responsesTotalBytes.longValue();
+        return (int)_processStats.getTotal();
     }
 
-    public String toStatsHTML()
+    @ManagedAttribute("")
+    public int getProcessingsActive()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("<h1>Statistics:</h1>\n");
-        sb.append("Statistics gathering started ").append(getStatsOnMs()).append("ms ago").append("<br />\n");
-
-        sb.append("<h2>Requests:</h2>\n");
-        sb.append("Total requests: ").append(getRequests()).append("<br />\n");
-        sb.append("Active requests: ").append(getRequestsActive()).append("<br />\n");
-        sb.append("Max active requests: ").append(getRequestsActiveMax()).append("<br />\n");
-        sb.append("Total requests time: ").append(getRequestTimeTotal()).append("<br />\n");
-        sb.append("Mean request time: ").append(getRequestTimeMean()).append("<br />\n");
-        sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
-        sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
-
-        sb.append("<h2>Dispatches:</h2>\n");
-        sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
-        sb.append("Active dispatched: ").append(getDispatchedActive()).append("<br />\n");
-        sb.append("Max active dispatched: ").append(getDispatchedActiveMax()).append("<br />\n");
-        sb.append("Total dispatched time: ").append(getDispatchedTimeTotal()).append("<br />\n");
-        sb.append("Mean dispatched time: ").append(getDispatchedTimeMean()).append("<br />\n");
-        sb.append("Max dispatched time: ").append(getDispatchedTimeMax()).append("<br />\n");
-        sb.append("Dispatched time standard deviation: ").append(getDispatchedTimeStdDev()).append("<br />\n");
-
-        sb.append("Total requests suspended: ").append(getAsyncRequests()).append("<br />\n");
-        sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
-        sb.append("Total requests resumed: ").append(getAsyncDispatches()).append("<br />\n");
-
-        sb.append("<h2>Responses:</h2>\n");
-        sb.append("1xx responses: ").append(getResponses1xx()).append("<br />\n");
-        sb.append("2xx responses: ").append(getResponses2xx()).append("<br />\n");
-        sb.append("3xx responses: ").append(getResponses3xx()).append("<br />\n");
-        sb.append("4xx responses: ").append(getResponses4xx()).append("<br />\n");
-        sb.append("5xx responses: ").append(getResponses5xx()).append("<br />\n");
-        sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
-
-        return sb.toString();
+        return (int)_processStats.getCurrent();
     }
 
-    @Override
-    public CompletableFuture<Void> shutdown()
+    @ManagedAttribute("")
+    public int getProcessingsMax()
     {
-        return _shutdown.shutdown();
+        return (int)_processStats.getMax();
     }
 
-    @Override
-    public boolean isShutdown()
+    @ManagedAttribute("total time spend in all request execution (in ns)")
+    public long getRequestTimeTotal()
     {
-        return _shutdown.isShutdown();
+        return _requestTimeStats.getTotal();
     }
 
-    @Override
-    public String toString()
+    @ManagedAttribute("maximum time spend executing requests (in ns)")
+    public long getRequestTimeMax()
     {
-        return String.format("%s@%x{%s,r=%d,d=%d}", getClass().getSimpleName(), hashCode(), getState(), _requestStats.getCurrent(), _dispatchedStats.getCurrent());
+        return _requestTimeStats.getMax();
     }
 
+    @ManagedAttribute("mean time spent executing requests (in ns)")
+    public double getRequestTimeMean()
+    {
+        return _requestTimeStats.getMean();
+    }
+
+    @ManagedAttribute("standard deviation for request execution (in ns)")
+    public double getRequestTimeStdDev()
+    {
+        return _requestTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getHandlingTimeTotal()
+    {
+        return _handleTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getHandlingTimeMax()
+    {
+        return _handleTimeStats.getMax();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getHandlingTimeMean()
+    {
+        return _handleTimeStats.getMean();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getHandlingTimeStdDev()
+    {
+        return _handleTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getProcessingTimeTotal()
+    {
+        return _processTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getProcessingTimeMax()
+    {
+        return _processTimeStats.getMax();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getProcessingTimeMean()
+    {
+        return _processTimeStats.getMean();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getProcessingTimeStdDev()
+    {
+        return _processTimeStats.getStdDev();
+    }
+
+    public static class MinimumDataRateHandler extends StatisticsHandler
+    {
+        private final long _minimumReadRate;
+        private final long _minimumWriteRate;
+
+        public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
+        {
+            _minimumReadRate = minimumReadRate;
+            _minimumWriteRate = minimumWriteRate;
+        }
+
+        private class MinimumDataRateRequest extends Request.WrapperProcessor
+        {
+            private StatisticsRequest _statisticsRequest;
+            private Content.Error _errorContent;
+
+            private MinimumDataRateRequest(Request request)
+            {
+                super(request);
+            }
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return _statisticsRequest.getAttribute(name);
+            }
+
+            @Override
+            public void demandContent(Runnable onContentAvailable)
+            {
+                if (_minimumReadRate > 0)
+                {
+                    Long rr = (Long)getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                    if (rr < _minimumReadRate)
+                    {
+                        // TODO should this be a QuietException to reduce log verbosity from bad clients?
+                        _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
+                        onContentAvailable.run();
+                        return;
+                    }
+                }
+                super.demandContent(onContentAvailable);
+            }
+
+            @Override
+            public Content readContent()
+            {
+                return _errorContent != null ? _errorContent : super.readContent();
+            }
+
+            @Override
+            public WrapperProcessor wrapProcessor(Processor processor)
+            {
+                _statisticsRequest = (StatisticsRequest)processor;
+                return super.wrapProcessor(processor);
+            }
+
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                super.process(ignored, new MinimumDataRateResponse(this, response), callback);
+            }
+        }
+
+        private class MinimumDataRateResponse extends Response.Wrapper
+        {
+            private MinimumDataRateResponse(Request request, Response wrapped)
+            {
+                super(request, wrapped);
+            }
+
+            @Override
+            public void write(boolean last, Callback callback, ByteBuffer... content)
+            {
+                if (_minimumWriteRate > 0)
+                {
+                    MinimumDataRateRequest request = (MinimumDataRateRequest)getRequest();
+                    if (((Long)request.getAttribute("o.e.j.s.h.StatsHandler.bytesWritten")) > 0L)
+                    {
+                        Long wr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                        if (wr < _minimumWriteRate)
+                        {
+                            TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
+                            request._errorContent = new Content.Error(cause);
+                            callback.failed(cause);
+                            return;
+                        }
+                    }
+                }
+                super.write(last, callback, content);
+            }
+        }
+
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            MinimumDataRateRequest minimumDataRateRequest = new MinimumDataRateRequest(request);
+            Request.Processor processor = super.handle(minimumDataRateRequest);
+            if (processor == null)
+                return null;
+            return minimumDataRateRequest.wrapProcessor(processor);
+        }
+    }
 }

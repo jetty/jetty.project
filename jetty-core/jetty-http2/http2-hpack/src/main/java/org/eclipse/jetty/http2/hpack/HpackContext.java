@@ -24,6 +24,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http2.hpack.internal.Huffman;
+import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
+import org.eclipse.jetty.http2.hpack.internal.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -39,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HpackContext
 {
-    public static final Logger LOG = LoggerFactory.getLogger(HpackContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HpackContext.class);
     private static final String EMPTY = "";
     public static final String[][] STATIC_TABLE =
         {

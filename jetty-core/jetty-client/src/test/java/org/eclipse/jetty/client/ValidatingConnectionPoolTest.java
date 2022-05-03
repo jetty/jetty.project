@@ -13,13 +13,9 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -27,7 +23,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -71,25 +67,24 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testServerClosesConnectionAfterRedirectWithoutConnectionCloseHeader(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
-                baseRequest.setHandled(true);
-                if (target.endsWith("/redirect"))
+                if (request.getPathInContext().endsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.setContentLength(0);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
-                    response.flushBuffer();
-                    baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
+                    Response.write(response, false);
+                    request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
                     response.setContentLength(0);
-                    response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 }
             }
         });
@@ -106,15 +101,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader(Scenario scenario) throws Exception
     {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
+        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
                 response.setContentLength(0);
-                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
             }
         });
     }
@@ -123,16 +117,15 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader(Scenario scenario) throws Exception
     {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
+        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
                 response.setContentLength(0);
-                response.flushBuffer();
-                baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                Response.write(response, false);
+                request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
             }
         });
     }

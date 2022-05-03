@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -69,7 +69,7 @@ public class InterleavingTest extends AbstractTest
         });
 
         int maxFrameSize = Frame.DEFAULT_MAX_LENGTH + 1;
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)

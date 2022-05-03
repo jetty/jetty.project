@@ -41,11 +41,11 @@ For FastCGI there is no web application that needs developed - all the work has 
 As such you only need to deploy a Jetty context XML file that configures the web application directly.
 Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
-<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+<Configure class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
 
     <New id="root" class="java.lang.String">
         <Arg>/var/www/wordpress</Arg>
@@ -58,7 +58,7 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
     </Set>
 
     <Call name="addFilter">
-        <Arg>org.eclipse.jetty.fcgi.server.proxy.TryFilesFilter</Arg>
+        <Arg>org.eclipse.jetty.ee9.fcgi.server.proxy.TryFilesFilterorg.eclipse.jetty.ee9.fcgi.server.proxy.TryFilesFilter</Arg>
         <Arg>/*</Arg>
         <Arg>
             <Call name="of" class="java.util.EnumSet">
@@ -73,11 +73,11 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
 
     <Call name="addServlet">
         <Arg>
-            <New class="org.eclipse.jetty.servlet.ServletHolder">
+            <New class="org.eclipse.jetty.ee9.servlet.ServletHolder">
                 <Arg>default</Arg>
                 <Arg>
                     <Call name="forName" class="java.lang.Class">
-                        <Arg>org.eclipse.jetty.servlet.DefaultServlet</Arg>
+                        <Arg>org.eclipse.jetty.ee9.servlet.DefaultServlet</Arg>
                     </Call>
                 </Arg>
                 <Call name="setInitParameter">

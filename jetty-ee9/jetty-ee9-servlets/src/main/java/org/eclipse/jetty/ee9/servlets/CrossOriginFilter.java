@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -107,7 +107,7 @@ import org.slf4j.LoggerFactory;
  *     ...
  *     &lt;filter&gt;
  *         &lt;filter-name&gt;cross-origin&lt;/filter-name&gt;
- *         &lt;filter-class&gt;org.eclipse.jetty.servlets.CrossOriginFilter&lt;/filter-class&gt;
+ *         &lt;filter-class&gt;org.eclipse.jetty.ee9.servlets.CrossOriginFilter&lt;/filter-class&gt;
  *     &lt;/filter&gt;
  *     &lt;filter-mapping&gt;
  *         &lt;filter-name&gt;cross-origin&lt;/filter-name&gt;

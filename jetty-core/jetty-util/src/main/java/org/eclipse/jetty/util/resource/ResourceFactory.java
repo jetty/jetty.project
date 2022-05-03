@@ -18,6 +18,7 @@ import java.io.IOException;
 /**
  * ResourceFactory.
  */
+// TODO remove
 public interface ResourceFactory
 {
     /**

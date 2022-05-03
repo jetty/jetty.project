@@ -1,0 +1,276 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
+<!--                                                                 -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Server Thread Pool                                          -->
+  <!-- =========================================================== -->
+  <Set name="ThreadPool">
+    <!-- Default queued blocking threadpool -->
+    <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+      <Set name="minThreads">10</Set>
+      <Set name="maxThreads">50</Set>
+      <Set name="lowThreads">5</Set>
+      <Set name="SpawnOrShrinkAt">2</Set>
+    </New>
+  </Set>
+
+  <!-- =========================================================== -->
+  <!-- Set connectors                                              -->
+  <!-- =========================================================== -->
+  <!-- One of each type!                                           -->
+  <!-- =========================================================== -->
+  <Call name="addConnector">
+    <Arg>
+      <New class="org.eclipse.jetty.server.ServerConnector">
+        <Set name="host">
+          <SystemProperty name="jetty.http.host" />
+        </Set>
+        <Set name="port">
+          <SystemProperty name="jetty.http.port" default="8080" />
+        </Set>
+        <Set name="idleTimeout">30000</Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- To add an HTTPS SSL listener                                     -->
+  <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
+  <!-- java -jar start.jar etc/jetty-ssl.xml                           -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <!-- =========================================================== -->
+  <!-- Set up global session ID manager                            -->
+  <!-- =========================================================== -->
+  <!--
+  <Set name="sessionIdManager">
+    <New class="org.eclipse.jetty.ee9.servlet.HashSessionIdManager">
+      <Set name="workerName">node1</Set>
+    </New>
+  </Set>
+  -->
+
+  <!-- =========================================================== -->
+  <!-- Set handler Collection Structure                            -->
+  <!-- =========================================================== -->
+  <Set name="handler">
+    <!-- ==========================================================  -->
+    <!-- RewriteHandler Sample Configuration                         -->
+    <!-- ==========================================================  -->
+    <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+
+      <Set name="originalPathAttribute">requestedPath</Set>
+      <Set name="rewriteRequestURI">true</Set>
+
+      <Set name="rules">
+        <Array type="org.eclipse.jetty.rewrite.handler.Rule">
+
+          <Item>
+            <New id="rewrite" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+              <Set name="pattern">/*</Set>
+              <Set name="replacement">/test</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
+              <Set name="pattern">/session/</Set>
+              <Set name="code">401</Set>
+              <Set name="reason">Setting error code 401</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="header1" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+              <Set name="pattern">*.jsp</Set>
+              <Set name="name">Server</Set>
+              <Set name="value">dexter webserver</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="header2" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+              <Set name="pattern">*.jsp</Set>
+              <Set name="name">title</Set>
+              <Set name="value">driven header purpose</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+              <Set name="pattern">/test/dispatch</Set>
+              <Set name="location">http://jetty.eclipse.org</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="regexRewrite" class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+              <Set name="regex">/test-jaas/$</Set>
+              <Set name="replacement">/demo</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="forwardedHttps" class="org.eclipse.jetty.rewrite.handler.ForwardedSchemeHeaderRule">
+              <Set name="header">X-Forwarded-Scheme</Set>
+              <Set name="headerValue">https</Set>
+              <Set name="scheme">https</Set>
+            </New>
+          </Item>
+
+          <Item>
+            <New id="virtualHost" class="org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer">
+
+              <Set name="virtualHosts">
+                <Array type="java.lang.String">
+                  <Item>eclipse.com</Item>
+                  <Item>www.eclipse.com</Item>
+                  <Item>eclipse.org</Item>
+                  <Item>www.eclipse.org</Item>
+                </Array>
+              </Set>
+
+              <Call name="addRule">
+                <Arg>
+                  <New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule">
+                    <Set name="pattern">/*</Set>
+                    <Set name="name">CookiePatternRule</Set>
+                    <Set name="value">1</Set>
+                  </New>
+                </Arg>
+              </Call>
+
+            </New>
+          </Item>
+
+        </Array>
+      </Set>
+
+      <Set name="handler">
+        <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
+          <Set name="handlers">
+            <Array type="org.eclipse.jetty.server.Handler">
+              <Item>
+                <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection" />
+              </Item>
+              <Item>
+                <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler" />
+              </Item>
+            </Array>
+          </Set>
+        </New>
+      </Set>
+    </New>
+  </Set>
+
+  <!-- =========================================================== -->
+  <!-- Configure the context deployer                              -->
+  <!-- A context deployer will deploy contexts described in        -->
+  <!-- configuration files discovered in a directory.              -->
+  <!-- The configuration directory can be scanned for hot          -->
+  <!-- deployments at the configured scanInterval.                 -->
+  <!--                                                             -->
+  <!-- This deployer is configured to deploy contexts configured   -->
+  <!-- in the $JETTY_HOME/contexts directory                       -->
+  <!--                                                             -->
+  <!-- =========================================================== -->
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.server.deployer.ContextDeployer">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Set name="configurationDir"><SystemProperty name="jetty.home" default="." />/contexts
+        </Set>
+        <Set name="scanInterval">1</Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- =========================================================== -->
+  <!-- Configure the webapp deployer.                              -->
+  <!-- A webapp  deployer will deploy standard webapps discovered  -->
+  <!-- in a directory at startup, without the need for additional  -->
+  <!-- configuration files.    It does not support hot deploy or   -->
+  <!-- non standard contexts (see ContextDeployer above).          -->
+  <!--                                                             -->
+  <!-- This deployer is configured to deploy webapps from the      -->
+  <!-- $JETTY_HOME/webapps directory                               -->
+  <!--                                                             -->
+  <!-- Normally only one type of deployer need be used.            -->
+  <!--                                                             -->
+  <!-- =========================================================== -->
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.server.deployer.WebAppDeployer">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Set name="webAppDir"><SystemProperty name="jetty.home" default="." />/webapps
+        </Set>
+        <Set name="parentLoaderPriority">false</Set>
+        <Set name="extract">true</Set>
+        <Set name="allowDuplicates">false</Set>
+        <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- =========================================================== -->
+  <!-- Configure Authentication Realms                             -->
+  <!-- Realms may be configured for the entire server here, or     -->
+  <!-- they can be configured for a specific web app in a context  -->
+  <!-- configuration (see $(jetty.home)/contexts/test.xml for an   -->
+  <!-- example).                                                   -->
+  <!-- =========================================================== -->
+  <Set name="LoginServices">
+    <Array type="org.eclipse.jetty.security.LoginService">
+      <Item>
+        <New class="org.eclipse.jetty.security.jaspi.modules.HashLoginService">
+          <Set name="name">Test Realm</Set>
+          <Set name="config"><SystemProperty name="jetty.home" default="." />/etc/realm.properties
+          </Set>
+        </New>
+      </Item>
+    </Array>
+  </Set>
+
+  <!-- =========================================================== -->
+  <!-- Configure Request Log                                       -->
+  <!-- Request logs  may be configured for the entire server here, -->
+  <!-- or they can be configured for a specific web app in a       -->
+  <!-- contexts configuration (see $(jetty.home)/contexts/test.xml -->
+  <!-- for an example).                                            -->
+  <!-- =========================================================== -->
+  <Ref refid="RequestLog">
+    <Set name="requestLog">
+      <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
+        <Set name="filename"><SystemProperty name="jetty.requestlog.dir" default="./logs" />/yyyy_mm_dd.request.log
+        </Set>
+        <Set name="filenameDateFormat">yyyy_MM_dd</Set>
+        <Set name="retainDays">90</Set>
+        <Set name="append">true</Set>
+        <Set name="extended">true</Set>
+        <Set name="logCookies">false</Set>
+        <Set name="LogTimeZone">GMT</Set>
+      </New>
+    </Set>
+  </Ref>
+
+  <!-- =========================================================== -->
+  <!-- extra options                                               -->
+  <!-- =========================================================== -->
+  <Set name="stopAtShutdown">true</Set>
+  <Set name="stopTimeout">1000</Set>
+
+</Configure>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,8 +20,9 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

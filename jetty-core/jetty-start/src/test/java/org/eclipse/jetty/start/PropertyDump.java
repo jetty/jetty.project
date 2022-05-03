@@ -63,5 +63,7 @@ public class PropertyDump
                 }
             }
         }
+
+        System.exit(0);
     }
 }

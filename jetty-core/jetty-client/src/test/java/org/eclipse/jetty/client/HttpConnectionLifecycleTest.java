@@ -20,8 +20,6 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -31,7 +29,6 @@ import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
@@ -321,13 +318,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testResponseWithConnectionCloseHeaderRemovesConnection(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
-                response.setHeader("Connection", "close");
-                baseRequest.setHandled(true);
+                response.getHeaders().put("Connection", "close");
             }
         });
 
@@ -368,13 +364,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     {
         try (StacklessLogging ignore = new StacklessLogging(HttpConnection.class))
         {
-            start(scenario, new AbstractHandler()
+            start(scenario, new EmptyServerHandler()
             {
                 @Override
-                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
                 {
-                    response.setHeader("Connection", "close");
-                    baseRequest.setHandled(true);
+                    response.getHeaders().put("Connection", "close");
                     // Don't read request content; this causes the server parser to be closed
                 }
             });

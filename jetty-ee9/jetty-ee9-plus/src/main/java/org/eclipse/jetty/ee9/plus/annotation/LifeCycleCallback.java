@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

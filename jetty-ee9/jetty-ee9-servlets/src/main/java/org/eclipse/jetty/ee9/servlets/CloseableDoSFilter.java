@@ -11,11 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
+
+import java.io.IOException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is an extension to {@link DoSFilter} that uses Jetty APIs to
@@ -24,10 +27,18 @@ import org.eclipse.jetty.server.Request;
 
 public class CloseableDoSFilter extends DoSFilter
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CloseableDoSFilter.class);
+
     @Override
     protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        baseRequest.getHttpChannel().getEndPoint().close();
+        try
+        {
+            response.sendError(-1);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Unable to trigger channel close", e);
+        }
     }
 }

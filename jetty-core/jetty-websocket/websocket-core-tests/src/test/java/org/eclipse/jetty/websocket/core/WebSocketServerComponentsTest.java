@@ -17,8 +17,7 @@ import java.util.zip.Deflater;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
@@ -35,14 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class WebSocketServerComponentsTest
 {
     private Server server;
-    private ServletContextHandler contextHandler;
+    private ContextHandler contextHandler;
     private WebSocketComponents components;
 
     @BeforeEach
     public void before()
     {
         server = new Server();
-        contextHandler = new ServletContextHandler();
+        contextHandler = new ContextHandler();
         server.setHandler(contextHandler);
     }
 
@@ -56,8 +55,14 @@ public class WebSocketServerComponentsTest
     public void testComponentsInsideServletContainerInitializer() throws Exception
     {
         // ensureWebSocketComponents can only be called when the server is starting.
-        contextHandler.addServletContainerInitializer(new ServletContainerInitializerHolder((c, ctx) ->
-            components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler.getServletContext())));
+        contextHandler.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarting(LifeCycle event)
+            {
+                components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            }
+        });
 
         // Components is created only when the server is started.
         assertNull(components);
@@ -81,17 +86,23 @@ public class WebSocketServerComponentsTest
     @Test
     public void testCompressionPoolsManagedByContext() throws Exception
     {
-        ContextHandler.Context servletContext = contextHandler.getServletContext();
+        ContextHandler.Context context = contextHandler.getContext();
 
         // Use a custom InflaterPool and DeflaterPool that are not started or managed.
         InflaterPool inflaterPool = new InflaterPool(333, false);
         DeflaterPool deflaterPool = new DeflaterPool(333, Deflater.BEST_SPEED, false);
-        servletContext.setAttribute(WebSocketServerComponents.WEBSOCKET_DEFLATER_POOL_ATTRIBUTE, deflaterPool);
-        servletContext.setAttribute(WebSocketServerComponents.WEBSOCKET_INFLATER_POOL_ATTRIBUTE, inflaterPool);
+        context.setAttribute(WebSocketServerComponents.WEBSOCKET_DEFLATER_POOL_ATTRIBUTE, deflaterPool);
+        context.setAttribute(WebSocketServerComponents.WEBSOCKET_INFLATER_POOL_ATTRIBUTE, inflaterPool);
 
         // ensureWebSocketComponents can only be called when the server is starting.
-        contextHandler.addServletContainerInitializer(new ServletContainerInitializerHolder((c, ctx) ->
-            components = WebSocketServerComponents.ensureWebSocketComponents(server, servletContext)));
+        contextHandler.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarting(LifeCycle event)
+            {
+                components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            }
+        });
 
         // Components is created only when the server is started.
         assertNull(components);
@@ -119,8 +130,6 @@ public class WebSocketServerComponentsTest
     @Test
     public void testCompressionPoolsManagedByServer() throws Exception
     {
-        ContextHandler.Context servletContext = contextHandler.getServletContext();
-
         // Use a custom InflaterPool and DeflaterPool that are not started or managed.
         InflaterPool inflaterPool = new InflaterPool(333, false);
         DeflaterPool deflaterPool = new DeflaterPool(333, Deflater.BEST_SPEED, false);
@@ -128,8 +137,14 @@ public class WebSocketServerComponentsTest
         server.addBean(deflaterPool);
 
         // ensureWebSocketComponents can only be called when the server is starting.
-        contextHandler.addServletContainerInitializer(new ServletContainerInitializerHolder((c, ctx) ->
-            components = WebSocketServerComponents.ensureWebSocketComponents(server, servletContext)));
+        contextHandler.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarting(LifeCycle event)
+            {
+                components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            }
+        });
 
         // The CompressionPools will only be started with the server.
         assertTrue(inflaterPool.isStopped());

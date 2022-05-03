@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.ArrayList;
 import javax.inject.Inject;
@@ -64,7 +64,7 @@ public class TestJettyOSGiBootContextAsService
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         // a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-context").versionAsInProject().start());
 
         options.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(System.getProperty("mavenRepoPath")));
 
@@ -106,8 +106,8 @@ public class TestJettyOSGiBootContextAsService
         // Context is destroyed for it.
         // TODO: think of a better way to communicate this to the test, other
         // than checking stderr output
-        Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.testcontext");
-        assertNotNull("Could not find the org.eclipse.jetty.test-jetty-osgi-context.jar bundle", testWebBundle);
+        Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.testcontext");
+        assertNotNull("Could not find the org.eclipse.jetty.test-jetty-ee9-osgi-context.jar bundle", testWebBundle);
         assertEquals("The bundle org.eclipse.jetty.testcontext is not correctly resolved", Bundle.ACTIVE, testWebBundle.getState());
         testWebBundle.stop();
     }

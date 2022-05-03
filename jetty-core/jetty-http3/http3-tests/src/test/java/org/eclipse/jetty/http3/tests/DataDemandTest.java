@@ -32,8 +32,6 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -42,7 +40,6 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -586,59 +583,5 @@ public class DataDemandTest extends AbstractClientServerTest
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
 
         assertTrue(lastDataLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testOnDataAvailableThenNoReadThenIdleTimeoutReleasesNetworkBuffer() throws Exception
-    {
-        long idleTimeout = 1000;
-        CountDownLatch onDataLatch = new CountDownLatch(1);
-        CountDownLatch idleLatch = new CountDownLatch(1);
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
-        {
-            @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
-            {
-                HTTP3Stream http3Stream = (HTTP3Stream)stream;
-                http3Stream.setIdleTimeout(idleTimeout);
-                http3Stream.getEndPoint().getConnection().addEventListener(new Connection.Listener.Adapter()
-                {
-                    @Override
-                    public void onClosed(Connection connection)
-                    {
-                        assertFalse(((HTTP3StreamConnection)connection).hasBuffer());
-                        closeLatch.countDown();
-                    }
-                });
-                stream.demand();
-                return new Stream.Server.Listener()
-                {
-                    @Override
-                    public void onDataAvailable(Stream.Server stream)
-                    {
-                        // Do not read.
-                        onDataLatch.countDown();
-                    }
-
-                    @Override
-                    public boolean onIdleTimeout(Stream.Server stream, Throwable failure)
-                    {
-                        idleLatch.countDown();
-                        return true;
-                    }
-                };
-            }
-        });
-
-        Session.Client session = newSession(new Session.Client.Listener() {});
-
-        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), true));
-
-        assertTrue(onDataLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(idleLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

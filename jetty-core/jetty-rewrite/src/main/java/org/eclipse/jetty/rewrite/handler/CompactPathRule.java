@@ -15,37 +15,31 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Rewrite the URI by compacting to remove //
+ * <p>Rewrites the URI by compacting to remove occurrences of {@code //}.</p>
+ * <p>For example, {@code //foo/bar//baz} is compacted to {@code /foo/bar/baz}.</p>
  */
-public class CompactPathRule extends Rule implements Rule.ApplyURI
+public class CompactPathRule extends Rule
 {
-    public CompactPathRule()
-    {
-        _handling = false;
-        _terminating = false;
-    }
-
     @Override
-    public void applyURI(Request request, String oldURI, String newURI) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        String uri = request.getRequestURI();
-        if (uri.startsWith("/"))
-            uri = URIUtil.compactPath(uri);
-        request.setHttpURI(HttpURI.build(request.getHttpURI(), uri));
-    }
+        String path = input.getPathInContext();
+        String compacted = URIUtil.compactPath(path);
 
-    @Override
-    public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        if (target.startsWith("/"))
-            return URIUtil.compactPath(target);
-        return target;
+        if (path.equals(compacted))
+            return null;
+
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public String getPathInContext()
+            {
+                return compacted;
+            }
+        };
     }
 }

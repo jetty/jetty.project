@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -39,7 +39,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 /**
  * Helper methods for pax-exam tests
@@ -205,7 +204,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-common").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-ee9-osgi-boot").versionAsInProject().start());
     }
 
     public static void coreJspDependencies(List<Option> res)
@@ -237,7 +236,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-ee9-osgi-boot-jsp").versionAsInProject().noStart());
     }
     
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)

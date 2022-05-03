@@ -13,110 +13,105 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RewritePatternRuleTest extends AbstractRuleTestCase
+public class RewritePatternRuleTest extends AbstractRuleTest
 {
-    // TODO: Parameterize
-    private final String[][] _tests =
+    public static Stream<Arguments> data()
+    {
+        return Stream.of(
+            Arguments.of("/", "/replace", "/foo/bar", "/replace"),
+            Arguments.of("/*", "/replace/foo/bar", "/foo/bar", "/replace/foo/bar/foo/bar"),
+            Arguments.of("/foo/*", "/replace/bar", "/foo/bar", "/replace/bar/bar"),
+            Arguments.of("/foo/bar", "/replace", "/foo/bar", "/replace"),
+            Arguments.of("*.txt", "/replace", "/foo/bar.txt", "/replace"),
+            Arguments.of("/foo/*", "/replace", "/foo/bar/%20x", "/replace/bar/%20x"),
+            Arguments.of("/old/context", "/replace?given=param", "/old/context", "/replace?given=param")
+        );
+    }
+
+    private void start(RewritePatternRule rule) throws Exception
+    {
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
-            {"/foo/bar", "/", "/replace"},
-            {"/foo/bar", "/*", "/replace/foo/bar"},
-            {"/foo/bar", "/foo/*", "/replace/bar"},
-            {"/foo/bar", "/foo/bar", "/replace"},
-            {"/foo/bar.txt", "*.txt", "/replace"},
-            {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
-        };
-    private RewritePatternRule _rule;
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setHeader("X-URI", request.getHttpURI().getPathQuery());
+                callback.succeeded();
+            }
+        });
+    }
 
-    @BeforeEach
-    public void init() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRewritePatternRule(String pattern, String replacement, String inputURI, String expectURI) throws Exception
     {
-        start(false);
-        _rule = new RewritePatternRule();
-        _rule.setReplacement("/replace");
+        RewritePatternRule rule = new RewritePatternRule(pattern, replacement);
+        start(rule);
+
+        String request = """
+            GET $U HTTP/1.1
+            Host: localhost
+            Connection: close
+                        
+            """.replace("$U", inputURI);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(expectURI, response.get("X-URI"), "X-URI response header value");
     }
 
     @Test
-    public void testMatchAndApplyAndApplyURI() throws IOException
-    {
-        for (String[] test : _tests)
-        {
-            _rule.setPattern(test[1]);
-            String result = _rule.matchAndApply(test[0], _request, _response);
-            assertThat(test[1], test[2], is(result));
-
-            _rule.applyURI(_request, null, result);
-            assertThat(_request.getRequestURI(), is(test[2]));
-        }
-    }
-
-    @Test
-    public void testReplacementWithQueryString() throws IOException
-    {
-        String replacement = "/replace?given=param";
-        String[] split = replacement.split("\\?", 2);
-        String path = split[0];
-        String queryString = split[1];
-
-        RewritePatternRule rewritePatternRule = new RewritePatternRule();
-        rewritePatternRule.setPattern("/old/context");
-        rewritePatternRule.setReplacement(replacement);
-
-        String result = rewritePatternRule.matchAndApply("/old/context", _request, _response);
-        assertThat(result, is(path));
-
-        rewritePatternRule.applyURI(_request, null, result);
-        assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
-        assertThat("request URI matches expected", _request.getRequestURI(), is(path));
-    }
-
-    @Test
-    public void testRequestWithQueryString() throws IOException
+    public void testRequestWithQueryString() throws Exception
     {
         String replacement = "/replace";
-        String queryString = "request=parameter";
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, queryString).asImmutable());
+        RewritePatternRule rule = new RewritePatternRule("/context", replacement);
+        start(rule);
 
-        RewritePatternRule rewritePatternRule = new RewritePatternRule();
-        rewritePatternRule.setPattern("/old/context");
-        rewritePatternRule.setReplacement(replacement);
+        String query = "a=b";
+        String request = """
+            GET /context?$Q HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$Q", query);
 
-        String result = rewritePatternRule.matchAndApply("/old/context", _request, _response);
-        assertThat("result matches expected", result, is(replacement));
-
-        rewritePatternRule.applyURI(_request, null, result);
-        assertThat("request URI matches expected", _request.getRequestURI(), is(replacement));
-        assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(replacement + "?" + query, response.get("X-URI"));
     }
 
     @Test
-    public void testRequestAndReplacementWithQueryString() throws IOException
+    public void testRequestAndReplacementWithQueryString() throws Exception
     {
-        String requestQueryString = "request=parameter";
-        String replacement = "/replace?given=param";
-        String[] split = replacement.split("\\?", 2);
-        String path = split[0];
-        String queryString = split[1];
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, requestQueryString).asImmutable());
+        String replacementPath = "/replace";
+        String replacementQuery = "c=d";
+        RewritePatternRule rule = new RewritePatternRule("/context", replacementPath + "?" + replacementQuery);
+        start(rule);
 
-        RewritePatternRule rewritePatternRule = new RewritePatternRule();
-        rewritePatternRule.setPattern("/old/context");
-        rewritePatternRule.setReplacement(replacement);
+        String query = "a=b";
+        String request = """
+            GET /context?$Q HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$Q", query);
 
-        String result = rewritePatternRule.matchAndApply("/old/context", _request, _response);
-        assertThat(result, is(path));
-
-        rewritePatternRule.applyURI(_request, null, result);
-        assertThat("queryString matches expected", _request.getQueryString(),
-            is(requestQueryString + "&" + queryString));
-        assertThat("request URI matches expected", _request.getRequestURI(), is(path));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(replacementPath + "?" + query + "&" + replacementQuery, response.get("X-URI"));
     }
 }

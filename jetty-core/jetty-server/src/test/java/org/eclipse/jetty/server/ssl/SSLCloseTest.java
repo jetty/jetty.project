@@ -15,21 +15,20 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
@@ -83,37 +82,25 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends AbstractHandler
+    private static class WriteHandler extends Handler.Processor
     {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            try
-            {
-                baseRequest.setHandled(true);
-                response.setStatus(200);
-                response.setHeader("test", "value");
+            response.setStatus(200);
+            response.getHeaders().put("test", "value");
 
-                OutputStream out = response.getOutputStream();
+            String data = "Now is the time for all good men to come to the aid of the party.\n";
+            data += "How now brown cow.\n";
+            data += "The quick brown fox jumped over the lazy dog.\n";
+            // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
+            // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
+            data = data + data + data + data;
+            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-                String data = "Now is the time for all good men to come to the aid of the party.\n";
-                data += "How now brown cow.\n";
-                data += "The quick brown fox jumped over the lazy dog.\n";
-                // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
-                // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
-                data = data + data + data + data;
-                byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-
-                for (int i = 0; i < 2; i++)
-                {
-                    // System.err.println("Write "+i+" "+bytes.length);
-                    out.write(bytes);
-                }
-            }
-            catch (Throwable e)
-            {
-                e.printStackTrace();
-                throw new ServletException(e);
-            }
+            response.write(false,
+                Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
+                BufferUtil.toBuffer(bytes));
         }
     }
 }

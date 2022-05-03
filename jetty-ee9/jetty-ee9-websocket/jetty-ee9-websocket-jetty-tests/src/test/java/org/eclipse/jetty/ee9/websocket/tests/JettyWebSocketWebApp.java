@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,13 +19,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
         // Configure the WebAppContext.
         setContextPath("/" + contextName);
-        setBaseResource(new PathResource(contextDir));
+       .setResourceBase(contextDir);
         addConfiguration(new JettyWebSocketConfiguration());
     }
 

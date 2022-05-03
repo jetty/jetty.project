@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
@@ -20,8 +20,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.PongMessage;
-import org.eclipse.jetty.websocket.jakarta.tests.DataUtils;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.DataUtils;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 
 @ClientEndpoint
 public class JsrClientEchoTrackingSocket extends WSEventTracker.Basic

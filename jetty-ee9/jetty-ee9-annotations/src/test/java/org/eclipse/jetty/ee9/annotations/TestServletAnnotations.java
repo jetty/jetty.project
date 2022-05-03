@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,11 +19,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

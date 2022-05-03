@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

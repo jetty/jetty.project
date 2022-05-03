@@ -38,7 +38,7 @@ The code is as follows:
 ----
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
 /**
  * ServerWithAnnotations
@@ -53,9 +53,9 @@ public class ServerWithAnnotations
         Server server = new Server(8080);
 
         //Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        org.eclipse.jetty.webapp.Configuration.ClassList classlist = org.eclipse.jetty.webapp.Configuration.ClassList.setServerDefault(server);
-        classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration", "org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", "org.eclipse.jetty.annotations.AnnotationConfiguration");
+        org.eclipse.jetty.ee9.webapp.Configuration.ClassList classlist = org.eclipse.jetty.ee9.webapp.Configuration.ClassList.setServerDefault(server);
+        classlist.addAfter("org.eclipse.jetty.ee9.webapp.FragmentConfiguration", "org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        classlist.addBefore("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration", "org.eclipse.jetty.annotations.AnnotationConfiguration");
 
         //Create a WebApp
         WebAppContext webapp = new WebAppContext();

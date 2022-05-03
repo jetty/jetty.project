@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.endpoints;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.endpoints;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,8 +22,8 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.Defaults;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.jakarta.common.Defaults;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;

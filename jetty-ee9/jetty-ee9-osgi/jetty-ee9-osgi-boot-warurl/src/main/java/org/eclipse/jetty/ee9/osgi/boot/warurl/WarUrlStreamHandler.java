@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.warurl;
+package org.eclipse.jetty.ee9.osgi.boot.warurl;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,8 +20,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.jar.Manifest;
 
-import org.eclipse.jetty.osgi.boot.warurl.internal.WarBundleManifestGenerator;
-import org.eclipse.jetty.osgi.boot.warurl.internal.WarURLConnection;
+import org.eclipse.jetty.ee9.osgi.boot.warurl.internal.WarBundleManifestGenerator;
+import org.eclipse.jetty.ee9.osgi.boot.warurl.internal.WarURLConnection;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.service.url.AbstractURLStreamHandlerService;

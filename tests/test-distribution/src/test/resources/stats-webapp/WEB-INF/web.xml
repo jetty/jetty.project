@@ -6,7 +6,7 @@
   <display-name>stats-demo</display-name>
   <servlet>
     <servlet-name>Stats</servlet-name>
-    <servlet-class>org.eclipse.jetty.servlet.StatisticsServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee9.servlet.StatisticsServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 

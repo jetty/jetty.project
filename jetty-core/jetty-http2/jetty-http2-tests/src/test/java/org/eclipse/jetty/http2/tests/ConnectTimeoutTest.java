@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -41,11 +40,11 @@ public class ConnectTimeoutTest extends AbstractTest
         assumeConnectTimeout(host, port, connectTimeout);
 
         start(new ServerSessionListener.Adapter());
-        client.setConnectTimeout(connectTimeout);
+        http2Client.setConnectTimeout(connectTimeout);
 
         InetSocketAddress address = new InetSocketAddress(host, port);
         final CountDownLatch latch = new CountDownLatch(1);
-        client.connect(address, new Session.Listener.Adapter(), new Promise.Adapter<Session>()
+        http2Client.connect(address, new Session.Listener.Adapter(), new Promise.Adapter<>()
         {
             @Override
             public void failed(Throwable x)
@@ -58,7 +57,7 @@ public class ConnectTimeoutTest extends AbstractTest
         assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
+    private void assumeConnectTimeout(String host, int port, int connectTimeout)
     {
         boolean socketTimeout = false;
 

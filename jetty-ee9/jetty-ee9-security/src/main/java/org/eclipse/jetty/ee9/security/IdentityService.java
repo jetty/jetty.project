@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 
 /**
  * Associates UserIdentities from with threads and UserIdentity.Contexts.
@@ -28,7 +29,7 @@ public interface IdentityService
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
-     * {@link SecurityHandler#handle(String, org.eclipse.jetty.server.Request, jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)}
+     * {@link SecurityHandler#handle(String, Request, jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
      *
      * @param user The current user or null for no user to associated.

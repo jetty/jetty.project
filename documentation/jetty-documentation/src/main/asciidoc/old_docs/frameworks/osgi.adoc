@@ -115,7 +115,7 @@ Here's how you would specify it:
 +
 [source, plain, subs="{sub-order}"]
 ----
-jetty.home.bundle=org.eclipse.jetty.osgi.boot
+jetty.home.bundle=org.eclipse.jetty.ee9.osgi.boot
 ----
 
 +
@@ -357,7 +357,7 @@ Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
 
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="defaultsDescriptor"><Property name="bundle.root"/>META-INF/webdefault.xml</Set>
 </Configure>
 ----
@@ -440,7 +440,7 @@ include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 [[services-as-webapps]]
 ==== Deploying Services as Webapps
 
-In addition to listening for bundles whose format or `MANIFEST` entries define a webapp or `ContextHandler` for to be deployed, the Jetty OSGi container also listens for the registration of OSGi services that are instances of `org.eclipse.jetty.webapp.WebAppContext`.
+In addition to listening for bundles whose format or `MANIFEST` entries define a webapp or `ContextHandler` for to be deployed, the Jetty OSGi container also listens for the registration of OSGi services that are instances of `org.eclipse.jetty.ee9.webapp.WebAppContext`.
 So you may programmatically create a `WebAppContext`, register it as a service, and have Jetty pick it up and deploy it.
 
 Here's an example of doing that with a simple bundle that serves static content, and an `org.osgi.framework.BundleActivator` that instantiates the `WebAppContext`:
@@ -679,7 +679,7 @@ Here is the list of recommended jars (NOTE the version numbers may change in fut
 |org.eclipse.jdt.core.compiler.batch |Distribution lib/apache-jsp
 
 |org.eclipse.jetty.osgi:jetty-osgi-boot-jsp
-|org.eclipse.jetty.osgi.boot.jsp
+|org.eclipse.jetty.ee9.osgi.boot.jsp
 |https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven central]
 |=======================================================================
 
@@ -748,15 +748,15 @@ The format of the *Require-TldBundle* header is a comma separated list of one or
 
 Some TLD jars are required to be found on the Jetty OSGi container's classpath, rather than considered part of the web bundle's classpath.
 For example, this is true of JSTL and Java Server Faces.
-The Jetty OSGi container takes care of JSTL for you, but you can control which other jars are considered as part of the container's classpath by using the System property **org.eclipse.jetty.osgi.tldbundles**:
+The Jetty OSGi container takes care of JSTL for you, but you can control which other jars are considered as part of the container's classpath by using the System property **org.eclipse.jetty.ee9.osgi.tldbundles**:
 
-org.eclipse.jetty.osgi.tldbundles::
+org.eclipse.jetty.ee9.osgi.tldbundles::
 System property defined on the OSGi environment that is a comma separated list of symbolic names of bundles containing taglibs that will be treated as if they are on the container's classpath for web bundles.
 For example:
 +
 [source, plain, subs="{sub-order}"]
 ----
-org.eclipse.jetty.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
+org.eclipse.jetty.ee9.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
 ----
 +
 You will still need to define the *Import-Bundle* header in the `MANIFEST` file for the web bundle to ensure that the TLD bundles are on the OSGi classpath.

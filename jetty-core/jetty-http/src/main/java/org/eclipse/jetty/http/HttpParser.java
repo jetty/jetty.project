@@ -1761,10 +1761,6 @@ public class HttpParser
                                 setState(State.CHUNK);
                             break;
 
-                        case SPACE:
-                            setState(State.CHUNK_PARAMS);
-                            break;
-
                         default:
                             if (t.isHexDigit())
                             {
@@ -1772,9 +1768,13 @@ public class HttpParser
                                     throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
                                 _chunkLength = _chunkLength * 16 + t.getHexDigit();
                             }
-                            else
+                            else if (t.getChar() == ';')
                             {
                                 setState(State.CHUNK_PARAMS);
+                            }
+                            else
+                            {
+                                throw new IllegalCharacterException(_state, t, buffer);
                             }
                     }
                     break;
@@ -1900,14 +1900,40 @@ public class HttpParser
     protected void setState(State state)
     {
         if (debugEnabled)
-            LOG.debug("{} --> {}", _state, state);
+        {
+            String info;
+            switch (state)
+            {
+                case SPACE1:
+                    info = _requestHandler == null ? _version.asString() : _methodString;
+                    break;
+                case SPACE2:
+                    info = _requestHandler == null ? Integer.toString(_responseStatus) : _uri.toString();
+                    break;
+                case CONTENT_END:
+                case TRAILER:
+                    info = Long.toString(_contentPosition);
+                    break;
+                default:
+                    info = null;
+            }
+            if (info == null)
+                LOG.debug("{} --> {}", _state, state);
+            else
+                LOG.debug("{} --> {}({})", _state, state, info);
+        }
         _state = state;
     }
 
     protected void setState(FieldState state)
     {
         if (debugEnabled)
-            LOG.debug("{}:{} --> {}", _state, _field != null ? _field : _headerString != null ? _headerString : _string, state);
+        {
+            if (state != FieldState.FIELD)
+                LOG.debug("{}:{} --> {}", _state, _fieldState, state);
+            else
+                LOG.debug("{}:{} --> {}({}: {})", _state, _fieldState, state, _field != null ? _field : _headerString, _valueString);
+        }
         _fieldState = state;
     }
 

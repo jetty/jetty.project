@@ -11,75 +11,49 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AsyncIOTest extends AbstractTest
 {
     @Test
     public void testLastContentAvailableBeforeService() throws Exception
     {
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to fully arrive.
                 sleep(1000);
-
-                final AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
-                request.getInputStream().setReadListener(new EmptyReadListener()
-                {
-                    @Override
-                    public void onDataAvailable() throws IOException
-                    {
-                        ServletInputStream input = request.getInputStream();
-                        while (input.isReady())
-                        {
-                            int read = input.read();
-                            if (read < 0)
-                                break;
-                        }
-                        if (input.isFinished())
-                            asyncContext.complete();
-                    }
-                });
+                Content.consumeAll(request);
+                callback.succeeded();
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
@@ -103,33 +77,17 @@ public class AsyncIOTest extends AbstractTest
     @Test
     public void testLastContentAvailableAfterServiceReturns() throws Exception
     {
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                final AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
-                request.getInputStream().setReadListener(new EmptyReadListener()
-                {
-                    @Override
-                    public void onDataAvailable() throws IOException
-                    {
-                        ServletInputStream input = request.getInputStream();
-                        while (input.isReady())
-                        {
-                            int read = input.read();
-                            if (read < 0)
-                                break;
-                        }
-                        if (input.isFinished())
-                            asyncContext.complete();
-                    }
-                });
+                Content.consumeAll(request);
+                callback.succeeded();
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
@@ -154,13 +112,16 @@ public class AsyncIOTest extends AbstractTest
     }
 
     @Test
-    public void testSomeContentAvailableAfterServiceReturns() throws Exception
+    @Disabled("port to ee9")
+    public void testSomeContentAvailableAfterServiceReturns()
     {
+        fail();
+/*
         final AtomicInteger count = new AtomicInteger();
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 final AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
@@ -212,11 +173,15 @@ public class AsyncIOTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         // Make sure onDataAvailable() has been called twice
         assertEquals(2, count.get());
+*/
     }
 
     @Test
-    public void testDirectAsyncWriteThenComplete() throws Exception
+    @Disabled("port to ee9")
+    public void testDirectAsyncWriteThenComplete()
     {
+        fail();
+/*
         // Use a small flow control window to stall the server writes.
         int clientWindow = 16;
         start(new EmptyHttpServlet()
@@ -271,6 +236,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+*/
     }
 
     private static void sleep(long ms) throws InterruptedIOException
@@ -282,24 +248,6 @@ public class AsyncIOTest extends AbstractTest
         catch (InterruptedException x)
         {
             throw new InterruptedIOException();
-        }
-    }
-
-    private static class EmptyReadListener implements ReadListener
-    {
-        @Override
-        public void onDataAvailable() throws IOException
-        {
-        }
-
-        @Override
-        public void onAllDataRead() throws IOException
-        {
-        }
-
-        @Override
-        public void onError(Throwable t)
-        {
         }
     }
 }

@@ -17,7 +17,7 @@
 [[header-filter-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlets.HeaderFilter`
+* Classname: `org.eclipse.jetty.ee9.servlets.HeaderFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/HeaderFilter.html
 
@@ -54,7 +54,7 @@ ____
 ----
 <filter>
    <filter-name>HeaderFilter</filter-name>
-   <filter-class>org.eclipse.jetty.servlets.HeaderFilter</filter-class>
+   <filter-class>org.eclipse.jetty.ee9.servlets.HeaderFilter</filter-class>
    <init-param>
      <param-name>headerConfig</param-name>
      <param-value>

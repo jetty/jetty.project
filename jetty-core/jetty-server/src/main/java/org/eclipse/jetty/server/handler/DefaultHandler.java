@@ -14,23 +14,29 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +51,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * For requests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
  */
-public class DefaultHandler extends AbstractHandler
+public class DefaultHandler extends Handler.Processor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
-    final long _faviconModified = (System.currentTimeMillis() / 1000) * 1000L;
-    final byte[] _favicon;
+    final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
+    final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
+    final ByteBuffer _favicon;
     boolean _serveIcon = true;
     boolean _showContexts = true;
 
@@ -73,44 +80,41 @@ public class DefaultHandler extends AbstractHandler
         }
         finally
         {
-            _favicon = favbytes;
+            _favicon = BufferUtil.toBuffer(favbytes);
         }
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        if (response.isCommitted() || baseRequest.isHandled())
-            return;
-
-        baseRequest.setHandled(true);
-
         String method = request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && target.equals("/favicon.ico"))
+        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && request.getPathInContext().equals("/favicon.ico"))
         {
-            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString()) == _faviconModified)
-                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+            if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
+                response.setStatus(HttpStatus.NOT_MODIFIED_304);
             else
             {
-                response.setStatus(HttpServletResponse.SC_OK);
+                response.setStatus(HttpStatus.OK_200);
                 response.setContentType("image/x-icon");
-                response.setContentLength(_favicon.length);
-                response.setDateHeader(HttpHeader.LAST_MODIFIED.toString(), _faviconModified);
-                response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
-                response.getOutputStream().write(_favicon);
+                response.setContentLength(_favicon.remaining());
+                response.getHeaders().add(_faviconModified);
+                response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
+                content = _favicon.slice();
             }
+            response.write(true, callback, content);
             return;
         }
 
-        if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
+        if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPathInContext().equals("/"))
         {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
             return;
         }
 
-        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.setStatus(HttpStatus.NOT_FOUND_404);
         response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -134,13 +138,11 @@ public class DefaultHandler extends AbstractHandler
             writer.append("</tr></thead><tbody>\n");
 
             Server server = getServer();
-            Handler[] handlers = server == null ? null : server.getChildHandlersByClass(ContextHandler.class);
+            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getDescendants(ContextHandler.class);
 
-            for (int i = 0; handlers != null && i < handlers.length; i++)
+            for (ContextHandler context : handlers)
             {
                 writer.append("<tr><td>");
-                // Context Path
-                ContextHandler context = (ContextHandler)handlers[i];
 
                 String contextPath = context.getContextPath();
                 String href = URIUtil.encodePath(contextPath);
@@ -187,19 +189,17 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<a href=\"https://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
-            byte[] content = outputStream.toByteArray();
-            response.setContentLength(content.length);
-            try (OutputStream out = response.getOutputStream())
-            {
-                out.write(content);
-            }
+            ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
+            response.setContentLength(content.remaining());
+            response.write(true, callback, content);
         }
     }
 
     /**
      * @return Returns true if the handle can server the jetty favicon.ico
      */
-    public boolean getServeIcon()
+    @ManagedAttribute("True if the favicon.ico should be served")
+    public boolean isServeIcon()
     {
         return _serveIcon;
     }
@@ -212,7 +212,8 @@ public class DefaultHandler extends AbstractHandler
         _serveIcon = serveIcon;
     }
 
-    public boolean getShowContexts()
+    @ManagedAttribute("True if the contexts should be shown in the default 404 page")
+    public boolean isShowContexts()
     {
         return _showContexts;
     }

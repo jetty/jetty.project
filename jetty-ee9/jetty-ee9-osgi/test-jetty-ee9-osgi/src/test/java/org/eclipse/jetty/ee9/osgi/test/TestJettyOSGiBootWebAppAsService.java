@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +19,8 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -41,7 +41,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  *
  * Tests the ServiceWebAppProvider.
  *
- * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
+ * Pax-Exam to make sure the jetty-ee9-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
@@ -81,10 +81,10 @@ public class TestJettyOSGiBootWebAppAsService
 
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-webapp").versionAsInProject().start());
 
         //a bundle that registers a new named Server instance
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-server").versionAsInProject().start());
 
         return res;
     }

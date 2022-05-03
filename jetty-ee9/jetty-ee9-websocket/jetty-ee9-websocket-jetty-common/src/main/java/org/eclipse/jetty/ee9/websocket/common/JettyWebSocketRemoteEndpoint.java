@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -19,12 +19,12 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
+public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketRemoteEndpoint.class);
 
@@ -225,7 +225,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public org.eclipse.jetty.websocket.api.BatchMode getBatchMode()
+    public org.eclipse.jetty.ee9.websocket.api.BatchMode getBatchMode()
     {
         return batchMode;
     }

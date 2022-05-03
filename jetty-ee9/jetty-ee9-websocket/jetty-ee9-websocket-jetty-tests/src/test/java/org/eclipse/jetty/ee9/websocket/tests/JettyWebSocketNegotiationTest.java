@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -21,17 +21,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.client.JettyUpgradeListener;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +102,7 @@ public class JettyWebSocketNegotiationTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannelState.class))
         {
             CompletableFuture<Session> connect = client.connect(socket, uri);
             Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));

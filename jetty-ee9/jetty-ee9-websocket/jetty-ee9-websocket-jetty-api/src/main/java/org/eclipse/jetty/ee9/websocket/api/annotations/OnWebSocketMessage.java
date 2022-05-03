@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.annotations;
+package org.eclipse.jetty.ee9.websocket.api.annotations;
 
 import java.io.Reader;
 import java.lang.annotation.Documented;
@@ -20,8 +20,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
 
 /**
  * Annotation for tagging methods to receive Binary or Text Message events.

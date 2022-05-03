@@ -462,7 +462,7 @@ deploying more than one web application:::
 
 As the `org.eclipse.jetty.ant.AntWebAppContext` class is an extension of
 the
-link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`org.eclipse.jetty.webapp.WebAppContext`]
+link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`org.eclipse.jetty.ee9.webapp.WebAppContext`]
 class, you can configure it by adding attributes of the same name
 (without the `set` or `add` prefix) as the setter methods.
 

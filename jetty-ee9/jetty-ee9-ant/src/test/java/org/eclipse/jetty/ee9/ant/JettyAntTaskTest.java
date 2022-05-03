@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.net.HttpURLConnection;
 import java.net.URI;

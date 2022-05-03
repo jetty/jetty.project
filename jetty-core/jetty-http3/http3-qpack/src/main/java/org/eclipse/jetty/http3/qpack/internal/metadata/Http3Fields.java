@@ -115,9 +115,15 @@ public class Http3Fields implements HttpFields
     }
 
     @Override
-    public Immutable asImmutable()
+    public HttpFields asImmutable()
     {
-        return new Immutable(stream().toArray(HttpField[]::new));
+        return HttpFields.from(stream().toArray(HttpField[]::new));
+    }
+
+    @Override
+    public HttpFields takeAsImmutable()
+    {
+        return asImmutable();
     }
 
     @Override

@@ -13,25 +13,25 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
+import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.IO;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -48,19 +48,20 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         final String value3 = "\u20AC";
 
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response)
             {
-                baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
-                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getContentType());
-                assertEquals(value1, request.getParameter(name1));
-                String[] values = request.getParameterValues(name2);
-                assertNotNull(values);
-                assertEquals(2, values.length);
-                assertThat(values, Matchers.arrayContainingInAnyOrder(value2, value3));
+                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                new FutureFormFields(request).whenComplete((fields, failure) ->
+                {
+                    assertEquals(value1, fields.get(name1).getValue());
+                    List<String> values = fields.get(name2).getValues();
+                    assertEquals(2, values.size());
+                    assertThat(values, containsInAnyOrder(value2, value3));
+                });
             }
         });
 
@@ -87,15 +88,14 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String content = FormRequestContent.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Throwable
             {
-                baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
-                assertEquals(contentType, request.getContentType());
-                assertEquals(content, IO.toString(request.getInputStream()));
+                assertEquals(contentType, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(content, Content.readAll(request));
             }
         });
 
@@ -115,15 +115,14 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
     {
         final String content = "data";
 
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Throwable
             {
-                baseRequest.setHandled(true);
                 assertEquals("GET", request.getMethod());
-                assertNotNull(request.getContentType());
-                assertEquals(content, IO.toString(request.getInputStream()));
+                assertNotNull(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(content, Content.readAll(request));
             }
         });
 

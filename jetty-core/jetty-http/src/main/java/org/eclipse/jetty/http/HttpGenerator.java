@@ -47,7 +47,7 @@ public class HttpGenerator
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, null, -1);
     public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, null, -1);
     public static final MetaData.Response RESPONSE_500_INFO =
-        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.build().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE), 0);
+        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
 
     // states
     public enum State
@@ -169,6 +169,14 @@ public class HttpGenerator
     public boolean isPersistent()
     {
         return Boolean.TRUE.equals(_persistent);
+    }
+
+    /**
+     * @return true if known to be persistent
+     */
+    public boolean isPersistent(HttpVersion version)
+    {
+        return version == HttpVersion.HTTP_1_1 ? !Boolean.FALSE.equals(_persistent) : Boolean.TRUE.equals(_persistent);
     }
 
     public boolean isWritten()

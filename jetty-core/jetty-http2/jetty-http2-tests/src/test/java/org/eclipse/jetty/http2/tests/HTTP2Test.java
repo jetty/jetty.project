@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,17 +26,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -46,15 +41,15 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Graceful;
@@ -74,9 +69,16 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
@@ -122,7 +124,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
@@ -154,16 +156,16 @@ public class HTTP2Test extends AbstractTest
     public void testRequestNoContentResponseContent() throws Exception
     {
         final byte[] content = "Hello World!".getBytes(StandardCharsets.UTF_8);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                resp.getOutputStream().write(content);
+                Response.write(response, true, ByteBuffer.wrap(content));
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
@@ -201,16 +203,16 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestContentResponseContent() throws Exception
     {
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                Content.copy(request, response, callback);
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
@@ -245,20 +247,20 @@ public class HTTP2Test extends AbstractTest
     public void testMultipleRequests() throws Exception
     {
         final String downloadBytes = "X-Download";
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                int download = request.getIntHeader(downloadBytes);
+                int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
         int requests = 20;
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         Random random = new Random();
         HttpFields fields = HttpFields.build()
@@ -281,23 +283,24 @@ public class HTTP2Test extends AbstractTest
             });
         }
 
-        assertTrue(latch.await(requests, TimeUnit.SECONDS), server.dump() + System.lineSeparator() + client.dump());
+        assertTrue(latch.await(requests, TimeUnit.SECONDS), server.dump() + System.lineSeparator() + httpClient.dump());
     }
 
     @Test
     public void testCustomResponseCode() throws Exception
     {
         final int status = 475;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
+                callback.succeeded();
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -322,19 +325,20 @@ public class HTTP2Test extends AbstractTest
         final String host = "fooBar";
         final int port = 1313;
         final String authority = host + ":" + port;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                assertEquals(host, request.getServerName());
-                assertEquals(port, request.getServerPort());
+                assertEquals(host, Request.getServerName(request));
+                assertEquals(port, Request.getServerPort(request));
+                callback.succeeded();
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HostPortHttpField hostHeader = new HostPortHttpField(authority);
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -358,7 +362,7 @@ public class HTTP2Test extends AbstractTest
         start(new ServerSessionListener.Adapter());
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        newClient(new Session.Listener.Adapter()
+        newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
@@ -387,11 +391,11 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        newClient(new Session.Listener.Adapter());
+        newClientSession(new Session.Listener.Adapter());
 
         sleep(1000);
 
-        client.stop();
+        http2Client.stop();
 
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
@@ -420,7 +424,7 @@ public class HTTP2Test extends AbstractTest
         });
 
         CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -551,7 +555,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
@@ -670,7 +674,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
@@ -707,7 +711,7 @@ public class HTTP2Test extends AbstractTest
 
         CountDownLatch closeLatch = new CountDownLatch(1);
         CountDownLatch failureLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
@@ -731,76 +735,19 @@ public class HTTP2Test extends AbstractTest
     }
 
     @Test
-    public void testGoAwayRespondedWithGoAway() throws Exception
-    {
-        ServerSessionListener.Adapter serverListener = new ServerSessionListener.Adapter()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(response, Callback.NOOP);
-                stream.getSession().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-                return null;
-            }
-        };
-        CountDownLatch goAwayLatch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
-        {
-            @Override
-            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
-            {
-                return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
-                {
-                    @Override
-                    public void onGoAway(GoAwayFrame frame)
-                    {
-                        super.onGoAway(frame);
-                        goAwayLatch.countDown();
-                    }
-                }, rateControl);
-            }
-        };
-        prepareServer(connectionFactory);
-        server.start();
-
-        prepareClient();
-        client.start();
-
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
-            @Override
-            public void onClose(Session session, GoAwayFrame frame)
-            {
-                closeLatch.countDown();
-            }
-        });
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, null, true);
-        CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(request, new Promise.Adapter<>(), new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
-            {
-                responseLatch.countDown();
-            }
-        });
-
-        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
     public void testClientInvalidHeader() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         // A bad header in the request should fail on the client.
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         HttpFields requestFields = HttpFields.build()
             .put(":custom", "special");
         MetaData.Request metaData = newRequest("GET", requestFields);
@@ -814,17 +761,18 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testServerInvalidHeader() throws Exception
     {
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader(":custom", "special");
+                response.getHeaders().put(":custom", "special");
+                callback.succeeded();
             }
         });
 
         // Good request with bad header in the response.
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -847,15 +795,15 @@ public class HTTP2Test extends AbstractTest
     public void testServerInvalidHeaderFlushed() throws Exception
     {
         CountDownLatch serverFailure = new CountDownLatch(1);
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                response.setHeader(":custom", "special");
+                response.getHeaders().put(":custom", "special");
                 try
                 {
-                    response.flushBuffer();
+                    Response.write(response, false);
                 }
                 catch (IOException x)
                 {
@@ -867,7 +815,7 @@ public class HTTP2Test extends AbstractTest
         });
 
         // Good request with bad header in the response.
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", "/flush", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -928,7 +876,7 @@ public class HTTP2Test extends AbstractTest
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClient(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -992,7 +940,7 @@ public class HTTP2Test extends AbstractTest
 
         // Client cannot create new requests after receiving a GOAWAY.
         HostPortHttpField authority3 = new HostPortHttpField("localhost" + ":" + port);
-        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame request3 = new HeadersFrame(metaData3, null, true);
         FuturePromise<Stream> promise3 = new FuturePromise<>();
         clientSession.newStream(request3, promise3, new Stream.Listener.Adapter());

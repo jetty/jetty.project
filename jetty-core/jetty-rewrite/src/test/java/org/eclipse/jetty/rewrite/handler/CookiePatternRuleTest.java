@@ -13,25 +13,16 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringReader;
+import java.util.Arrays;
+import java.util.List;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,71 +31,48 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class CookiePatternRuleTest
+public class CookiePatternRuleTest extends AbstractRuleTest
 {
-    private Server server;
-    private LocalConnector localConnector;
-
-    public void startServer(CookiePatternRule rule) throws Exception
+    private void start(CookiePatternRule rule) throws Exception
     {
-        server = new Server();
-        localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        RewriteHandler rewriteHandler = new RewriteHandler();
-//        rewriteHandler.setRewriteRequestURI(false);
-        rewriteHandler.addRule(rule);
-
-        Handler dummyHandler = new AbstractHandler()
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain");
-                response.setCharacterEncoding("utf-8");
-                PrintWriter out = response.getWriter();
-                out.printf("target=%s%n", target);
-                out.printf("baseRequest.requestUri=%s%n", baseRequest.getRequestURI());
-                out.printf("baseRequest.originalUri=%s%n", baseRequest.getOriginalURI());
-                out.printf("request.requestUri=%s%n", request.getRequestURI());
-                out.printf("request.queryString=%s%n", request.getQueryString());
-                baseRequest.setHandled(true);
+                response.setContentType("text/plain;charset=utf-8");
+                response.write(false, Callback.NOOP, "pathInContext=%s%n".formatted(request.getPathInContext()));
+                response.write(false, Callback.NOOP, "path=%s%n".formatted(request.getHttpURI().getPath()));
+                response.write(false, Callback.NOOP, "query=%s%n".formatted(request.getHttpURI().getQuery()));
+                Request original = Request.unWrap(request);
+                response.write(false, Callback.NOOP, "originalPath=%s%n".formatted(original.getHttpURI().getPath()));
+                response.write(false, Callback.NOOP, "originalQuery=%s%n".formatted(original.getHttpURI().getQuery()));
+                callback.succeeded();
             }
-        };
-
-        server.setHandler(new HandlerList(rewriteHandler, dummyHandler));
-        server.start();
+        });
     }
 
-    @AfterEach
-    public void stopServer() throws Exception
-    {
-        if (server != null)
-        {
-            server.stop();
-        }
-    }
-
-    @BeforeEach
-    public void init() throws Exception
+    @Test
+    public void testRule() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
         rule.setPattern("*");
         rule.setName("cookie");
         rule.setValue("value");
 
-        startServer(rule);
+        start(rule);
 
-        StringBuilder rawRequest = new StringBuilder();
-        rawRequest.append("GET / HTTP/1.1\r\n");
-        rawRequest.append("Host: local\r\n");
-        rawRequest.append("Connection: close\r\n");
-        rawRequest.append("\r\n");
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        // verify
         HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
         assertThat("response should have Set-Cookie", setCookieField, notNullValue());
         for (String value : setCookieField.getValues())
@@ -116,53 +84,54 @@ public class CookiePatternRuleTest
     }
 
     @Test
-    public void testSetAlready() throws Exception
+    public void testCookieAlreadySet() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
         rule.setPattern("*");
         rule.setName("set");
         rule.setValue("already");
 
-        startServer(rule);
+        start(rule);
 
-        StringBuilder rawRequest = new StringBuilder();
-        rawRequest.append("GET / HTTP/1.1\r\n");
-        rawRequest.append("Host: local\r\n");
-        rawRequest.append("Connection: close\r\n");
-        rawRequest.append("Cookie: set=already\r\n"); // already present on request
-        rawRequest.append("\r\n");
+        // Cookie already present on the request.
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: local
+            Connection: close
+            Cookie: set=already
+            
+            """;
 
-        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        // verify
         assertThat("response should not have Set-Cookie", response.getField(HttpHeader.SET_COOKIE), nullValue());
     }
 
     @Test
-    public void testUrlQuery() throws Exception
+    public void testPathQuery() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
         rule.setPattern("*");
         rule.setName("fruit");
         rule.setValue("banana");
 
-        startServer(rule);
+        start(rule);
 
-        StringBuilder rawRequest = new StringBuilder();
-        rawRequest.append("GET /other?fruit=apple HTTP/1.1\r\n");
-        rawRequest.append("Host: local\r\n");
-        rawRequest.append("Connection: close\r\n");
-        rawRequest.append("\r\n");
+        String rawRequest = """
+            GET /other?fruit=apple HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();
-        assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other");
-        assertResponseContentLine(responseContent, "request.queryString=", "fruit=apple");
+        assertResponseContentLine(responseContent, "path=", "/other");
+        assertResponseContentLine(responseContent, "query=", "fruit=apple");
 
-        // verify
         HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
         assertThat("response should have Set-Cookie", setCookieField, notNullValue());
         for (String value : setCookieField.getValues())
@@ -174,28 +143,28 @@ public class CookiePatternRuleTest
     }
 
     @Test
-    public void testUrlParameter() throws Exception
+    public void testPathParameter() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
         rule.setPattern("*");
         rule.setName("fruit");
         rule.setValue("banana");
 
-        startServer(rule);
+        start(rule);
 
-        StringBuilder rawRequest = new StringBuilder();
-        rawRequest.append("GET /other;fruit=apple HTTP/1.1\r\n");
-        rawRequest.append("Host: local\r\n");
-        rawRequest.append("Connection: close\r\n");
-        rawRequest.append("\r\n");
+        String rawRequest = """
+            GET /other;fruit=apple HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();
-        assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other;fruit=apple");
+        assertResponseContentLine(responseContent, "path=", "/other;fruit=apple");
 
-        // verify
         HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
         assertThat("response should have Set-Cookie", setCookieField, notNullValue());
         for (String value : setCookieField.getValues())
@@ -206,33 +175,17 @@ public class CookiePatternRuleTest
         }
     }
 
-    private void assertResponseContentLine(String responseContent, String linePrefix, String expectedEquals) throws IOException
+    private void assertResponseContentLine(String responseContent, String linePrefix, String expectedEquals)
     {
-        String line;
-        try (StringReader stringReader = new StringReader(responseContent);
-             BufferedReader bufferedReader = new BufferedReader(stringReader))
-        {
-            boolean foundIt = false;
-            while ((line = bufferedReader.readLine()) != null)
-            {
-                if (line.startsWith(linePrefix))
-                {
-                    if (foundIt)
-                    {
-                        // duplicate lines
-                        fail("Found multiple lines prefixed with: " + linePrefix);
-                    }
-                    // found it
-                    String actualValue = line.substring(linePrefix.length());
-                    assertThat("Line:" + linePrefix, actualValue, is(expectedEquals));
-                    foundIt = true;
-                }
-            }
+        List<String> matches = Arrays.stream(responseContent.split("\n"))
+            .filter(line -> line.startsWith(linePrefix))
+            .map(line -> line.substring(linePrefix.length()))
+            .filter(line -> line.equals(expectedEquals))
+            .toList();
 
-            if (!foundIt)
-            {
-                fail("Unable to find line prefixed with: " + linePrefix);
-            }
-        }
+        if (matches.size() == 0)
+            fail("Unable to find line prefixed with: " + linePrefix);
+        if (matches.size() > 1)
+            fail("Found multiple lines prefixed with: " + linePrefix);
     }
 }

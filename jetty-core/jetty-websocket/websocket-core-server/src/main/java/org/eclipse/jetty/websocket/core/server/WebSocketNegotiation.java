@@ -19,61 +19,56 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public abstract class WebSocketNegotiation
 {
-    private final HttpServletRequest request;
-    private final HttpServletResponse response;
+    private final Request request;
+    private final Response response;
+    private final Callback callback;
     private final WebSocketComponents components;
-    private Request baseRequest;
     private String version;
     private List<ExtensionConfig> offeredExtensions;
     private List<ExtensionConfig> negotiatedExtensions;
     private List<String> offeredProtocols;
     private String protocol;
 
-    public WebSocketNegotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    public WebSocketNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
-        this.baseRequest = baseRequest;
         this.request = request;
         this.response = response;
+        this.callback = callback;
         this.components = webSocketComponents;
     }
 
-    public Request getBaseRequest()
-    {
-        return baseRequest;
-    }
-
-    public void upgrade()
-    {
-        this.baseRequest = null;
-    }
-
-    public HttpServletRequest getRequest()
+    public Request getRequest()
     {
         return request;
     }
 
-    public HttpServletResponse getResponse()
+    public Response getResponse()
     {
         return response;
+    }
+
+    public Callback getCallback()
+    {
+        return callback;
     }
 
     public void negotiate() throws BadMessageException
     {
         try
         {
-            negotiateHeaders(getBaseRequest());
+            negotiateHeaders(request);
         }
         catch (Throwable x)
         {
@@ -85,7 +80,7 @@ public abstract class WebSocketNegotiation
     {
         QuotedCSV extensions = null;
         QuotedCSV protocols = null;
-        for (HttpField field : baseRequest.getHttpFields())
+        for (HttpField field : baseRequest.getHeaders())
         {
             if (field.getHeader() != null)
             {
@@ -155,7 +150,7 @@ public abstract class WebSocketNegotiation
     public void setSubprotocol(String protocol)
     {
         this.protocol = protocol;
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), protocol);
+        response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     public List<String> getOfferedSubprotocols()
@@ -186,7 +181,7 @@ public abstract class WebSocketNegotiation
         return String.format("%s@%x{uri=%s,oe=%s,op=%s}",
             getClass().getSimpleName(),
             hashCode(),
-            getRequest().getRequestURI(),
+            getRequest().getHttpURI(),
             getOfferedExtensions(),
             getOfferedSubprotocols());
     }

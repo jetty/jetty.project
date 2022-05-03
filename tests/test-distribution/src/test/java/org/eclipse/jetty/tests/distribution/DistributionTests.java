@@ -33,6 +33,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -43,22 +47,14 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.toolchain.test.PathAssert;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
-import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -70,7 +66,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DistributionTests extends AbstractJettyHomeTest
@@ -279,52 +274,6 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
-        }
-    }
-
-    @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "jnr not supported on windows")
-    public void testUnixSocket() throws Exception
-    {
-        String dir = System.getProperty("jetty.unixdomain.dir");
-        assertNotNull(dir);
-        Path sockFile = Files.createTempFile(Path.of(dir), "unix_", ".sock");
-        assertTrue(sockFile.toAbsolutePath().toString().length() < UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH, "Unix-Domain path too long");
-        Files.delete(sockFile);
-
-        String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-            .build();
-
-        String[] args1 = {
-            "--add-modules=unixsocket-http,deploy,jsp",
-            "--approve-all-licenses"
-        };
-        try (JettyHomeTester.Run run1 = distribution.start(args1))
-        {
-            // Give it time to download the dependencies
-            assertTrue(run1.awaitFor(30, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
-
-            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test");
-
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile))
-            {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
-
-                startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
-                ContentResponse response = client.GET("http://localhost/test/index.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("JSP Examples"));
-                assertThat(response.getContentAsString(), not(containsString("<%")));
-            }
-        }
-        finally
-        {
-            Files.deleteIfExists(sockFile);
         }
     }
 

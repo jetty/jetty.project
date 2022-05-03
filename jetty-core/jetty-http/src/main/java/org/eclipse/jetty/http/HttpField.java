@@ -139,22 +139,36 @@ public class HttpField
      */
     public boolean contains(String search)
     {
+        return contains(_value, search);
+    }
+
+    /**
+     * Look for a value in a possible multi valued field
+     *
+     * @param value The field value to search in.
+     * @param search Values to search for (case insensitive)
+     * @return True iff the value is contained in the field value entirely or
+     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
+     * except if they are q=0, in which case the item itself is ignored.
+     */
+    public static boolean contains(String value, String search)
+    {
         if (search == null)
-            return _value == null;
+            return value == null;
         if (search.isEmpty())
             return false;
-        if (_value == null)
+        if (value == null)
             return false;
-        if (search.equalsIgnoreCase(_value))
+        if (search.equalsIgnoreCase(value))
             return true;
 
         int state = 0;
         int match = 0;
         int param = 0;
 
-        for (int i = 0; i < _value.length(); i++)
+        for (int i = 0; i < value.length(); i++)
         {
-            char c = StringUtil.asciiToLowerCase(_value.charAt(i));
+            char c = StringUtil.asciiToLowerCase(value.charAt(i));
             switch (state)
             {
                 case 0: // initial white space

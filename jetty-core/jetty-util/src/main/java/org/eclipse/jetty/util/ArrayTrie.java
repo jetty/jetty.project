@@ -167,7 +167,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
 
     /**
      * @param capacity The capacity of the trie, which at the worst case
-     * is the total number of characters of all keys stored in the Trie, 
+     * is the total number of characters of all keys stored in the Trie,
      * plus 1 for the empty key.
      * @see AbstractTrie#requiredCapacity(Set, boolean)
      */

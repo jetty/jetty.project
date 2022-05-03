@@ -25,10 +25,10 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionCache;
-import org.eclipse.jetty.server.session.TestServer;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionTestSupport;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,12 +74,12 @@ public class AttributeNameTest
         MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server1 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
 
-        TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server2 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server2.start();
         int port2 = server2.getPort();

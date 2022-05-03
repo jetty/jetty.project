@@ -44,7 +44,7 @@ For example:
   <!-- The CrossOriginFilter *must* be the first --> <!--1-->
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee9.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>

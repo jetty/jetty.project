@@ -3,8 +3,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>test-webapps-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>test-webapps</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-rfc2616</artifactId>
   <name>Jetty Tests :: WebApp :: RFC2616</name>
@@ -23,8 +23,8 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
           <stopPort>8087</stopPort>
@@ -39,8 +39,8 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

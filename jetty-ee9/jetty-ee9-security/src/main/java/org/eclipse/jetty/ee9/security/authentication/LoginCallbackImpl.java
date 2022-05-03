@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.ee9.security.IdentityService;
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user

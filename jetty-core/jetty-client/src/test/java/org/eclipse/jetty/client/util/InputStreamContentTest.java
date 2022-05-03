@@ -16,24 +16,23 @@ package org.eclipse.jetty.client.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -103,10 +102,10 @@ public class InputStreamContentTest
         start(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
                 serverLatch.countDown();
-                if (request.getInputStream().read() >= 0)
+                if (Content.readAllBytes(request).hasRemaining())
                     throw new IOException();
             }
         });
@@ -178,9 +177,11 @@ public class InputStreamContentTest
         start(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
-                assertEquals(singleByteContent, request.getInputStream().read());
+                ByteBuffer buffer = Content.readAllBytes(request);
+                assertTrue(buffer.hasRemaining());
+                assertEquals(singleByteContent, buffer.get());
                 serverLatch.countDown();
             }
         });
@@ -234,10 +235,10 @@ public class InputStreamContentTest
         start(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
                 serverLatch.countDown();
-                IO.copy(request.getInputStream(), IO.getNullStream());
+                Content.consumeAll(request);
             }
         });
 

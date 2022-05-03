@@ -31,7 +31,7 @@ For example, if you had a webapp named MyApp, you would place a deployable xml f
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   ...
   <!-- Set up the path to the custom override descriptor,
   relative to your $(jetty.home) directory or to the current directory -->
@@ -44,7 +44,7 @@ The equivalent in code is:
 
 [source, java, subs="{sub-order}"]
 ----
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
     ...
 

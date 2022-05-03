@@ -11,10 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.http2.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 

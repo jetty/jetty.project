@@ -13,17 +13,17 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -39,13 +39,12 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
     {
         final byte[] content = new byte[1024];
         new Random().nextBytes(content);
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -66,14 +65,13 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
     {
         final String content = "The quick brown fox jumped over the lazy dog";
         final String mediaType = "text/plain";
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.setHeader(HttpHeader.CONTENT_TYPE.asString(), mediaType);
-                response.getOutputStream().write(content.getBytes("UTF-8"));
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
+                response.write(true, callback, ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)));
             }
         });
 
@@ -96,14 +94,13 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         final String mediaType = "text/plain";
         final String encoding = "UTF-8";
         final String contentType = mediaType + "; charset=" + encoding;
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setHeader(HttpHeader.CONTENT_TYPE.asString(), contentType);
-                response.getOutputStream().write(content.getBytes(encoding));
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+                response.write(true, callback, ByteBuffer.wrap(content.getBytes(encoding)));
             }
         });
 
@@ -126,14 +123,13 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         final String mediaType = "text/plain";
         final String encoding = "UTF-8";
         final String contentType = mediaType + "; charset=\"" + encoding + "\"";
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setHeader(HttpHeader.CONTENT_TYPE.asString(), contentType);
-                response.getOutputStream().write(content.getBytes(encoding));
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+                response.write(true, callback, ByteBuffer.wrap(content.getBytes(encoding)));
             }
         });
 

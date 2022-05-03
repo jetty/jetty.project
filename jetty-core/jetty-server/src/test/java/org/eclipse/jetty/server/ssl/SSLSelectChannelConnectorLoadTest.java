@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Random;
@@ -32,13 +33,14 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,7 +67,7 @@ public class SSLSelectChannelConnectorLoadTest
         connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
 
-        server.setHandler(new EmptyHandler());
+        server.setHandler(new TestHandler());
 
         server.start();
 
@@ -104,7 +106,7 @@ public class SSLSelectChannelConnectorLoadTest
         int mebiByte = 1048510;
         int clients = 1;
         int iterations = 2;
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
         threadPool.prestartAllCoreThreads();
         Worker[] workers = new Worker[clients];
         Future[] tasks = new Future[clients];
@@ -324,22 +326,18 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class EmptyHandler extends AbstractHandler
+    private static class TestHandler extends Handler.Processor
     {
-        public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public TestHandler()
         {
-            request.setHandled(true);
+            super(InvocationType.BLOCKING);
+        }
 
-            InputStream in = request.getInputStream();
-            int total = 0;
-            byte[] b = new byte[1024 * 1024];
-            int read;
-            while ((read = in.read(b)) >= 0)
-            {
-                total += read;
-            }
-//            System.err.println("Read " + total + " request bytes");
-            httpResponse.getOutputStream().write(String.valueOf(total).getBytes());
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            ByteBuffer input = Content.readAllBytes(request);
+            response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
         }
     }
 }

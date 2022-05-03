@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-alpn-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <artifactId>jetty-alpn</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-conscrypt-server</artifactId>
-  <name>Jetty :: ALPN :: Conscrypt Server Implementation</name>
+  <name>Jetty Core :: ALPN :: Conscrypt Server Implementation</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.server</bundle-symbolic-name>

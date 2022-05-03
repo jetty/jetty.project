@@ -17,9 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -27,61 +26,52 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 /**
  * Jetty implementation of {@link com.sun.net.httpserver.HttpExchange}
  */
 public class JettyHttpExchangeDelegate extends HttpExchange
 {
+    private final HttpContext _httpContext;
 
-    private HttpContext _httpContext;
+    private final Request _request;
 
-    private HttpServletRequest _req;
+    private final Response _response;
 
-    private HttpServletResponse _resp;
-
-    private Headers _responseHeaders = new Headers();
+    private final Headers _responseHeaders = new Headers();
 
     private int _responseCode = 0;
 
-    private InputStream _is;
+    private InputStream _inputStream;
 
-    private OutputStream _os;
+    private OutputStream _outputStream;
 
     private HttpPrincipal _httpPrincipal;
 
-    JettyHttpExchangeDelegate(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
+    JettyHttpExchangeDelegate(HttpContext httpSpiContext, Request request, Response response)
     {
-        this._httpContext = jaxWsContext;
-        this._req = req;
-        this._resp = resp;
-        try
-        {
-            this._is = req.getInputStream();
-            this._os = resp.getOutputStream();
-        }
-        catch (IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        this._httpContext = httpSpiContext;
+        this._request = request;
+        this._response = response;
+        this._inputStream = Content.asInputStream(request);
+        this._outputStream = Content.asOutputStream(response);
     }
 
     @Override
     public Headers getRequestHeaders()
     {
         Headers headers = new Headers();
-        Enumeration<?> en = _req.getHeaderNames();
-        while (en.hasMoreElements())
+
+        for (HttpField field : _request.getHeaders())
         {
-            String name = (String)en.nextElement();
-            Enumeration<?> en2 = _req.getHeaders(name);
-            while (en2.hasMoreElements())
-            {
-                String value = (String)en2.nextElement();
-                headers.add(name, value);
-            }
+            if (field.getValue() == null)
+                continue;
+            for (String value : field.getValues())
+                headers.add(field.getName(), value);
         }
         return headers;
     }
@@ -95,26 +85,13 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public URI getRequestURI()
     {
-        try
-        {
-            String uriAsString = _req.getRequestURI();
-            if (_req.getQueryString() != null)
-            {
-                uriAsString += "?" + _req.getQueryString();
-            }
-
-            return new URI(uriAsString);
-        }
-        catch (URISyntaxException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        return _request.getHttpURI().toURI();
     }
 
     @Override
     public String getRequestMethod()
     {
-        return _req.getMethod();
+        return _request.getMethod();
     }
 
     @Override
@@ -128,7 +105,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     {
         try
         {
-            _resp.getOutputStream().close();
+            _outputStream.close();
         }
         catch (IOException ex)
         {
@@ -139,13 +116,13 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public InputStream getRequestBody()
     {
-        return _is;
+        return _inputStream;
     }
 
     @Override
     public OutputStream getResponseBody()
     {
-        return _os;
+        return _outputStream;
     }
 
     @Override
@@ -160,20 +137,23 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
             for (String value : values)
             {
-                _resp.setHeader(name, value);
+                _response.setHeader(name, value);
             }
         }
         if (responseLength > 0)
         {
-            _resp.setHeader("content-length", "" + responseLength);
+            _response.setHeader("content-length", "" + responseLength);
         }
-        _resp.setStatus(rCode);
+        _response.setStatus(rCode);
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return new InetSocketAddress(_req.getRemoteAddr(), _req.getRemotePort());
+        SocketAddress remote = _request.getConnectionMetaData().getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress inet)
+            return inet;
+        return null;
     }
 
     @Override
@@ -185,32 +165,35 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return new InetSocketAddress(_req.getLocalAddr(), _req.getLocalPort());
+        SocketAddress local = _request.getConnectionMetaData().getLocalSocketAddress();
+        if (local instanceof InetSocketAddress inet)
+            return inet;
+        return null;
     }
 
     @Override
     public String getProtocol()
     {
-        return _req.getProtocol();
+        return _request.getConnectionMetaData().getProtocol();
     }
 
     @Override
     public Object getAttribute(String name)
     {
-        return _req.getAttribute(name);
+        return _request.getAttribute(name);
     }
 
     @Override
     public void setAttribute(String name, Object value)
     {
-        _req.setAttribute(name, value);
+        _request.setAttribute(name, value);
     }
 
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _is = i;
-        _os = o;
+        _inputStream = i;
+        _outputStream = o;
     }
 
     @Override

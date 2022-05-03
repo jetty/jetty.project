@@ -27,18 +27,17 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -88,12 +87,12 @@ public class JDK9ALPNTest
     @Test
     public void testClientNotSupportingALPNServerSpeaksDefaultProtocol() throws Exception
     {
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
 
@@ -130,12 +129,12 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNServerSpeaksNegotiatedProtocol() throws Exception
     {
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
 
@@ -175,12 +174,12 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNCannotNegotiateProtocol() throws Exception
     {
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
+                callback.succeeded();
             }
         });
 

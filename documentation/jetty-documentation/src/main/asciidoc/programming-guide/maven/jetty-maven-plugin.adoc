@@ -338,7 +338,7 @@ Here is an example, which turns on scanning for changes every ten seconds, and s
 ===== Configuration
 
 webApp::
-This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.ee9.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
@@ -565,7 +565,7 @@ This goal will generate output from jetty into the `target/jetty-start.out` file
 These configuration parameters are available:
 
 webApp::
-This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.ee9.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
@@ -1032,7 +1032,7 @@ Putting the configuration in webapp A's `pom.xml`:
 
 [IMPORTANT]
 ====
-If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.maven.plugin.MavenWebAppContext` instance rather than a standard `org.eclipse.jetty.webapp.WebAppContext` instance.
+If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.maven.plugin.MavenWebAppContext` instance rather than a standard `org.eclipse.jetty.ee9.webapp.WebAppContext` instance.
 Only the former will allow the webapp to function correctly in the maven environment.
 ====
 

@@ -15,26 +15,21 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Request;
 
 /**
- * Abstract rule that use a {@link ServletPathSpec} for pattern matching. It uses the
- * servlet pattern syntax.
+ * <p>Abstract rule that uses the Servlet pattern syntax via
+ * {@link ServletPathSpec} for path pattern matching.</p>
  */
+// TODO: add boolean useCanonical and use canonicalPath?query instead of pathQuery()
 public abstract class PatternRule extends Rule
 {
-    protected String _pattern;
-
-    protected PatternRule()
-    {
-    }
+    private String _pattern;
 
     protected PatternRule(String pattern)
     {
-        this();
-        setPattern(pattern);
+        _pattern = pattern;
     }
 
     public String getPattern()
@@ -42,43 +37,31 @@ public abstract class PatternRule extends Rule
         return _pattern;
     }
 
-    /**
-     * Sets the rule pattern.
-     *
-     * @param pattern the pattern
-     */
     public void setPattern(String pattern)
     {
         _pattern = pattern;
     }
 
     @Override
-    public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        if (ServletPathSpec.match(_pattern, target))
-        {
-            return apply(target, request, response);
-        }
+        if (ServletPathSpec.match(_pattern, input.getHttpURI().getPath()))
+            return apply(input);
         return null;
     }
 
     /**
-     * Apply the rule to the request
+     * <p>Invoked after the Servlet pattern matched the URI path to apply the rule's logic.</p>
      *
-     * @param target field to attempt match
-     * @param request request object
-     * @param response response object
-     * @return The target (possible updated)
-     * @throws IOException exceptions dealing with operating on request or response objects
+     * @param input the input {@code Request} and {@code Processor}
+     * @return the possibly wrapped {@code Request} and {@code Processor}
+     * @throws IOException if applying the rule failed
      */
-    protected abstract String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException;
 
-    /**
-     * Returns the rule pattern.
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _pattern + "]";
+        return "%s[pattern=%s]".formatted(super.toString(), getPattern());
     }
 }

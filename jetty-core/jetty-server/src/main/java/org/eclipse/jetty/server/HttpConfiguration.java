@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.UriCompliance;
@@ -34,9 +35,8 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 
 /**
  * HTTP Configuration.
- * <p>This class is a holder of HTTP configuration for use by the
- * {@link HttpChannel} class.  Typically an HTTPConfiguration instance
- * is instantiated and passed to a {@link ConnectionFactory} that can
+ * <p>This class is a holder of HTTP configuration.  Typically an HTTPConfiguration
+ * instance is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
  * but for the interpretation and handling of HTTP requests that could
@@ -98,7 +98,7 @@ public class HttpConfiguration implements Dumpable
      */
     public interface Customizer
     {
-        public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
+        Request customize(Request request, HttpFields.Mutable responseHeaders);
     }
 
     public interface ConnectionFactory
@@ -193,7 +193,7 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for the HTTP request line and HTTP request headers")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
@@ -406,13 +406,11 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>Sets the maximum allowed size in bytes for the HTTP request line and HTTP request headers.</p>
-     *
      * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
-     * @param requestHeaderSize the maximum allowed size in bytes for the HTTP request line and HTTP request headers
+     * @param requestHeaderSize the maximum size in bytes of the request header
      */
     public void setRequestHeaderSize(int requestHeaderSize)
     {
@@ -468,8 +466,7 @@ public class HttpConfiguration implements Dumpable
      * Sets the form encoded HTTP methods.
      *
      * @param methods the HTTP methods of requests that can be decoded as
-     * {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs
+     * {@code x-www-form-urlencoded} content.
      */
     public void setFormEncodedMethods(String... methods)
     {
@@ -482,8 +479,7 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * @return the set of HTTP methods of requests that can be decoded as
-     * {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs
+     * {@code x-www-form-urlencoded} content.
      */
     public Set<String> getFormEncodedMethods()
     {
@@ -494,8 +490,7 @@ public class HttpConfiguration implements Dumpable
      * Adds a form encoded HTTP Method
      *
      * @param method the HTTP method of requests that can be decoded as
-     * {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs
+     * {@code x-www-form-urlencoded} content.
      */
     public void addFormEncodedMethod(String method)
     {
@@ -507,8 +502,7 @@ public class HttpConfiguration implements Dumpable
      *
      * @param method the HTTP method
      * @return true if requests with this method can be
-     * decoded as {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs
+     * decoded as {@code x-www-form-urlencoded} content.
      */
     public boolean isFormEncodedMethod(String method)
     {

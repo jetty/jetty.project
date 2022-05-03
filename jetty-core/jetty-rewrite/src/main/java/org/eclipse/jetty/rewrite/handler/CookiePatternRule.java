@@ -14,16 +14,18 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.List;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Sets the cookie in the response whenever the rule finds a match.
+ * <p>Sets a response cookie whenever the rule matches.</p>
  *
- * @see Cookie
+ * @see HttpCookie
  */
 public class CookiePatternRule extends PatternRule
 {
@@ -38,16 +40,20 @@ public class CookiePatternRule extends PatternRule
     public CookiePatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);
-        _handling = false;
-        _terminating = false;
         setName(name);
         setValue(value);
     }
 
     /**
-     * Assigns the cookie name.
-     *
-     * @param name a <code>String</code> specifying the name of the cookie.
+     * @return the response cookie name
+     */
+    public String getName()
+    {
+        return _name;
+    }
+
+    /**
+     * @param name the response cookie name
      */
     public void setName(String name)
     {
@@ -55,10 +61,15 @@ public class CookiePatternRule extends PatternRule
     }
 
     /**
-     * Assigns the cookie value.
-     *
-     * @param value a <code>String</code> specifying the value of the cookie
-     * @see Cookie#setValue(String)
+     * @return the response cookie value
+     */
+    public String getValue()
+    {
+        return _value;
+    }
+
+    /**
+     * @param value the response cookie value
      */
     public void setValue(String value)
     {
@@ -66,30 +77,34 @@ public class CookiePatternRule extends PatternRule
     }
 
     @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
+        // TODO: fix once Request.getCookies() is implemented (currently always returns null)
         // Check that cookie is not already set
-        Cookie[] cookies = request.getCookies();
+        List<HttpCookie> cookies = Request.getCookies(input);
         if (cookies != null)
         {
-            for (Cookie cookie : cookies)
+            for (HttpCookie cookie : cookies)
             {
                 if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
-                    return target;
+                    return null;
             }
         }
 
-        // set it
-        response.addCookie(new Cookie(_name, _value));
-        return target;
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                Response.addCookie(response, new HttpCookie(_name, _value));
+                super.process(this, response, callback);
+            }
+        };
     }
 
-    /**
-     * Returns the cookie contents.
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _name + "," + _value + "]";
+        return "%s@%x[set-cookie:%s=%s]".formatted(super.toString(), hashCode(), getName(), getValue());
     }
 }

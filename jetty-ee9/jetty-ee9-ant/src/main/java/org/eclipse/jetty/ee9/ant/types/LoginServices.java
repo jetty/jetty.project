@@ -11,12 +11,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant.types;
+package org.eclipse.jetty.ee9.ant.types;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.LoginService;
 
 /**
  * Specifies a jetty configuration &lt;loginServices/&gt; element for Ant build file.

@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.config;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.config;
 
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppConfiguration;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 
 /**
  * <p>Websocket Configuration</p>
@@ -30,7 +30,7 @@ public class JakartaWebSocketConfiguration extends AbstractConfiguration
     public JakartaWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        addDependents("org.eclipse.jetty.ee9.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.jakarta.server.config.");

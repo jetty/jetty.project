@@ -419,10 +419,15 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         // for a dispatched servlet or suspended request to extend beyond the connections idle
         // time.  So if this test would always close an idle endpoint that is not handled, then
         // we would need a mode to ignore timeouts for some HTTP states
-        if (isOpen() && (outputShutdown || inputShutdown) && !(fillFailed || writeFailed))
+        if (isOpen() && (inputShutdown || outputShutdown) && !(fillFailed || writeFailed))
             close();
         else
-            LOG.debug("Ignored idle endpoint {}", this);
+            LOG.debug("handled idle inputShutdown={} outputShutdown={} fillFailed={} writeFailed={} for {}",
+                inputShutdown,
+                outputShutdown,
+                fillFailed,
+                writeFailed,
+                this);
     }
 
     @Override

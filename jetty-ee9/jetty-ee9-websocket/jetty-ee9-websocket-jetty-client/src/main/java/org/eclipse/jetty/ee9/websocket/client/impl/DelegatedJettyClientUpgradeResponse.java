@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.ee9.websocket.client.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,9 +21,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpResponse}

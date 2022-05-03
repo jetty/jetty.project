@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -22,7 +22,7 @@ import java.net.Socket;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
-import org.eclipse.jetty.ant.utils.TaskLog;
+import org.eclipse.jetty.ee9.ant.utils.TaskLog;
 
 /**
  * JettyStopTask

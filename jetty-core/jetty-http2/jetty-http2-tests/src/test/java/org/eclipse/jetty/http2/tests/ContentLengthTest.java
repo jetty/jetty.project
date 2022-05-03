@@ -11,22 +11,23 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentLengthTest extends AbstractTest
 {
@@ -34,9 +35,16 @@ public class ContentLengthTest extends AbstractTest
     @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
     public void testZeroContentLengthAddedByServer(String method) throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(method)
             .send();
 
@@ -50,16 +58,16 @@ public class ContentLengthTest extends AbstractTest
     public void testContentLengthAddedByServer(String method) throws Exception
     {
         byte[] data = new byte[512];
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(method)
             .send();
 
@@ -68,33 +76,37 @@ public class ContentLengthTest extends AbstractTest
         assertEquals(data.length, contentLength);
     }
 
+    // TODO
     @ParameterizedTest
     @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
+    @Disabled("enable when GzipHandler is implemented")
     public void testGzippedContentLengthAddedByServer(String method) throws Exception
     {
-        byte[] data = new byte[4096];
+        fail();
 
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.addIncludedMethods(method);
-        gzipHandler.setMinGzipSize(data.length / 2);
-        gzipHandler.setHandler(new EmptyServerHandler()
-        {
-            @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                response.setContentLength(data.length);
-                response.getOutputStream().write(data);
-            }
-        });
-
-        start(gzipHandler);
-
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .method(method)
-            .send();
-
-        HttpFields responseHeaders = response.getHeaders();
-        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-        assertTrue(0 < contentLength && contentLength < data.length);
+//        byte[] data = new byte[4096];
+//
+//        GzipHandler gzipHandler = new GzipHandler();
+//        gzipHandler.addIncludedMethods(method);
+//        gzipHandler.setMinGzipSize(data.length / 2);
+//        gzipHandler.setHandler(new EmptyServerHandler()
+//        {
+//            @Override
+//            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+//            {
+//                response.setContentLength(data.length);
+//                response.write(true, callback, ByteBuffer.wrap(data));
+//            }
+//        });
+//
+//        start(gzipHandler);
+//
+//        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+//            .method(method)
+//            .send();
+//
+//        HttpFields responseHeaders = response.getHeaders();
+//        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+//        assertTrue(0 < contentLength && contentLength < data.length);
     }
 }

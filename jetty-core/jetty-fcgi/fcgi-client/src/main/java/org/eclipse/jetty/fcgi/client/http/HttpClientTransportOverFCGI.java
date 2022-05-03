@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -86,7 +85,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
@@ -97,12 +96,12 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         return customize(connection, context);
     }
 
-    protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+    protected org.eclipse.jetty.io.Connection newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         return new HttpConnectionOverFCGI(endPoint, destination, promise);
     }
 
-    protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
+    public void customize(Request request, HttpFields.Mutable fastCGIHeaders)
     {
         fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, getScriptRoot());
     }

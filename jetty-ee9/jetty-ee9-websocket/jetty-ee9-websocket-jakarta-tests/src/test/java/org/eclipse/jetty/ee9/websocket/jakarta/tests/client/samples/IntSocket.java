@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client.samples;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples;
 
 import java.io.IOException;
 
@@ -19,7 +19,7 @@ import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.websocket.jakarta.tests.coders.BadDualDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.BadDualDecoder;
 
 @ClientEndpoint(decoders = BadDualDecoder.class)
 public class IntSocket

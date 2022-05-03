@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.warurl.internal;
+package org.eclipse.jetty.ee9.osgi.boot.warurl.internal;
 
 import java.io.IOException;
 import java.io.InputStream;

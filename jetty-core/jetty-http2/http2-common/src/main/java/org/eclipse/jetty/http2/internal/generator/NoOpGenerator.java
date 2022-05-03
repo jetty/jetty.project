@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.generator;
+package org.eclipse.jetty.http2.internal.generator;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.io.ByteBufferPool;

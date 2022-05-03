@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 
 /**
  * OSGiWebInfConfiguration

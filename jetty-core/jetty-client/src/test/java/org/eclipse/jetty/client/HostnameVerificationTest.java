@@ -13,24 +13,24 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLHandshakeException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -71,13 +71,15 @@ public class HostnameVerificationTest
         SslConnectionFactory ssl = new SslConnectionFactory(serverSslContextFactory, http.getProtocol());
         connector = new ServerConnector(server, 1, 1, ssl, http);
         server.addConnector(connector);
-        server.setHandler(new DefaultHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.getWriter().write("foobar");
+                try (Blocking.Callback blocker = Blocking.callback())
+                {
+                    response.write(true, blocker, "foobar");
+                }
             }
         });
         server.start();

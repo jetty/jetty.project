@@ -13,54 +13,66 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RedirectPatternRuleTest extends AbstractRuleTestCase
+public class RedirectPatternRuleTest extends AbstractRuleTest
 {
-    @BeforeEach
-    public void init() throws Exception
+    private void start(RedirectPatternRule rule) throws Exception
     {
-        start(false);
-    }
-
-    private void assertRedirectResponse(int expectedStatusCode, String expectedLocation) throws IOException
-    {
-        assertThat("Response status code", _response.getStatus(), is(expectedStatusCode));
-        assertThat("Response location", _response.getHeader(HttpHeader.LOCATION.asString()), is(expectedLocation));
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
     }
 
     @Test
-    public void testGlobPattern() throws IOException
+    public void testGlobPattern() throws Exception
     {
         String location = "http://eclipse.com";
+        RedirectPatternRule rule = new RedirectPatternRule("*", location);
+        start(rule);
 
-        RedirectPatternRule rule = new RedirectPatternRule();
-        rule.setPattern("*");
-        rule.setLocation(location);
+        String request = """
+            GET / HTTP/1.1
+            Host: localhost
+                        
+            """;
 
-        rule.apply("/", _request, _response);
-        assertRedirectResponse(HttpStatus.FOUND_302, location);
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.FOUND_302, response.getStatus());
+        assertEquals(location, response.get(HttpHeader.LOCATION));
     }
 
     @Test
-    public void testPrefixPattern() throws IOException
+    public void testPrefixPattern() throws Exception
     {
         String location = "http://api.company.com/";
-
-        RedirectPatternRule rule = new RedirectPatternRule();
-        rule.setPattern("/api/*");
-        rule.setLocation(location);
+        RedirectPatternRule rule = new RedirectPatternRule("/api/*", location);
         rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+        start(rule);
 
-        rule.apply("/api/rest?foo=1", _request, _response);
-        assertRedirectResponse(HttpStatus.MOVED_PERMANENTLY_301, location);
+        String request = """
+            GET /api/rest?foo=1 HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
+        assertEquals(location, response.get(HttpHeader.LOCATION));
     }
 }

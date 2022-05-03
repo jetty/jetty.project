@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
+// TODO remove
 public class ResourceCollators
 {
     private static Comparator<? super Resource> BY_NAME_ASCENDING =

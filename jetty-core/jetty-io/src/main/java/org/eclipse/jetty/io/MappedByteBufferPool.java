@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class MappedByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
+    // TODO Logarithmic buffer sizes
+
     private static final Logger LOG = LoggerFactory.getLogger(MappedByteBufferPool.class);
 
     private final ConcurrentMap<Integer, Bucket> _directBuffers = new ConcurrentHashMap<>();

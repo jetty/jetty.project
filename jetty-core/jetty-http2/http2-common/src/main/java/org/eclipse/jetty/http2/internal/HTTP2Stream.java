@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -29,6 +29,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
+import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
@@ -348,6 +351,22 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     public Listener getListener()
     {
         return listener;
+    }
+
+    @Override
+    public Data readData()
+    {
+        DataEntry dataEntry;
+        try (AutoLock l = lock.lock())
+        {
+            if (dataQueue == null || dataQueue.isEmpty())
+                return null;
+            dataEntry = dataQueue.poll();
+        }
+        DataFrame frame = dataEntry.frame;
+        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+            session.removeStream(this);
+        return new Data(frame, () -> dataEntry.callback.succeeded());
     }
 
     @Override

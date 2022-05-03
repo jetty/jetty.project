@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,17 +21,17 @@ import jakarta.servlet.Servlet;
 import jakarta.servlet.annotation.WebInitParam;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee9.webapp.MetaData;
+import org.eclipse.jetty.ee9.webapp.Origin;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.webapp.MetaData;
-import org.eclipse.jetty.webapp.Origin;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

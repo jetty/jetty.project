@@ -50,7 +50,7 @@ Here's an example context xml file that calls this method:
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
   <Set name="configurationDiscovered">false</Set> <2>
 </Configure>
 ----
@@ -78,7 +78,7 @@ Here's an example from a context xml file that includes any jar whose name start
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
     <Call name="setAttribute"> <2>
       <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <3>
       <Arg>.*/foo-[^/]*\.jar$|.*/bar-[^/]*\.jar$|.*/classes/.*</Arg> <4>
@@ -108,7 +108,7 @@ Here's an example of a context xml file that sets a pattern that matches any jar
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
     <Call name="setAttribute">  <2>
       <Arg>org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern</Arg>  <3>
       <Arg>.*/spring-[^/]*\.jar$</Arg>  <4>
@@ -174,7 +174,7 @@ Here's an example of setting the context attribute in a context xml file:
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
     <Call name="setAttribute">  <2>
       <Arg>org.eclipse.jetty.containerInitializerExclusionPattern</Arg>  <3>
       <Arg>com.acme.*|com.corp.SlowContainerInitializer</Arg>  <4>
@@ -205,7 +205,7 @@ Here is an example context xml file that ensures the `com.example.PrioritySCI` w
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
     <Call name="setAttribute">  <2>
       <Arg>org.eclipse.jetty.containerInitializerOrder</Arg>  <3>
       <Arg>org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer, com.acme.FooSCI, *</Arg>  <4>

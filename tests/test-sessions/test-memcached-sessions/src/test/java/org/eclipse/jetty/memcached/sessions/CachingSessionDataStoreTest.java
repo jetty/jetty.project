@@ -23,15 +23,15 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.memcached.sessions.MemcachedTestHelper.MockDataStore;
-import org.eclipse.jetty.server.session.CachingSessionDataStore;
-import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataMap;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.eclipse.jetty.server.session.TestServer;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.CachingSessionDataStore;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataMap;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionTestSupport;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -58,7 +58,7 @@ public class CachingSessionDataStoreTest
         SessionDataStoreFactory storeFactory = MemcachedTestHelper.newSessionDataStoreFactory();
 
         //Make sure sessions are evicted on request exit so they will need to be reloaded via cache/persistent store
-        TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
@@ -78,7 +78,7 @@ public class CachingSessionDataStoreTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                String id = TestServer.extractSessionId(sessionCookie);
+                String id = SessionTestSupport.extractSessionId(sessionCookie);
 
                 //check that the memcache contains the session, and the session data store contains the session
                 CachingSessionDataStore ds = (CachingSessionDataStore)context.getSessionHandler().getSessionCache().getSessionDataStore();

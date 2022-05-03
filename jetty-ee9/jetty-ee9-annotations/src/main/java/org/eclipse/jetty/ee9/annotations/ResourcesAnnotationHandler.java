@@ -11,14 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;
-import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +57,8 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 {
                     //TODO don't ignore the shareable, auth etc etc
 
-                    if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName))
-                        if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
+                    if (!NamingEntryUtil.bindToENC(_context, name, mappedName))
+                        if (!NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
                             LOG.warn("Skipping Resources(Resource) annotation on {} for name {}: no resource bound at {}",
                                     clazz.getName(), name, (mappedName == null ? name : mappedName));
                 }

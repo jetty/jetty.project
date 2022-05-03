@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
- * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
+ * Pax-Exam to make sure the jetty-ee9-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
@@ -67,7 +67,7 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         options.addAll(annotationDependencies());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-fragment").versionAsInProject().noStart());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-fragment").versionAsInProject().noStart());
         return options.toArray(new Option[0]);
     }
 

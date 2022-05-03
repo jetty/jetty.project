@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
- * is not protected by a protected target as defined by {@link ContextHandler#getProtectedTargets()} at start.</p>
+ * is not protected by a protected target as defined by TODO at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
@@ -60,9 +60,21 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
+    protected String[] getProtectedTargets()
+    {
+        // TODO return _contextHandler.getProtectedTargets();
+        return new String[0];
+    }
+
+    protected boolean isProtectedTarget(String target)
+    {
+        // TODO
+        return false;
+    }
+
     protected void initialize()
     {
-        _base = getPath(_contextHandler.getBaseResource());
+        _base = _contextHandler.getResourceBase();
         if (_base == null)
             return;
 
@@ -70,7 +82,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             if (Files.exists(_base, NO_FOLLOW_LINKS))
                 _base = _base.toRealPath(FOLLOW_LINKS);
-            String[] protectedTargets = _contextHandler.getProtectedTargets();
+            String[] protectedTargets = getProtectedTargets();
             if (protectedTargets != null)
             {
                 for (String s : protectedTargets)
@@ -228,7 +240,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public String toString()
     {
-        String[] protectedTargets = _contextHandler.getProtectedTargets();
+        String[] protectedTargets = getProtectedTargets();
         return String.format("%s@%x{base=%s,protected=%s}",
             this.getClass().getSimpleName(),
             hashCode(),

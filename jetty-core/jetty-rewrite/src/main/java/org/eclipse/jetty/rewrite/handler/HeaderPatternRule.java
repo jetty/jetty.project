@@ -15,118 +15,80 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Sets the header in the response whenever the rule finds a match.
+ * <p>Puts or adds a response header whenever the rule matches a path Servlet pattern.</p>
  */
 public class HeaderPatternRule extends PatternRule
 {
-    private String _name;
-    private String _value;
+    private String _headerName;
+    private String _headerValue;
     private boolean _add;
-
-    public HeaderPatternRule()
-    {
-        this(null, null, null);
-    }
 
     public HeaderPatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);
-        _handling = false;
-        _terminating = false;
-        _add = false;
-        setName(name);
-        setValue(value);
+        _headerName = name;
+        _headerValue = value;
     }
 
-    /**
-     * Sets the header name.
-     *
-     * @param name name of the header field
-     */
-    public void setName(String name)
+    public String getHeaderName()
     {
-        _name = name;
+        return _headerName;
     }
 
-    /**
-     * Sets the header value. The value can be either a <code>String</code> or <code>int</code> value.
-     *
-     * @param value of the header field
-     */
-    public void setValue(String value)
+    public void setHeaderName(String name)
     {
-        _value = value;
+        _headerName = name;
     }
 
-    /**
-     * Sets the Add flag.
-     *
-     * @param add If true, the header is added to the response, otherwise the header it is set on the response.
-     */
-    public void setAdd(boolean add)
+    public String getHeaderValue()
     {
-        _add = add;
+        return _headerValue;
     }
 
-    /**
-     * Invokes this method when a match found. If the header had already been set,
-     * the new value overwrites the previous one. Otherwise, it adds the new
-     * header name and value.
-     *
-     * @see org.eclipse.jetty.rewrite.handler.Rule#matchAndApply(String, jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)
-     */
-    @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void setHeaderValue(String value)
     {
-        // process header
-        if (_add)
-            response.addHeader(_name, _value);
-        else
-            response.setHeader(_name, _value);
-        return target;
+        _headerValue = value;
     }
 
-    /**
-     * Returns the header name.
-     *
-     * @return the header name.
-     */
-    public String getName()
-    {
-        return _name;
-    }
-
-    /**
-     * Returns the header value.
-     *
-     * @return the header value.
-     */
-    public String getValue()
-    {
-        return _value;
-    }
-
-    /**
-     * Returns the add flag value.
-     *
-     * @return true if add flag set
-     */
     public boolean isAdd()
     {
         return _add;
     }
 
     /**
-     * Returns the header contents.
+     * @param add true to add the response header, false to put the response header.
      */
+    public void setAdd(boolean add)
+    {
+        _add = add;
+    }
+
+    @Override
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    {
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                if (isAdd())
+                    response.addHeader(getHeaderName(), getHeaderValue());
+                else
+                    response.setHeader(getHeaderName(), getHeaderValue());
+                super.process(ignored, response, callback);
+            }
+        };
+    }
+
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _name + "," + _value + "]";
+        return "%s[header:%s=%s]".formatted(super.toString(), getHeaderName(), getHeaderValue());
     }
 }

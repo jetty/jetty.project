@@ -115,7 +115,7 @@ Here's an example of this type of XML file:
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
      <Set name="loginService">

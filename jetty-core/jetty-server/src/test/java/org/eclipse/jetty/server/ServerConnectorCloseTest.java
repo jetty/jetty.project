@@ -21,7 +21,7 @@ public class ServerConnectorCloseTest extends ConnectorCloseTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server));
+        initServer(new ServerConnector(_server));
     }
 
     @AfterEach

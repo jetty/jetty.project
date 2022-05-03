@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 public interface Flags
 {

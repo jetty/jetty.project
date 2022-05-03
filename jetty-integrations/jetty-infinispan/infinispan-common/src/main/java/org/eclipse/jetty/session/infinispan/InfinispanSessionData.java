@@ -19,9 +19,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.infinispan.commons.marshall.SerializeWith;
 
 /**
  * InfinispanSessionData

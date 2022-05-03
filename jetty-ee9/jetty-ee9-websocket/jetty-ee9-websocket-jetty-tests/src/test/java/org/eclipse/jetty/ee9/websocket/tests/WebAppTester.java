@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,9 +22,19 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.JmxConfiguration;
+import org.eclipse.jetty.ee9.webapp.JndiConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -35,16 +45,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.JmxConfiguration;
-import org.eclipse.jetty.webapp.JndiConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

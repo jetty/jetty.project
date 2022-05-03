@@ -11,22 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee9.websocket.api.CloseStatus;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.SuspendToken;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.websocket.api.CloseStatus;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

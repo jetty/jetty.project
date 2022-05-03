@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -22,17 +20,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
@@ -54,24 +52,33 @@ public class HttpClientUploadDuringServerShutdownTest
             ServerConnector connector = new ServerConnector(server);
             connector.setPort(8888);
             server.addConnector(connector);
-            server.setHandler(new AbstractHandler()
+            server.setHandler(new EmptyServerHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+                protected void service(Request request, Response response) throws Throwable
                 {
-                    baseRequest.setHandled(true);
-                    byte[] buffer = new byte[1024];
-                    InputStream input = request.getInputStream();
                     while (true)
                     {
-                        int read = input.read(buffer);
-                        if (read < 0)
-                            break;
-                        long now = System.nanoTime();
-                        long sleep = TimeUnit.MICROSECONDS.toNanos(1);
-                        while (System.nanoTime() < now + sleep)
+                        Content content = request.readContent();
+                        if (content == null)
                         {
-                            // Wait.
+                            try (Blocking.Runnable blocker = _blocking.runnable())
+                            {
+                                request.demandContent(blocker);
+                            }
+                        }
+                        else
+                        {
+                            if (content.hasRemaining())
+                                content.release();
+                            if (content.isLast())
+                                break;
+                            long now = System.nanoTime();
+                            long sleep = TimeUnit.MICROSECONDS.toNanos(1);
+                            while (System.nanoTime() < now + sleep)
+                            {
+                                Thread.onSpinWait();
+                            }
                         }
                     }
                 }
@@ -131,13 +138,12 @@ public class HttpClientUploadDuringServerShutdownTest
         Server server = new Server(serverThreads);
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                endPointRef.set(baseRequest.getHttpChannel().getEndPoint());
+                endPointRef.set(request.getConnectionMetaData().getConnection().getEndPoint());
                 serverLatch.countDown();
             }
         });

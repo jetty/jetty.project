@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -39,9 +36,9 @@ public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                assertEquals(correlationData, request.getHeader(correlationName));
+                assertEquals(correlationData, request.getHeaders().get(correlationName));
             }
         });
         client.getRequestListeners().add(new Request.Listener.Adapter()

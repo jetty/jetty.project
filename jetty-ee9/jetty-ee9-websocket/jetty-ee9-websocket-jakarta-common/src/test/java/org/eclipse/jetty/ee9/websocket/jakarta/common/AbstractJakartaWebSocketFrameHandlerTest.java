@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common;
+package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.EndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 

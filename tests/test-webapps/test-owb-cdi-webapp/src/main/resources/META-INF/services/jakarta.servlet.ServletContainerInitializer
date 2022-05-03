@@ -1,1 +1,1 @@
-org.eclipse.jetty.cdi.owb.OwbServletContainerInitializer
+org.eclipse.jetty.ee9.cdi.owb.OwbServletContainerInitializer

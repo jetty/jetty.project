@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,9 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -43,29 +42,35 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.http.internal.HttpChannelOverHTTP2;
+import org.eclipse.jetty.http2.client.http.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -134,7 +139,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+            httpClient.newRequest("localhost", connector.getLocalPort())
                 .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
                 .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -172,7 +177,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+            httpClient.newRequest("localhost", connector.getLocalPort())
                 .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
                 .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -181,17 +186,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testRequestHasHTTP2Version() throws Exception
     {
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                HttpVersion version = HttpVersion.fromString(request.getProtocol());
+                HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
+                callback.succeeded();
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .onRequestBegin(request ->
             {
                 if (request.getVersion() != HttpVersion.HTTP_2)
@@ -239,7 +245,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         AtomicInteger lastStream = new AtomicInteger();
         AtomicReference<Stream> streamRef = new AtomicReference<>();
         CountDownLatch streamLatch = new CountDownLatch(1);
-        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
+        prepareClient();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
         {
             @Override
             protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
@@ -267,7 +274,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
 
             @Override
-            protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+            protected void onClose(HttpConnection connection, GoAwayFrame frame)
             {
                 super.onClose(connection, frame);
                 lastStream.set(frame.getLastStreamId());
@@ -276,17 +283,17 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        client.setExecutor(clientExecutor);
-        client.start();
+        httpClient.setExecutor(clientExecutor);
+        httpClient.start();
 
         // Prime the connection to allow client and server prefaces to be exchanged.
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .path("/zero")
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort())
+        org.eclipse.jetty.client.api.Request request = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.HEAD)
             .path("/one");
         request.send(result ->
@@ -308,17 +315,19 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                HttpURI httpURI = request.getHttpURI();
+                assertEquals(path, httpURI.getPath());
+                assertEquals(query, httpURI.getQuery());
+                callback.succeeded();
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -331,21 +340,23 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                HttpURI httpURI = request.getHttpURI();
+                assertEquals(path, httpURI.getPath());
+                assertEquals(query, httpURI.getQuery());
+                callback.succeeded();
             }
         });
 
         int proxyPort = connector.getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
 
         int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
-        ContentResponse response = client.newRequest("localhost", serverPort)
+        ContentResponse response = httpClient.newRequest("localhost", serverPort)
             .path(path + "?" + query)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -374,12 +385,12 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 };
             }
         });
-        client.stop();
-        client.setIdleTimeout(idleTimeout);
-        client.start();
+        http2Client.stop();
+        http2Client.setIdleTimeout(idleTimeout);
+        http2Client.start();
 
         assertThrows(TimeoutException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+            httpClient.newRequest("localhost", connector.getLocalPort())
                 // Make sure the connection idle times out, not the stream.
                 .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
                 .send());
@@ -410,7 +421,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertThrows(TimeoutException.class, () ->
         {
             long idleTimeout = 1000;
-            client.newRequest("localhost", connector.getLocalPort())
+            httpClient.newRequest("localhost", connector.getLocalPort())
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .send();
         });
@@ -428,7 +439,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+                protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
                 {
                     sessions.add(session);
                     return super.newHttpConnection(destination, session);
@@ -565,7 +576,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -599,7 +610,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        httpClient.newRequest("localhost", connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {

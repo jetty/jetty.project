@@ -11,24 +11,38 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -37,9 +51,22 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,26 +75,36 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo
+public class HttpConnection extends AbstractConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
-    public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
+    private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
-    private final HttpConfiguration _config;
+    private final AtomicLong _streamIdGenerator = new AtomicLong();
+    private final long _id;
+    private final HttpConfiguration _configuration;
     private final Connector _connector;
+    private final HttpChannel _httpChannel;
+    private final RequestHandler _requestHandler;
+    private final HttpParser _parser;
+    private final HttpGenerator _generator;
     private final ByteBufferPool _bufferPool;
     private final RetainableByteBufferPool _retainableByteBufferPool;
-    private final HttpInput _input;
-    private final HttpGenerator _generator;
-    private final HttpChannelOverHttp _channel;
-    private final HttpParser _parser;
-    private volatile RetainableByteBuffer _retainableByteBuffer;
-    private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
+    private final AtomicReference<HttpStreamOverHTTP1> _stream = new AtomicReference<>();
+    private final Lazy _attributes = new Lazy();
+    private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+    private final AtomicBoolean _handling = new AtomicBoolean(false);
+    private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private volatile RetainableByteBuffer _retainableByteBuffer;
+    private HttpFields.Mutable _trailers;
+    private Runnable _onRequest;
+    private long _requests;
+    // TODO why is this not on HttpConfiguration?
     private boolean _useInputDirectByteBuffers;
     private boolean _useOutputDirectByteBuffers;
 
@@ -91,25 +128,27 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
+    public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
         super(endPoint, connector.getExecutor());
-        _config = config;
+        _id = __connectionIdGenerator.getAndIncrement();
+        _configuration = configuration;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, _bufferPool);
         _generator = newHttpGenerator();
-        _channel = newHttpChannel();
-        _input = _channel.getRequest().getHttpInput();
-        _parser = newHttpParser(config.getHttpCompliance());
+        _httpChannel = newHttpChannel(connector.getServer(), configuration);
+        _requestHandler = newRequestHandler();
+        _parser = newHttpParser(configuration.getHttpCompliance());
         _recordHttpComplianceViolations = recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
 
-    public HttpConfiguration getHttpConfiguration()
+    @Override
+    public InvocationType getInvocationType()
     {
-        return _config;
+        return getServer().getInvocationType();
     }
 
     public boolean isRecordHttpComplianceViolations()
@@ -119,25 +158,30 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpGenerator newHttpGenerator()
     {
-        return new HttpGenerator(_config.getSendServerVersion(), _config.getSendXPoweredBy());
-    }
-
-    protected HttpChannelOverHttp newHttpChannel()
-    {
-        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
+        return new HttpGenerator(_configuration.getSendServerVersion(), _configuration.getSendXPoweredBy());
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        HttpParser parser = new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
     }
 
-    protected HttpParser.RequestHandler newRequestHandler()
+    protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
     {
-        return _channel;
+        return new HttpChannelState(this);
+    }
+
+    protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
+    {
+        return new HttpStreamOverHTTP1(method, uri, version);
+    }
+
+    protected RequestHandler newRequestHandler()
+    {
+        return new RequestHandler();
     }
 
     public Server getServer()
@@ -152,7 +196,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public HttpChannel getHttpChannel()
     {
-        return _channel;
+        return _httpChannel;
     }
 
     public HttpParser getParser()
@@ -166,15 +210,116 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
+    public String getId()
+    {
+        return "%s@%x#%d".formatted(getEndPoint().getRemoteSocketAddress(), hashCode(), _id);
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _configuration;
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        HttpStreamOverHTTP1 stream = _stream.get();
+        return (stream != null) ? stream._version : HttpVersion.HTTP_1_1;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return getHttpVersion().asString();
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return this;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return _generator.isPersistent(getHttpVersion());
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        HttpConfiguration config = getHttpConfiguration();
+        if (config != null)
+        {
+            SocketAddress override = config.getLocalAddress();
+            if (override != null)
+                return override;
+        }
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        HostPort authority = ConnectionMetaData.getServerAuthority(getHttpConfiguration(), this);
+        if (authority == null)
+            authority = new HostPort(getLocalSocketAddress().toString(), -1);
+        return authority;
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return _attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return _attributes.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return _attributes.getAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        _attributes.clearAttributes();
+    }
+
+    @Override
     public long getMessagesIn()
     {
-        return getHttpChannel().getRequests();
+        return _requests;
     }
 
     @Override
     public long getMessagesOut()
     {
-        return getHttpChannel().getRequests();
+        return _requests; // TODO not strictly correct
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -184,6 +329,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
+        // TODO why is this not on HttpConfiguration?
         _useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
@@ -194,6 +340,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
+        // TODO why is this not on HttpConfiguration?
         _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
@@ -220,9 +367,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onFlushed(long bytes) throws IOException
     {
-        // Unfortunately cannot distinguish between header and content
-        // bytes, and for content bytes whether they are chunked or not.
-        _channel.getResponse().getHttpOutput().onFlushed(bytes);
+        // TODO is this callback still needed?   Couldn't we wrap send callback instead?
+        //      Either way, the dat rate calculations from HttpOutput.onFlushed should be moved to Channel.
     }
 
     void releaseRequestBuffer()
@@ -254,13 +400,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(), _retainableByteBuffer);
+            LOG.debug(">>onFillable enter {} {} {}", this, _httpChannel, _retainableByteBuffer);
 
         HttpConnection last = setCurrentConnection(this);
         try
         {
             while (getEndPoint().isOpen())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onFillable fill and parse {} {} {}", this, _httpChannel, _retainableByteBuffer);
+
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
                 if (filled < 0 && getEndPoint().isOutputShutdown())
@@ -276,24 +425,50 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (getEndPoint().getConnection() != this)
                     break;
 
-                // Handle channel event
+                // Handle channel event. This will only be true when the headers of a request have been received.
                 if (handle)
                 {
-                    boolean suspended = !_channel.handle();
+                    Request request = _httpChannel.getRequest();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HANDLE {} {}", request, this);
 
-                    // We should break iteration if we have suspended or upgraded the connection.
-                    if (suspended || getEndPoint().getConnection() != this)
+                    // handle the request by running the task obtained from onRequest
+                    _handling.set(true);
+                    Runnable onRequest = _onRequest;
+                    _onRequest = null;
+                    onRequest.run();
+
+                    // If the _handling boolean has already been CaS'd to false, then stream is completed and we are no longer
+                    // handling, so the caller can continue to fill and parse more connections.  If it is still true, then some
+                    // thread is still handling the request and they will need to organize more filling and parsing once complete.
+                    if (_handling.compareAndSet(true, false))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("request !complete {} {}", request, this);
                         break;
+                    }
+
+                    // If the request is complete, but has been upgraded, then break
+                    if (getEndPoint().getConnection() != this)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("upgraded {} -> {}", this, getEndPoint().getConnection());
+                        break;
+                    }
+                }
+                else if (filled < 0)
+                {
+                    getEndPoint().shutdownOutput();
+                    break;
+                }
+                else if (_requestHandler._failure != null)
+                {
+                    // There was an error, don't fill more.
+                    break;
                 }
                 else if (filled == 0)
                 {
                     fillInterested();
-                    break;
-                }
-                else if (filled < 0)
-                {
-                    if (_channel.getState().isIdle())
-                        getEndPoint().shutdownOutput();
                     break;
                 }
             }
@@ -303,7 +478,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} caught exception {}", this, _channel.getState(), x);
+                    LOG.debug("caught exception {} {}", this, _httpChannel, x);
                 if (_retainableByteBuffer != null)
                 {
                     _retainableByteBuffer.clear();
@@ -319,7 +494,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(), _retainableByteBuffer);
+                LOG.debug("<<onFillable exit {} {} {}", this, _httpChannel, _retainableByteBuffer);
         }
     }
 
@@ -332,7 +507,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
         // in case the parser was mistakenly closed and the connection was not aborted.
         if (_parser.isTerminated())
-            throw new IllegalStateException("Parser is terminated: " + _parser);
+        {
+            _requestHandler.messageComplete();
+            return;
+        }
 
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
@@ -353,7 +531,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private int fillRequestBuffer()
     {
         if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
-            throw new IllegalStateException("fill with unconsumed content on " + this);
+        {
+            // TODO this is almost certainly wrong
+            RetainableByteBuffer newBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
+            _retainableByteBuffer.release();
+            _retainableByteBuffer = newBuffer;
+        }
 
         if (isRequestBufferEmpty())
         {
@@ -407,17 +592,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return handle;
     }
 
-    private boolean upgrade()
+    private boolean upgrade(HttpStream stream)
     {
-        Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        Connection connection = stream.upgrade();
         if (connection == null)
             return false;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", this, connection);
-        _channel.getState().upgrade();
         getEndPoint().upgrade(connection);
-        _channel.recycle();
+        //_channel.recycle(); // TODO should something be done to the channel?
         _parser.reset();
         _generator.reset();
         if (_retainableByteBuffer != null)
@@ -433,98 +617,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
         return true;
-    }
-
-    @Override
-    public void onCompleted()
-    {
-        // If we are fill interested, then a read is pending and we must abort
-        if (isFillInterested())
-        {
-            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
-            _channel.abort(new IOException("Pending read in onCompleted"));
-        }
-        else
-        {
-            // Handle connection upgrades.
-            if (upgrade())
-                return;
-        }
-
-        // Drive to EOF, EarlyEOF or Error
-        boolean complete = _input.consumeAll();
-
-        // Finish consuming the request
-        // If we are still expecting
-        if (_channel.isExpecting100Continue())
-        {
-            // close to seek EOF
-            _parser.close();
-        }
-        // else abort if we can't consume all
-        else if (_generator.isPersistent() && !complete)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("unconsumed input {} {}", this, _parser);
-            _channel.abort(new IOException("unconsumed input"));
-        }
-
-        // Reset the channel, parsers and generator
-        _channel.recycle();
-        if (!_parser.isClosed())
-        {
-            if (_generator.isPersistent())
-                _parser.reset();
-            else
-                _parser.close();
-        }
-
-        _generator.reset();
-
-        // if we are not called from the onfillable thread, schedule completion
-        if (getCurrentConnection() != this)
-        {
-            // If we are looking for the next request
-            if (_parser.isStart())
-            {
-                // if the buffer is empty
-                if (isRequestBufferEmpty())
-                {
-                    // look for more data
-                    fillInterested();
-                }
-                // else if we are still running
-                else if (getConnector().isRunning())
-                {
-                    // Dispatched to handle a pipelined request
-                    try
-                    {
-                        getExecutor().execute(this);
-                    }
-                    catch (RejectedExecutionException e)
-                    {
-                        if (getConnector().isRunning())
-                            LOG.warn("Failed dispatch of {}", this, e);
-                        else
-                            LOG.trace("IGNORED", e);
-                        getEndPoint().close();
-                    }
-                }
-                else
-                {
-                    getEndPoint().close();
-                }
-            }
-            // else the parser must be closed, so seek the EOF if we are still open
-            else if (getEndPoint().isOpen())
-                fillInterested();
-        }
-    }
-
-    @Override
-    protected boolean onReadTimeout(Throwable timeout)
-    {
-        return _channel.onIdleTimeout(timeout);
     }
 
     @Override
@@ -547,10 +639,24 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onClose(Throwable cause)
     {
-        if (cause == null)
-            _sendCallback.close();
-        else
-            _sendCallback.failed(cause);
+        // TODO: do we really need to do this?
+        //  This event is fired really late, sendCallback should already be failed at this point.
+        try
+        {
+            if (cause == null)
+                _sendCallback.close();
+            else
+                _sendCallback.failed(cause);
+        }
+        finally
+        {
+            if (cause != null)
+            {
+                Runnable todo = _httpChannel.onFailure(cause);
+                if (todo != null)
+                    todo.run();
+            }
+        }
         super.onClose(cause);
     }
 
@@ -560,61 +666,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         onFillable();
     }
 
-    @Override
-    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
-    {
-        if (response == null)
-        {
-            if (!lastContent && BufferUtil.isEmpty(content))
-            {
-                callback.succeeded();
-                return;
-            }
-        }
-        else
-        {
-            // If we are still expecting a 100 continues when we commit
-            if (_channel.isExpecting100Continue())
-                // then we can't be persistent
-                _generator.setPersistent(false);
-        }
-
-        if (_sendCallback.reset(request, response, content, lastContent, callback))
-        {
-            _sendCallback.iterate();
-        }
-    }
-
-    HttpInput.Content newContent(ByteBuffer c)
-    {
-        return new Content(c);
-    }
-
-    @Override
-    public void abort(Throwable failure)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("abort {} {}", this, failure);
-        // Do a direct close of the output, as this may indicate to a client that the
-        // response is bad either with RST or by abnormal completion of chunked response.
-        getEndPoint().close();
-    }
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
-        LOG.debug("ignore push in {}", this);
-    }
-
     public void asyncReadFillInterested()
     {
-        getEndPoint().tryFillInterested(_asyncReadCallback);
+        getEndPoint().tryFillInterested(_demandContentCallback);
     }
 
     @Override
@@ -637,53 +691,36 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             hashCode(),
             _parser,
             _generator,
-            _channel);
+            _httpChannel);
     }
 
-    private class Content extends HttpInput.Content
+    private class DemandContentCallback implements Callback
     {
-        public Content(ByteBuffer content)
-        {
-            super(content);
-            _retainableByteBuffer.retain();
-        }
-
         @Override
         public void succeeded()
         {
-            _retainableByteBuffer.release();
+            Runnable task = _httpChannel.onContentAvailable();
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand succeeded {}", task);
+            if (task != null)
+                task.run();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            succeeded();
-        }
-    }
-
-    private class AsyncReadCallback implements Callback
-    {
-        @Override
-        public void succeeded()
-        {
-            if (_channel.getRequest().getHttpInput().onContentProducible())
-                _channel.handle();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            if (_channel.failed(x))
-                _channel.handle();
+            Runnable task = _httpChannel.onFailure(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand failed {}", task, x);
+            if (task != null)
+                // Execute error path as invocation type is probably wrong.
+                getConnector().getExecutor().execute(task);
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            // This callback does not block when the HttpInput is in blocking mode,
-            // rather it wakes up the thread that is blocked waiting on the read;
-            // but it can if it is in async mode, hence the varying InvocationType.
-            return _channel.getRequest().getHttpInput().isAsync() ? InvocationType.BLOCKING : InvocationType.NON_BLOCKING;
+            return Invocable.getInvocationType(_httpChannel);
         }
     }
 
@@ -709,23 +746,30 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             return _callback.getInvocationType();
         }
 
-        private boolean reset(MetaData.Request request, MetaData.Response info, ByteBuffer content, boolean last, Callback callback)
+        private boolean reset(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
             {
-                _info = info;
+                _info = response;
                 _head = request != null && HttpMethod.HEAD.is(request.getMethod());
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
                 _header = null;
-                _shutdownOut = false;
 
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
 
                 return true;
             }
+
+            if (isClosed() && response == null && last && content == null)
+            {
+                callback.succeeded();
+                return false;
+            }
+
+            LOG.warn("reset failed {}", this);
 
             if (isClosed())
                 callback.failed(new EofException());
@@ -760,15 +804,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(_config.getResponseHeaderSize(), _config.getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        if (_header.capacity() >= _config.getResponseHeaderSize())
+                        if (_header.capacity() >= _configuration.getResponseHeaderSize())
                             throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
@@ -779,7 +823,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -893,7 +937,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void onCompleteSuccess()
         {
-            boolean upgrading = _channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE) != null;
+            // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
+            boolean upgrading = _httpChannel.getRequest() != null && _httpChannel.getRequest().getAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
             // If successfully upgraded it is responsibility of the next protocol to close the connection.
             if (_shutdownOut && !upgrading)
@@ -912,6 +957,697 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public String toString()
         {
             return String.format("%s[i=%s,cb=%s]", super.toString(), _info, _callback);
+        }
+    }
+
+    protected class RequestHandler implements HttpParser.RequestHandler, ComplianceViolation.Listener
+    {
+        private Throwable _failure;
+
+        protected RequestHandler()
+        {
+        }
+
+        @Override
+        public void startRequest(String method, String uri, HttpVersion version)
+        {
+            HttpStreamOverHTTP1 stream = newHttpStream(method, uri, version);
+            if (!_stream.compareAndSet(null, stream))
+                throw new IllegalStateException("Stream pending");
+            _headerBuilder.clear();
+            _httpChannel.setHttpStream(stream);
+        }
+
+        @Override
+        public void parsedHeader(HttpField field)
+        {
+            _stream.get().parsedHeader(field);
+        }
+
+        @Override
+        public boolean headerComplete()
+        {
+            _onRequest = _stream.get().headerComplete();
+            return true;
+        }
+
+        @Override
+        public boolean content(ByteBuffer buffer)
+        {
+            HttpStreamOverHTTP1 stream = _stream.get();
+            if (stream == null || stream._content != null || _retainableByteBuffer == null)
+                throw new IllegalStateException();
+
+            _retainableByteBuffer.retain();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
+
+            stream._content = new Content.Abstract(false, false)
+            {
+                final RetainableByteBuffer _retainable = _retainableByteBuffer;
+
+                @Override
+                public void release()
+                {
+                    _retainable.release();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), _retainable, HttpConnection.this);
+                }
+
+                @Override
+                public ByteBuffer getByteBuffer()
+                {
+                    return buffer;
+                }
+            };
+            return true;
+        }
+
+        @Override
+        public boolean contentComplete()
+        {
+            // Do nothing at this point.
+            // Wait for messageComplete so any trailers can be sent as special content
+            return false;
+        }
+
+        @Override
+        public boolean messageComplete()
+        {
+            HttpStreamOverHTTP1 stream = _stream.get();
+            stream._content = Content.last(stream._content);
+            if (_trailers != null && (stream._content == null || stream._content == Content.EOF))
+                stream._content = new Content.Trailers(_trailers.asImmutable());
+            else
+                stream._content = Content.last(stream._content);
+            return false;
+        }
+
+        @Override
+        public void parsedTrailer(HttpField field)
+        {
+            if (_trailers == null)
+                _trailers = HttpFields.build();
+            _trailers.add(field);
+        }
+
+        @Override
+        public void badMessage(BadMessageException failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("badMessage {} {}", HttpConnection.this, failure);
+
+            _failure = failure;
+            _generator.setPersistent(false);
+
+            HttpStreamOverHTTP1 stream = _stream.get();
+            if (stream == null)
+            {
+                stream = newHttpStream("GET", "/badMessage", HttpVersion.HTTP_1_0);
+                _stream.set(stream);
+                _httpChannel.setHttpStream(stream);
+            }
+
+            if (_httpChannel.getRequest() == null)
+            {
+                HttpURI uri = stream._uri;
+                if (uri.hasViolations())
+                    uri = HttpURI.from("/badURI");
+                _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY));
+            }
+
+            Runnable todo = _httpChannel.onFailure(failure);
+            if (todo != null)
+                getServer().getThreadPool().execute(todo);
+        }
+
+        @Override
+        public void earlyEOF()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("early EOF {}", HttpConnection.this);
+            _generator.setPersistent(false);
+            HttpStreamOverHTTP1 stream = _stream.get();
+            if (stream != null)
+            {
+                BadMessageException bad = new BadMessageException("Early EOF");
+
+                if (stream._content instanceof Error error)
+                    error.getCause().addSuppressed(bad);
+                else
+                {
+                    if (stream._content != null)
+                        stream._content.release();
+                    stream._content = new Content.Error(bad);
+                }
+
+                Runnable todo = _httpChannel.onFailure(bad);
+                if (todo != null)
+                    getServer().getThreadPool().execute(todo);
+            }
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+        {
+            //TODO configure this somewhere else
+            //TODO what about cookie compliance
+            //TODO what about http2 & 3
+            //TODO test this in core
+            if (isRecordHttpComplianceViolations())
+            {
+                HttpStreamOverHTTP1 stream = _stream.get();
+                if (stream != null)
+                {
+                    if (stream._complianceViolations == null)
+                    {
+                        stream._complianceViolations = new ArrayList<>();
+                    }
+                    String record = String.format("%s (see %s) in mode %s for %s in %s",
+                        violation.getDescription(), violation.getURL(), mode, details, HttpConnection.this);
+                    stream._complianceViolations.add(record);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(record);
+                }
+            }
+        }
+    }
+
+    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
+
+    protected class HttpStreamOverHTTP1 implements HttpStream
+    {
+        private final long _nanoTimestamp = System.nanoTime();
+        private final long _id;
+        private final String _method;
+        private final HttpURI.Mutable _uri;
+        private final HttpVersion _version;
+        private long _contentLength = -1;
+        private HostPortHttpField _hostField;
+        private MetaData.Request _request;
+        private HttpField _upgrade = null;
+        private Connection _upgradeConnection;
+
+        Content _content;
+        private boolean _connectionClose = false;
+        private boolean _connectionKeepAlive = false;
+        private boolean _connectionUpgrade = false;
+        private boolean _unknownExpectation = false;
+        private boolean _expect100Continue = false;
+        private boolean _expect102Processing = false;
+        private List<String> _complianceViolations;
+
+        protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
+        {
+            _id = _streamIdGenerator.getAndIncrement();
+            _method = method;
+            _uri = uri == null ? null : HttpURI.build(method, uri);
+            _version = version;
+
+            if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
+                _uri.path("/");
+        }
+
+        public void parsedHeader(HttpField field)
+        {
+            HttpHeader header = field.getHeader();
+            String value = field.getValue();
+            if (header != null)
+            {
+                switch (header)
+                {
+                    case CONNECTION:
+                        _connectionClose |= field.contains(HttpHeaderValue.CLOSE.asString());
+                        if (HttpVersion.HTTP_1_0.equals(_version))
+                            _connectionKeepAlive |= field.contains(HttpHeader.KEEP_ALIVE.asString());
+                        _connectionUpgrade |= field.contains(HttpHeaderValue.UPGRADE.asString());
+                        break;
+
+                    case HOST:
+                        if (value == null)
+                            value = "";
+                        if (field instanceof HostPortHttpField)
+                            _hostField = (HostPortHttpField)field;
+                        else
+                            field = _hostField = new HostPortHttpField(value);
+                        break;
+
+                    case EXPECT:
+                    {
+                        if (!HttpHeaderValue.parseCsvIndex(value, t ->
+                        {
+                            switch (t)
+                            {
+                                case CONTINUE:
+                                    _expect100Continue = true;
+                                    return true;
+                                case PROCESSING:
+                                    _expect102Processing = true;
+                                    return true;
+                                default:
+                                    return false;
+                            }
+                        }, s -> false))
+                        {
+                            _unknownExpectation = true;
+                            _expect100Continue = false;
+                            _expect102Processing = false;
+                        }
+                        break;
+                    }
+
+                    case UPGRADE:
+                        _upgrade = field;
+                        break;
+
+                    case CONTENT_LENGTH:
+                        _contentLength = field.getLongValue();
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            _headerBuilder.add(field);
+        }
+
+        public Runnable headerComplete()
+        {
+            UriCompliance compliance;
+            if (_uri.hasViolations())
+            {
+                compliance = _configuration.getUriCompliance();
+                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri);
+                if (badMessage != null)
+                    throw new BadMessageException(badMessage);
+            }
+
+            // Check host field matches the authority in the any absolute URI or is not blank
+            if (_hostField != null)
+            {
+                if (_uri.isAbsolute())
+                {
+                    if (!_hostField.getValue().equals(_uri.getAuthority()))
+                        throw new BadMessageException("Authority!=Host ");
+                }
+                else
+                {
+                    if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
+                        throw new BadMessageException("Blank Host");
+                }
+            }
+
+            // Set the scheme in the URI
+            if (!_uri.isAbsolute())
+                _uri.scheme(getEndPoint() instanceof SslConnection.DecryptedEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+
+            // Set the authority (if not already set) in the URI
+            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            {
+                HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
+                int port = hostPort.getPort();
+                if (port == HttpScheme.getDefaultPort(_uri.getScheme()))
+                    port = -1;
+                _uri.authority(hostPort.getHost(), port);
+            }
+
+            _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
+
+            Runnable handle = _httpChannel.onRequest(_request);
+            ++_requests;
+
+            if (_complianceViolations != null && !_complianceViolations.isEmpty())
+            {
+                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _complianceViolations = null;
+            }
+
+            boolean persistent;
+
+            switch (_request.getHttpVersion())
+            {
+                case HTTP_0_9:
+                {
+                    persistent = false;
+                    break;
+                }
+                case HTTP_1_0:
+                {
+                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
+                        _connectionKeepAlive &&
+                        !_connectionClose ||
+                        HttpMethod.CONNECT.is(_method);
+
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
+                    if (!persistent)
+                        _connectionKeepAlive = false;
+
+                    break;
+                }
+
+                case HTTP_1_1:
+                {
+                    if (_unknownExpectation)
+                    {
+                        _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
+                        return null; // TODO Is this enough ???
+                    }
+
+                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
+                        !_connectionClose ||
+                        HttpMethod.CONNECT.is(_method);
+
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
+
+                    if (_upgrade != null && HttpConnection.this.upgrade(_stream.get()))
+                        return null; // TODO do we need to return a runnable to complete the upgrade ???
+
+                    break;
+                }
+
+                case HTTP_2:
+                {
+                    // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
+                    _upgrade = PREAMBLE_UPGRADE_H2C;
+
+                    if (HttpMethod.PRI.is(_method) &&
+                        "*".equals(_uri.getPath()) &&
+                        _headerBuilder.size() == 0 &&
+                        HttpConnection.this.upgrade(_stream.get()))
+                        return null; // TODO do we need to return a runnable to complete the upgrade ???
+
+                    // TODO is this sufficient?
+                    _parser.close();
+                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("unsupported version " + _version);
+                }
+            }
+
+            if (!persistent)
+                _generator.setPersistent(false);
+
+            return handle;
+        }
+
+        @Override
+        public String getId()
+        {
+            return "%s#%d".formatted(_version, _id);
+        }
+
+        @Override
+        public long getNanoTimeStamp()
+        {
+            return _nanoTimestamp;
+        }
+
+        @Override
+        public Content readContent()
+        {
+            if (_content == null)
+            {
+                if (_parser.isTerminated())
+                    _content = Content.EOF;
+                else
+                    parseAndFillForContent();
+            }
+
+            Content content = _content;
+            _content = Content.next(content);
+            if (content != null && _expect100Continue && content.hasRemaining())
+                _expect100Continue = false;
+
+            return content;
+        }
+
+        @Override
+        public void demandContent()
+        {
+            if (_content != null)
+            {
+                Runnable onContentAvailable = _httpChannel.onContentAvailable();
+                if (onContentAvailable != null)
+                    onContentAvailable.run();
+                return;
+            }
+            parseAndFillForContent();
+            if (_content != null)
+            {
+                Runnable onContentAvailable = _httpChannel.onContentAvailable();
+                if (onContentAvailable != null)
+                    onContentAvailable.run();
+                return;
+            }
+
+            if (_expect100Continue)
+            {
+                _expect100Continue = false;
+                send(_request, HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
+            }
+
+            tryFillInterested(_demandContentCallback);
+        }
+
+        @Override
+        public void prepareResponse(HttpFields.Mutable headers)
+        {
+            if (_connectionKeepAlive && _version == HttpVersion.HTTP_1_0 && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
+                headers.add(HttpFields.CONNECTION_KEEPALIVE);
+        }
+
+        @Override
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        {
+            if (response == null)
+            {
+                if (!last && BufferUtil.isEmpty(content))
+                {
+                    callback.succeeded();
+                    return;
+                }
+            }
+            else if (_generator.isCommitted())
+            {
+                callback.failed(new IllegalStateException("Committed"));
+            }
+            else if (response.getStatus() == 102 && !_expect102Processing)
+            {
+                // silently discard
+                callback.succeeded();
+            }
+            else if (response.getStatus() != 100 && _expect100Continue)
+            {
+                // If we are still expecting a 100 continues when we commit then we can't be persistent
+                _generator.setPersistent(false);
+            }
+
+            // TODO support gather write
+            if (content.length > 1)
+                throw new UnsupportedOperationException("Gather write!");
+            if (_sendCallback.reset(_request, response, content.length == 0 ? null : content[0], last, callback))
+                _sendCallback.iterate();
+        }
+
+        @Override
+        public boolean isPushSupported()
+        {
+            return false;
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return _stream.get() != this || _generator.isCommitted();
+        }
+
+        @Override
+        public boolean isComplete()
+        {
+            return _stream.get() != this;
+        }
+
+        @Override
+        public void setUpgradeConnection(Connection connection)
+        {
+            _upgradeConnection = connection;
+            if (_httpChannel.getRequest() != null)
+                _httpChannel.getRequest().setAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        }
+
+        @Override
+        public Connection upgrade()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrade {} {}", this, _upgrade);
+
+            // If Upgrade attribute already set then we don't need to do anything here.
+            if (_upgradeConnection != null)
+                return _upgradeConnection;
+
+            // If no upgrade headers there is nothing to do.
+            if (!_connectionUpgrade && (_upgrade == null))
+                return null;
+
+            @SuppressWarnings("ReferenceEquality")
+            boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+            if (!isUpgradedH2C && !_connectionUpgrade)
+                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+
+            // Find the upgrade factory
+            ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
+                .filter(f -> f instanceof ConnectionFactory.Upgrading)
+                .map(ConnectionFactory.Upgrading.class::cast)
+                .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+                .findAny()
+                .orElse(null);
+
+            if (factory == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No factory for {} in {}", _upgrade, getConnector());
+                return null;
+            }
+
+            // Create new connection
+            HttpFields.Mutable response101 = HttpFields.build();
+            Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
+            if (upgradeConnection == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
+                return null;
+            }
+
+            // Send 101 if needed
+            if (!isUpgradedH2C)
+                send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, Callback.NOOP);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+            //getHttpTransport().onCompleted(); // TODO: succeed callback instead?
+            return upgradeConnection;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
+            if (stream == null)
+                return;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded {}", HttpConnection.this);
+            // If we are fill interested, then a read is pending and we must abort
+            if (isFillInterested())
+            {
+                LOG.warn("Read pending {} {}", this, getEndPoint());
+                failed(new IOException("Pending read in onCompleted"));
+                return;
+            }
+
+            _httpChannel.recycle();
+
+            if (HttpConnection.this.upgrade(stream))
+                return;
+
+            // Finish consuming the request
+            // If we are still expecting
+            if (_expect100Continue)
+            {
+                // close to seek EOF
+                _parser.close();
+            }
+
+            // Reset the channel, parsers and generator
+            if (!_parser.isClosed())
+            {
+                if (_generator.isPersistent())
+                    _parser.reset();
+                else
+                    _parser.close();
+            }
+
+            _generator.reset();
+
+            // Can the onFillable thread continue processing
+            if (_handling.compareAndSet(true, false))
+                return;
+
+            // we need to organized further processing
+            if (LOG.isDebugEnabled())
+                LOG.debug("non-current completion {}", this);
+
+            // TODO what about upgrade????
+
+            // If we are looking for the next request
+            if (_parser.isStart())
+            {
+                // if the buffer is empty
+                if (isRequestBufferEmpty())
+                {
+                    // look for more data
+                    fillInterested();
+                }
+                // else if we are still running
+                else if (getConnector().isRunning())
+                {
+                    // Dispatched to handle a pipelined request
+                    try
+                    {
+                        getExecutor().execute(HttpConnection.this);
+                    }
+                    catch (RejectedExecutionException e)
+                    {
+                        if (getConnector().isRunning())
+                            LOG.warn("Failed dispatch of {}", this, e);
+                        else
+                            LOG.trace("IGNORED", e);
+                        getEndPoint().close();
+                    }
+                }
+                else
+                {
+                    getEndPoint().close();
+                }
+            }
+            // else the parser must be closed, so seek the EOF if we are still open
+            else if (getEndPoint().isOpen())
+                fillInterested();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
+            if (stream == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored", x);
+                return;
+            }
+
+            getEndPoint().close();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return HttpStream.super.getInvocationType();
         }
     }
 }

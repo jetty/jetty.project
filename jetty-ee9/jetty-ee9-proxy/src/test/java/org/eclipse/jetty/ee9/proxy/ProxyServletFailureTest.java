@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.ee9.proxy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,15 +36,15 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -308,7 +308,7 @@ public class ProxyServletFailureTest
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
 
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .body(new BytesRequestContent(content))
@@ -401,7 +401,7 @@ public class ProxyServletFailureTest
     @MethodSource("impls")
     public void testServerException(Class<? extends ProxyServlet> proxyServletClass) throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             prepareProxy(proxyServletClass);
             prepareServer(new HttpServlet()

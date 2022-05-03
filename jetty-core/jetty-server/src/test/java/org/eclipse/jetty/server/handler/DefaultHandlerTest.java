@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +47,7 @@ public class DefaultHandlerTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handler = new DefaultHandler();
-        server.setHandler(new HandlerList(contexts, handler));
+        server.setHandler(new Handler.Collection(contexts, handler));
 
         handler.setServeIcon(true);
         handler.setShowContexts(true);

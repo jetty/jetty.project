@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.webapp;
+package org.eclipse.jetty.ee9.plus.webapp;
 
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

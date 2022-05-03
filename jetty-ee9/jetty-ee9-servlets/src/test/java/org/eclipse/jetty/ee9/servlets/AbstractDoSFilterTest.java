@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,12 +28,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.DefaultSessionCache;
-import org.eclipse.jetty.server.session.FileSessionDataStore;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.DefaultSessionCache;
+import org.eclipse.jetty.session.FileSessionDataStore;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.IO;
@@ -62,7 +62,7 @@ public abstract class AbstractDoSFilterTest
         _server.addConnector(_connector);
         ServletContextHandler context = new ServletContextHandler(_server, "/ctx", true, false);
 
-        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler());
+        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler().getSessionManager());
         FileSessionDataStore fileStore = new FileSessionDataStore();
 
         Path p = workDir.getPathFile("sessions");
@@ -70,7 +70,7 @@ public abstract class AbstractDoSFilterTest
         fileStore.setStoreDir(p.toFile());
         sessionCache.setSessionDataStore(fileStore);
 
-        context.getSessionHandler().setSessionCache(sessionCache);
+        // FIXME context.getSessionHandler().setSessionCache(sessionCache);
 
         context.addServlet(TestServlet.class, "/*");
 

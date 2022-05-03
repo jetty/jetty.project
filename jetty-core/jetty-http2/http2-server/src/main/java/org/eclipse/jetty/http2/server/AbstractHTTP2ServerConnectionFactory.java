@@ -25,16 +25,18 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.RateControl;
+import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.http2.parser.WindowRateControl;
+import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.ServerParser;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerSession;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -51,6 +53,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
+    private static boolean isProtocolSupported(String protocol)
+    {
+        return switch (protocol)
+        {
+            case "h2", "h2c" -> true;
+            default -> false;
+        };
+    }
+
     private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
@@ -77,7 +88,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         super(protocols);
         for (String p : protocols)
         {
-            if (!HTTP2ServerConnection.isSupportedProtocol(p))
+            if (!isProtocolSupported(p))
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
         }
         addBean(sessionContainer);
@@ -282,7 +293,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
 
-        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector.getExecutor(),
+        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector,
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
@@ -292,7 +303,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
+    private ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
     {
         return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }

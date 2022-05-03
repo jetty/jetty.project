@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
-public class ExtensionConfigParser implements org.eclipse.jetty.websocket.api.ExtensionConfig.Parser
+public class ExtensionConfigParser implements org.eclipse.jetty.ee9.websocket.api.ExtensionConfig.Parser
 {
     /**
      * Parse a single parameterized name.

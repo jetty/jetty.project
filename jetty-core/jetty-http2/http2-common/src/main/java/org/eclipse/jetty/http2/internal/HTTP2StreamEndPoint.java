@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

@@ -17,20 +17,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -55,16 +54,12 @@ public abstract class AbstractHandshaker implements Handshaker
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (!validateRequest(request))
             return false;
 
-        // After negotiation these can be set to copy data from request and disable unavailable methods.
-        UpgradeHttpServletRequest upgradeRequest = new UpgradeHttpServletRequest(request);
-        UpgradeHttpServletResponse upgradeResponse = new UpgradeHttpServletResponse(response);
-
-        WebSocketNegotiation negotiation = newNegotiation(upgradeRequest, upgradeResponse, components);
+        WebSocketNegotiation negotiation = newNegotiation(request, response, callback, components);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
@@ -74,27 +69,8 @@ public abstract class AbstractHandshaker implements Handshaker
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
-        if (!validateFrameHandler(handler, response))
-            return false;
-
-        // Handle error responses
-        Request baseRequest = negotiation.getBaseRequest();
-        if (response.isCommitted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: response committed {}", request);
-            baseRequest.setHandled(true);
-            return false;
-        }
-        int httpStatus = response.getStatus();
-        if (httpStatus > 200)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: invalid http code {} {}", httpStatus, request);
-            response.flushBuffer();
-            baseRequest.setHandled(true);
-            return false;
-        }
+        if (handler == null)
+            return true;
 
         // Validate negotiated protocol.
         String protocol = negotiation.getSubprotocol();
@@ -125,14 +101,14 @@ public abstract class AbstractHandshaker implements Handshaker
         extensionStack.negotiate(negotiation.getOfferedExtensions(), negotiation.getNegotiatedExtensions());
         negotiation.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
         if (extensionStack.hasNegotiatedExtensions())
-            baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
+            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
         else
-            baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
+            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
 
-        Negotiated negotiated = new Negotiated(baseRequest.getHttpURI().toURI(), protocol, baseRequest.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
+        Negotiated negotiated = new Negotiated(request.getHttpURI().toURI(), protocol, request.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(upgradeRequest, handler, negotiated, components);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
         if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
@@ -140,78 +116,73 @@ public abstract class AbstractHandshaker implements Handshaker
         if (LOG.isDebugEnabled())
             LOG.debug("session {}", coreSession);
 
-        WebSocketConnection connection = createWebSocketConnection(baseRequest, coreSession);
+        WebSocketConnection connection = createWebSocketConnection(request, coreSession);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
             throw new WebSocketException("not upgraded: no connection");
 
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        HttpConfiguration httpConfig = httpChannel.getHttpConfiguration();
+        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        HttpConfiguration httpConfig = connectionMetaData.getHttpConfiguration();
         connection.setUseInputDirectByteBuffers(httpConfig.isUseInputDirectByteBuffers());
-        connection.setUseOutputDirectByteBuffers(httpChannel.isUseOutputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(httpConfig.isUseOutputDirectByteBuffers());
 
-        httpChannel.getConnector().getEventListeners().forEach(connection::addEventListener);
+        connectionMetaData.getConnector().getEventListeners().forEach(connection::addEventListener);
 
         coreSession.setWebSocketConnection(connection);
 
-        baseRequest.setHandled(true);
-        Response baseResponse = baseRequest.getResponse();
-        prepareResponse(baseResponse, negotiation);
+        prepareResponse(response, negotiation);
         if (httpConfig.getSendServerVersion())
-            baseResponse.getHttpFields().put(SERVER_VERSION);
-        baseResponse.flushBuffer();
+            response.getHeaders().put(SERVER_VERSION);
 
-        baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
-
-        // Save state from request/response and remove reference to the base request/response.
-        upgradeRequest.upgrade();
-        upgradeResponse.upgrade();
-        negotiation.upgrade();
+        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+        {
+            @Override
+            public void succeeded()
+            {
+                setUpgradeConnection(connection);
+                super.succeeded();
+            }
+        });
 
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
-
+        response.write(true, callback);
         return true;
     }
 
-    protected abstract boolean validateRequest(HttpServletRequest request);
+    protected abstract boolean validateRequest(Request request);
 
-    protected abstract WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
-
-    protected abstract boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response);
+    protected abstract WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents);
 
     protected boolean validateNegotiation(WebSocketNegotiation negotiation)
     {
         if (!negotiation.validateHeaders())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no upgrade header or connection upgrade {}", negotiation.getBaseRequest());
+                LOG.debug("not upgraded: no upgrade header or connection upgrade {}", negotiation.getRequest());
             return false;
         }
 
         if (!WebSocketConstants.SPEC_VERSION_STRING.equals(negotiation.getVersion()))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: unsupported version {} {}", negotiation.getVersion(), negotiation.getBaseRequest());
+                LOG.debug("not upgraded: unsupported version {} {}", negotiation.getVersion(), negotiation.getRequest());
             return false;
         }
 
         return true;
     }
 
-    protected WebSocketCoreSession newWebSocketCoreSession(HttpServletRequest request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
+    protected WebSocketCoreSession newWebSocketCoreSession(Request request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
     {
-        final ContextHandler contextHandler = ContextHandler.getContextHandler(request.getServletContext());
+        Context context = request.getContext();
         return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated, components)
         {
             @Override
             protected void handle(Runnable runnable)
             {
-                if (contextHandler != null)
-                    contextHandler.handle(runnable);
-                else
-                    super.handle(runnable);
+                context.run(runnable);
             }
         };
     }

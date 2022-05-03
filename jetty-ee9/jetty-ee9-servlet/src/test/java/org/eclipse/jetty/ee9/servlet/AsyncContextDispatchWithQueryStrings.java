@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 
@@ -21,10 +21,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,9 @@ public class AsyncContextDispatchWithQueryStrings
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/firstDispatchWithNewQueryString");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
 
-        _server.setHandler(new HandlerList(_contextHandler, new DefaultHandler()));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(_contextHandler.getCoreContextHandler(), new DefaultHandler());
+        _server.setHandler(handlers);
         _server.start();
     }
 

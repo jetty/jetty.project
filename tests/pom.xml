@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <version>12.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
-  <artifactId>tests-parent</artifactId>
+  <artifactId>tests</artifactId>
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
   <properties>
@@ -46,19 +46,20 @@
   </build>
   <modules>
     <module>jetty-jmh</module>
-    <module>jetty-http-tools</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
-    <module>test-loginservice</module>
-    <module>test-integration</module>
-    <module>test-quickstart</module>
-    <module>test-jmx</module>
-    <module>test-http-client-transport</module>
     <module>test-distribution</module>
-    <module>test-cdi</module>
-    <module>test-jndi</module>
     <module>test-jpms</module>
-    <module>test-websocket-autobahn</module>
   </modules>
-
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>

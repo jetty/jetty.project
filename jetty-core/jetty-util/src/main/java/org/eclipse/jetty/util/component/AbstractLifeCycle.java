@@ -18,7 +18,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -334,9 +334,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public String toString()
     {
-        String name = getClass().getSimpleName();
-        if (StringUtil.isBlank(name) && getClass().getSuperclass() != null)
-            name = getClass().getSuperclass().getSimpleName();
+        String name = TypeUtil.toShortName(getClass());
         return String.format("%s@%x{%s}", name, hashCode(), getState());
     }
 

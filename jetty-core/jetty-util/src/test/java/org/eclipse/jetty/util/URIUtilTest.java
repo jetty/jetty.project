@@ -96,35 +96,63 @@ public class URIUtilTest
     public static Stream<Arguments> decodePathSource()
     {
         List<Arguments> arguments = new ArrayList<>();
-        arguments.add(Arguments.of("/foo/bar", "/foo/bar"));
+        arguments.add(Arguments.of("/foo/bar", "/foo/bar", "/foo/bar"));
+
+        // Simple encoding
+        arguments.add(Arguments.of("/f%20%6f/b%20r", "/f%20o/b%20r", "/f o/b r"));
+
+        // UTF8 and unicode handling
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+        arguments.add(Arguments.of("/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4"));
+        arguments.add(Arguments.of("/f%d8%a9%D8%A9/bar", "/f\u0629\u0629/bar", "/f\u0629\u0629/bar"));
+
+        // Encoded delimiters
+        arguments.add(Arguments.of("/foo%2fbar", "/foo%2Fbar", "/foo/bar"));
+        arguments.add(Arguments.of("/foo%252fbar", "/foo%252fbar", "/foo%2fbar"));
+        arguments.add(Arguments.of("/foo%3bbar", "/foo%3Bbar", "/foo;bar"));
+        arguments.add(Arguments.of("/foo%3fbar", "/foo%3Fbar", "/foo?bar"));
 
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        arguments.add(Arguments.of("/f%20o/b%20r", "/f o/b r"));
-        arguments.add(Arguments.of("fää%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%23;,:=b a r="));
-        arguments.add(Arguments.of("f%d8%a9%d8%a9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%23;,:=b a r"));
+        arguments.add(Arguments.of("/f%20o/b%20r", "/f%20o/b%20r", "/f o/b r"));
+        arguments.add(Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="));
+        arguments.add(Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"));
 
         // path parameters should be ignored
-        arguments.add(Arguments.of("/foo;ignore/bar;ignore", "/foo/bar"));
-        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar"));
-        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%23/bar"));
-        arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%23;,:=b a r"));
+        arguments.add(Arguments.of("/foo;ignore/bar;ignore", "/foo/bar", "/foo/bar"));
+        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar", "/fää/bar"));
+        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"));
+        arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%2523%3B,:=b%20a%20r", "foo%23;,:=b a r"));
+
+        // test for chars that are somehow already decoded, but shouldn't be
+        arguments.add(Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"));
+        arguments.add(Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"));
+        arguments.add(Arguments.of("/foo/bär", "/foo/bär", "/foo/bär"));
+        arguments.add(Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"));
 
         // Test for null character (real world ugly test case)
         byte[] oddBytes = {'/', 0x00, '/'};
         String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
-        arguments.add(Arguments.of("/%00/", odd));
+        arguments.add(Arguments.of("/%00/", "/%00/", odd));
 
         // Deprecated Microsoft Percent-U encoding
-        arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
+        arguments.add(Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"));
         return arguments.stream();
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testDecodePath(String encodedPath, String expectedPath)
+    public void testNormalizePath(String encodedPath, String safePath, String decodedPath)
+    {
+        String path = URIUtil.normalizePath(encodedPath);
+        assertEquals(safePath, path);
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("decodePathSource")
+    public void testDecodePath(String encodedPath, String safePath, String decodedPath)
     {
         String path = URIUtil.decodePath(encodedPath);
-        assertEquals(expectedPath, path);
+        assertEquals(decodedPath, path);
     }
 
     public static Stream<Arguments> decodeBadPathSource()

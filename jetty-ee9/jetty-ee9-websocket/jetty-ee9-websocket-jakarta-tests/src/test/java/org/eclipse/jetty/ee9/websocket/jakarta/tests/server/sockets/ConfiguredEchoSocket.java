@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server.sockets;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets;
 
 import java.nio.ByteBuffer;
 import java.util.Locale;
@@ -22,9 +22,9 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.jakarta.tests.coders.TimeEncoder;
-import org.eclipse.jetty.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.DateDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.TimeEncoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;

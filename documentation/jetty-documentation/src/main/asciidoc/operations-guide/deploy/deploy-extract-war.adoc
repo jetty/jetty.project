@@ -26,7 +26,7 @@ If you do not want Jetty to extract the `+*.war+` files, you can disable this fe
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
   <Set name="extractWAR">false</Set>

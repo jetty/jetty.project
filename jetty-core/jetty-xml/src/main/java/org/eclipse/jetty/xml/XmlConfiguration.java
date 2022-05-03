@@ -1824,7 +1824,7 @@ public class XmlConfiguration
                     }
                     else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                     {
-                        try (InputStream inputStream = Resource.newResource(arg).getInputStream())
+                        try (Resource resource = Resource.newResource(arg); InputStream inputStream = resource.getInputStream())
                         {
                             properties.load(inputStream);
                         }

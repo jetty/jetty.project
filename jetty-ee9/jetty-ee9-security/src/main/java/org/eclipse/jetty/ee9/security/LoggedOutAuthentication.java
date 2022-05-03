@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 
 /**
  * LoggedOutAuthentication

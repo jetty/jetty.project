@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -745,11 +745,11 @@ public class ServletHandlerTest
     public void testServletMappings() throws Exception
     {
         Server server = new Server();
-        ServletHandler handler = new ServletHandler();
-        server.setHandler(handler);
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
         for (final String mapping : new String[] {"/", "/foo", "/bar/*", "*.bob"})
         {
-            handler.addServletWithMapping(new ServletHolder(new HttpServlet()
+            context.getServletHandler().addServletWithMapping(new ServletHolder(new HttpServlet()
             {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
@@ -759,7 +759,7 @@ public class ServletHandlerTest
             }), mapping);
         }
         // add servlet with no mapping
-        handler.addServlet(new ServletHolder(new HttpServlet() {}));
+        context.getServletHandler().addServlet(new ServletHolder(new HttpServlet() {}));
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -778,8 +778,8 @@ public class ServletHandlerTest
     public void testFilterMappings() throws Exception
     {
         Server server = new Server();
-        ServletHandler handler = new ServletHandler();
-        server.setHandler(handler);
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
 
         ServletHolder foo = new ServletHolder(new HttpServlet()
         {
@@ -790,7 +790,7 @@ public class ServletHandlerTest
             }
         });
         foo.setName("foo");
-        handler.addServletWithMapping(foo, "/foo/*");
+        context.getServletHandler().addServletWithMapping(foo, "/foo/*");
 
         ServletHolder def = new ServletHolder(new HttpServlet()
         {
@@ -801,11 +801,11 @@ public class ServletHandlerTest
             }
         });
         def.setName("default");
-        handler.addServletWithMapping(def, "/");
+        context.getServletHandler().addServletWithMapping(def, "/");
 
         for (final String mapping : new String[]{"/*", "/foo", "/bar/*", "*.bob"})
         {
-            handler.addFilterWithMapping(new FilterHolder((TestFilter)(request, response, chain) ->
+            context.getServletHandler().addFilterWithMapping(new FilterHolder((TestFilter)(request, response, chain) ->
             {
                 response.getOutputStream().print("path-" + mapping + "-");
                 chain.doFilter(request, response);
@@ -821,7 +821,7 @@ public class ServletHandlerTest
         FilterMapping named = new FilterMapping();
         named.setFilterHolder(fooFilter);
         named.setServletName("foo");
-        handler.addFilter(fooFilter, named);
+        context.getServletHandler().addFilter(fooFilter, named);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);

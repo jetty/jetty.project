@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,21 +29,20 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.FilterMapping;
+import org.eclipse.jetty.ee9.servlet.ListenerHolder;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler.JspPropertyGroup;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler.TagLib;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.servlet.Source;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ListenerHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
-import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
-import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;
@@ -272,7 +271,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servletClass);
-                servletClass = "org.eclipse.jetty.servlet.NoJspServlet";
+                servletClass = "org.eclipse.jetty.ee9.servlet.NoJspServlet";
             }
         }
 
@@ -741,7 +740,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!name.equals(SessionHandler.getSessionCookieName(context.getSessionHandler().getSessionCookieConfig())))
+                        if (!name.equals(context.getSessionHandler().getSessionCookieConfig().getName()))
                             throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
                         break;
                     }

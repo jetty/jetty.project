@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 
 /**
  * The default implementation of UserIdentity.

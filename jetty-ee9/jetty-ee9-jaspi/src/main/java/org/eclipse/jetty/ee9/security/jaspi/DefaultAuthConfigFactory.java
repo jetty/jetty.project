@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.util.ArrayList;
 import java.util.List;

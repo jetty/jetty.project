@@ -11,15 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -27,6 +28,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -34,11 +37,12 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -52,7 +56,8 @@ public class PriorKnowledgeHTTP2OverTLSTest
 {
     private Server server;
     private ServerConnector connector;
-    private HTTP2Client client;
+    private HTTP2Client http2Client;
+    private HttpClient httpClient;
 
     private void start(Handler handler) throws Exception
     {
@@ -82,15 +87,17 @@ public class PriorKnowledgeHTTP2OverTLSTest
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSslContextFactory(newClientSslContextFactory());
-        client = new HTTP2Client(clientConnector);
-        client.setUseALPN(false);
-        client.start();
+        http2Client = new HTTP2Client(clientConnector);
+        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2Client);
+        transport.setUseALPN(false);
+        httpClient = new HttpClient(transport);
+        httpClient.start();
     }
 
     @AfterEach
     public void dispose() throws Exception
     {
-        LifeCycle.stop(client);
+        LifeCycle.stop(httpClient);
         LifeCycle.stop(server);
     }
 
@@ -118,21 +125,21 @@ public class PriorKnowledgeHTTP2OverTLSTest
     }
 
     @Test
-    public void testDirectHTTP2OverTLS() throws Exception
+    public void testDirectHTTP2OverTLSWithHTTP2Client() throws Exception
     {
         // The client knows a priori that the server speaks h2 on a particular port.
 
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
 
         int port = connector.getLocalPort();
-        MetaData.Response response = client.connect(client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener.Adapter())
+        MetaData.Response response = http2Client.connect(http2Client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener.Adapter())
             .thenCompose(session ->
             {
                 CompletableFuture<MetaData.Response> responsePromise = new CompletableFuture<>();
@@ -152,6 +159,28 @@ public class PriorKnowledgeHTTP2OverTLSTest
                 }).thenCompose(stream -> responsePromise);
             })
             .get(5, TimeUnit.SECONDS);
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testDirectHTTP2OverTLSWithHttpClient() throws Exception
+    {
+        // The client knows a priori that the server speaks h2 on a particular port.
+
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
@@ -27,9 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -37,8 +35,11 @@ import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -271,10 +272,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(303);
-                response.setHeader("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
+                response.getHeaders().put("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
             }
         });
 
@@ -439,23 +440,23 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void testRedirectWithCorruptedBody(Scenario scenario) throws Exception
     {
         byte[] bytes = "ok".getBytes(StandardCharsets.UTF_8);
-        start(scenario, new EmptyServerHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (target.startsWith("/redirect"))
+                if (request.getPathInContext().startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
+                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
-                    response.getOutputStream().write("redirect".getBytes(StandardCharsets.UTF_8));
+                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                    response.write(true, callback, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)));
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.getOutputStream().write(bytes);
+                    response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
         });
@@ -477,10 +478,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(HttpStatus.SEE_OTHER_303);
-                response.setHeader(HttpHeader.LOCATION.asString(), request.getRequestURI());
+                response.getHeaders().put(HttpHeader.LOCATION, request.getHttpURI().asString());
             }
         });
 
@@ -499,13 +500,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 try
                 {
                     Thread.sleep(200);
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), "/" + counter.getAndIncrement());
+                    response.getHeaders().put(HttpHeader.LOCATION, "/" + counter.getAndIncrement());
                 }
                 catch (InterruptedException x)
                 {
@@ -534,48 +535,35 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
+                String target = request.getPathInContext();
                 if ("/one".equals(target))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
+                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
                 }
                 else if ("/two".equals(target))
                 {
-                    try
-                    {
-                        // Send another request to "localhost", therefore reusing the
-                        // connection used for the first request, it must timeout.
-                        CountDownLatch latch = new CountDownLatch(1);
-                        client.newRequest("localhost", connector.getLocalPort())
-                            .scheme(scenario.getScheme())
-                            .path("/three")
-                            .timeout(timeout, TimeUnit.MILLISECONDS)
-                            .send(result ->
-                            {
-                                if (result.getFailure() instanceof TimeoutException)
-                                    latch.countDown();
-                            });
-                        // Wait for the request to fail as it should.
-                        assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
-                    }
-                    catch (Throwable x)
-                    {
-                        throw new ServletException(x);
-                    }
+                    // Send another request to "localhost", therefore reusing the
+                    // connection used for the first request, it must timeout.
+                    CountDownLatch latch = new CountDownLatch(1);
+                    client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scenario.getScheme())
+                        .path("/three")
+                        .timeout(timeout, TimeUnit.MILLISECONDS)
+                        .send(result ->
+                        {
+                            if (result.getFailure() instanceof TimeoutException)
+                                latch.countDown();
+                        });
+                    // Wait for the request to fail as it should.
+                    assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
                 }
                 else if ("/three".equals(target))
                 {
-                    try
-                    {
-                        // The third request must timeout.
-                        Thread.sleep(2 * timeout);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        throw new ServletException(x);
-                    }
+                    // The third request must timeout.
+                    Thread.sleep(2 * timeout);
                 }
             }
         });
@@ -597,31 +585,25 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                try
+                String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
+                String target = request.getPathInContext();
+                if ("/one".equals(target))
                 {
-                    String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
-                    if ("/one".equals(target))
-                    {
-                        Thread.sleep(timeout);
-                        response.setStatus(HttpStatus.SEE_OTHER_303);
-                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/two");
-                    }
-                    else if ("/two".equals(target))
-                    {
-                        Thread.sleep(timeout);
-                        response.setStatus(HttpStatus.SEE_OTHER_303);
-                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/three");
-                    }
-                    else if ("/three".equals(target))
-                    {
-                        Thread.sleep(2 * timeout);
-                    }
+                    Thread.sleep(timeout);
+                    response.setStatus(HttpStatus.SEE_OTHER_303);
+                    response.getHeaders().put(HttpHeader.LOCATION, serverURI + "/two");
                 }
-                catch (InterruptedException x)
+                else if ("/two".equals(target))
                 {
-                    throw new ServletException(x);
+                    Thread.sleep(timeout);
+                    response.setStatus(HttpStatus.SEE_OTHER_303);
+                    response.getHeaders().put(HttpHeader.LOCATION, serverURI + "/three");
+                }
+                else if ("/three".equals(target))
+                {
+                    Thread.sleep(2 * timeout);
                 }
             }
         });
@@ -688,34 +670,38 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     private static class RedirectHandler extends EmptyServerHandler
     {
         @Override
-        protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
         {
             try
             {
-                String[] paths = target.split("/", 4);
+                Fields fields = Request.extractQueryParameters(request);
+
+                String[] paths = request.getPathInContext().split("/", 4);
 
                 int status = Integer.parseInt(paths[1]);
                 response.setStatus(status);
 
                 String host = paths[2];
                 String path = paths[3];
-                boolean relative = Boolean.parseBoolean(request.getParameter("relative"));
-                String location = relative ? "" : request.getScheme() + "://" + host + ":" + request.getServerPort();
+                boolean relative = Boolean.parseBoolean(fields.getValue("relative"));
+                String location = relative ? "" : request.getHttpURI().getScheme() + "://" + host + ":" + Request.getServerPort(request);
                 location += "/" + path;
 
-                if (Boolean.parseBoolean(request.getParameter("decode")))
-                    location = URLDecoder.decode(location, "UTF-8");
+                if (Boolean.parseBoolean(fields.getValue("decode")))
+                    location = URLDecoder.decode(location, StandardCharsets.UTF_8);
 
-                response.setHeader("Location", location);
+                response.getHeaders().put("Location", location);
 
-                if (Boolean.parseBoolean(request.getParameter("close")))
-                    response.setHeader("Connection", "close");
+                if (Boolean.parseBoolean(fields.getValue("close")))
+                    response.getHeaders().put("Connection", "close");
             }
             catch (NumberFormatException x)
             {
                 response.setStatus(200);
                 // Echo content back
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                InputStream inputStream = Request.asInputStream(request);
+                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                IO.copy(inputStream, outputStream);
             }
         }
     }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,10 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -68,7 +64,7 @@ public class TestAnnotationParser
         }
 
         @Override
-        public void handle(ClassInfo info, String annotation)
+        public void handle(AnnotationParser.ClassInfo info, String annotation)
         {
             if (annotation == null || !annotationName.equals(annotation))
                 return;
@@ -81,7 +77,7 @@ public class TestAnnotationParser
         private Map<String, List<String>> _classMap = new ConcurrentHashMap();
 
         @Override
-        public void handle(ClassInfo info)
+        public void handle(AnnotationParser.ClassInfo info)
         {
             List<String> list = new CopyOnWriteArrayList<>();
             Resource r = info.getContainingResource();
@@ -113,7 +109,7 @@ public class TestAnnotationParser
             private List<String> methods = Arrays.asList("a", "b", "c", "d", "l");
 
             @Override
-            public void handle(ClassInfo info, String annotation)
+            public void handle(AnnotationParser.ClassInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
@@ -122,7 +118,7 @@ public class TestAnnotationParser
             }
 
             @Override
-            public void handle(FieldInfo info, String annotation)
+            public void handle(AnnotationParser.FieldInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
@@ -131,7 +127,7 @@ public class TestAnnotationParser
             }
 
             @Override
-            public void handle(MethodInfo info, String annotation)
+            public void handle(AnnotationParser.MethodInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
@@ -157,7 +153,7 @@ public class TestAnnotationParser
         class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
         {
             @Override
-            public void handle(ClassInfo info, String annotation)
+            public void handle(AnnotationParser.ClassInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
                     return;
@@ -165,14 +161,14 @@ public class TestAnnotationParser
             }
 
             @Override
-            public void handle(FieldInfo info, String annotation)
+            public void handle(AnnotationParser.FieldInfo info, String annotation)
             {
                 assertTrue(annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation),
                     "There should not be any");
             }
 
             @Override
-            public void handle(MethodInfo info, String annotation)
+            public void handle(AnnotationParser.MethodInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
                     return;
@@ -189,7 +185,7 @@ public class TestAnnotationParser
     {
         File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
-        Set<Handler> emptySet = Collections.emptySet();
+        Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
         // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
     }
@@ -199,7 +195,7 @@ public class TestAnnotationParser
     {
         File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/slf4j-api-1.8.0-alpha2.jar");
         AnnotationParser parser = new AnnotationParser();
-        Set<Handler> emptySet = Collections.emptySet();
+        Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
         // Should throw no exceptions, and happily skip the module-info.class files
     }
@@ -209,7 +205,7 @@ public class TestAnnotationParser
     {
         File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/log4j-api-2.9.0.jar");
         AnnotationParser parser = new AnnotationParser();
-        Set<Handler> emptySet = Collections.emptySet();
+        Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
         // Should throw no exceptions, and skip the META-INF/versions/9/* files
     }
@@ -220,7 +216,7 @@ public class TestAnnotationParser
         File jdk10Jar = MavenTestingUtils.getTestResourceFile("jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<Handler> handlers = Collections.singleton(handler);
+        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, new PathResource(jdk10Jar));
         // Should throw no exceptions
     }
@@ -259,7 +255,7 @@ public class TestAnnotationParser
         Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar"));
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<Handler> handlers = Collections.singleton(handler);
+        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, testJar);
         parser.parse(handlers, testJar2);
         List<String> locations = handler.getParsedList("org.acme.ClassOne");
@@ -275,7 +271,7 @@ public class TestAnnotationParser
         File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<Handler> handlers = Collections.singleton(handler);
+        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, testJar);
         parser.parse(handlers, Resource.newResource(testClasses));
         List<String> locations = handler.getParsedList("org.acme.ClassOne");

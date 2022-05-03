@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.generator;
+package org.eclipse.jetty.http2.internal.generator;
 
 import java.nio.ByteBuffer;
 

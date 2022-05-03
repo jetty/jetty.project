@@ -120,7 +120,7 @@ In this example, we'll configure a link:http://db.apache.org/derby[Derby] DataSo
 
 [source,xml,subs=verbatim]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/myds</Arg>
@@ -166,7 +166,7 @@ Here is an example of binding an link:http://activemq.apache.org[ActiveMQ] in-JV
 
 [source,xml,subs=verbatim]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jms/connectionFactory</Arg>
@@ -202,7 +202,7 @@ To configure access to `javax.mail.Session` from within a webapp, declare an `or
 
 [source,xml,subs=verbatim]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>mail/Session</Arg>
@@ -277,7 +277,7 @@ The context XML file declares `jdbc/workforce`:
 
 [source,xml,subs=verbatim]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/workforce</Arg>
@@ -374,7 +374,7 @@ For example:
 <1> We refer to the id `Server` which identifies the default `org.eclipse.jetty.server.Server` instance.
 
 *Webapp scope:*
-The name is unique to the `org.eclipse.jetty.webapp.WebAppContext` instance, and is only visible to that application.
+The name is unique to the `org.eclipse.jetty.ee9.webapp.WebAppContext` instance, and is only visible to that application.
 This scope is represented by referencing the instance as the first parameter to the resource declaration.
 For example:
 [source,xml,subs=verbatim]
@@ -389,4 +389,4 @@ For example:
   </Arg>
 </New>
 ----
-<1> We refer to an instance of an `org.eclipse.jetty.webapp.WebAppContext` which has been previously defined.
+<1> We refer to an instance of an `org.eclipse.jetty.ee9.webapp.WebAppContext` which has been previously defined.

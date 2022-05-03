@@ -13,16 +13,10 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.List;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 
 /**
  * <p> Rewrite handler is responsible for managing the rules. Its capabilities
@@ -31,8 +25,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * whenever the rule finds a match.
  *
  * <p> The rules can be matched by the either: pattern matching of @{@link org.eclipse.jetty.http.pathmap.ServletPathSpec}
- * (eg {@link PatternRule}), regular expressions (eg {@link RegexRule}) or certain conditions set
- * (eg {@link MsieSslRule} - the requests must be in SSL mode).
+ * (eg {@link PatternRule}), regular expressions (eg {@link RegexRule}) or custom logic.
  *
  * <p> The rules can be grouped into rule containers (class {@link RuleContainer}), and will only
  * be applied if the request matches the conditions for their container
@@ -46,7 +39,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * <li> {@link ResponsePatternRule} - sets the status/error codes. </li>
  * <li> {@link RewritePatternRule} - rewrites the requested URI. </li>
  * <li> {@link RewriteRegexRule} - rewrites the requested URI using regular expression for pattern matching. </li>
- * <li> {@link MsieSslRule} - disables the keep alive on SSL for IE5 and IE6. </li>
  * <li> {@link ForwardedSchemeHeaderRule} - set the scheme according to the headers present. </li>
  * <li> {@link VirtualHostRuleContainer} - checks whether the request matches one of a set of virtual host names.</li>
  * </ul>
@@ -160,14 +152,18 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *     &lt;/Set&gt;
  * </pre>
  */
-public class RewriteHandler extends HandlerWrapper
+public class RewriteHandler extends Handler.Wrapper
 {
-    private RuleContainer _rules;
-    private EnumSet<DispatcherType> _dispatchTypes = EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC);
+    private final RuleContainer _rules;
 
     public RewriteHandler()
     {
-        _rules = new RuleContainer();
+        this(new RuleContainer());
+    }
+
+    public RewriteHandler(RuleContainer rules)
+    {
+        _rules = rules;
         addBean(_rules);
     }
 
@@ -176,7 +172,7 @@ public class RewriteHandler extends HandlerWrapper
      *
      * @return an array of {@link Rule}.
      */
-    public Rule[] getRules()
+    public List<Rule> getRules()
     {
         return _rules.getRules();
     }
@@ -186,25 +182,9 @@ public class RewriteHandler extends HandlerWrapper
      *
      * @param rules an array of {@link Rule}.
      */
-    public void setRules(Rule[] rules)
+    public void setRules(List<Rule> rules)
     {
         _rules.setRules(rules);
-    }
-
-    /**
-     * Assigns the rules to process.
-     *
-     * @param rules a {@link RuleContainer} containing other rules to process
-     */
-    public void setRuleContainer(RuleContainer rules)
-    {
-        updateBean(_rules, rules);
-        _rules = rules;
-    }
-
-    public RuleContainer getRuleContainer()
-    {
-        return _rules;
     }
 
     /**
@@ -218,43 +198,7 @@ public class RewriteHandler extends HandlerWrapper
     }
 
     /**
-     * @return the rewriteRequestURI If true, this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getRequestURI()}.
-     */
-    public boolean isRewriteRequestURI()
-    {
-        return _rules.isRewriteRequestURI();
-    }
-
-    /**
-     * @param rewriteRequestURI true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getRequestURI()}.
-     */
-    public void setRewriteRequestURI(boolean rewriteRequestURI)
-    {
-        _rules.setRewriteRequestURI(rewriteRequestURI);
-    }
-
-    /**
-     * @return true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getPathInfo()}.
-     */
-    public boolean isRewritePathInfo()
-    {
-        return _rules.isRewritePathInfo();
-    }
-
-    /**
-     * @param rewritePathInfo true if this handler will rewrite the value
-     * returned by {@link HttpServletRequest#getPathInfo()}.
-     */
-    public void setRewritePathInfo(boolean rewritePathInfo)
-    {
-        _rules.setRewritePathInfo(rewritePathInfo);
-    }
-
-    /**
-     * @return the originalPathAttribte. If non null, this string will be used
+     * @return the originalPathAttribute. If non null, this string will be used
      * as the attribute name to store the original request path.
      */
     public String getOriginalPathAttribute()
@@ -271,34 +215,20 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setOriginalPathAttribute(originalPathAttribute);
     }
 
-    public EnumSet<DispatcherType> getDispatcherTypes()
-    {
-        return _dispatchTypes;
-    }
-
-    public void setDispatcherTypes(EnumSet<DispatcherType> types)
-    {
-        _dispatchTypes = EnumSet.copyOf(types);
-    }
-
-    public void setDispatcherTypes(DispatcherType... types)
-    {
-        _dispatchTypes = EnumSet.copyOf(Arrays.asList(types));
-    }
-
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        if (isStarted())
-        {
-            if (_dispatchTypes.contains(baseRequest.getDispatcherType()))
-            {
-                String returned = _rules.matchAndApply(target, request, response);
-                target = (returned == null) ? target : returned;
-            }
+        if (!isStarted())
+            return null;
 
-            if (!baseRequest.isHandled())
-                super.handle(target, baseRequest, request, response);
-        }
+        Request.WrapperProcessor input = new Request.WrapperProcessor(request);
+        Request.WrapperProcessor output = _rules.matchAndApply(input);
+
+        // No rule matched, call super with the original request.
+        if (output == null)
+            return super.handle(request);
+
+        // At least one rule matched, call super with the result of the rule applications.
+        return output.wrapProcessor(super.handle(output));
     }
 }

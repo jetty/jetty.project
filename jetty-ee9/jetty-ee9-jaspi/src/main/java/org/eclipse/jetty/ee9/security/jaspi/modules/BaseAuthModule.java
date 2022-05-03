@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi.modules;
+package org.eclipse.jetty.ee9.security.jaspi.modules;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,9 +33,9 @@ import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
-import org.eclipse.jetty.security.jaspi.JaspiMessageInfo;
-import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
+import org.eclipse.jetty.ee9.security.authentication.LoginCallbackImpl;
+import org.eclipse.jetty.ee9.security.jaspi.JaspiMessageInfo;
+import org.eclipse.jetty.ee9.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 

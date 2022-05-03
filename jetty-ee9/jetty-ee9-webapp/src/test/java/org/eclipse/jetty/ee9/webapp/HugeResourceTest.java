@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,15 +41,15 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -100,7 +100,7 @@ public class HugeResourceTest
 
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
         makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
-        makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
+        // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
@@ -115,7 +115,7 @@ public class HugeResourceTest
 
         ret.add(Arguments.of("test-1g.dat", GB));
         ret.add(Arguments.of("test-4g.dat", 4 * GB));
-        ret.add(Arguments.of("test-10g.dat", 10 * GB));
+        // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
     }
@@ -198,7 +198,7 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
         server.start();
     }
 

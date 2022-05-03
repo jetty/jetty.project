@@ -23,14 +23,14 @@ For a more in-depth look at the syntax, see xref:jetty-xml-syntax[].
 [[root-element-jetty-web-xml]]
 ==== Root Element
 
-`jetty-web.xml` applies on a per-webapp basis, and configures an instance of `org.eclipse.jetty.webapp.WebAppContext`.
+`jetty-web.xml` applies on a per-webapp basis, and configures an instance of `org.eclipse.jetty.ee9.webapp.WebAppContext`.
 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
  ..
 </Configure>
 ----

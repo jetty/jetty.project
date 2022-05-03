@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -26,11 +26,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -75,7 +75,7 @@ public class Invoker extends HttpServlet
     public void init()
     {
         ServletContext config = getServletContext();
-        _contextHandler = ((ContextHandler.Context)config).getContextHandler();
+        _contextHandler = ((ContextHandler.APIContext)config).getContextHandler();
 
         Handler handler = _contextHandler.getHandler();
         while (handler != null && !(handler instanceof ServletHandler) && (handler instanceof HandlerWrapper))

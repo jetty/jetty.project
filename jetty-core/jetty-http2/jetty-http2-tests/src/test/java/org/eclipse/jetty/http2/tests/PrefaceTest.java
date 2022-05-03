@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,17 +36,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -90,7 +91,7 @@ public class PrefaceTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener.Adapter()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -146,7 +147,7 @@ public class PrefaceTest extends AbstractTest
             }
         });
 
-        ByteBufferPool byteBufferPool = client.getByteBufferPool();
+        ByteBufferPool byteBufferPool = http2Client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
@@ -161,15 +162,22 @@ public class PrefaceTest extends AbstractTest
             generator.control(lease, new PingFrame(true));
 
             List<ByteBuffer> buffers = lease.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
+            socket.write(buffers.toArray(new ByteBuffer[0]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
+            AtomicBoolean closed = new AtomicBoolean();
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
                 {
                     settings.offer(frame);
+                }
+
+                @Override
+                public void onGoAway(GoAwayFrame frame)
+                {
+                    closed.set(true);
                 }
             }, 4096, 8192);
             parser.init(UnaryOperator.identity());
@@ -179,10 +187,12 @@ public class PrefaceTest extends AbstractTest
             {
                 BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
                 if (read < 0)
                     break;
+                BufferUtil.flipToFlush(buffer, 0);
                 parser.parse(buffer);
+                if (closed.get())
+                    break;
             }
 
             assertEquals(2, settings.size());
@@ -288,7 +298,7 @@ public class PrefaceTest extends AbstractTest
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(lease, new SettingsFrame(clientSettings, false));
             List<ByteBuffer> buffers = lease.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
+            socket.write(buffers.toArray(new ByteBuffer[0]));
 
             // However, we should not call onPreface() again.
             assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));
@@ -340,12 +350,12 @@ public class PrefaceTest extends AbstractTest
         try (ServerSocket server = new ServerSocket(0))
         {
             prepareClient();
-            client.start();
+            http2Client.start();
 
             CountDownLatch failureLatch = new CountDownLatch(1);
             Promise.Completable<Session> promise = new Promise.Completable<>();
             InetSocketAddress address = new InetSocketAddress("localhost", server.getLocalPort());
-            client.connect(address, new Session.Listener.Adapter()
+            http2Client.connect(address, new Session.Listener.Adapter()
             {
                 @Override
                 public void onFailure(Session session, Throwable failure)

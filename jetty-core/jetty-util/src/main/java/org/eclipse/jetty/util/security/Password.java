@@ -29,7 +29,7 @@ import java.util.Locale;
  * </pre>
  *
  * Passwords that begin with OBF: are de obfuscated. Passwords can be obfuscated
- * by run {@link org.eclipse.jetty.util.security.Password} as a main class. Obfuscated password are
+ * by run org.eclipse.util.Password as a main class. Obfuscated password are
  * required if a system needs to recover the full password (eg. so that it may
  * be passed to another system). They are not secure, but prevent casual
  * observation.

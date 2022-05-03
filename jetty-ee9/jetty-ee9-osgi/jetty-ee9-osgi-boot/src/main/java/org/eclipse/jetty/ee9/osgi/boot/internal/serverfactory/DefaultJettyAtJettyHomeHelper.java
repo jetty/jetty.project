@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.serverfactory;
+package org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
-import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.ee9.osgi.boot.utils.OSGiClassLoader;
+import org.eclipse.jetty.ee9.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;

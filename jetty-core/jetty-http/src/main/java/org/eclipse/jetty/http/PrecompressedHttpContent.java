@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -40,15 +38,9 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public int hashCode()
+    public Path getPath()
     {
-        return _content.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        return _content.equals(obj);
+        return _content.getPath();
     }
 
     @Override
@@ -66,7 +58,8 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return _content.getResource().getWeakETag(_format.getEtagSuffix());
+        //return _content.getResource().getWeakETag(_format.getEtagSuffix());
+        return null;
     }
 
     @Override
@@ -118,24 +111,6 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public void release()
-    {
-        _content.release();
-    }
-
-    @Override
-    public ByteBuffer getIndirectBuffer()
-    {
-        return _precompressedContent.getIndirectBuffer();
-    }
-
-    @Override
-    public ByteBuffer getDirectBuffer()
-    {
-        return _precompressedContent.getDirectBuffer();
-    }
-
-    @Override
     public HttpField getContentLength()
     {
         return _precompressedContent.getContentLength();
@@ -148,25 +123,14 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
-    {
-        return _precompressedContent.getInputStream();
-    }
-
-    @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return _precompressedContent.getReadableByteChannel();
-    }
-
-    @Override
     public String toString()
     {
         return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
             this.getClass().getSimpleName(), hashCode(),
             _format,
-            _content.getResource(), _precompressedContent.getResource(),
-            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            _content.getPath(), _precompressedContent.getPath(),
+//            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            0L, 0L,
             getContentType());
     }
 
@@ -174,5 +138,17 @@ public class PrecompressedHttpContent implements HttpContent
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return null;
+    }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        return _content.getBuffer();
+    }
+
+    @Override
+    public void release()
+    {
+        _content.release();
     }
 }

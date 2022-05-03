@@ -18,8 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
@@ -28,14 +26,16 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -54,7 +54,7 @@ public class ConscryptHTTP2ServerTest
         Security.addProvider(new OpenSSLProvider());
     }
 
-    private Server server = new Server();
+    private final Server server = new Server();
 
     private SslContextFactory.Server newServerSslContextFactory()
     {
@@ -105,13 +105,12 @@ public class ConscryptHTTP2ServerTest
         http2Connector.setPort(0);
         server.addConnector(http2Connector);
 
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setStatus(200);
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
 
@@ -121,8 +120,7 @@ public class ConscryptHTTP2ServerTest
     @AfterEach
     public void stopServer() throws Exception
     {
-        if (server != null)
-            server.stop();
+        server.stop();
     }
 
     @Test

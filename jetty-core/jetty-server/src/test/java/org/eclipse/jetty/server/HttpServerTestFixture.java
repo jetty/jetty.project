@@ -13,33 +13,24 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HotSwapHandler;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
-
-    // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
@@ -65,20 +56,12 @@ public class HttpServerTestFixture
         _server = new Server(_threadPool);
     }
 
-    protected void startServer(ServerConnector connector) throws Exception
-    {
-        startServer(connector, new HotSwapHandler());
-    }
-
-    protected void startServer(ServerConnector connector, Handler handler) throws Exception
+    protected void initServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
-        _server.setHandler(handler);
-        _server.start();
-        _serverURI = _server.getURI();
     }
 
     @AfterEach
@@ -89,110 +72,41 @@ public class HttpServerTestFixture
         _server.setConnectors(new Connector[]{});
     }
 
-    protected void configureServer(Handler handler) throws Exception
+    protected void startServer(Handler handler) throws Exception
     {
-        HotSwapHandler swapper = (HotSwapHandler)_server.getHandler();
-        swapper.setHandler(handler);
-        handler.start();
+        _server.setHandler(handler);
+        _server.start();
+        _serverURI = _server.getURI();
     }
 
-    protected static class EchoHandler extends AbstractHandler
-    {
-        boolean _musthavecontent = true;
-
-        public EchoHandler()
-        {
-        }
-
-        public EchoHandler(boolean content)
-        {
-            _musthavecontent = false;
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            LOG.debug("handle " + target);
-            baseRequest.setHandled(true);
-
-            if (request.getContentType() != null)
-                response.setContentType(request.getContentType());
-            if (request.getParameter("charset") != null)
-                response.setCharacterEncoding(request.getParameter("charset"));
-            else if (request.getCharacterEncoding() != null)
-                response.setCharacterEncoding(request.getCharacterEncoding());
-
-            PrintWriter writer = response.getWriter();
-
-            int count = 0;
-            BufferedReader reader = request.getReader();
-
-            if (request.getContentLength() != 0)
-            {
-                String line = reader.readLine();
-                while (line != null)
-                {
-                    writer.print(line);
-                    writer.print("\n");
-                    count += line.length();
-                    line = reader.readLine();
-                }
-            }
-
-            if (count == 0)
-            {
-                if (_musthavecontent)
-                    throw new IllegalStateException("no input received");
-
-                writer.println("No content");
-            }
-
-            // just to be difficult
-            reader.close();
-            writer.close();
-
-            if (reader.read() >= 0)
-                throw new IllegalStateException("Not closed");
-
-            LOG.debug("handled " + target);
-        }
-    }
-
-    protected static class OptionsHandler extends AbstractHandler
+    protected static class OptionsHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback)
         {
-            baseRequest.setHandled(true);
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
                 response.setStatus(500);
-
-            response.setHeader("Allow", "GET");
+            response.getHeaders().put("Allow", "GET");
+            callback.succeeded();
         }
     }
 
-    protected static class HelloWorldHandler extends AbstractHandler
+    protected static class HelloWorldHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            response.getOutputStream().print("Hello world\r\n");
+            response.write(true, callback, "Hello world\r\n");
         }
     }
 
-    protected static class SendErrorHandler extends AbstractHandler
+    protected static class SendErrorHandler extends Handler.Processor
     {
         private final int code;
         private final String message;
-
-        public SendErrorHandler()
-        {
-            this(500, null);
-        }
 
         public SendErrorHandler(int code, String message)
         {
@@ -201,16 +115,15 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback)
         {
-            baseRequest.setHandled(true);
-            response.sendError(code, message);
+            Response.writeError(request, response, callback, code, message);
         }
     }
 
-    protected static class ReadExactHandler extends AbstractHandler
+    protected static class ReadExactHandler extends Handler.Processor
     {
-        private int expected;
+        private final int expected;
 
         public ReadExactHandler()
         {
@@ -223,66 +136,80 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
-            int len = expected < 0 ? request.getContentLength() : expected;
+            long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
-            byte[] content = new byte[len];
+            byte[] content = new byte[(int)len];
             int offset = 0;
             while (offset < len)
             {
-                int read = request.getInputStream().read(content, offset, len - offset);
-                if (read < 0)
+                Content c = request.readContent();
+                if (c == null)
+                {
+                    try (Blocking.Runnable blocker = Blocking.runnable())
+                    {
+                        request.demandContent(blocker);
+                        blocker.block();
+                    }
+                    continue;
+                }
+
+                if (c.hasRemaining())
+                {
+                    int r = c.remaining();
+                    c.fill(content, offset, r);
+                    offset += r;
+                    c.release();
+                }
+
+                if (c.isLast())
                     break;
-                offset += read;
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
-            response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
+            response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
 
-    protected static class ReadHandler extends AbstractHandler
+    protected static class ReadHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback)
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-
-            try
-            {
-                InputStream in = request.getInputStream();
-                String input = IO.toString(in);
-                response.getWriter().printf("read %d%n", input.length());
-            }
-            catch (Exception e)
-            {
-                response.getWriter().printf("caught %s%n", e);
-            }
+            Content.readAll(request, Promise.from(
+                s -> response.write(true, callback, "read %d%n" + s.length()),
+                t -> response.write(true, callback, String.format("caught %s%n", t))
+            ));
         }
     }
 
-    protected static class DataHandler extends AbstractHandler
+    protected static class DataHandler extends Handler.Processor
     {
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public DataHandler()
         {
-            baseRequest.setHandled(true);
+            super(InvocationType.BLOCKING);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
             response.setStatus(200);
 
-            InputStream in = request.getInputStream();
-            String input = IO.toString(in);
+            String input = Content.readAll(request);
+            Fields fields = Request.extractQueryParameters(request);
 
-            String tmp = request.getParameter("writes");
+            String tmp = fields.getValue("writes");
             int writes = Integer.parseInt(tmp == null ? "10" : tmp);
-            tmp = request.getParameter("block");
+            tmp = fields.getValue("block");
             int block = Integer.parseInt(tmp == null ? "10" : tmp);
-            String encoding = request.getParameter("encoding");
-            String chars = request.getParameter("chars");
+            String encoding = fields.getValue("encoding");
+            String chars = fields.getValue("chars");
+            if (chars != null)
+                throw new IllegalStateException("chars no longer supported"); // TODO remove
 
             String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             while (data.length() < block)
@@ -291,39 +218,33 @@ public class HttpServerTestFixture
             }
 
             String chunk = (input + data).substring(0, block);
-            response.setContentType("text/plain");
             if (encoding == null)
             {
-                byte[] bytes = chunk.getBytes(StandardCharsets.ISO_8859_1);
-                OutputStream out = response.getOutputStream();
-                for (int i = 0; i < writes; i++)
+                response.setContentType("text/plain");
+                ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
+                for (int i = writes; i-- > 0;)
                 {
-                    out.write(bytes);
-                }
-            }
-            else if ("true".equals(chars))
-            {
-                response.setCharacterEncoding(encoding);
-                PrintWriter out = response.getWriter();
-                char[] c = chunk.toCharArray();
-                for (int i = 0; i < writes; i++)
-                {
-                    out.write(c);
-                    if (out.checkError())
-                        break;
+                    try (Blocking.Callback blocker = Blocking.callback())
+                    {
+                        response.write(i == 0, blocker, bytes.slice());
+                        blocker.block();
+                    }
                 }
             }
             else
             {
-                response.setCharacterEncoding(encoding);
-                PrintWriter out = response.getWriter();
-                for (int i = 0; i < writes; i++)
+                response.setContentType("text/plain;charset=" + encoding);
+                ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
+                for (int i = writes; i-- > 0;)
                 {
-                    out.write(chunk);
-                    if (out.checkError())
-                        break;
+                    try (Blocking.Callback blocker = Blocking.callback())
+                    {
+                        response.write(i == 0, blocker, bytes.slice());
+                        blocker.block();
+                    }
                 }
             }
+            callback.succeeded();
         }
     }
 }

@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
@@ -34,7 +32,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 public class RFC8441Handshaker extends AbstractHandshaker
 {
     @Override
-    protected boolean validateRequest(HttpServletRequest request)
+    protected boolean validateRequest(Request request)
     {
         if (!HttpMethod.CONNECT.is(request.getMethod()))
         {
@@ -43,7 +41,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
             return false;
         }
 
-        if (!HttpVersion.HTTP_2.is(request.getProtocol()))
+        if (!HttpVersion.HTTP_2.is(request.getConnectionMetaData().getProtocol()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded HttpVersion!=2 {}", request);
@@ -54,31 +52,17 @@ public class RFC8441Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    protected WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
-        return new RFC8441Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
-    }
-
-    @Override
-    protected boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response)
-    {
-        if (frameHandler == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no frame handler provided");
-
-            response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
-        }
-
-        return true;
+        return new RFC8441Negotiation(request, response, callback, webSocketComponents);
     }
 
     @Override
     protected WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession)
     {
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        Connector connector = httpChannel.getConnector();
-        EndPoint endPoint = httpChannel.getTunnellingEndPoint();
+        ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
+        Connector connector = connectionMetaData.getConnector();
+        EndPoint endPoint = null; // TODO: connectionMetaData.getTunnellingEndPoint();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
         RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, byteBufferPool);
         return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, retainableByteBufferPool, coreSession);

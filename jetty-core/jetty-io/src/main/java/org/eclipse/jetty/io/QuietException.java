@@ -20,4 +20,26 @@ package org.eclipse.jetty.io;
  */
 public interface QuietException
 {
+    class Exception extends java.lang.Exception implements QuietException
+    {
+        public Exception()
+        {
+            super();
+        }
+
+        public Exception(String message)
+        {
+            super(message);
+        }
+
+        public Exception(String message, Throwable cause)
+        {
+            super(message, cause);
+        }
+
+        public Exception(Throwable cause)
+        {
+            super(cause);
+        }
+    }
 }

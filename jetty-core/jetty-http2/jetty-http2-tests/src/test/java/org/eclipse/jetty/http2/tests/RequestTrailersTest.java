@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -73,7 +73,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         if (content != null)
@@ -113,7 +113,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
@@ -162,7 +162,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();

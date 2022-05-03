@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

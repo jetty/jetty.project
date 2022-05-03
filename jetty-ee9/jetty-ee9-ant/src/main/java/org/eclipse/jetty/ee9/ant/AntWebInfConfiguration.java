@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 
 public class AntWebInfConfiguration extends WebInfConfiguration
 {

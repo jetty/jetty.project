@@ -14,94 +14,69 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.server.Request;
 
 /**
- * Groups rules that apply only to a specific virtual host
- * or sets of virtual hosts
+ * <p>Groups rules that apply only to one or more specific virtual hosts.</p>
  */
-
 public class VirtualHostRuleContainer extends RuleContainer
 {
-    private String[] _virtualHosts;
+    private final List<String> _virtualHosts = new ArrayList<>();
 
     /**
-     * Set the virtual hosts that the rules within this container will apply to
-     *
-     * @param virtualHosts Array of virtual hosts that the rules within this container are applied to.
-     * A null hostname or null/empty array means any hostname is acceptable.
+     * @return the virtual hosts to match
      */
-    public void setVirtualHosts(String[] virtualHosts)
-    {
-        if (virtualHosts == null)
-        {
-            _virtualHosts = virtualHosts;
-        }
-        else
-        {
-            _virtualHosts = new String[virtualHosts.length];
-            for (int i = 0; i < virtualHosts.length; i++)
-            {
-                _virtualHosts[i] = normalizeHostname(virtualHosts[i]);
-            }
-        }
-    }
-
-    /**
-     * Get the virtual hosts that the rules within this container will apply to
-     *
-     * @return Array of virtual hosts that the rules within this container are applied to.
-     * A null hostname or null/empty array means any hostname is acceptable.
-     */
-    public String[] getVirtualHosts()
+    public List<String> getVirtualHosts()
     {
         return _virtualHosts;
     }
 
     /**
-     * @param virtualHost add a virtual host to the existing list of virtual hosts
-     * A null hostname means any hostname is acceptable
+     * <p>Sets the virtual hosts to match for the rules within this container to be applied.</p>
+     *
+     * @param virtualHosts the virtual hosts to match
      */
-    public void addVirtualHost(String virtualHost)
+    public void setVirtualHosts(List<String> virtualHosts)
     {
-        _virtualHosts = ArrayUtil.addToArray(_virtualHosts, virtualHost, String.class);
+        _virtualHosts.clear();
+        if (virtualHosts != null)
+            virtualHosts.forEach(this::addVirtualHost);
     }
 
     /**
-     * Process the contained rules if the request is applicable to the virtual hosts of this rule
-     *
-     * @param target target field to pass on to the contained rules
-     * @param request request object to pass on to the contained rules
-     * @param response response object to pass on to the contained rules
+     * @param virtualHost the virtual host to add to the existing list of virtual hosts
      */
-    @Override
-    public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void addVirtualHost(String virtualHost)
     {
-        if (_virtualHosts != null && _virtualHosts.length > 0)
+        _virtualHosts.add(normalizeHostName(virtualHost));
+    }
+
+    @Override
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    {
+        if (_virtualHosts.isEmpty())
+            return super.matchAndApply(input);
+
+        String serverName = Request.getServerName(input);
+        for (String virtualHost : getVirtualHosts())
         {
-            String requestHost = normalizeHostname(request.getServerName());
-            for (String ruleHost : _virtualHosts)
-            {
-                if (ruleHost == null ||
-                    ruleHost.equalsIgnoreCase(requestHost) ||
-                    (ruleHost.startsWith("*.") && ruleHost.regionMatches(true, 2, requestHost, requestHost.indexOf(".") + 1, ruleHost.length() - 2))
-                )
-                {
-                    return apply(target, request, response);
-                }
-            }
+            if (virtualHost == null || virtualHost.equalsIgnoreCase(serverName))
+                return super.matchAndApply(input);
+
+            // Handle case-insensitive wildcard host names.
+            if (virtualHost.startsWith("*.") &&
+                virtualHost.regionMatches(true, 2, serverName, serverName.indexOf(".") + 1, virtualHost.length() - 2))
+                return super.matchAndApply(input);
         }
-        else
-        {
-            return apply(target, request, response);
-        }
+
+        // No virtual host match, skip the other rules.
         return null;
     }
 
-    private String normalizeHostname(String host)
+    private String normalizeHostName(String host)
     {
         if (host == null)
             return null;

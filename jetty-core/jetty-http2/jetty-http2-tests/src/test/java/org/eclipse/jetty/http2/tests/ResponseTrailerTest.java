@@ -11,19 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.tests;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -34,7 +31,9 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -60,15 +59,17 @@ public class ResponseTrailerTest extends AbstractTest
 
     public void testEmptyTrailers(String data) throws Exception
     {
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 // Send empty response trailers.
-                response.setTrailerFields(HashMap::new);
+                response.getTrailers();
                 if (data != null)
-                    response.getOutputStream().write(data.getBytes(StandardCharsets.US_ASCII));
+                    response.write(true, callback, ByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)));
+                else
+                    callback.succeeded();
             }
         });
 

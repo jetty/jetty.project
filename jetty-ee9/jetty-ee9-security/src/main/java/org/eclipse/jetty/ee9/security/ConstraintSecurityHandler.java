@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,16 +32,16 @@ import jakarta.servlet.HttpMethodConstraintElement;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.security.Constraint;
@@ -570,7 +570,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * <li>Mappings with keys of the form "&lt;method&gt;.&lt;method&gt;.&lt;method&gt;.omission" that indicates it will match every method name EXCEPT those given</li>
      * </ol>
      *
-     * @see org.eclipse.jetty.security.SecurityHandler#prepareConstraintInfo(java.lang.String, org.eclipse.jetty.server.Request)
+     * @see SecurityHandler#prepareConstraintInfo(java.lang.String, Request)
      */
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)

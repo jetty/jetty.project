@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quickstart;
+package org.eclipse.jetty.ee9.quickstart;
 
 import java.util.Locale;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

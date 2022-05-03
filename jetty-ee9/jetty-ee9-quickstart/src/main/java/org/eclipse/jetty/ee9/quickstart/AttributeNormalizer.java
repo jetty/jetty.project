@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quickstart;
+package org.eclipse.jetty.ee9.quickstart;
 
 import java.io.File;
 import java.io.IOException;

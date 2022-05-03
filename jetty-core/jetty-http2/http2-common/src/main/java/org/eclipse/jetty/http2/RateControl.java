@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.io.EndPoint;
 

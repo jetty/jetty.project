@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -185,7 +186,7 @@ public class ResponseHeadersTest
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
-        String actualPathInfo = "%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--";
+        String actualPathInfo = "%0a%20Content-Type%3a%20image/png%0a%20Content-Length%3a%208%0A%20%0A%20yuck<!--";
 
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
@@ -202,8 +203,9 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
 
-        String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
-        expected = URLDecoder.decode(expected, "utf-8"); // decode the rest
+        String expected = StringUtil.replace(actualPathInfo, "%0a", " ");  // replace OBS fold with space
+        expected = StringUtil.replace(expected, "%0A", " "); // replace OBS fold with space
+        expected = URLDecoder.decode(expected, StandardCharsets.UTF_8); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));
     }

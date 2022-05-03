@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import org.eclipse.jetty.fcgi.server.internal.ServerFCGIConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;

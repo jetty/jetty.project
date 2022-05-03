@@ -27,14 +27,14 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.EchoHandler;
+import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -66,11 +66,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     private int minimumTestRuntime = MAX_IDLE_TIME - MAX_IDLE_TIME / 5;
     private int maximumTestRuntime = MAX_IDLE_TIME * 10;
 
-    static
-    {
-        System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK", "500");
-    }
-
     @BeforeEach
     @Override
     public void before()
@@ -86,7 +81,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest10() throws Exception
     {
-        configureServer(new HelloWorldHandler());
+        startServer(new HelloWorldHandler());
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
@@ -120,7 +115,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest11() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -158,21 +153,20 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
-        configureServer(new HelloWorldHandler()
+        startServer(new HelloWorldHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
-                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
+                    exchanger.exchange(request.getConnectionMetaData().getConnection().getEndPoint());
                 }
                 catch (Exception e)
                 {
                     e.printStackTrace();
                 }
-                super.handle(target, baseRequest, request, response);
+                super.process(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -217,21 +211,20 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     public void testMaxIdleWithRequest11NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
-        configureServer(new EchoHandler()
+        startServer(new EchoHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                ServletException
+            public void process(Request request, Response response, Callback callback)
             {
                 try
                 {
-                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
+                    exchanger.exchange(request.getConnectionMetaData().getConnection().getEndPoint());
                 }
                 catch (Exception e)
                 {
                     e.printStackTrace();
                 }
-                super.handle(target, baseRequest, request, response);
+                super.process(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -281,7 +274,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Disabled // TODO make more stable
     public void testNoBlockingTimeoutRead() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is = client.getInputStream();
@@ -342,7 +335,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Disabled // TODO make more stable
     public void testBlockingTimeoutRead() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is = client.getInputStream();
@@ -362,7 +355,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             .getBytes("utf-8"));
         os.flush();
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
         {
             Thread.sleep(300);
             os.write("1".getBytes("utf-8"));
@@ -398,7 +391,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Disabled // TODO make more stable
     public void testNoBlockingTimeoutWrite() throws Exception
     {
-        configureServer(new HugeResponseHandler());
+        startServer(new HugeResponseHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -441,7 +434,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Disabled // TODO make more stable
     public void testBlockingTimeoutWrite() throws Exception
     {
-        configureServer(new HugeResponseHandler());
+        startServer(new HugeResponseHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -467,7 +460,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class, AbstractConnection.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class, AbstractConnection.class))
         {
             for (int i = 0; i < (128 * 1024); i++)
             {
@@ -489,7 +482,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleNoRequest() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is = client.getInputStream();
@@ -520,7 +513,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleNothingSent() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
@@ -551,7 +544,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleDelayedDispatch() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is = client.getInputStream();
@@ -590,7 +583,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleDispatch() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is = client.getInputStream();
@@ -630,7 +623,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithSlowRequest() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -673,7 +666,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithSlowResponse() throws Exception
     {
-        configureServer(new SlowResponseHandler());
+        startServer(new SlowResponseHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -705,7 +698,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithWait() throws Exception
     {
-        configureServer(new WaitHandler());
+        startServer(new WaitHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
 
@@ -729,40 +722,37 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         });
     }
 
-    protected static class SlowResponseHandler extends AbstractHandler
+    protected static class SlowResponseHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            OutputStream out = response.getOutputStream();
+
+            Blocking.Shared blocker = new Blocking.Shared();
 
             for (int i = 0; i < 20; i++)
             {
-                out.write("Hello World\r\n".getBytes());
-                out.flush();
-                try
+                try (Blocking.Callback block = blocker.callback())
                 {
                     Thread.sleep(50);
+                    response.write(false, block, "Hello World\r\n");
                 }
                 catch (Exception e)
                 {
                     e.printStackTrace();
                 }
             }
-            out.close();
+            response.write(true, callback);
         }
     }
 
-    protected static class HugeResponseHandler extends AbstractHandler
+    protected static class HugeResponseHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            OutputStream out = response.getOutputStream();
             byte[] buffer = new byte[128 * 1024 * 1024];
             Arrays.fill(buffer, (byte)'x');
             for (int i = 0; i < 128 * 1024; i++)
@@ -770,20 +760,16 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 buffer[i * 1024 + 1022] = '\r';
                 buffer[i * 1024 + 1023] = '\n';
             }
-            ByteBuffer bb = ByteBuffer.wrap(buffer);
-            ((HttpOutput)out).sendContent(bb);
-            out.close();
+            response.write(true, callback, ByteBuffer.wrap(buffer));
         }
     }
 
-    protected static class WaitHandler extends AbstractHandler
+    protected static class WaitHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            OutputStream out = response.getOutputStream();
             try
             {
                 Thread.sleep(2000);
@@ -792,8 +778,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 e.printStackTrace();
             }
-            out.write("Hello World\r\n".getBytes());
-            out.flush();
+            response.write(true, callback, "Hello World\r\n");
         }
     }
 }

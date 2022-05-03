@@ -11,10 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -30,14 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -48,15 +42,21 @@ import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.Flags;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.Parser;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
@@ -72,7 +72,14 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNoPrefaceBytes() throws Exception
     {
-        startServer(new HttpServlet() {});
+        startServer(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         // No preface bytes.
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -100,7 +107,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(555, TimeUnit.SECONDS));
         }
     }
 
@@ -108,12 +115,13 @@ public class HTTP2ServerTest extends AbstractServerTest
     public void testRequestResponseNoContent() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(3);
-        startServer(new HttpServlet()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
+            public void process(Request request, Response response, Callback callback)
             {
                 latch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -165,13 +173,13 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         final byte[] content = "Hello, world!".getBytes(StandardCharsets.UTF_8);
         final CountDownLatch latch = new CountDownLatch(4);
-        startServer(new HttpServlet()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 latch.countDown();
-                resp.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -233,7 +241,14 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongPayload() throws Exception
     {
-        startServer(new HttpServlet() {});
+        startServer(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
@@ -271,7 +286,14 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongStreamId() throws Exception
     {
-        startServer(new HttpServlet() {});
+        startServer(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
@@ -311,21 +333,15 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         final long delay = 1000;
         final AtomicBoolean broken = new AtomicBoolean();
-        startServer(new HttpServlet()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                try
-                {
-                    // Wait for the SETTINGS frames to be exchanged.
-                    Thread.sleep(delay);
-                    broken.set(true);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
-                }
+                // Wait for the SETTINGS frames to be exchanged.
+                Thread.sleep(delay);
+                broken.set(true);
+                callback.succeeded();
             }
         });
         server.stop();
@@ -376,16 +392,17 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNonISOHeader() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
         {
-            startServer(new HttpServlet()
+            startServer(new Handler.Processor()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response)
+                public void process(Request request, Response response, Callback callback)
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.
-                    response.setHeader("Euro_(\u20AC)", "42");
+                    response.getHeaders().put("Euro_(\u20AC)", "42");
+                    callback.succeeded();
                 }
             });
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -20,15 +20,15 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.annotation.WebInitParam;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.FilterMapping;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee9.webapp.MetaData;
+import org.eclipse.jetty.ee9.webapp.Origin;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.webapp.MetaData;
-import org.eclipse.jetty.webapp.Origin;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

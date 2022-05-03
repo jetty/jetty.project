@@ -11,20 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations.resources;
+package org.eclipse.jetty.ee9.annotations.resources;
 
 import java.lang.reflect.Field;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.annotations.AnnotationIntrospector;
-import org.eclipse.jetty.annotations.ResourceAnnotationHandler;
-import org.eclipse.jetty.annotations.ResourcesAnnotationHandler;
-import org.eclipse.jetty.plus.annotation.Injection;
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector;
+import org.eclipse.jetty.ee9.annotations.ResourceAnnotationHandler;
+import org.eclipse.jetty.ee9.annotations.ResourcesAnnotationHandler;
+import org.eclipse.jetty.ee9.plus.annotation.Injection;
+import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,8 +66,8 @@ public class TestResourceAnnotations
     public void testResourceAnnotations()
         throws Exception
     {
-        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
-        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
+        new EnvEntry(server, "resA", objA, false);
+        new EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
@@ -150,8 +151,8 @@ public class TestResourceAnnotations
     public void testResourcesAnnotation()
         throws Exception
     {
-        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
-        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
+        new EnvEntry(server, "resA", objA, false);
+        new EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);

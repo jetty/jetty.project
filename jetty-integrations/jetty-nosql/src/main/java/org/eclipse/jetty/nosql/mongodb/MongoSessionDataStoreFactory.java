@@ -17,9 +17,9 @@ import java.net.UnknownHostException;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -115,10 +115,10 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
 
     /**
      * @throws Exception {@link UnknownHostException} if any issue while resolving MongoDB Host
-     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
+     * @see org.eclipse.jetty.session.SessionDataStoreFactory#getSessionDataStore(SessionManager)
      */
     @Override
-    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore(SessionManager sessionManager) throws Exception
     {
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());

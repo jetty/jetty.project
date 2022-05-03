@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -115,7 +115,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         //load all classnames
         classes.addAll(resolveStartupClasses());
 
-        ContextHandler.Context ctx = null;
+        ContextHandler.APIContext ctx = null;
         if (getServletHandler() != null)
         {
             ctx = getServletHandler().getServletContextHandler().getServletContext();    

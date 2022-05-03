@@ -1,0 +1,9 @@
+Request-Header|Accept-Encoding|gzip,deflate
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|173
+Request-Header|Content-Type|multipart/form-data; boundary=xE8WoYDcbqAfj08bxPk669iK22hMMlZL
+Request-Header|Host|localhost:9090
+Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
+Request-Header|X-BrowserId|apache-httpcomp
+Parts-Count|1
+Part-ContainsContents|pi|3.14159265358979323846264338327950288419716939937510

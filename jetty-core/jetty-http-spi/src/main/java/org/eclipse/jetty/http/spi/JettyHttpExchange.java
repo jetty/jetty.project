@@ -23,14 +23,14 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 public class JettyHttpExchange extends HttpExchange implements JettyExchange
 {
-    private JettyHttpExchangeDelegate _delegate;
+    private final JettyHttpExchangeDelegate _delegate;
 
-    public JettyHttpExchange(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
+    public JettyHttpExchange(HttpContext jaxWsContext, Request req, Response resp)
     {
         super();
         _delegate = new JettyHttpExchangeDelegate(jaxWsContext, req, resp);

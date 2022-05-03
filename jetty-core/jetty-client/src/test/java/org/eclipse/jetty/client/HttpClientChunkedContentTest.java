@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -70,14 +69,10 @@ public class HttpClientChunkedContentTest
             final CountDownLatch completeLatch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        resultRef.set(result);
-                        completeLatch.countDown();
-                    }
+                    resultRef.set(result);
+                    completeLatch.countDown();
                 });
 
             try (Socket socket = server.accept())
@@ -123,26 +118,18 @@ public class HttpClientChunkedContentTest
             final AtomicReference<Result> resultRef = new AtomicReference<>();
             final CountDownLatch completeLatch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
-                .onResponseContentAsync(new Response.AsyncContentListener()
+                .onResponseContentAsync((response, content, callback) ->
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content, Callback callback)
-                    {
-                        if (callbackRef.compareAndSet(null, callback))
-                            firstContentLatch.countDown();
-                        else
-                            callback.succeeded();
-                    }
+                    if (callbackRef.compareAndSet(null, callback))
+                        firstContentLatch.countDown();
+                    else
+                        callback.succeeded();
                 })
                 .timeout(5, TimeUnit.SECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        resultRef.set(result);
-                        completeLatch.countDown();
-                    }
+                    resultRef.set(result);
+                    completeLatch.countDown();
                 });
 
             try (Socket socket = server.accept())

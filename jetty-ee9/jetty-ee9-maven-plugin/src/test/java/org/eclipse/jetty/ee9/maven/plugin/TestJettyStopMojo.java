@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.FileReader;
@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.maven.plugin.AbstractWebAppMojo.DeploymentMode;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;

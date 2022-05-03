@@ -57,7 +57,7 @@ Applications interested in this type of messages receive a `byte[]` representing
 [[pg-websocket-endpoints-listener]]
 ===== Listener Endpoints
 
-A WebSocket endpoint may implement the `org.eclipse.jetty.websocket.api.WebSocketListener` interface to receive WebSocket events:
+A WebSocket endpoint may implement the `org.eclipse.jetty.ee9.websocket.api.WebSocketListener` interface to receive WebSocket events:
 
 [source,java,indent=0]
 ----
@@ -70,7 +70,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=l
 If you need to deal with large WebSocket messages, you may reduce the memory usage by streaming the message content.
 For large WebSocket messages, the memory usage may be large due to the fact that the text or the bytes must be accumulated until the message is complete before delivering the message event.
 
-To stream textual or binary messages, you must implement interface `org.eclipse.jetty.websocket.api.WebSocketPartialListener` instead of `WebSocketListener`.
+To stream textual or binary messages, you must implement interface `org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener` instead of `WebSocketListener`.
 
 Interface `WebSocketPartialListener` exposes one method for textual messages, and one method to binary messages that receive _chunks_ of, respectively, text and bytes that form the whole WebSocket message.
 
@@ -84,7 +84,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 [[pg-websocket-endpoints-annotated]]
 ===== Annotated Endpoints
 
-A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events.
+A WebSocket endpoint may annotate methods with `org.eclipse.jetty.ee9.websocket.api.annotations.*` annotations to receive WebSocket events.
 Each annotated method may take an optional `Session` argument as its first parameter:
 
 [source,java,indent=0]
@@ -144,7 +144,7 @@ A WebSocket session is the entity that offers an API to send data to the remote 
 [[pg-websocket-session-configure]]
 ===== Configuring the Session
 
-You may configure the WebSocket session behavior using the `org.eclipse.jetty.websocket.api.Session` APIs.
+You may configure the WebSocket session behavior using the `org.eclipse.jetty.ee9.websocket.api.Session` APIs.
 You want to do this as soon as you have access to the `Session` object, typically from the xref:pg-websocket-endpoints[_connect_ event] handler:
 
 [source,java,indent=0]
@@ -254,7 +254,7 @@ The WebSocket protocol defines two special frame, named `Ping` and `Pong` that m
 * Calculate the round-trip time with the remote peer.
 * Keep the connection from being closed due to idle timeout -- a heartbeat-like mechanism.
 
-To handle `Ping`/`Pong` events, you may implement interface `org.eclipse.jetty.websocket.api.WebSocketPingPongListener`.
+To handle `Ping`/`Pong` events, you may implement interface `org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener`.
 
 [NOTE]
 ====

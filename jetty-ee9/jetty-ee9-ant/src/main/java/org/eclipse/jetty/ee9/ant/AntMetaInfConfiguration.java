@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.io.File;
 import java.net.URI;
@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.tools.ant.AntClassLoader;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
 public class AntMetaInfConfiguration extends MetaInfConfiguration
 {

@@ -16,17 +16,16 @@ package org.eclipse.jetty.websocket.core.server;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
  * {@link Configuration.Customizer}.
  * <p>
- * When the {@link #upgrade(HttpServletRequest, HttpServletResponse, Configuration.Customizer)}
+ * When the {@link #upgrade(WebSocketNegotiator, Request, Response, Callback, Configuration.Customizer)}
  * method is called, a match for the pathSpec is looked for. If one is found then the
  * creator is used to create a POJO for the WebSocket endpoint, the factory is used to
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
@@ -54,18 +53,26 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
 
-    public static WebSocketMappings getMappings(ServletContext servletContext)
+    public static WebSocketMappings getMappings(ContextHandler contextHandler)
     {
-        return (WebSocketMappings)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
+        return (WebSocketMappings)contextHandler.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
-    public static WebSocketMappings ensureMappings(ServletContext servletContext)
+    public static WebSocketMappings ensureMappings(ContextHandler contextHandler)
     {
-        WebSocketMappings mapping = getMappings(servletContext);
+        WebSocketMappings mapping = getMappings(contextHandler);
         if (mapping == null)
         {
-            mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(servletContext));
-            servletContext.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
+            mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
+            contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
+            contextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
+                }
+            });
         }
 
         return mapping;
@@ -213,16 +220,16 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
             return null;
 
         pathSpecConsumer.accept(mapping.getPathSpec());
-        return mapping.getResource();
+        WebSocketNegotiator negotiator = mapping.getResource();
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
+
+        return negotiator;
     }
 
-    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
-        // Since this may come from a filter, we need to be smart about determining the target path.
-        // We should rely on the Servlet API for stripping URI path
-        // parameters before attempting to match a specific mapping.
-        String target = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
-
+        String target = request.getPathInContext();
         WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
         {
             // Store PathSpec resource mapping as request attribute,
@@ -233,10 +240,16 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         if (negotiator == null)
             return false;
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
+        // We have an upgrade request
+        return handshaker.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
+    }
+
+    public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
+    {
+        if (negotiator == null)
+            return false;
 
         // We have an upgrade request
-        return handshaker.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
+        return handshaker.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-@SuppressWarnings("serial")
 public abstract class HpackException extends Exception
 {
     HpackException(String messageFormat, Object... args)
@@ -30,7 +29,7 @@ public abstract class HpackException extends Exception
      */
     public static class StreamException extends HpackException
     {
-        StreamException(String messageFormat, Object... args)
+        public StreamException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }
@@ -43,7 +42,7 @@ public abstract class HpackException extends Exception
      */
     public static class SessionException extends HpackException
     {
-        SessionException(String messageFormat, Object... args)
+        public SessionException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server.sockets.idletimeout;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.idletimeout;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;

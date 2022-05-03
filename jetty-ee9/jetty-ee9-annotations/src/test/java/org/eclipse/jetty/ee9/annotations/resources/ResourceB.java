@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations.resources;
+package org.eclipse.jetty.ee9.annotations.resources;
 
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;

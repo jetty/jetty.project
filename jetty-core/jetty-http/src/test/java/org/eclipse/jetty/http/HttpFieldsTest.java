@@ -26,11 +26,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,10 +49,79 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldsTest
 {
-    @Test
-    public void testPut()
+    public static Stream<HttpFields.Mutable> mutables()
     {
-        HttpFields.Mutable header = HttpFields.build()
+        return Stream.of(
+            HttpFields.build(),
+            HttpFields.build(0),
+            new HttpFields.Mutable()
+            {
+                private final HttpFields.Mutable fields = HttpFields.build();
+
+                @Override
+                public ListIterator<HttpField> listIterator()
+                {
+                    return fields.listIterator();
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "DefaultMutableMethods";
+                }
+            },
+            new HttpFields.Mutable()
+            {
+                private final HttpFields.Mutable fields = HttpFields.build();
+
+                @Override
+                public ListIterator<HttpField> listIterator()
+                {
+                    return fields.listIterator();
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "DefaultMutableMethods";
+                }
+
+                @Override
+                public HttpFields asImmutable()
+                {
+                    HttpFields f = fields.asImmutable();
+                    return new HttpFields()
+                    {
+                        @Override
+                        public Iterator<HttpField> iterator()
+                        {
+                            return f.iterator();
+                        }
+                    };
+                }
+
+                @Override
+                public HttpFields takeAsImmutable()
+                {
+                    HttpFields f = fields.takeAsImmutable();
+                    return new HttpFields()
+                    {
+                        @Override
+                        public Iterator<HttpField> iterator()
+                        {
+                            return f.iterator();
+                        }
+                    };
+                }
+            }
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testPut(HttpFields.Mutable header)
+    {
+        header
             .put("name0", "value:0")
             .put("name1", "value1");
 
@@ -60,10 +131,8 @@ public class HttpFieldsTest
         assertNull(header.get("name2"));
 
         int matches = 0;
-        Enumeration<String> e = header.getFieldNames();
-        while (e.hasMoreElements())
+        for (String o : header.getFieldNamesCollection())
         {
-            Object o = e.nextElement();
             if ("name0".equals(o))
                 matches++;
             if ("name1".equals(o))
@@ -71,16 +140,26 @@ public class HttpFieldsTest
         }
         assertEquals(2, matches);
 
-        e = header.getValues("name0");
-        assertTrue(e.hasMoreElements());
-        assertEquals(e.nextElement(), "value:0");
-        assertFalse(e.hasMoreElements());
+        Enumeration<String> values = header.getValues("name0");
+        assertTrue(values.hasMoreElements());
+        assertEquals(values.nextElement(), "value:0");
+        assertFalse(values.hasMoreElements());
+
+        header.add("name0", "extra0");
+        header.add("name1", "extra1");
+        header.put(new HttpField("name0", "ZERO"));
+        header.put(new HttpField("name1", "ONE"));
+        assertThat(header.stream().map(HttpField::getValue).collect(Collectors.toList()), Matchers.contains("ZERO", "ONE"));
+
+        header.put("name0", (String)null);
+        assertThat(header.stream().map(HttpField::getValue).collect(Collectors.toList()), Matchers.contains("ONE"));
     }
 
-    @Test
-    public void testPutTo()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testPutTo(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build()
+        header
             .put("name0", "value0")
             .put("name1", "value:A")
             .add("name1", "value:B")
@@ -121,10 +200,11 @@ public class HttpFieldsTest
         assertThrows(NoSuchElementException.class, () -> header.getField(2));
     }
 
-    @Test
-    public void testMutable()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testMutable(HttpFields.Mutable mutable)
     {
-        HttpFields headers = HttpFields.build()
+        HttpFields headers = mutable
             .add(HttpHeader.ETAG, "tag")
             .add("name0", "value0")
             .add("name1", "value1").asImmutable();
@@ -143,9 +223,27 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testTakeImmutable()
+    {
+        HttpFields.Mutable mutable = HttpFields.build();
+        HttpFields immutable = mutable.takeAsImmutable();
+        assertThat(immutable.get(HttpHeader.HOST), nullValue());
+        assertThat(immutable.size(), is(0));
+
+        immutable = mutable
+            .put("name0", "value0")
+            .put("name1", "value1").takeAsImmutable();
+
+        assertThat(mutable.get("name0"), nullValue());
+        assertThat(mutable.get("name1"), nullValue());
+        assertThat(immutable.get("name0"), is("value0"));
+        assertThat(immutable.get("name1"), is("value1"));
+    }
+
+    @Test
     public void testMap()
     {
-        Map<HttpFields.Immutable, String> map = new HashMap<>();
+        Map<HttpFields, String> map = new HashMap<>();
         map.put(HttpFields.build().add("X", "1").add(HttpHeader.ETAG, "tag").asImmutable(), "1");
         map.put(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "other").asImmutable(), "2");
 
@@ -179,11 +277,10 @@ public class HttpFieldsTest
         assertThrows(NoSuchElementException.class, () -> header.getField(2));
     }
 
-    @Test
-    public void testGetKnown()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testGetKnown(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.put("Connection", "value0");
         header.put(HttpHeader.ACCEPT, "value1");
 
@@ -197,11 +294,10 @@ public class HttpFieldsTest
         assertNull(header.get(HttpHeader.AGE));
     }
 
-    @Test
-    public void testCRLF()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testCRLF(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.put("name0", "value\r\n0");
         header.put("name\r\n1", "value1");
         header.put("name:2", "value:\r\n2");
@@ -216,11 +312,10 @@ public class HttpFieldsTest
         assertThat(out, containsString("name?2: value:  2"));
     }
 
-    @Test
-    public void testCachedPut()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testCachedPut(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.put("Connection", "Keep-Alive");
         header.put("tRansfer-EncOding", "CHUNKED");
         header.put("CONTENT-ENCODING", "gZIP");
@@ -236,11 +331,10 @@ public class HttpFieldsTest
         assertThat(out, Matchers.containsString((HttpHeader.CONTENT_ENCODING + ": " + HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
     }
 
-    @Test
-    public void testRePut()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testRePut(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.put("name0", "value0");
         header.put("name1", "xxxxxx");
         header.put("name2", "value2");
@@ -257,10 +351,8 @@ public class HttpFieldsTest
         assertNull(header.get("name3"));
 
         int matches = 0;
-        Enumeration<String> e = header.getFieldNames();
-        while (e.hasMoreElements())
+        for (String o : header.getFieldNamesCollection())
         {
-            String o = e.nextElement();
             if ("name0".equals(o))
                 matches++;
             if ("name1".equals(o))
@@ -270,16 +362,17 @@ public class HttpFieldsTest
         }
         assertEquals(3, matches);
 
-        e = header.getValues("name1");
+        Enumeration<String> e = header.getValues("name1");
         assertTrue(e.hasMoreElements());
         assertEquals(e.nextElement(), "value1");
         assertFalse(e.hasMoreElements());
     }
 
-    @Test
-    public void testRemove()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testRemove(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build(1)
+        header
             .put("name0", "value0")
             .add(HttpHeader.CONTENT_TYPE, "text")
             .add("name1", "WRONG")
@@ -305,10 +398,8 @@ public class HttpFieldsTest
         assertNull(header.get("name3"));
 
         int matches = 0;
-        Enumeration<String> e = header.getFieldNames();
-        while (e.hasMoreElements())
+        for (String o : header.getFieldNamesCollection())
         {
-            Object o = e.nextElement();
             if ("name0".equals(o))
                 matches++;
             if ("name1".equals(o))
@@ -318,8 +409,54 @@ public class HttpFieldsTest
         }
         assertEquals(2, matches);
 
-        e = header.getValues("name1");
+        Enumeration<String> e = header.getValues("name1");
         assertFalse(e.hasMoreElements());
+    }
+
+    /**
+     * <p>
+     * Test where multiple headers arrive with the same name, but
+     * those values are interleaved with other headers names.
+     * </p>
+     */
+    @Test
+    public void testRemoveInterleaved()
+    {
+        HttpFields originalHeaders = HttpFields.build()
+            .put(new HostPortHttpField("local"))
+            .add("Accept", "images/jpeg")
+            .add("Accept-Encoding", "Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0")
+            .add("Accept", "text/plain")
+            .add("Accept-Charset", "iso-8859-5, unicode-1-1;q=0.8")
+            .add("Accept", "*/*")
+            .add("Connection", "closed");
+
+        assertEquals(7, originalHeaders.size(), "Size of Original fields");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", originalHeaders.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals("iso-8859-5, unicode-1-1;q=0.8", originalHeaders.get(HttpHeader.ACCEPT_CHARSET));
+        assertEquals("images/jpeg", originalHeaders.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
+        assertEquals("images/jpeg, text/plain, */*", String.join(", ", originalHeaders.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+
+        HttpFields tookImmutable = originalHeaders.takeAsImmutable();
+
+        assertEquals(7, tookImmutable.size(), "Size of (took as) Immutable fields");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", tookImmutable.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals("iso-8859-5, unicode-1-1;q=0.8", tookImmutable.get(HttpHeader.ACCEPT_CHARSET));
+        assertEquals("images/jpeg", tookImmutable.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
+        assertEquals("images/jpeg, text/plain, */*", String.join(", ", tookImmutable.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+
+        // Lets remove "Accept" headers in a copy of the headers
+        HttpFields.Mutable headersCopy = HttpFields.build(tookImmutable);
+
+        assertEquals(7, headersCopy.size(), "Size of Mutable fields");
+
+        // Attempt to remove all the "Accept" headers.
+        headersCopy.remove("Accept");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", headersCopy.get(HttpHeader.ACCEPT_ENCODING));
+        assertNull(headersCopy.get(HttpHeader.ACCEPT));
     }
 
     @Test
@@ -343,10 +480,8 @@ public class HttpFieldsTest
         assertNull(fields.get("name3"));
 
         int matches = 0;
-        Enumeration<String> e = fields.getFieldNames();
-        while (e.hasMoreElements())
+        for (String o : fields.getFieldNamesCollection())
         {
-            Object o = e.nextElement();
             if ("name0".equals(o))
                 matches++;
             if ("name1".equals(o))
@@ -356,7 +491,7 @@ public class HttpFieldsTest
         }
         assertEquals(3, matches);
 
-        e = fields.getValues("name1");
+        Enumeration<String> e = fields.getValues("name1");
         assertTrue(e.hasMoreElements());
         assertEquals(e.nextElement(), "valueA");
         assertTrue(e.hasMoreElements());
@@ -636,11 +771,10 @@ public class HttpFieldsTest
         assertEquals("Sun, 02 Dec 55 16:47:04 GMT", fields.get("Dancient"));
     }
 
-    @Test
-    public void testLongFields()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testLongFields(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.put("I1", "42");
         header.put("I2", " 43 99");
         header.put("I3", "-44");
@@ -665,11 +799,10 @@ public class HttpFieldsTest
         assertEquals("-47", header.get("I6"));
     }
 
-    @Test
-    public void testContains()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testContains(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
-
         header.add("n0", "");
         header.add("n1", ",");
         header.add("n2", ",,");
@@ -740,10 +873,10 @@ public class HttpFieldsTest
     @Test
     public void testAddHttpFields()
     {
-        HttpFields.Mutable fields = new HttpFields.Mutable(new HttpFields.Mutable());
+        HttpFields.Mutable fields = HttpFields.build();
         fields.add("One", "1");
 
-        fields = new HttpFields.Mutable(fields);
+        fields = HttpFields.build(fields);
 
         fields.add(HttpFields.build().add("two", "2").add("three", "3"));
         fields.add(HttpFields.build().add("four", "4").add("five", "5").asImmutable());
@@ -823,10 +956,10 @@ public class HttpFieldsTest
         });
     }
 
-    @Test
-    public void testIteration()
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testIteration(HttpFields.Mutable header)
     {
-        HttpFields.Mutable header = HttpFields.build();
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 
@@ -951,7 +1084,7 @@ public class HttpFieldsTest
         // 1 existing cases
         fields.ensureField(new HttpField(HttpHeader.VARY, "one"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one"));
-;
+
         fields.ensureField(new HttpField(HttpHeader.VARY, "two"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
 
@@ -1019,7 +1152,7 @@ public class HttpFieldsTest
         // 1 existing cases
         fields.ensureField(new HttpField("Test", "one"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one"));
-        ;
+
         fields.ensureField(new HttpField("Test", "two"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
 

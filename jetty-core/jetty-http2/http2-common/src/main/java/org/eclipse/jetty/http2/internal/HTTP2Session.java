@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -38,6 +38,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
+import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -54,9 +58,9 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;

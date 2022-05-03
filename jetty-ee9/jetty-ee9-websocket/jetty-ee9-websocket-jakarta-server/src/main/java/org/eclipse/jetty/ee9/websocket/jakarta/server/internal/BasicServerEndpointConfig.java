@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.common.ServerEndpointConfigWrapper;
-import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
 public class BasicServerEndpointConfig extends ServerEndpointConfigWrapper
 {

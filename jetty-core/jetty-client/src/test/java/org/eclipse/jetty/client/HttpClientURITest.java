@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
@@ -27,16 +26,13 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
@@ -153,13 +149,12 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     public void testPath(Scenario scenario) throws Exception
     {
         final String path = "/path";
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
+                assertEquals(path, request.getPathInContext());
             }
         });
 
@@ -187,14 +182,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         String value = "1";
         final String query = name + "=" + value;
         final String path = "/path";
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
             }
         });
 
@@ -225,14 +219,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String query = name + "=" + value;
         final String path = "/path";
         String pathQuery = path + "?" + query;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
             }
         });
 
@@ -265,14 +258,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String query = name1 + "=" + value1 + "&" + name2 + "=" + value2;
         final String path = "/path";
         String pathQuery = path + "?" + query;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
             }
         });
 
@@ -301,23 +293,23 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     {
         final String name1 = "a";
         final String value1 = "\u20AC";
-        final String encodedValue1 = URLEncoder.encode(value1, "UTF-8");
+        final String encodedValue1 = URLEncoder.encode(value1, StandardCharsets.UTF_8);
         final String name2 = "b";
         final String value2 = "\u00A5";
-        String encodedValue2 = URLEncoder.encode(value2, "UTF-8");
+        String encodedValue2 = URLEncoder.encode(value2, StandardCharsets.UTF_8);
         final String query = name1 + "=" + encodedValue1 + "&" + name2 + "=" + encodedValue2;
         final String path = "/path";
         String pathQuery = path + "?" + query;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
-                assertEquals(value1, request.getParameter(name1));
-                assertEquals(value2, request.getParameter(name2));
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                assertEquals(value1, fields.getValue(name1));
+                assertEquals(value2, fields.getValue(name2));
             }
         });
 
@@ -347,14 +339,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String path = "/path";
         final String query = "="; // Bogus query
         String pathQuery = path + "?" + query;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
             }
         });
 
@@ -381,14 +372,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String path = "/path";
         final String query = "=1"; // Bogus query
         String pathQuery = path + "?" + query;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(path, request.getRequestURI());
-                assertEquals(query, request.getQueryString());
+                assertEquals(path, request.getPathInContext());
+                assertEquals(query, request.getHttpURI().getQuery());
             }
         });
 
@@ -414,14 +404,14 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     {
         final String name1 = "a";
         final String name2 = "A";
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(name1, request.getParameter(name1));
-                assertEquals(name2, request.getParameter(name2));
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                assertEquals(name1, fields.getValue(name1));
+                assertEquals(name2, fields.getValue(name2));
             }
         });
 
@@ -443,14 +433,14 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String rawValue = "Hello%20World";
         final String rawQuery = name + "=" + rawValue;
         final String value = "Hello World";
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(rawQuery, request.getQueryString());
-                assertEquals(value, request.getParameter(name));
+                assertEquals(rawQuery, request.getHttpURI().getQuery());
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                assertEquals(value, fields.getValue(name));
             }
         });
 
@@ -472,14 +462,14 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String rawValue = "Hello%20World";
         final String rawQuery = name + "=" + rawValue;
         final String value = "Hello World";
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(rawQuery, request.getQueryString());
-                assertEquals(value, request.getParameter(name));
+                assertEquals(rawQuery, request.getHttpURI().getQuery());
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                assertEquals(value, fields.getValue(name));
             }
         });
 
@@ -504,17 +494,17 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         final String rawQuery1 = name1 + "=" + rawValue1;
         final String value1 = "Hello World";
         final String value2 = "alfa omega";
-        final String encodedQuery2 = name2 + "=" + URLEncoder.encode(value2, "UTF-8");
+        final String encodedQuery2 = name2 + "=" + URLEncoder.encode(value2, StandardCharsets.UTF_8);
         final String query = rawQuery1 + "&" + encodedQuery2;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals(query, request.getQueryString());
-                assertEquals(value1, request.getParameter(name1));
-                assertEquals(value2, request.getParameter(name2));
+                assertEquals(query, request.getHttpURI().getQuery());
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                assertEquals(value1, fields.getValue(name1));
+                assertEquals(value2, fields.getValue(name2));
             }
         });
 
@@ -534,14 +524,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testSchemeIsCaseInsensitive(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme().toUpperCase(Locale.ENGLISH))
@@ -555,14 +538,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testHostIsCaseInsensitive(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("LOCALHOST", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -576,14 +552,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAsteriskFormTarget(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                assertEquals("*", target);
-                assertEquals("*", request.getPathInfo());
+                assertEquals("*", request.getHttpURI().getPath());
+                assertEquals("*", request.getPathInContext());
             }
         });
 
@@ -610,7 +585,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         private ServerSocket serverSocket;
         private int port;
 
-        private IDNRedirectServer(final String location) throws IOException
+        private IDNRedirectServer(final String location)
         {
             this.location = location;
         }

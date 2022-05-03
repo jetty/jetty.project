@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -34,20 +34,20 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.security.EmptyLoginService;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.security.WrappedAuthConfiguration;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.EmptyLoginService;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.ee9.security.WrappedAuthConfiguration;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.UserIdentity;
 
-import static org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
+import static org.eclipse.jetty.ee9.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
 /**
  * Implementation of Jetty {@link LoginAuthenticator} that is a bridge from Jakarta Authentication to Jetty Security.

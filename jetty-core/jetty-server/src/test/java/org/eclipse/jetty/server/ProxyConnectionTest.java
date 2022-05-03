@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
@@ -103,7 +103,7 @@ public class ProxyConnectionTest
         String response = p.sendRequestWaitingForResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("remote=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:65535"));
         assertThat(response, Matchers.containsString("local=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535"));
     }
@@ -141,7 +141,7 @@ public class ProxyConnectionTest
         String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("local=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:8080"));
         assertThat(response, Matchers.containsString("remote=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:12345"));
     }
@@ -174,7 +174,7 @@ public class ProxyConnectionTest
         String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("local=0.0.0.0:0"));
         assertThat(response, Matchers.containsString("remote=0.0.0.0:0"));
     }
@@ -228,7 +228,7 @@ public class ProxyConnectionTest
         String response = p.sendRequestWaitingForResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("local=5.6.7.8:222"));
         assertThat(response, Matchers.containsString("remote=1.2.3.4:111"));
     }
@@ -264,7 +264,7 @@ public class ProxyConnectionTest
         String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("local=127.0.0.1:8080"));
         assertThat(response, Matchers.containsString("remote=192.168.0.1:12345"));
     }
@@ -324,9 +324,6 @@ public class ProxyConnectionTest
             _connector.setIdleTimeout(1000);
             _server.addConnector(_connector);
             _server.setHandler(new DumpHandler());
-            ErrorHandler eh = new ErrorHandler();
-            eh.setServer(_server);
-            _server.addBean(eh);
         }
 
         public RequestProcessor customize(Consumer<LocalConnector> consumer)
@@ -362,7 +359,7 @@ public class ProxyConnectionTest
         }
     }
 
-    static Stream<Arguments> requestProcessors()
+    public static Stream<Arguments> requestProcessors()
     {
         return Stream.of(
             Arguments.of(new RequestProcessor()

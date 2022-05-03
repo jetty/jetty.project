@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,19 +49,17 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.server.Handler.Container;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
@@ -121,7 +119,7 @@ public class ServletContextHandler extends ContextHandler
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     protected final DecoratedObjectFactory _objFactory;
-    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
+    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
@@ -140,36 +138,36 @@ public class ServletContextHandler extends ContextHandler
         this(null, null, options);
     }
 
-    public ServletContextHandler(HandlerContainer parent, String contextPath)
+    public ServletContextHandler(Container parent, String contextPath)
     {
         this(parent, contextPath, null, null, null, null);
     }
 
-    public ServletContextHandler(HandlerContainer parent, String contextPath, int options)
+    public ServletContextHandler(Container parent, String contextPath, int options)
     {
         this(parent, contextPath, null, null, null, null, options);
     }
 
-    public ServletContextHandler(HandlerContainer parent, String contextPath, boolean sessions, boolean security)
+    public ServletContextHandler(Container parent, String contextPath, boolean sessions, boolean security)
     {
         this(parent, contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
     }
 
-    public ServletContextHandler(HandlerContainer parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
+    public ServletContextHandler(Container parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
         this(parent, null, sessionHandler, securityHandler, servletHandler, errorHandler);
     }
 
-    public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
+    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
         this(parent, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
 
-    public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         super(null, parent, contextPath);
         _options = options;
-        _scontext = new Context();
+        _apiContext = new ServletAPIContext();
         _sessionHandler = sessionHandler;
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
@@ -181,14 +179,6 @@ public class ServletContextHandler extends ContextHandler
 
         if (errorHandler != null)
             setErrorHandler(errorHandler);
-    }
-
-    protected void setParent(HandlerContainer parent)
-    {
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
     }
 
     /**
@@ -231,8 +221,6 @@ public class ServletContextHandler extends ContextHandler
             setSecurityHandler((SecurityHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
         else
         {
             if (handler != null)
@@ -695,17 +683,6 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * @param gzipHandler the GzipHandler for this ServletContextHandler
-     * @deprecated use {@link #insertHandler(HandlerWrapper)} instead
-     */
-    @Deprecated
-    public void setGzipHandler(GzipHandler gzipHandler)
-    {
-        insertHandler(gzipHandler);
-        LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
-    }
-
-    /**
      * Insert a HandlerWrapper before the first Session, Security or ServletHandler
      * but after any other HandlerWrappers.
      */
@@ -1030,12 +1007,12 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class Context extends ContextHandler.Context
+    public class ServletAPIContext extends APIContext
     {
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
-            ContextHandler context = org.eclipse.jetty.servlet.ServletContextHandler.this;
+            ContextHandler context = ServletContextHandler.this;
             if (_servletHandler == null)
                 return null;
             ServletHolder holder = _servletHandler.getServlet(name);

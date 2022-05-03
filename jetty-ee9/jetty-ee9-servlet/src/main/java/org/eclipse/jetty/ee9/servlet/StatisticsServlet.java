@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -34,13 +34,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.StatisticsHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.slf4j.Logger;
@@ -74,10 +74,9 @@ public class StatisticsServlet extends HttpServlet
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
-        ContextHandler.Context scontext = (ContextHandler.Context)context;
+        ContextHandler.APIContext scontext = (ContextHandler.APIContext)context;
         Server server = scontext.getContextHandler().getServer();
-
-        _statsHandler = server.getChildHandlerByClass(StatisticsHandler.class);
+        _statsHandler = scontext.getContextHandler().getChildHandlerByClass(StatisticsHandler.class);
 
         if (_statsHandler == null)
         {

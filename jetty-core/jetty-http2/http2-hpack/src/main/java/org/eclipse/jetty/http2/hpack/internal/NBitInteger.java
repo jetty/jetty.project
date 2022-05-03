@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http2.hpack.internal;
 
 import java.nio.ByteBuffer;
 

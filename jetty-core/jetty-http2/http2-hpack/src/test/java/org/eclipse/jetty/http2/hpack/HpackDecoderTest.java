@@ -23,7 +23,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException.CompressionException;
 import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.http2.hpack.internal.MetaDataBuilder;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +62,7 @@ public class HpackDecoderTest
 
         // First request
         String encoded = "828684410f7777772e6578616d706c652e636f6d";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
@@ -73,7 +74,7 @@ public class HpackDecoderTest
 
         // Second request
         encoded = "828684be58086e6f2d6361636865";
-        buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         request = (MetaData.Request)decoder.decode(buffer);
 
@@ -88,7 +89,7 @@ public class HpackDecoderTest
 
         // Third request
         encoded = "828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
-        buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         request = (MetaData.Request)decoder.decode(buffer);
 
@@ -109,7 +110,7 @@ public class HpackDecoderTest
 
         // First request
         String encoded = "828684418cf1e3c2e5f23a6ba0ab90f4ff";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
@@ -121,7 +122,7 @@ public class HpackDecoderTest
 
         // Second request
         encoded = "828684be5886a8eb10649cbf";
-        buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         request = (MetaData.Request)decoder.decode(buffer);
 
@@ -142,7 +143,7 @@ public class HpackDecoderTest
 
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         String encoded = "8682418cF1E3C2E5F23a6bA0Ab90F4Ff841f0822426173696320515778685a475270626a70766347567549484e6c633246745a513d3d";
-        byte[] bytes = TypeUtil.fromHexString(encoded);
+        byte[] bytes = StringUtil.fromHexString(encoded);
         byte[] array = new byte[bytes.length + 1];
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
@@ -165,7 +166,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "8286418cf1e3c2e5f23a6ba0ab90f4ff84";
-        byte[] bytes = TypeUtil.fromHexString(encoded);
+        byte[] bytes = StringUtil.fromHexString(encoded);
         byte[] array = new byte[bytes.length + 1];
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
@@ -184,7 +185,7 @@ public class HpackDecoderTest
     {
         // Response encoded by nghttpx
         String encoded = "886196C361Be940b6a65B6850400B8A00571972e080a62D1Bf5f87497cA589D34d1f9a0f0d0234327690Aa69D29aFcA954D3A5358980Ae112e0f7c880aE152A9A74a6bF3";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         MetaData.Response response = (MetaData.Response)decoder.decode(buffer);
@@ -203,7 +204,7 @@ public class HpackDecoderTest
     public void testResize() throws Exception
     {
         String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         MetaData metaData = decoder.decode(buffer);
         assertThat(metaData.getFields().get(HttpHeader.HOST), is("localhost0"));
@@ -225,7 +226,7 @@ public class HpackDecoderTest
         */
 
         String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f20";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         try
         {
@@ -242,7 +243,7 @@ public class HpackDecoderTest
     public void testTooBigToIndex() throws Exception
     {
         String encoded = "3f610f17FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(128, 8192);
         MetaData metaData = decoder.decode(buffer);
@@ -255,7 +256,7 @@ public class HpackDecoderTest
     public void testUnknownIndex() throws Exception
     {
         String encoded = "BE";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(128, 8192);
 
@@ -445,7 +446,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "83" + "49509F";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
 
@@ -463,7 +464,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "84" + "49509FFF";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
@@ -475,7 +476,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "83" + "495090";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
@@ -488,7 +489,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "87" + "497FFFFFFF427F";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
@@ -500,7 +501,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "81" + "FE";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
@@ -512,7 +513,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "82868441" + "82" + "FFFE";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
@@ -524,7 +525,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "00000130";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         SessionException ex = assertThrows(SessionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Header size 0"));
     }
@@ -535,7 +536,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "00016800";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         MetaData metaData = decoder.decode(buffer);
         assertThat(metaData.getFields().size(), is(1));
         assertThat(metaData.getFields().get("h"), is(""));
@@ -547,7 +548,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "0001480130";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
     }
@@ -558,7 +559,7 @@ public class HpackDecoderTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
         String encoded = "0001200130";
-        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
         StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Illegal header"));
     }

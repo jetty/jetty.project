@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +23,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -35,12 +31,13 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.server.handler.EchoHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -93,7 +90,7 @@ public class SslContextFactoryReloadTest
     @Test
     public void testReload() throws Exception
     {
-        start(new EchoHandler());
+        start(new TestHandler());
 
         SSLContext ctx = SSLContext.getInstance("TLSv1.2");
         ctx.init(null, SslContextFactory.TRUST_ALL_CERTS, null);
@@ -151,7 +148,7 @@ public class SslContextFactoryReloadTest
     @Test
     public void testReloadWhileServing() throws Exception
     {
-        start(new EchoHandler());
+        start(new TestHandler());
 
         Scheduler scheduler = new ScheduledExecutorScheduler();
         scheduler.start();
@@ -247,16 +244,21 @@ public class SslContextFactoryReloadTest
         }
     }
 
-    private static class EchoHandler extends AbstractHandler
+    private static class TestHandler extends EchoHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public Request.Processor handle(Request request) throws Exception
         {
-            baseRequest.setHandled(true);
             if (HttpMethod.POST.is(request.getMethod()))
-                IO.copy(request.getInputStream(), response.getOutputStream());
-            else
-                response.setContentLength(0);
+                return super.handle(request);
+
+            return this::processNoContent;
+        }
+
+        public void processNoContent(Request request, Response response, Callback callback)
+        {
+            response.setContentLength(0);
+            callback.succeeded();
         }
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -22,12 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.internal.HttpConnection;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,25 +79,27 @@ public class SlowClientWithPipelinedRequestTest
     public void testSlowClientWithPipelinedRequest() throws Exception
     {
         final int contentLength = 512 * 1024;
-        startServer(new AbstractHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                if ("/content".equals(target))
+                if ("/content".equals(request.getPathInContext()))
                 {
+                    // TODO is this still a valid test?
                     // We simulate what the DefaultServlet does, bypassing the blocking
                     // write mechanism otherwise the test does not reproduce the bug
-                    OutputStream outputStream = response.getOutputStream();
-                    HttpOutput output = (HttpOutput)outputStream;
+
                     // Since the test is via localhost, we need a really big buffer to stall the write
                     byte[] bytes = new byte[contentLength];
                     Arrays.fill(bytes, (byte)'9');
                     ByteBuffer buffer = ByteBuffer.wrap(bytes);
                     // Do a non blocking write
-                    output.sendContent(buffer);
+                    response.write(true, callback, buffer);
+                }
+                else
+                {
+                    callback.succeeded();
                 }
             }
         });

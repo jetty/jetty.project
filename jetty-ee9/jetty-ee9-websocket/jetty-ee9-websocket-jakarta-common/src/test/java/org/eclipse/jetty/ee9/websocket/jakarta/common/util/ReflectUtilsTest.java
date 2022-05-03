@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.util;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.util;
 
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.junit.jupiter.api.Test;

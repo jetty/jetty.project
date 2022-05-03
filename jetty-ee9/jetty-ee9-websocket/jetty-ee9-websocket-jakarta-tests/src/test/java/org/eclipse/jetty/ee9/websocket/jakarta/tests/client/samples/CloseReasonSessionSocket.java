@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client.samples;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -19,7 +19,7 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 
 @ClientEndpoint
 public class CloseReasonSessionSocket extends WSEventTracker

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,16 +23,14 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.Cookie;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -218,6 +215,7 @@ import static java.lang.invoke.MethodType.methodType;
  * </td>
  * </tr>
  *
+ * // TODO ATTRIBUTE LOGGING
  * <tr>
  * <td>%r</td>
  * <td>
@@ -388,7 +386,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @Override
     public void log(Request request, Response response)
     {
-        if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
+        if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getHttpURI().toString()) != null)
             return;
 
         if (_filter != null && !_filter.test(request, response))
@@ -419,14 +417,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
      */
     protected static String getAuthentication(Request request, boolean checkDeferred)
     {
-        Authentication authentication = request.getAuthentication();
-        if (checkDeferred && authentication instanceof Authentication.Deferred)
-            authentication = ((Authentication.Deferred)authentication).authenticate(request);
+        // TODO
+//        Authentication authentication = request.getAuthentication();
+//        if (checkDeferred && authentication instanceof Authentication.Deferred)
+//            authentication = ((Authentication.Deferred)authentication).authenticate(request);
 
         String name = null;
-        if (authentication instanceof Authentication.User)
-            name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
-
+//        if (authentication instanceof Authentication.User)
+//            name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
+//
         return name;
     }
 
@@ -642,7 +641,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         MethodType logType = methodType(void.class, StringBuilder.class, Request.class, Response.class);
         MethodType logTypeArg = methodType(void.class, String.class, StringBuilder.class, Request.class, Response.class);
 
-        //TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them 
+        //TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them
         MethodHandle specificHandle;
         switch (code)
         {
@@ -994,66 +993,66 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logServerHost(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getServerName());
+        append(b, Request.getServerName(request));
     }
 
     @SuppressWarnings("unused")
     private static void logClientHost(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getRemoteHost());
+        append(b, Request.getRemoteAddr(request));
     }
 
     @SuppressWarnings("unused")
     private static void logLocalHost(StringBuilder b, Request request, Response response)
     {
-        InetSocketAddress local = request.getHttpChannel().getLocalAddress();
-        append(b, local == null ? null : local.getAddress().getHostAddress());
+        // Unwrap to bypass any customizers
+        append(b, Request.getLocalAddr(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logRemoteHost(StringBuilder b, Request request, Response response)
     {
-        InetSocketAddress remote = request.getHttpChannel().getRemoteAddress();
-        append(b, remote == null ? null : remote.getAddress().getHostAddress());
+        // Unwrap to bypass any customizers
+        append(b, Request.getRemoteAddr(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logServerPort(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getServerPort());
+        b.append(Request.getServerPort(request));
     }
 
     @SuppressWarnings("unused")
     private static void logClientPort(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getRemotePort());
+        b.append(Request.getRemotePort(request));
     }
 
     @SuppressWarnings("unused")
     private static void logLocalPort(StringBuilder b, Request request, Response response)
     {
-        InetSocketAddress local = request.getHttpChannel().getLocalAddress();
-        append(b, local == null ? null : String.valueOf(local.getPort()));
+        // Unwrap to bypass any customizers
+        b.append(Request.getLocalPort(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logRemotePort(StringBuilder b, Request request, Response response)
     {
-        InetSocketAddress remote = request.getHttpChannel().getRemoteAddress();
-        append(b, remote == null ? null : String.valueOf(remote.getPort()));
+        // Unwrap to bypass any customizers
+        b.append(Request.getRemotePort(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
-        long written = response.getHttpChannel().getBytesWritten();
+        long written = Response.getContentBytesWritten(response);
         b.append(written);
     }
 
     @SuppressWarnings("unused")
     private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
-        long written = response.getHttpChannel().getBytesWritten();
+        long written = Response.getContentBytesWritten(response);
         if (written == 0)
             b.append('-');
         else
@@ -1063,13 +1062,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
-        b.append(response.getHttpChannel().getBytesWritten());
+        b.append(Response.getContentBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesSentCLF(StringBuilder b, Request request, Response response)
     {
-        long sent = response.getHttpChannel().getBytesWritten();
+        long sent = Response.getContentBytesWritten(response);
         if (sent == 0)
             b.append('-');
         else
@@ -1079,13 +1078,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpInput().getContentReceived());
+        b.append(Request.getContentBytesRead(request));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesReceivedCLF(StringBuilder b, Request request, Response response)
     {
-        long received = request.getHttpInput().getContentReceived();
+        long received = Request.getContentBytesRead(request);
         if (received == 0)
             b.append('-');
         else
@@ -1095,13 +1094,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpInput().getContentReceived() + response.getHttpOutput().getWritten());
+        b.append(Request.getContentBytesRead(request) + Response.getContentBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesTransferredCLF(StringBuilder b, Request request, Response response)
     {
-        long transferred = request.getHttpInput().getContentReceived() + response.getHttpOutput().getWritten();
+        long transferred = Request.getContentBytesRead(request) + Response.getContentBytesWritten(response);
         if (transferred == 0)
             b.append('-');
         else
@@ -1111,10 +1110,10 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
-        Cookie[] cookies = request.getCookies();
+        List<HttpCookie> cookies = Request.getCookies(request);
         if (cookies != null)
         {
-            for (Cookie c : cookies)
+            for (HttpCookie c : cookies)
             {
                 if (arg.equals(c.getName()))
                 {
@@ -1130,18 +1129,18 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestCookies(StringBuilder b, Request request, Response response)
     {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null || cookies.length == 0)
-            b.append("-");
+        List<HttpCookie> cookies = Request.getCookies(request);
+        if (cookies == null || cookies.size() == 0)
+            b.append('-');
         else
         {
-            for (int i = 0; i < cookies.length; i++)
+            for (int i = 0; i < cookies.size(); i++)
             {
                 if (i != 0)
                     b.append(';');
-                b.append(cookies[i].getName());
+                b.append(cookies.get(i).getName());
                 b.append('=');
-                b.append(cookies[i].getValue());
+                b.append(cookies.get(i).getValue());
             }
         }
     }
@@ -1155,34 +1154,35 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logFilename(StringBuilder b, Request request, Response response)
     {
-        UserIdentity.Scope scope = request.getUserIdentityScope();
-        if (scope == null || scope.getContextHandler() == null)
-            b.append('-');
-        else
-        {
-            ContextHandler context = scope.getContextHandler();
-            int lengthToStrip = scope.getContextPath().length() > 1 ? scope.getContextPath().length() : 0;
-            String filename = context.getServletContext().getRealPath(request.getPathInfo().substring(lengthToStrip));
-            append(b, filename);
-        }
+        b.append('-');
+//      TODO UserIdentity.Scope scope = request.getUserIdentityScope();
+//        if (scope == null || scope.getContextHandler() == null)
+//            b.append('-');
+//        else
+//        {
+//            ContextHandler context = scope.getContextHandler();
+//            int lengthToStrip = scope.getContextPath().length() > 1 ? scope.getContextPath().length() : 0;
+//            String filename = context.getServletContext().getRealPath(request.getPathInfo().substring(lengthToStrip));
+//            append(b, filename);
+//        }
     }
 
     @SuppressWarnings("unused")
     private static void logRequestProtocol(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getProtocol());
+        append(b, request.getConnectionMetaData().getProtocol());
     }
 
     @SuppressWarnings("unused")
     private static void logRequestHeader(String arg, StringBuilder b, Request request, Response response)
     {
-        append(b, request.getHeader(arg));
+        append(b, request.getHeaders().get(arg));
     }
 
     @SuppressWarnings("unused")
     private static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
     {
-        long requests = request.getHttpChannel().getConnection().getMessagesIn();
+        long requests = request.getConnectionMetaData().getConnection().getMessagesIn();
         if (requests >= 0)
             b.append(requests);
         else
@@ -1198,13 +1198,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
     {
-        append(b, response.getHeader(arg));
+        append(b, response.getHeaders().get(arg));
     }
 
     @SuppressWarnings("unused")
     private static void logQueryString(StringBuilder b, Request request, Response response)
     {
-        append(b, "?" + request.getQueryString());
+        append(b, "?" + request.getHttpURI().getQuery());
     }
 
     @SuppressWarnings("unused")
@@ -1212,21 +1212,22 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         append(b, request.getMethod());
         b.append(" ");
-        append(b, request.getOriginalURI());
+        append(b, request.getHttpURI().getPathQuery());
         b.append(" ");
-        append(b, request.getProtocol());
+        append(b, request.getConnectionMetaData().getProtocol());
     }
 
     @SuppressWarnings("unused")
     private static void logRequestHandler(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getServletName());
+        b.append('-');
+//      TODO append(b, request.getServletName());
     }
 
     @SuppressWarnings("unused")
     private static void logResponseStatus(StringBuilder b, Request request, Response response)
     {
-        b.append(response.getCommittedMetaData().getStatus());
+        b.append(response.getStatus());
     }
 
     @SuppressWarnings("unused")
@@ -1278,19 +1279,21 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logUrlRequestPath(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getRequestURI());
+        append(b, request.getHttpURI().getPath());
     }
 
     @SuppressWarnings("unused")
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpChannel().isResponseCompleted() ? (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
+        b.append(response.isCompletedSuccessfully()
+            ? (request.getConnectionMetaData().isPersistent() ? '+' : '-')
+            : 'X');
     }
 
     @SuppressWarnings("unused")
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        HttpFields trailers = request.getTrailerHttpFields();
+        HttpFields trailers = response.getTrailers();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
@@ -1300,17 +1303,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        Supplier<HttpFields> supplier = response.getTrailers();
-        if (supplier != null)
-        {
-            HttpFields trailers = supplier.get();
-
-            if (trailers != null)
-                append(b, trailers.get(arg));
-            else
-                b.append('-');
-        }
+        b.append('-');
+        HttpFields trailers = response.getTrailers();
+        if (trailers != null)
+            append(b, trailers.get(arg));
         else
-            b.append("-");
+            b.append('-');
     }
 }

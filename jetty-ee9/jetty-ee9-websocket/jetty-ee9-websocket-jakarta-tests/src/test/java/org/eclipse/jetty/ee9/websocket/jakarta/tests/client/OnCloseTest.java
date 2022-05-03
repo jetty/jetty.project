@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -19,20 +19,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.websocket.ClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequestAdapter;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples.CloseReasonSessionSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples.CloseReasonSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples.CloseSessionReasonSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples.CloseSessionSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.samples.CloseSocket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
-import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseReasonSessionSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseReasonSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSessionReasonSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSessionSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSocket;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

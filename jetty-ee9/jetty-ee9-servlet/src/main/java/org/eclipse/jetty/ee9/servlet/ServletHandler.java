@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,19 +44,19 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ScopedHandler;
+import org.eclipse.jetty.ee9.nested.ServletPathMapping;
+import org.eclipse.jetty.ee9.nested.ServletRequestHttpWrapper;
+import org.eclipse.jetty.ee9.nested.ServletResponseHttpWrapper;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServletPathMapping;
-import org.eclipse.jetty.server.ServletRequestHttpWrapper;
-import org.eclipse.jetty.server.ServletResponseHttpWrapper;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -159,9 +159,9 @@ public class ServletHandler extends ScopedHandler
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            _servletContext = context == null ? new ContextHandler.StaticContext() : context;
-            _contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
+            ContextHandler.APIContext context = ContextHandler.getCurrentContext();
+            _servletContext = context;
+            _contextHandler = (ServletContextHandler)context.getContextHandler();
 
             if (_contextHandler != null)
             {
@@ -1248,7 +1248,6 @@ public class ServletHandler extends ScopedHandler
 
     protected PathSpec asPathSpec(String pathSpec)
     {
-        // By default only allow servlet path specs
         return new ServletPathSpec(pathSpec);
     }
 
@@ -1360,9 +1359,9 @@ public class ServletHandler extends ScopedHandler
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
-                PathSpec ps = asPathSpec(pathSpec);
-                MappedServlet mappedServlet = new MappedServlet(ps, getServlet(finalMapping.getServletName()));
-                pm.put(ps, mappedServlet);
+                PathSpec servletPathSpec = asPathSpec(pathSpec);
+                MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
+                pm.put(servletPathSpec, mappedServlet);
             }
 
             _servletPathMap = pm;

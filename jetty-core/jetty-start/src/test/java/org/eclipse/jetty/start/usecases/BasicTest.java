@@ -95,7 +95,7 @@ public class BasicTest extends AbstractUseCase
         PathAssert.assertDirExists("Required Directory: maindir/", results.baseHome.getPath("maindir/"));
 
         // === Validate home/base property uri values
-        Props props = results.startArgs.getProperties();
+        Props props = results.startArgs.getCoreEnvironment().getProperties();
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));
@@ -256,7 +256,7 @@ public class BasicTest extends AbstractUseCase
             "-Xms1g",
             "-Xmx1g"
         );
-        List<String> actualJvmArgs = new ArrayList<>(results.startArgs.getJvmArgSources().keySet());
+        List<String> actualJvmArgs = results.startArgs.getJvmArgs();
         assertThat("JVM Args", actualJvmArgs, contains(expectedJvmArgs.toArray()));
     }
 
@@ -352,7 +352,7 @@ public class BasicTest extends AbstractUseCase
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
         // === Validate home/base property uri values
-        Props props = results.startArgs.getProperties();
+        Props props = results.startArgs.getCoreEnvironment().getProperties();
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));

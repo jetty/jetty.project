@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;

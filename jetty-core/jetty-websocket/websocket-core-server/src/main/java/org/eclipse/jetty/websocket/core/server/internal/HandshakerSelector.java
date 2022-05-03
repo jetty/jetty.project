@@ -15,8 +15,9 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
@@ -33,10 +34,10 @@ public class HandshakerSelector implements Handshaker
     private final RFC8441Handshaker rfc8441 = new RFC8441Handshaker();
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
         // Try HTTP/1.1 WS upgrade, if this fails try an HTTP/2 WS upgrade if no response was committed.
-        return rfc6455.upgradeRequest(negotiator, request, response, components, defaultCustomizer) ||
-            !response.isCommitted() && rfc8441.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
+        return rfc6455.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer) ||
+            !response.isCommitted() && rfc8441.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
     }
 }

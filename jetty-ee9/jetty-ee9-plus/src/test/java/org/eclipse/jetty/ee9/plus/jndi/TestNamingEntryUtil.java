@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.jndi;
+package org.eclipse.jetty.ee9.plus.jndi;
 
 import java.util.List;
 import javax.naming.Context;

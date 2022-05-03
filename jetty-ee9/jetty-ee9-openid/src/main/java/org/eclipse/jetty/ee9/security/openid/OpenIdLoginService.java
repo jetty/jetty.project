@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
 import java.util.Objects;
 import javax.security.auth.Subject;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

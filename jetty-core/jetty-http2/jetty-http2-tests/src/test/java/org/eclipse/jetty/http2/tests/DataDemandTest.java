@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -25,14 +25,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -73,7 +73,7 @@ public class DataDemandTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
         MetaData.Request post = newRequest("POST", HttpFields.EMPTY);
         FuturePromise<Stream> promise = new FuturePromise<>();
         Queue<DataFrame> clientQueue = new ConcurrentLinkedQueue<>();
@@ -183,7 +183,7 @@ public class DataDemandTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
         MetaData.Request post = newRequest("GET", HttpFields.EMPTY);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -243,7 +243,7 @@ public class DataDemandTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
         MetaData.Request post = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch latch = new CountDownLatch(1);
         client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -290,7 +290,7 @@ public class DataDemandTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
         MetaData.Request post = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch latch = new CountDownLatch(1);
         client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -342,7 +342,7 @@ public class DataDemandTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener.Adapter());
         MetaData.Request post = newRequest("POST", HttpFields.EMPTY);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);

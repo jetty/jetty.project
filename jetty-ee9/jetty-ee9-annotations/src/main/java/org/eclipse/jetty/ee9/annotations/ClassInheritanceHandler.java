@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +25,7 @@ import org.slf4j.LoggerFactory;
  *
  * As asm scans for classes, remember the type hierarchy.
  */
-public class ClassInheritanceHandler extends AbstractHandler
+public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClassInheritanceHandler.class);
 
@@ -39,7 +37,7 @@ public class ClassInheritanceHandler extends AbstractHandler
     }
 
     @Override
-    public void handle(ClassInfo classInfo)
+    public void handle(AnnotationParser.ClassInfo classInfo)
     {
         try
         {

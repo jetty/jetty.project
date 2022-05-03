@@ -16,78 +16,75 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Issues a (3xx) Redirect response whenever the rule finds a match via regular expression.
- * <p>
- * The replacement string may use $n" to replace the nth capture group.
- * <p>
- * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4">{@code 3xx Redirection} status code set</a>.
- * <p>
- * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3">{@code 302 Found}</a>
+ * <p>Issues a (3xx) redirect response whenever the rule finds a request path regular expression match</p>
+ * <p>The replacement string may use {@code $n} to replace the nth capture group.</p>
+ * <p>All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4">{@code 3xx Redirection} status code set</a>.</p>
+ * <p>Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3">{@code 302 Found}</a>.</p>
  */
 public class RedirectRegexRule extends RegexRule
 {
     protected String _location;
     private int _statusCode = HttpStatus.FOUND_302;
 
-    public RedirectRegexRule()
-    {
-        this(null, null);
-    }
-
     public RedirectRegexRule(@Name("regex") String regex, @Name("location") String location)
     {
         super(regex);
-        setHandling(true);
-        setTerminating(true);
-        setLocation(location);
+        _location = location;
+    }
+
+    @Override
+    public boolean isTerminating()
+    {
+        return true;
+    }
+
+    public String getLocation()
+    {
+        return _location;
     }
 
     /**
-     * Sets the redirect location.
-     *
-     * @param location the URI to redirect to
+     * @param location the location to redirect.
      */
     public void setLocation(String location)
     {
         _location = location;
     }
 
-    /**
-     * Sets the redirect status code.
-     *
-     * @param statusCode the 3xx redirect status code
-     */
+    public int getStatusCode()
+    {
+        return _statusCode;
+    }
+
     public void setStatusCode(int statusCode)
     {
-        if (statusCode >= 300 && statusCode <= 399)
-            _statusCode = statusCode;
-        else
+        if (!HttpStatus.isRedirection(statusCode))
             throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
+        _statusCode = statusCode;
     }
 
     @Override
-    protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
+    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
     {
-        target = _location;
-        for (int g = 1; g <= matcher.groupCount(); g++)
+        return new Request.WrapperProcessor(input)
         {
-            String group = matcher.group(g);
-            target = StringUtil.replace(target, "$" + g, group);
-        }
-
-        target = response.encodeRedirectURL(target);
-        response.setHeader("Location", RedirectUtil.toRedirectURL(request, target));
-        response.setStatus(_statusCode);
-        response.getOutputStream().flush(); // no output / content
-        response.getOutputStream().close();
-        return target;
+            @Override
+            public void process(Request ignored, Response response, Callback callback)
+            {
+                String target = matcher.replaceAll(getLocation());
+                response.setStatus(_statusCode);
+                response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
+                callback.succeeded();
+            }
+        };
     }
 
     /**
@@ -96,11 +93,6 @@ public class RedirectRegexRule extends RegexRule
     @Override
     public String toString()
     {
-        StringBuilder str = new StringBuilder();
-        str.append(super.toString());
-        str.append('[').append(_statusCode);
-        str.append('>').append(_location);
-        str.append(']');
-        return str.toString();
+        return "%s[redirect:%d>%s]".formatted(super.toString(), getStatusCode(), getLocation());
     }
 }

@@ -16,26 +16,27 @@ etc/jetty-requestlog.xml
 [files]
 logs/
 
-[ini-template]
-# tag::documentation[]
-## Request log line format string.
-#jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %O "%{Referer}i" "%{User-Agent}i"
+[ini]
+jetty.requestlog.dir?=logs
 
-## The logging directory (relative to $JETTY_BASE).
+[ini-template]
+## Format string
+# jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %O "%{Referer}i" "%{User-Agent}i"
+
+## Logging directory (relative to $jetty.base)
 # jetty.requestlog.dir=logs
 
-## The request log file path (may be absolute and/or outside $JETTY_BASE).
-# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_MM_dd.request.log
+## File path
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
-## Date format for the files that are rolled over (uses SimpleDateFormat syntax).
+## Date format for rollovered files (uses SimpleDateFormat syntax)
 # jetty.requestlog.filenameDateFormat=yyyy_MM_dd
 
-## How many days to retain old log files.
+## How many days to retain old log files
 # jetty.requestlog.retainDays=90
 
-## Whether to append to existing file or create a new one.
+## Whether to append to existing file
 # jetty.requestlog.append=false
 
-## The timezone of the log file name.
+## Timezone of the log file rollover
 # jetty.requestlog.timezone=GMT
-# end::documentation[]

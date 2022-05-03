@@ -17,72 +17,62 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 
 /**
- * Abstract rule to use as a base class for rules that match with a regular expression.
+ * <p>Abstract rule that uses the regular expression syntax for path pattern matching.</p>
  */
+// TODO: add boolean useCanonical and use canonicalPath?query instead of pathQuery()
 public abstract class RegexRule extends Rule
 {
-    protected Pattern _regex;
+    private Pattern _regex;
 
-    protected RegexRule()
-    {
-    }
-
-    protected RegexRule(String pattern)
+    public RegexRule(String pattern)
     {
         setRegex(pattern);
     }
 
     /**
-     * Sets the regular expression string used to match with string URI.
-     *
-     * @param regex the regular expression.
-     */
-    public void setRegex(String regex)
-    {
-        _regex = regex == null ? null : Pattern.compile(regex);
-    }
-
-    /**
-     * @return get the regular expression
+     * @return the regular expression
      */
     public String getRegex()
     {
         return _regex == null ? null : _regex.pattern();
     }
 
-    @Override
-    public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    /**
+     * <p>Sets the regular expression to match with the request path.</p>
+     *
+     * @param regex the regular expression
+     */
+    public void setRegex(String regex)
     {
+        _regex = regex == null ? null : Pattern.compile(regex);
+    }
+
+    @Override
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    {
+        String target = input.getHttpURI().getPathQuery();
         Matcher matcher = _regex.matcher(target);
-        boolean matches = matcher.matches();
-        if (matches)
-            return apply(target, request, response, matcher);
+        if (matcher.matches())
+            return apply(input, matcher);
         return null;
     }
 
     /**
-     * Apply this rule to the request/response pair.
-     * Called by {@link #matchAndApply(String, HttpServletRequest, HttpServletResponse)} if the regex matches.
+     * <p>Invoked after the regular expression matched the URI path to apply the rule's logic.</p>
      *
-     * @param target field to attempt match
-     * @param request request object
-     * @param response response object
-     * @param matcher The Regex matcher that matched the request (with capture groups available for replacement).
-     * @return The target (possible updated).
-     * @throws IOException exceptions dealing with operating on request or response objects
+     * @param input the input {@code Request} and {@code Processor}
+     * @param matcher the {@code Matcher} that matched the request path, with capture groups available for replacement.
+     * @return the possibly wrapped {@code Request} and {@code Processor}
+     * @throws IOException if applying the rule failed
      */
-    protected abstract String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException;
+    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException;
 
-    /**
-     * Returns the regular expression string.
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _regex + "]";
+        return "%s[regex:%s]".formatted(super.toString(), getRegex());
     }
 }

@@ -13,16 +13,16 @@
 
 package org.eclipse.jetty.hazelcast.session.client;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
 import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.session.SessionContext;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

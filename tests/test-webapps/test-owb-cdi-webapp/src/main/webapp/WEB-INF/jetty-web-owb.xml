@@ -1,6 +1,6 @@
 <!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <!-- Rename this file to jetty-web.xml if the cdi-spi module is not used-->
   <Get id="wal" name="classLoader"/>
   <Get id="objf" name="objectFactory">

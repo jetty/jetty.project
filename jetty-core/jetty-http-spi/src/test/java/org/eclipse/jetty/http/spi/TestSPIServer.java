@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.spi;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -24,11 +23,11 @@ import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
@@ -67,11 +66,9 @@ public class TestSPIServer
                     OutputStream responseBody = exchange.getResponseBody();
                     Headers requestHeaders = exchange.getRequestHeaders();
                     Set<String> keySet = requestHeaders.keySet();
-                    Iterator<String> iter = keySet.iterator();
-                    while (iter.hasNext())
+                    for (String key : keySet)
                     {
-                        String key = iter.next();
-                        List values = requestHeaders.get(key);
+                        List<String> values = requestHeaders.get(key);
                         String s = key + " = " + values.toString() + "\n";
                         responseBody.write(s.getBytes());
                     }
@@ -83,9 +80,7 @@ public class TestSPIServer
                 @Override
                 public boolean checkCredentials(String username, String password)
                 {
-                    if ("username".equals(username) && password.equals("password"))
-                        return true;
-                    return false;
+                    return "username".equals(username) && password.equals("password");
                 }
             });
 
@@ -109,7 +104,7 @@ public class TestSPIServer
                 Request request = client.newRequest("http://localhost:" + port + "/");
                 client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
-                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
             finally
             {
@@ -150,11 +145,9 @@ public class TestSPIServer
                     OutputStream responseBody = exchange.getResponseBody();
                     Headers requestHeaders = exchange.getRequestHeaders();
                     Set<String> keySet = requestHeaders.keySet();
-                    Iterator<String> iter = keySet.iterator();
-                    while (iter.hasNext())
+                    for (String key : keySet)
                     {
-                        String key = iter.next();
-                        List values = requestHeaders.get(key);
+                        List<String> values = requestHeaders.get(key);
                         String s = key + " = " + values.toString() + "\n";
                         responseBody.write(s.getBytes());
                     }
@@ -166,9 +159,7 @@ public class TestSPIServer
                 @Override
                 public boolean checkCredentials(String username, String password)
                 {
-                    if ("username".equals(username) && password.equals("password"))
-                        return true;
-                    return false;
+                    return "username".equals(username) && password.equals("password");
                 }
             });
 
@@ -186,7 +177,7 @@ public class TestSPIServer
                 Request request = client.newRequest("http://localhost:" + port + "/");
                 client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
-                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
             finally
             {

@@ -19,9 +19,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -32,9 +29,10 @@ import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -82,16 +80,15 @@ public class HttpClientCustomProxyTest
     {
         final String serverHost = "server";
         final int status = HttpStatus.NO_CONTENT_204;
-        prepare(new AbstractHandler()
+        prepare(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(Request request, Response response)
             {
-                baseRequest.setHandled(true);
-                if (serverHost.equals(request.getServerName()))
+                if (serverHost.equals(Request.getServerName(request)))
                     response.setStatus(status);
                 else
-                    response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+                    response.setStatus(HttpStatus.NOT_ACCEPTABLE_406);
             }
         });
 
@@ -107,7 +104,7 @@ public class HttpClientCustomProxyTest
         assertEquals(status, response.getStatus());
     }
 
-    private class CAFEBABEProxy extends ProxyConfiguration.Proxy
+    private static class CAFEBABEProxy extends ProxyConfiguration.Proxy
     {
         private CAFEBABEProxy(Origin.Address address, boolean secure)
         {
@@ -121,7 +118,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEClientConnectionFactory implements ClientConnectionFactory
+    private static class CAFEBABEClientConnectionFactory implements ClientConnectionFactory
     {
         private final ClientConnectionFactory connectionFactory;
 
@@ -140,7 +137,7 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private class CAFEBABEConnection extends AbstractConnection implements Callback
+    private static class CAFEBABEConnection extends AbstractConnection implements Callback
     {
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;

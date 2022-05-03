@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.webapp.MetaData;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.resource.EmptyResource;
-import org.eclipse.jetty.webapp.MetaData;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 

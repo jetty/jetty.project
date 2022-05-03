@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -28,11 +28,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,9 @@ public class ServletWrapperTest
         FilterHolder filterHolder = context.addFilter(WrapFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         filterHolder.setAsyncSupported(true);
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(context.getCoreContextHandler(), new DefaultHandler());
+        server.setHandler(handlers);
         server.start();
     }
 

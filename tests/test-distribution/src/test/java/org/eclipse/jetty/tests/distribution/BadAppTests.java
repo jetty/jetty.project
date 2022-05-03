@@ -18,8 +18,8 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

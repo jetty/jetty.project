@@ -18,9 +18,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.infinispan.commons.api.BasicCache;

@@ -16,15 +16,16 @@ package org.eclipse.jetty.server;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
@@ -32,9 +33,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -43,20 +42,16 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Customizer that extracts the attribute from an {@link SSLContext}
- * and sets them on the request with {@link ServletRequest#setAttribute(String, Object)}
+ * and sets them on the request with {@link Request#setAttribute(String, Object)}
  * according to Servlet Specification Requirements.</p>
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
-
-    public static final String JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE = "jakarta.servlet.request.X509Certificate";
-    public static final String JAKARTA_SERVLET_REQUEST_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
-    public static final String JAKARTA_SERVLET_REQUEST_KEY_SIZE = "jakarta.servlet.request.key_size";
-    public static final String JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
     public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
-
-    private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
+    public static final String CERTIFICATES = "org.eclipse.jetty.server.certificates";
+    private String _sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session"; // TODO better name?
+    private String _sslSessionDataAttribute = _sslSessionAttribute + "_data"; // TODO better name?
 
     private boolean _sniRequired;
     private boolean _sniHostCheck;
@@ -197,93 +192,42 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
-        EndPoint endp = request.getHttpChannel().getEndPoint();
+        EndPoint endp = request.getConnectionMetaData().getConnection().getEndPoint();
+        HttpURI uri = request.getHttpURI();
+        SSLEngine sslEngine;
         if (endp instanceof DecryptedEndPoint)
         {
-            SslConnection.DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
+            DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
             SslConnection sslConnection = sslEndp.getSslConnection();
-            SSLEngine sslEngine = sslConnection.getSSLEngine();
-            customize(sslEngine, request);
-
-            request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
+            uri = (HttpScheme.HTTPS.is(uri.getScheme()))
+                ? uri : HttpURI.build(uri).scheme(HttpScheme.HTTPS);
+            sslEngine = sslConnection.getSSLEngine();
         }
         else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
-            if (request.getHttpURI().getScheme() == null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION) != null)
-                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
+            if (proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION) == null)
+                return request;
+            uri = (HttpScheme.HTTPS.is(uri.getScheme()))
+                ? uri : HttpURI.build(uri).scheme(HttpScheme.HTTPS);
+            sslEngine = null;
         }
-
-        if (HttpScheme.HTTPS.is(request.getScheme()))
-            customizeSecure(request);
-    }
-
-    /**
-     * <p>
-     * Customizes the request attributes to be set for SSL requests.
-     * </p>
-     * <p>
-     * The requirements of the Servlet specs are:
-     * </p>
-     * <ul>
-     * <li>an attribute named "jakarta.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
-     * <li>an attribute named "jakarta.servlet.request.cipher_suite" of type String.</li>
-     * <li>an attribute named "jakarta.servlet.request.key_size" of type Integer.</li>
-     * <li>an attribute named "jakarta.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
-     * is an array of objects of type X509Certificate, the order of this array is defined as being in ascending order of
-     * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
-     * the first, and so on.</li>
-     * </ul>
-     *
-     * @param sslEngine the sslEngine to be customized.
-     * @param request HttpRequest to be customized.
-     */
-    protected void customize(SSLEngine sslEngine, Request request)
-    {
-        SSLSession sslSession = sslEngine.getSession();
-
-        if (isSniRequired() || isSniHostCheck())
+        else
         {
-            String sniHost = (String)sslSession.getValue(SslContextFactory.Server.SNI_HOST);
-            X509 x509 = (X509)sslSession.getValue(X509_CERT);
-            if (x509 == null)
-            {
-                Certificate[] certificates = sslSession.getLocalCertificates();
-                if (certificates == null || certificates.length == 0 || !(certificates[0] instanceof X509Certificate))
-                    throw new BadMessageException(400, "Invalid SNI");
-                x509 = new X509(null, (X509Certificate)certificates[0]);
-                sslSession.putValue(X509_CERT, x509);
-            }
-            String serverName = request.getServerName();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
-
-            if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
-                throw new BadMessageException(400, "Invalid SNI");
-
-            if (isSniHostCheck() && !x509.matches(serverName))
-                throw new BadMessageException(400, "Invalid SNI");
+            return request;
         }
-
-        request.setAttributes(new SslAttributes(request, sslSession));
-    }
-
-    /**
-     * Customizes the request attributes for general secure settings.
-     * The default impl calls {@link Request#setSecure(boolean)} with true
-     * and sets a response header if the Strict-Transport-Security options
-     * are set.
-     *
-     * @param request the request being customized
-     */
-    protected void customizeSecure(Request request)
-    {
-        request.setSecure(true);
 
         if (_stsField != null)
-            request.getResponse().getHttpFields().add(_stsField);
+            responseHeaders.add(_stsField);
+
+        return newSecureRequest(request, uri, sslEngine);
+    }
+
+    protected SecureRequest newSecureRequest(Request request, HttpURI uri, SSLEngine sslEngine)
+    {
+        return new SecureRequest(request, uri, sslEngine);
     }
 
     private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
@@ -303,12 +247,60 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     public void setSslSessionAttribute(String attribute)
     {
-        this.sslSessionAttribute = attribute;
+        Objects.requireNonNull(attribute);
+        _sslSessionAttribute = attribute;
+        _sslSessionDataAttribute = attribute + "_data";
     }
 
     public String getSslSessionAttribute()
     {
-        return sslSessionAttribute;
+        return _sslSessionAttribute;
+    }
+
+    /**
+     * Get data belonging to the {@link SSLSession}.
+     *
+     * @return the SslSessionData
+     */
+    public static SslSessionData getSslSessionData(SSLSession session)
+    {
+        String key = SslSessionData.class.getName();
+        return (SslSessionData)session.getValue(key);
+    }
+
+    protected void checkSni(Request request, SSLSession session)
+    {
+        if (isSniRequired() || isSniHostCheck())
+        {
+            String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
+
+            X509 x509 = getX509(session);
+            if (x509 == null)
+                throw new BadMessageException(400, "Invalid SNI");
+            String serverName = Request.getServerName(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
+
+            if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
+                throw new BadMessageException(400, "Invalid SNI");
+
+            if (isSniHostCheck() && !x509.matches(serverName))
+                throw new BadMessageException(400, "Invalid SNI");
+        }
+    }
+
+    private X509 getX509(SSLSession session)
+    {
+        X509 x509 = (X509)session.getValue(X509_CERT);
+        if (x509 == null)
+        {
+            Certificate[] certificates = session.getLocalCertificates();
+            if (certificates == null || certificates.length == 0 || !(certificates[0] instanceof X509Certificate))
+                return null;
+            x509 = new X509(null, (X509Certificate)certificates[0]);
+            session.putValue(X509_CERT, x509);
+        }
+        return x509;
     }
 
     @Override
@@ -317,104 +309,95 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
-    private class SslAttributes extends Attributes.Wrapper
+    protected class SecureRequest extends Request.Wrapper
     {
-        private final Request _request;
-        private final SSLSession _session;
+        private final HttpURI _uri;
+        private final SSLSession _sslSession;
+        private final SslSessionData _sslSessionData;
 
-        private X509Certificate[] _certs;
-        private String _cipherSuite;
-        private Integer _keySize;
-        private String _sessionId;
-        private String _sessionAttribute;
-
-        private SslAttributes(Request request, SSLSession sslSession)
+        private SecureRequest(Request request, HttpURI uri, SSLEngine sslEngine)
         {
-            super(request.getAttributes());
-            this._request = request;
-            this._session = sslSession;
+            super(request);
+            _uri = uri.asImmutable();
 
-            try
+            if (sslEngine == null)
             {
-                SslSessionData sslSessionData = getSslSessionData();
-                _certs = sslSessionData.getCerts();
-                _cipherSuite = _session.getCipherSuite();
-                _keySize = sslSessionData.getKeySize();
-                _sessionId = sslSessionData.getIdStr();
-                _sessionAttribute = getSslSessionAttribute();
+                _sslSession = null;
+                _sslSessionData = null;
             }
-            catch (Exception e)
+            else
             {
-                LOG.warn("Unable to get secure details ", e);
+                _sslSession = sslEngine.getSession();
+                checkSni(request, _sslSession);
+
+                String key = SslSessionData.class.getName();
+                SslSessionData sslSessionData = (SslSessionData)_sslSession.getValue(key);
+                if (sslSessionData == null)
+                {
+                    try
+                    {
+                        String cipherSuite = _sslSession.getCipherSuite();
+                        int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+
+                        X509Certificate[] certs = getCertChain(getConnectionMetaData().getConnector(), _sslSession);
+
+                        byte[] bytes = _sslSession.getId();
+                        String idStr = StringUtil.toHexString(bytes);
+
+                        sslSessionData = new SslSessionData(keySize, certs, idStr);
+                        _sslSession.putValue(key, sslSessionData);
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Unable to get secure details ", e);
+                    }
+                }
+                _sslSessionData = sslSessionData;
             }
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return _uri;
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return true;
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            switch (name)
+            String sessionAttribute = getSslSessionAttribute();
+            if (StringUtil.isNotBlank(sessionAttribute) && name.startsWith(sessionAttribute))
             {
-                case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE:
-                    return _certs;
-                case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE:
-                    return _cipherSuite;
-                case JAKARTA_SERVLET_REQUEST_KEY_SIZE:
-                    return _keySize;
-                case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID:
-                    return _sessionId;
-                default:
-                    if (!StringUtil.isEmpty(_sessionAttribute) && _sessionAttribute.equals(name))
-                        return _session;
+                if (name.equals(sessionAttribute))
+                    return _sslSession;
+                if (name.equals(_sslSessionDataAttribute))
+                    return _sslSessionData;
             }
 
-            return _attributes.getAttribute(name);
-        }
-
-        /**
-         * Get data belonging to the {@link SSLSession}.
-         *
-         * @return the SslSessionData
-         */
-        private SslSessionData getSslSessionData()
-        {
-            String key = SslSessionData.class.getName();
-            SslSessionData sslSessionData = (SslSessionData)_session.getValue(key);
-            if (sslSessionData == null)
+            return switch (name)
             {
-                String cipherSuite = _session.getCipherSuite();
-                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
-
-                X509Certificate[] certs = getCertChain(_request.getHttpChannel().getConnector(), _session);
-
-                byte[] bytes = _session.getId();
-                String idStr = TypeUtil.toHexString(bytes);
-
-                sslSessionData = new SslSessionData(keySize, certs, idStr);
-                _session.putValue(key, sslSessionData);
-            }
-            return sslSessionData;
+                case X509_CERT -> getX509(_sslSession);
+                case CERTIFICATES -> _sslSessionData._certs;
+                default -> super.getAttribute(name);
+            };
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
-            names.remove(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
-            names.remove(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
-            names.remove(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
-            names.remove(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
-
-            if (_certs != null)
-                names.add(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
-            if (_cipherSuite != null)
-                names.add(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
-            if (_keySize != null)
-                names.add(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
-            if (_sessionId != null)
-                names.add(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
-            if (!StringUtil.isEmpty(_sessionAttribute))
-                names.add(_sessionAttribute);
-
+            String sessionAttribute = getSslSessionAttribute();
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            if (!StringUtil.isEmpty(sessionAttribute))
+            {
+                names.add(sessionAttribute);
+                names.add(sessionAttribute + "_data");
+            }
             return names;
         }
     }
@@ -422,7 +405,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * Simple bundle of data that is cached in the SSLSession.
      */
-    private static class SslSessionData
+    public static class SslSessionData
     {
         private final Integer _keySize;
         private final X509Certificate[] _certs;
@@ -435,17 +418,17 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             this._idStr = idStr;
         }
 
-        private Integer getKeySize()
+        public Integer getKeySize()
         {
             return _keySize;
         }
 
-        private X509Certificate[] getCerts()
+        public X509Certificate[] getX509Certificates()
         {
             return _certs;
         }
 
-        private String getIdStr()
+        public String getId()
         {
             return _idStr;
         }

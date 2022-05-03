@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server.examples;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.examples;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;

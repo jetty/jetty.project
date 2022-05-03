@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,22 +26,22 @@ import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,13 +65,14 @@ public class ServletRequestLogTest
 
     public static class CaptureLog extends AbstractLifeCycle implements RequestLog
     {
+        ServletRequest _request;
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, Response response)
+        public void log(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
         {
-            int status = response.getCommittedMetaData().getStatus();
-            captured.add(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
+            int status = response.getStatus();
+            captured.add(String.format("%s %s %s %03d", request.getMethod(), request.getHttpURI().asString(), request.getHttpURI().getScheme(), status));
         }
     }
 
@@ -293,13 +294,13 @@ public class ServletRequestLogTest
 
         // First the behavior as defined in etc/jetty.xml
         // id="Handlers"
-        HandlerList handlers = new HandlerList();
+        org.eclipse.jetty.server.Handler.Collection handlers = new org.eclipse.jetty.server.Handler.Collection();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
 
-        handlers.setHandlers(new Handler[]{contexts, defaultHandler});
+        handlers.setHandlers(contexts, defaultHandler);
         server.setHandler(handlers);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
@@ -377,7 +378,9 @@ public class ServletRequestLogTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new HandlerList(contexts, defaultHandler));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(contexts, defaultHandler);
+        server.setHandler(handlers);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -450,7 +453,9 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(contexts, new DefaultHandler());
+        server.setHandler(handlers);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -532,7 +537,9 @@ public class ServletRequestLogTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new HandlerList(contexts, defaultHandler));
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(contexts, defaultHandler);
+        server.setHandler(handlers);
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"

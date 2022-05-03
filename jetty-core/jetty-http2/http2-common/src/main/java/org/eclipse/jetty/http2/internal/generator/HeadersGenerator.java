@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.generator;
+package org.eclipse.jetty.http2.internal.generator;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 

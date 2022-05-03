@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.webapp;
+package org.eclipse.jetty.ee9.plus.webapp;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -19,24 +19,24 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.ee9.plus.annotation.Injection;
+import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallback;
+import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee9.plus.annotation.PostConstructCallback;
+import org.eclipse.jetty.ee9.plus.annotation.PreDestroyCallback;
+import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee9.plus.jndi.Link;
+import org.eclipse.jetty.ee9.plus.jndi.NamingEntry;
+import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee9.webapp.Descriptor;
+import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee9.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.ee9.webapp.Origin;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.plus.annotation.Injection;
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.PostConstructCallback;
-import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
-import org.eclipse.jetty.plus.jndi.EnvEntry;
-import org.eclipse.jetty.plus.jndi.Link;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.webapp.Descriptor;
-import org.eclipse.jetty.webapp.FragmentDescriptor;
-import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
-import org.eclipse.jetty.webapp.Origin;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

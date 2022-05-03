@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,14 +22,14 @@ import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +51,7 @@ public class SpecExampleConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private static Server _server;
+    private static ContextHandler _context;
     private static LocalConnector _connector;
     private static SessionHandler _session;
     private ConstraintSecurityHandler _security;
@@ -59,10 +60,10 @@ public class SpecExampleConstraintTest
     public static void startServer()
     {
         _server = new Server();
+        _context = new ContextHandler(_server);
         _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler context = new ContextHandler();
         _session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -72,9 +73,8 @@ public class SpecExampleConstraintTest
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
-        context.setContextPath("/ctx");
-        _server.setHandler(context);
-        context.setHandler(_session);
+        _context.setContextPath("/ctx");
+        _context.setHandler(_session);
 
         _server.addBean(loginService);
     }

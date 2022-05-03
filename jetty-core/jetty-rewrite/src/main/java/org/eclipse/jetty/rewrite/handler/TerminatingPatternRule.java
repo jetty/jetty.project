@@ -15,38 +15,28 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 
 /**
- * If this rule matches, terminate the processing of other rules.
- * Allowing the request to be processed by the handlers after the rewrite rules.
+ * <p>If this rule matches, terminates the processing of other rules, allowing
+ * the request to be processed by the handlers after the {@link RewriteHandler}.</p>
  */
 public class TerminatingPatternRule extends PatternRule
 {
-    public TerminatingPatternRule()
-    {
-        this(null);
-    }
-
     public TerminatingPatternRule(String pattern)
     {
         super(pattern);
-        super.setTerminating(true);
     }
 
     @Override
-    public void setTerminating(boolean terminating)
+    public boolean isTerminating()
     {
-        if (!terminating)
-        {
-            throw new RuntimeException("Not allowed to disable terminating on a " + TerminatingPatternRule.class.getName());
-        }
+        return true;
     }
 
     @Override
-    protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
-        return target;
+        return input;
     }
 }

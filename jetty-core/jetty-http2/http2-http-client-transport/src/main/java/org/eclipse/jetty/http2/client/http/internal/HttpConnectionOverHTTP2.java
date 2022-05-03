@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client.http.internal;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Iterator;
@@ -36,11 +36,11 @@ import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;

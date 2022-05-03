@@ -26,12 +26,12 @@ public class BadMessageException extends RuntimeException
 
     public BadMessageException()
     {
-        this(400, null);
+        this(400, null, null);
     }
 
     public BadMessageException(int code)
     {
-        this(code, null);
+        this(code, null, null);
     }
 
     public BadMessageException(String reason)
@@ -47,6 +47,11 @@ public class BadMessageException extends RuntimeException
     public BadMessageException(int code, String reason)
     {
         this(code, reason, null);
+    }
+
+    public BadMessageException(int code, Throwable cause)
+    {
+        this(code, null, cause);
     }
 
     public BadMessageException(int code, String reason, Throwable cause)

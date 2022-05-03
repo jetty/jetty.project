@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ResourceHttpContent implements HttpContent
 {
     final Resource _resource;
+    final Path _path;
     final String _contentType;
     final int _maxBuffer;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
@@ -51,6 +53,7 @@ public class ResourceHttpContent implements HttpContent
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource = resource;
+        _path = resource.getPath();
         _contentType = contentType;
         _maxBuffer = maxBuffer;
         if (precompressedContents == null)
@@ -118,21 +121,6 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getDirectBuffer()
-    {
-        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
-            return null;
-        try
-        {
-            return BufferUtil.toBuffer(_resource, true);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public HttpField getETag()
     {
         return new HttpField(HttpHeader.ETAG, getETagValue());
@@ -142,21 +130,6 @@ public class ResourceHttpContent implements HttpContent
     public String getETagValue()
     {
         return _resource.getWeakETag();
-    }
-
-    @Override
-    public ByteBuffer getIndirectBuffer()
-    {
-        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
-            return null;
-        try
-        {
-            return BufferUtil.toBuffer(_resource, false);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -173,27 +146,15 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
+    public Path getPath()
     {
-        return _resource.getInputStream();
-    }
-
-    @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return _resource.getReadableByteChannel();
+        return _path;
     }
 
     @Override
     public Resource getResource()
     {
         return _resource;
-    }
-
-    @Override
-    public void release()
-    {
-        _resource.close();
     }
 
     @Override
@@ -206,5 +167,17 @@ public class ResourceHttpContent implements HttpContent
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return _precompressedContents;
+    }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        return null;
+    }
+
+    @Override
+    public void release()
+    {
+        _resource.close();
     }
 }

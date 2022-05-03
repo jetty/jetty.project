@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
@@ -24,9 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -34,7 +32,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -56,10 +56,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
-                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
+                response.getHeaders().put("Content-Encoding", "gzip");
+
+                GZIPOutputStream gzipOutput = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
                 gzipOutput.write(data);
                 gzipOutput.finish();
             }
@@ -82,21 +83,19 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
 
                 ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(gzipData);
                 gzipOutput.write(data);
                 gzipOutput.finish();
 
-                ServletOutputStream output = response.getOutputStream();
                 byte[] gzipBytes = gzipData.toByteArray();
                 for (byte gzipByte : gzipBytes)
                 {
-                    output.write(gzipByte);
-                    output.flush();
+                    org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(new byte[]{gzipByte}));
                     sleep(100);
                 }
             }
@@ -115,12 +114,12 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     public void testGZIPContentSentTwiceInOneWrite(Scenario scenario) throws Exception
     {
         final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(scenario, new EmptyServerHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
 
                 ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(gzipData);
@@ -131,8 +130,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] content = Arrays.copyOf(gzipBytes, 2 * gzipBytes.length);
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
-                ServletOutputStream output = response.getOutputStream();
-                output.write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -169,9 +167,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
 
                 ByteArrayOutputStream gzipData = new ByteArrayOutputStream();
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(gzipData);
@@ -182,14 +180,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] chunk1 = Arrays.copyOfRange(gzipBytes, 0, gzipBytes.length - fragment);
                 byte[] chunk2 = Arrays.copyOfRange(gzipBytes, gzipBytes.length - fragment, gzipBytes.length);
 
-                ServletOutputStream output = response.getOutputStream();
-                output.write(chunk1);
-                output.flush();
+                org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(chunk1));
 
                 sleep(500);
 
-                output.write(chunk2);
-                output.flush();
+                org.eclipse.jetty.server.Response.write(response, true, ByteBuffer.wrap(chunk2));
             }
         });
 
@@ -205,14 +200,14 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testGZIPContentCorrupted(Scenario scenario) throws Exception
     {
-        start(scenario, new EmptyServerHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
-                response.getOutputStream().print("0123456789");
+                response.write(true, callback, "0123456789");
             }
         });
 
@@ -237,11 +232,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
-                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
-                GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream());
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                GZIPOutputStream gzip = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
                 gzip.write(content);
                 gzip.finish();
             }
@@ -279,11 +274,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
-                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
-                GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream());
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                GZIPOutputStream gzip = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
                 gzip.write(content);
                 gzip.finish();
             }

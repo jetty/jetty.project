@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.ee9.websocket.api;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.

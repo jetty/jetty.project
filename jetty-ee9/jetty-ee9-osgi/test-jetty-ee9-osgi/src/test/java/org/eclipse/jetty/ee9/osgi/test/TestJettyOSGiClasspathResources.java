@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -70,7 +70,7 @@ public class TestJettyOSGiClasspathResources
         //Note: we have to back down the version of bnd used here because tinybundles expects only this version
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-webapp-resources").type("war").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
         return options.toArray(new Option[options.size()]);
     }
@@ -81,7 +81,7 @@ public class TestJettyOSGiClasspathResources
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        //Test the test-jetty-osgi-webapp-resource bundle with a
+        //Test the test-jetty-ee9-osgi-webapp-resource bundle with a
         //Bundle-Classpath that does NOT include WEB-INF/classes
         HttpClient client = new HttpClient();
         try
@@ -108,20 +108,20 @@ public class TestJettyOSGiClasspathResources
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        Bundle webappBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.webapp.resources");
+        Bundle webappBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources");
 
-        //Make a new bundle based on the test-jetty-osgi-webapp-resources war bundle, but
+        //Make a new bundle based on the test-jetty-ee9-osgi-webapp-resources war bundle, but
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
-        File warFile = new File("target/test-jetty-osgi-webapp-resources.war");
+        File warFile = new File("target/test-jetty-ee9-osgi-webapp-resources.war");
         TinyBundle tiny = TinyBundles.bundle();
         tiny.read(new FileInputStream(warFile));
         tiny.set(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
-        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.osgi.webapp.resources.alt");
+        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
         InputStream is = tiny.build(TinyBundles.withBnd());
         bundleContext.installBundle("dummyAltLocation", is);
 
         webappBundle.stop();
-        Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.webapp.resources.alt");
+        Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
         bundle.start();
         
         HttpClient client = new HttpClient();

@@ -23,13 +23,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -46,10 +44,10 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     @Test
     public void testOpenClose() throws Exception
     {
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException();
             }
@@ -59,7 +57,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)
@@ -95,12 +93,12 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     @Test
     public void testOpenRequestClose() throws Exception
     {
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
         server.start();
@@ -108,7 +106,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)
@@ -166,12 +164,12 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
 
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
+                callback.succeeded();
             }
         });
         server.start();
@@ -179,7 +177,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(2);
         final CountDownLatch closeLatch = new CountDownLatch(2);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)

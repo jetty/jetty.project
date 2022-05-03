@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO consider replacing this with java.net.HttpCookie (once it supports RFC6265)
 public class HttpCookie
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
@@ -50,9 +49,11 @@ public class HttpCookie
 
     public enum SameSite
     {
-        NONE("None"), STRICT("Strict"), LAX("Lax");
+        NONE("None"),
+        STRICT("Strict"),
+        LAX("Lax");
 
-        private String attributeValue;
+        private final String attributeValue;
 
         SameSite(String attributeValue)
         {
@@ -486,6 +487,10 @@ public class HttpCookie
         }
     }
 
+    /**
+     * @deprecated We should not need to do this now
+     */
+    @Deprecated
     public static String getCommentWithoutAttributes(String comment)
     {
         if (comment == null)
@@ -503,6 +508,10 @@ public class HttpCookie
         return strippedComment.length() == 0 ? null : strippedComment;
     }
 
+    /**
+     * @deprecated We should not need to do this now
+     */
+    @Deprecated
     public static String getCommentWithAttributes(String comment, boolean httpOnly, SameSite sameSite)
     {
         if (comment == null && sameSite == null)
@@ -522,17 +531,10 @@ public class HttpCookie
         {
             switch (sameSite)
             {
-                case NONE:
-                    builder.append(SAME_SITE_NONE_COMMENT);
-                    break;
-                case STRICT:
-                    builder.append(SAME_SITE_STRICT_COMMENT);
-                    break;
-                case LAX:
-                    builder.append(SAME_SITE_LAX_COMMENT);
-                    break;
-                default:
-                    throw new IllegalArgumentException(sameSite.toString());
+                case NONE -> builder.append(SAME_SITE_NONE_COMMENT);
+                case STRICT -> builder.append(SAME_SITE_STRICT_COMMENT);
+                case LAX -> builder.append(SAME_SITE_LAX_COMMENT);
+                default -> throw new IllegalArgumentException(sameSite.toString());
             }
         }
 
@@ -555,5 +557,35 @@ public class HttpCookie
         {
             return _cookie;
         }
+    }
+
+    /**
+     * Check that samesite is set on the cookie. If not, use a
+     * context default value, if one has been set.
+     *
+     * @param cookie the cookie to check
+     * @param attributes the context to check settings
+     * @return either the original cookie, or a new one that has the samesit default set
+     */
+    public static HttpCookie checkSameSite(HttpCookie cookie, Attributes attributes)
+    {
+        if (cookie == null || cookie.getSameSite() != null)
+            return cookie;
+
+        //sameSite is not set, use the default configured for the context, if one exists
+        SameSite contextDefault = HttpCookie.getSameSiteDefault(attributes);
+        if (contextDefault == null)
+            return cookie; //no default set
+
+        return new HttpCookie(cookie.getName(),
+            cookie.getValue(),
+            cookie.getDomain(),
+            cookie.getPath(),
+            cookie.getMaxAge(),
+            cookie.isHttpOnly(),
+            cookie.isSecure(),
+            cookie.getComment(),
+            cookie.getVersion(),
+            contextDefault);
     }
 }

@@ -11,10 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http2.hpack.internal;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class Huffman

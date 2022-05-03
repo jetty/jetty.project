@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas.callback;
+package org.eclipse.jetty.ee9.jaas.callback;
 
 import java.util.List;
 import javax.security.auth.callback.Callback;

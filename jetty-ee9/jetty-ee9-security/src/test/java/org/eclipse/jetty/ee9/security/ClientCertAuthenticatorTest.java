@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -25,15 +25,16 @@ import javax.net.ssl.SSLSocketFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -67,6 +68,8 @@ public class ClientCertAuthenticatorTest
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
         server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
 
         int port = 32080;
         int securePort = 32443;
@@ -111,7 +114,7 @@ public class ClientCertAuthenticatorTest
         loginService.setConfig("src/test/resources/realm.properties");
 
         constraintSecurityHandler.setHandler(new FooHandler());
-        server.setHandler(constraintSecurityHandler);
+        context.setHandler(constraintSecurityHandler);
         server.addBean(sslContextFactory);
         server.start();
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.jetty.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;

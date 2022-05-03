@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * will schedule a callback to {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
  * as appropriate.</p>
  */
-public abstract class AbstractConnection implements Connection
+public abstract class AbstractConnection implements Connection, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnection.class);
 
@@ -52,6 +52,15 @@ public abstract class AbstractConnection implements Connection
         _readCallback = new ReadCallback();
     }
 
+    @Deprecated
+    @Override
+    public InvocationType getInvocationType()
+    {
+        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
+        //      so a connection need not be Invocable
+        return Invocable.super.getInvocationType();
+    }
+
     @Override
     public void addEventListener(EventListener listener)
     {
@@ -60,9 +69,10 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public void removeEventListener(EventListener listener)
+    public void removeEventListener(EventListener eventListener)
     {
-        _listeners.remove(listener);
+        if (eventListener instanceof Listener listener)
+            _listeners.remove(listener);
     }
 
     public int getInputBufferSize()
@@ -301,17 +311,15 @@ public abstract class AbstractConnection implements Connection
     @Override
     public final String toString()
     {
-        return String.format("%s@%h::%s", getClass().getSimpleName(), this, getEndPoint());
+        return String.format("%s@%x::%s", getClass().getSimpleName(), hashCode(), getEndPoint());
     }
 
     public String toConnectionString()
     {
-        return String.format("%s@%h",
-            getClass().getSimpleName(),
-            this);
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
-    private class ReadCallback implements Callback
+    private class ReadCallback implements Callback, Invocable
     {
         @Override
         public void succeeded()
@@ -329,6 +337,12 @@ public abstract class AbstractConnection implements Connection
         public String toString()
         {
             return String.format("AC.ReadCB@%h{%s}", AbstractConnection.this, AbstractConnection.this);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return AbstractConnection.this.getInvocationType();
         }
     }
 }

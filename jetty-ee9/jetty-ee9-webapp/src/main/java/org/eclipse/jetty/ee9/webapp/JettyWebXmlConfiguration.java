@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.util.Map;
@@ -32,7 +32,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public static final String PROPERTY_WEB_INF_URI = "web-inf.uri";
     public static final String PROPERTY_WEB_INF = "web-inf";
-    public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
+    public static final String XML_CONFIGURATION = "org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
 
     public JettyWebXmlConfiguration()

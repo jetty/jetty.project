@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

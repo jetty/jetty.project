@@ -13,83 +13,68 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class TerminatingPatternRuleTest extends AbstractRuleTestCase
+public class TerminatingPatternRuleTest extends AbstractRuleTest
 {
-    private RewriteHandler rewriteHandler;
-
     @BeforeEach
     public void init() throws Exception
     {
-        rewriteHandler = new RewriteHandler();
-        rewriteHandler.setServer(_server);
-        rewriteHandler.setHandler(new AbstractHandler()
+        TerminatingPatternRule rule1 = new TerminatingPatternRule("/login.jsp");
+        _rewriteHandler.addRule(rule1);
+        RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
+        rule2.setStatusCode(HttpStatus.SEE_OTHER_303);
+        _rewriteHandler.addRule(rule2);
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                ServletException
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.CREATED_201);
-                request.setAttribute("target", target);
-                request.setAttribute("URI", request.getRequestURI());
-                request.setAttribute("info", request.getPathInfo());
+                callback.succeeded();
             }
         });
-        rewriteHandler.start();
-
-        TerminatingPatternRule rule1 = new TerminatingPatternRule();
-        rule1.setPattern("/login.jsp");
-        rewriteHandler.addRule(rule1);
-        RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
-        rewriteHandler.addRule(rule2);
-
-        start(false);
-    }
-
-    private void assertIsRedirect(int expectedStatus, String expectedLocation)
-    {
-        assertThat("Response Status", _response.getStatus(), is(expectedStatus));
-        assertThat("Response Location Header", _response.getHeader(HttpHeader.LOCATION.asString()), is(expectedLocation));
-    }
-
-    private void assertIsRequest(String expectedRequestPath)
-    {
-        assertThat("Response Status", _response.getStatus(), is(HttpStatus.CREATED_201));
-        assertThat("Request Target", _request.getAttribute("target"), is(expectedRequestPath));
     }
 
     @Test
-    public void testTerminatingEarly() throws IOException, ServletException
+    public void testTerminatingEarly() throws Exception
     {
-        rewriteHandler.handle("/login.jsp", _request, _request, _response);
-        assertIsRequest("/login.jsp");
+        String request = """
+            GET /login.jsp HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.CREATED_201, response.getStatus());
+        assertNull(response.get(HttpHeader.LOCATION));
     }
 
-    @Test
-    public void testNoTerminationDo() throws IOException, ServletException
+    @ParameterizedTest
+    @ValueSource(strings = {"/login.do", "/login/"})
+    public void testNonTerminating(String uri) throws Exception
     {
-        rewriteHandler.handle("/login.do", _request, _request, _response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
-    }
+        String request = """
+            GET $U HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$U", uri);
 
-    @Test
-    public void testNoTerminationDir() throws IOException, ServletException
-    {
-        rewriteHandler.handle("/login/", _request, _request, _response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
+        assertEquals("http://login.company.com/", response.get(HttpHeader.LOCATION));
     }
 }

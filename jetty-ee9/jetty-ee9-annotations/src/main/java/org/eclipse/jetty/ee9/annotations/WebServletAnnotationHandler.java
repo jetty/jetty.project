@@ -11,12 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +35,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
      * Handle discovering a WebServlet annotation.
      */
     @Override
-    public void handle(ClassInfo info, String annotationName)
+    public void handle(AnnotationParser.ClassInfo info, String annotationName)
     {
         if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
@@ -48,7 +45,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     }
 
     @Override
-    public void handle(FieldInfo info, String annotationName)
+    public void handle(AnnotationParser.FieldInfo info, String annotationName)
     {
         if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
@@ -57,7 +54,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     }
 
     @Override
-    public void handle(MethodInfo info, String annotationName)
+    public void handle(AnnotationParser.MethodInfo info, String annotationName)
     {
         if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;

@@ -13,49 +13,64 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.server.Dispatcher;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ResponsePatternRuleTest extends AbstractRuleTestCase
+public class ResponsePatternRuleTest extends AbstractRuleTest
 {
-    private ResponsePatternRule _rule;
-
-    @BeforeEach
-    public void init() throws Exception
+    private void start(ResponsePatternRule rule) throws Exception
     {
-        start(false);
-        _rule = new ResponsePatternRule();
-        _rule.setPattern("/test");
-    }
-
-    @Test
-    public void testStatusCodeNoMessage() throws IOException
-    {
-        for (int i = 1; i < 600; i++)
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
-            _rule.setCode("" + i);
-            _rule.setMessage(null);
-            _rule.apply(null, _request, _response);
-
-            assertEquals(i, _response.getStatus());
-            assertNull(_request.getAttribute(Dispatcher.ERROR_MESSAGE));
-        }
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
     }
 
     @Test
-    public void testStatusCodeMessage() throws IOException
+    public void testStatusCodeNoMessage() throws Exception
     {
-        _rule.setCode("499");
-        _rule.setMessage("Message 499");
-        _rule.apply(null, _request, _response);
+        ResponsePatternRule rule = new ResponsePatternRule("/test", HttpStatus.NO_CONTENT_204, null);
+        start(rule);
 
-        assertEquals(499, _response.getStatus());
-        assertEquals("Message 499", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
+        String request = """
+            GET /test HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(rule.getCode(), response.getStatus());
+    }
+
+    @Test
+    public void testStatusCodeMessage() throws Exception
+    {
+        ResponsePatternRule rule = new ResponsePatternRule("/test", HttpStatus.BAD_REQUEST_400, "MESSAGE");
+
+        start(rule);
+
+        String request = """
+            GET /test HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(rule.getCode(), response.getStatus());
+        assertThat(response.getContent(), containsString(rule.getMessage()));
     }
 }

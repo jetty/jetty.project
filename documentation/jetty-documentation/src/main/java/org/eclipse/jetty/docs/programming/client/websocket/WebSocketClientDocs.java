@@ -22,14 +22,14 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.client.JettyUpgradeListener;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @SuppressWarnings("unused")
 public class WebSocketClientDocs

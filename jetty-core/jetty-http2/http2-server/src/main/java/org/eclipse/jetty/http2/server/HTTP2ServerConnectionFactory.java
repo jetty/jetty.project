@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.server;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
@@ -27,6 +26,8 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.QuietException;
@@ -56,7 +57,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
-        return new HTTPServerSessionListener(connector, endPoint);
+        return new HTTPServerSessionListener(endPoint);
     }
 
     @Override
@@ -71,16 +72,14 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
     protected class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
-        private final Connector connector;
         private final EndPoint endPoint;
 
-        public HTTPServerSessionListener(Connector connector, EndPoint endPoint)
+        public HTTPServerSessionListener(EndPoint endPoint)
         {
-            this.connector = connector;
             this.endPoint = endPoint;
         }
 
-        protected HTTP2ServerConnection getConnection()
+        private HTTP2ServerConnection getConnection()
         {
             return (HTTP2ServerConnection)endPoint.getConnection();
         }
@@ -94,7 +93,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            getConnection().onNewStream(connector, (IStream)stream, frame);
+            getConnection().onNewStream((IStream)stream, frame);
             return this;
         }
 

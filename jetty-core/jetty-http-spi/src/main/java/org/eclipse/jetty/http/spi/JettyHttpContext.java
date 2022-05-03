@@ -29,22 +29,21 @@ import com.sun.net.httpserver.HttpServer;
 public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
 {
 
-    private HttpSpiContextHandler _jettyContextHandler;
+    private final HttpSpiContextHandler _jettyContextHandler;
 
-    private HttpServer _server;
+    private final HttpServer _server;
 
-    private Map<String, Object> _attributes = new HashMap<String, Object>();
+    private final Map<String, Object> _attributes = new HashMap<String, Object>();
 
-    private List<Filter> _filters = new ArrayList<Filter>();
+    private final List<Filter> _filters = new ArrayList<Filter>();
 
     private Authenticator _authenticator;
 
-    protected JettyHttpContext(HttpServer server, String path,
-                               HttpHandler handler)
+    protected JettyHttpContext(HttpServer server, String contextPath, HttpHandler handler)
     {
         this._server = server;
         _jettyContextHandler = new HttpSpiContextHandler(this, handler);
-        _jettyContextHandler.setContextPath(path);
+        _jettyContextHandler.setContextPath(contextPath);
     }
 
     protected HttpSpiContextHandler getJettyContextHandler()

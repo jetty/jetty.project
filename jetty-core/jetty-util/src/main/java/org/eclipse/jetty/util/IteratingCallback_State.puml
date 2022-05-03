@@ -1,0 +1,35 @@
+@startuml
+
+IDLE:
+PROCESSING:
+PENDING:
+CALLED:
+SUCCEEDED:
+FAILED:
+CLOSED:
+
+
+[*] --> IDLE
+
+IDLE --> PROCESSING: iterate()
+
+PROCESSING --> IDLE: IDLE
+PROCESSING --> PENDING: SCHEDULED
+PROCESSING --> SUCCEEDED: SUCCEEDED
+
+CALLED --> PROCESSING: SCHEDULED
+
+PROCESSING --> CALLED: succeeded()
+PENDING --> PROCESSING: succeeded()
+
+PENDING --> FAILED: failed(x)
+PROCESSING --> FAILED: failed(x)
+
+IDLE --> CLOSED: close()
+SUCCEEDED --> CLOSED: close()
+FAILED --> CLOSED: close()
+
+SUCCEEDED --> IDLE: reset()
+FAILED --> IDLE: reset()
+
+@enduml

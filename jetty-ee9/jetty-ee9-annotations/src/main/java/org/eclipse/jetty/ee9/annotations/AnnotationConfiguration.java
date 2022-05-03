@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -38,11 +38,19 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.servlet.Source.Origin;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.servlet.Source.Origin;
+import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -51,15 +59,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.FragmentDescriptor;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,11 +144,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         protected Exception _exception;
         protected final AnnotationParser _parser;
-        protected final Set<? extends Handler> _handlers;
+        protected final Set<? extends AnnotationParser.Handler> _handlers;
         protected final Resource _resource;
         protected TimeStatistic _stat;
 
-        public ParserTask(AnnotationParser parser, Set<? extends Handler> handlers, Resource resource)
+        public ParserTask(AnnotationParser parser, Set<? extends AnnotationParser.Handler> handlers, Resource resource)
         {
             _parser = parser;
             _handlers = handlers;
@@ -1057,7 +1056,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseContainerPath(final WebAppContext context, final AnnotationParser parser) throws Exception
     {
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
-        final Set<Handler> handlers = new HashSet<Handler>();
+        final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
         handlers.addAll(_containerInitializerAnnotationHandlers);
         if (_classInheritanceHandler != null)
@@ -1112,7 +1111,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         for (Resource r : jars)
         {
             //for each jar, we decide which set of annotations we need to parse for
-            final Set<Handler> handlers = new HashSet<Handler>();
+            final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
 
             FragmentDescriptor f = context.getMetaData().getFragmentDescriptorForJar(r);
 
@@ -1157,7 +1156,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseWebInfClasses(final WebAppContext context, final AnnotationParser parser)
         throws Exception
     {
-        Set<Handler> handlers = new HashSet<Handler>();
+        Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);

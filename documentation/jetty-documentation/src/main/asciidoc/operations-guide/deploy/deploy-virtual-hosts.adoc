@@ -58,7 +58,7 @@ If you have a web application `mywebapp.war` you can configure its virtual hosts
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
   <Set name="virtualHosts">
@@ -103,7 +103,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/domain.war</Set>
   <Set name="virtualHosts">
@@ -120,7 +120,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/hobby.war</Set>
   <Set name="virtualHosts">
@@ -148,7 +148,7 @@ In this case, you want to xref:og-protocols[configure multiple connectors], each
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/domain.war</Set>
   <Set name="virtualHosts">
@@ -165,7 +165,7 @@ In this case, you want to xref:og-protocols[configure multiple connectors], each
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/hobby.war</Set>
   <Set name="virtualHosts">
