@@ -166,10 +166,26 @@ public class RegexPathSpecTest
         assertMatches(spec, "/middle/");
 
         assertNotMatches(spec, "/a.do");
-        assertNotMatches(spec, "/a");
-        assertNotMatches(spec, "/aa");
-        assertNotMatches(spec, "/aa/bb");
-        assertNotMatches(spec, "/aa/bb.do/more");
+        assertNotMatches(spec, "/a/middle");
+        assertNotMatches(spec, "/middle");
+    }
+
+    @Test
+    public void testSuffixSpecMiddleWithGroupings()
+    {
+        RegexPathSpec spec = new RegexPathSpec("^(.*)/middle/(.*)$");
+        assertEquals("^(.*)/middle/(.*)$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^(.*)/middle/(.*)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
+
+        assertMatches(spec, "/a/middle/c.do");
+        assertMatches(spec, "/a/b/c/d/middle/e/f");
+        assertMatches(spec, "/middle/");
+
+        assertNotMatches(spec, "/a.do");
+        assertNotMatches(spec, "/a/middle");
+        assertNotMatches(spec, "/middle");
     }
 
     @Test

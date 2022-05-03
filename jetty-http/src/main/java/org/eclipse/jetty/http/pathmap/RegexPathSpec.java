@@ -73,6 +73,8 @@ public class RegexPathSpec extends AbstractPathSpec
                 case '^': // ignore anchors
                 case '$': // ignore anchors
                 case '\'': // ignore escaping
+                case '(': // ignore grouping
+                case ')': // ignore grouping
                     break;
                 case '+': // single char quantifier
                 case '?': // single char quantifier
@@ -107,7 +109,7 @@ public class RegexPathSpec extends AbstractPathSpec
                             if (forbiddenReason != null)
                             {
                                 throw new IllegalArgumentException(String.format("%s does not support \\%c (%s) for \"%s\"",
-                                    this.getClass().getSimpleName(), c, forbiddenReason));
+                                    this.getClass().getSimpleName(), c, forbiddenReason, declaration));
                             }
                             switch (c)
                             {
@@ -123,7 +125,7 @@ public class RegexPathSpec extends AbstractPathSpec
                                     break;
                             }
                         }
-                        else
+                        else // not escaped
                         {
                             signature.append('l'); // literal (exact)
                         }
