@@ -174,7 +174,7 @@ public class LifeCycleCallbackCollectionTest
     {
         Server server = new Server();
         WebAppContext context = new WebAppContext();
-        context.setResourceBase(MavenTestingUtils.getTargetTestingDir("predestroy-test").toPath());
+        context.setBaseResource(MavenTestingUtils.getTargetTestingDir("predestroy-test").toPath());
         context.setContextPath("/");
         server.setHandler(context);
 

@@ -800,7 +800,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            Path warPath = getResourceBase();
+            Path warPath = getResourceBase().getPath();
             if (warPath != null)
                 _war = warPath.toUri().toASCIIString();
         }
@@ -809,11 +809,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public Resource getWebInf() throws IOException
     {
-        if (super.getBaseResource() == null)
+        if (getResourceBase() == null)
             return null;
 
         // Iw there a WEB-INF directory?
-        Resource webInf = super.getBaseResource().addPath("WEB-INF/");
+        Resource webInf = getResourceBase().addPath("WEB-INF/");
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
@@ -1140,10 +1140,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called {@link ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
-     * for the given webapp has been declaratively allows access to the context.
+     * check when a servlet called <code>ServletContextHandler.Context#getContext(String)</code>,
+     * validating that the uriInPath for the given webapp has been declaratively allows access to the context.
      *
-     * @param contextWhiteList the whitelist of contexts for {@link ServletContextHandler.Context#getContext(String)}
+     * @param contextWhiteList the whitelist of contexts
      */
     public void setContextWhiteList(String... contextWhiteList)
     {
@@ -1204,7 +1204,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * Set the war of the webapp. From this value a {@link #setResourceBase(String)}
+     * Set the war of the webapp. From this value a {@link #setBaseResource(Resource)}
      * value is computed by {@link WebInfConfiguration}, which may be changed from
      * the war URI by unpacking and/or copying.
      *

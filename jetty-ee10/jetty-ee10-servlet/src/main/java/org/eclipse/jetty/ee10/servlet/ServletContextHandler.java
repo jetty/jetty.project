@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -93,7 +92,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -448,14 +446,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public void setLogger(Logger logger)
     {
         _logger = logger;
-    }
-
-    public Resource getBaseResource()
-    {
-        Path resourceBase = getResourceBase();
-        if (resourceBase == null)
-            return null;
-        return new PathResource(resourceBase);
     }
 
     private String getLogNameSuffix()
@@ -873,7 +863,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        Resource baseResource = getBaseResource();
+        Resource baseResource = getResourceBase();
         if (baseResource == null)
             return null;
 
@@ -1255,7 +1245,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (getContextPath() == null)
                 throw new IllegalStateException("Null contextPath");
 
-            Resource baseResource = getBaseResource();
+            Resource baseResource = getResourceBase();
             if (baseResource != null && baseResource.isAlias())
                 LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
                     baseResource, baseResource.getAlias(), this);

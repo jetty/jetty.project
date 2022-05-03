@@ -75,7 +75,7 @@ public class Http2Server
         if (!Files.exists(docroot))
             throw new FileNotFoundException(docroot.toString());
 
-        context.setResourceBase(docroot);
+        context.setBaseResource(docroot);
         context.addFilter(PushCacheFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));

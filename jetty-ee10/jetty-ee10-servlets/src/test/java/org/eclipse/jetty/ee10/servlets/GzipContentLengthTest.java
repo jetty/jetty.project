@@ -168,7 +168,7 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(contextDir);
         servletContextHandler.addServlet(contentServlet, "/*");
         GzipHandler gzipHandler = new GzipHandler();
 

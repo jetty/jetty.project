@@ -33,7 +33,7 @@ public class StandardDescriptorProcessorTest
         Server server = new Server();
         WebAppContext wac = new WebAppContext();
         wac.setServer(server);
-        wac.setResourceBase(MavenTestingUtils.getTargetTestingDir("testSessionConfig").getAbsoluteFile().toPath());
+        wac.setBaseResource(MavenTestingUtils.getTargetTestingDir("testSessionConfig").getAbsoluteFile().toPath());
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));

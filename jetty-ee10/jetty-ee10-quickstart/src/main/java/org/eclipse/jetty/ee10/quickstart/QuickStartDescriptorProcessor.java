@@ -32,7 +32,6 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -148,7 +147,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 values.add(value);
         }
 
-        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
+        AttributeNormalizer normalizer = new AttributeNormalizer(context.getResourceBase());
         // handle values
         switch (name)
         {
@@ -269,7 +268,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         //also add to base resource of webapp
         Resource[] collection = new Resource[metaInfResources.size() + 1];
         int i = 0;
-        collection[i++] = context.getBaseResource();
+        collection[i++] = context.getResourceBase();
         for (Resource resource : metaInfResources)
         {
             collection[i++] = resource;

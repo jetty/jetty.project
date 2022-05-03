@@ -114,7 +114,7 @@ public class PreconfigureQuickStartWar
             XmlConfiguration xmlConfiguration = new XmlConfiguration(xml);
             xmlConfiguration.configure(webapp);
         }
-        webapp.setResourceBase(dir.getFile().toPath());
+        webapp.setBaseResource(dir);
         server.setHandler(webapp);
         try
         {

@@ -91,7 +91,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
     {
         //check that webapp is suitable for quick start - it is not a packed war
         String war = context.getWar();
-        if (war == null || war.length() <= 0 || !context.getBaseResource().isDirectory())
+        if (war == null || war.length() <= 0 || !context.getResourceBase().isDirectory())
             throw new IllegalStateException("Bad Quickstart location");
 
         //look for quickstart-web.xml in WEB-INF of webapp
@@ -228,7 +228,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
-            File tmp = new File(context.getBaseResource().getFile(), "WEB-INF");
+            File tmp = new File(context.getResourceBase().getFile(), "WEB-INF");
             tmp.mkdirs();
             webInf = context.getWebInf();
         }

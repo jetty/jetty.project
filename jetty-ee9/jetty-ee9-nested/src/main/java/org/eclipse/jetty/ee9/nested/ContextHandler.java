@@ -199,7 +199,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
@@ -1143,9 +1142,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public Resource getBaseResource()
     {
-        if (_baseResource == null)
-            return null;
-        return _baseResource;
+        return _coreContextHandler.getResourceBase();
     }
 
     /**
@@ -1154,9 +1151,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("document root for context")
     public String getResourceBase()
     {
-        if (_baseResource == null)
-            return null;
-        return _baseResource.toString();
+        Resource resourceBase = _coreContextHandler.getResourceBase();
+        return resourceBase == null ? null : resourceBase.toString();
     }
 
     /**
@@ -1167,15 +1163,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setBaseResource(Resource base)
     {
-        try
-        {
-            _coreContextHandler.setResourceBase(base == null ? null : base.getFile().toPath());
-            _baseResource = base;
-        }
-        catch (IOException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        _coreContextHandler.setBaseResource(base);
     }
 
     /**
@@ -1408,7 +1396,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        if (_baseResource == null)
+        Resource baseResource = _coreContextHandler.getResourceBase();
+        if (baseResource == null)
             return null;
 
         try
@@ -1416,7 +1405,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = _baseResource.addPath(pathInContext);
+            Resource resource = baseResource.addPath(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;

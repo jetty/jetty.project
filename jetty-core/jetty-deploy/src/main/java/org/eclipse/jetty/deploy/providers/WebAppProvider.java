@@ -323,7 +323,7 @@ public class WebAppProvider extends ScanningAppProvider
 
             // Build the web application
             ContextHandler webAppContext = null; // TODO new WebAppContext();
-            webAppContext.setResourceBase(file.getAbsoluteFile().toPath());
+            webAppContext.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
             initializeContextPath(webAppContext, contextName, !file.isDirectory());
             initializeWebAppContextDefaults(webAppContext);
 

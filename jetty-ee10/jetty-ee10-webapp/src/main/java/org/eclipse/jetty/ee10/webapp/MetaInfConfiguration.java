@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -312,21 +313,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (resources != null && !resources.isEmpty())
         {
             if (resources.size() == 1)
-                context.setResourceBase(resources.stream().findFirst().get().getPath());
+                context.setBaseResource(resources.stream().findFirst().get());
             else
             {
-                throw new UnsupportedOperationException();
-                /* TODO
                 Resource[] collection = new Resource[resources.size() + 1];
                 int i = 0;
-                collection[i++] = context.getBaseResource();
+                collection[i++] = context.getResourceBase();
                 for (Resource resource : resources)
                 {
                     collection[i++] = resource;
                 }
                 context.setBaseResource(new ResourceCollection(collection));
-
-                 */
             }
         }
     }

@@ -74,7 +74,7 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(contextDir);
         ServletHolder holder = new ServletHolder("default", new DefaultServlet()
         {
             @Override

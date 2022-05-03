@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,14 +195,14 @@ public class ServletTester extends ContainerLifeCycle
         _context.setContextPath(contextPath);
     }
 
-    public Path getResourceBase()
+    public Resource getResourceBase()
     {
         return _context.getResourceBase();
     }
 
-    public void setResourceBase(Path path)
+    public void setResourceBase(Resource base)
     {
-        _context.setResourceBase(path);
+        _context.setBaseResource(base);
     }
 
     public ServletTester()

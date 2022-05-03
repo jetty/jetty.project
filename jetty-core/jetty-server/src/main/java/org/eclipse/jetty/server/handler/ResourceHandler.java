@@ -123,6 +123,9 @@ public class ResourceHandler extends Handler.Wrapper
     public void doStart() throws Exception
     {
         Context context = ContextHandler.getCurrentContext();
+        if (_baseResource == null && context.getBaseResource() != null)
+            _baseResource = context.getBaseResource().getPath();
+
 // TODO        _context = (context == null ? null : context.getContextHandler());
 //        if (_mimeTypes == null)
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();

@@ -71,7 +71,7 @@ public class TestQuickStart
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
-        quickstart.setResourceBase(testDir.toPath());
+        quickstart.setBaseResource(testDir.toPath());
         ServletHolder fooHolder = new ServletHolder();
         fooHolder.setServlet(new FooServlet());
         fooHolder.setName("foo");
@@ -87,7 +87,7 @@ public class TestQuickStart
 
         //now run the webapp again
         WebAppContext webapp = new WebAppContext();
-        webapp.setResourceBase(testDir.toPath());
+        webapp.setBaseResource(testDir.toPath());
         webapp.addConfiguration(new QuickStartConfiguration());
         webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee10.quickstart.");
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
@@ -120,7 +120,7 @@ public class TestQuickStart
 
         // generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
-        quickstart.setResourceBase(testDir.toPath());
+        quickstart.setBaseResource(testDir.toPath());
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
@@ -138,7 +138,7 @@ public class TestQuickStart
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setResourceBase(testDir.toPath());
+        webapp.setBaseResource(testDir.toPath());
         webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee10.quickstart.");
         server.setHandler(webapp);
 
@@ -163,7 +163,7 @@ public class TestQuickStart
 
         // generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
-        quickstart.setResourceBase(testDir.toPath());
+        quickstart.setBaseResource(testDir.toPath());
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
@@ -179,7 +179,7 @@ public class TestQuickStart
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setResourceBase(testDir.toPath());
+        webapp.setBaseResource(testDir.toPath());
         webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee10.quickstart.");
         server.setHandler(webapp);
 
@@ -212,7 +212,7 @@ public class TestQuickStart
         //if you add them to the ServletHandler (like StandardDescriptorProcessor does)
         //then they are not added to the ContextHandler in a pre-generate.
         quickstart.addEventListener(new FooContextListener());
-        quickstart.setResourceBase(testDir.toPath());
+        quickstart.setBaseResource(testDir.toPath());
         server.setHandler(quickstart);
         server.setDryRun(true);
 

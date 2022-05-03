@@ -108,7 +108,7 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp"));
+        webapp.setBaseResource(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp"));
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
                 ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
@@ -125,7 +125,7 @@ public class TestServer
         contexts.addHandler(webapp);
 
         ContextHandler srcroot = new ContextHandler();
-        srcroot.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src"));
+        srcroot.setBaseResource(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src"));
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);

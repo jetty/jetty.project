@@ -60,7 +60,7 @@ public class CustomRequestLogServletTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/context");
-        context.setResourceBase(Paths.get(_tmpDir));
+        context.setBaseResource(Paths.get(_tmpDir));
         context.addServlet(TestServlet.class, "/servlet/*");
 
         TestRequestLogWriter writer = new TestRequestLogWriter();

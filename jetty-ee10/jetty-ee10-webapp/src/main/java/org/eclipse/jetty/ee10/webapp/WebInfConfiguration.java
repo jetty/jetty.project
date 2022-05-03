@@ -94,10 +94,10 @@ public class WebInfConfiguration extends AbstractConfiguration
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
-        if (context.getBaseResource() != null)
-            context.getBaseResource().close();
+        if (context.getResourceBase() != null)
+            context.getResourceBase().close();
         //TODO there is something wrong with the config of the resource base as this should never be null
-        context.setResourceBase(_preUnpackBaseResource == null ? null : _preUnpackBaseResource.getPath());
+        context.setBaseResource(_preUnpackBaseResource == null ? null : _preUnpackBaseResource);
     }
 
     @Override
@@ -280,8 +280,8 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     public void unpack(WebAppContext context) throws IOException
     {
-        Resource webApp = context.getBaseResource();
-        _preUnpackBaseResource = context.getBaseResource();
+        Resource webApp = context.getResourceBase();
+        _preUnpackBaseResource = context.getResourceBase();
 
         if (webApp == null)
         {
@@ -289,7 +289,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (war != null && war.length() > 0)
                 webApp = context.newResource(war);
             else
-                webApp = context.getBaseResource();
+                webApp = context.getResourceBase();
 
             if (webApp == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
@@ -401,7 +401,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new java.io.FileNotFoundException(war);
             }
 
-            context.setResourceBase(webApp.getPath());
+            context.setBaseResource(webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("webapp={}", webApp);
@@ -451,7 +451,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("context.resourcebase={}", rc);
 
-            context.setResourceBase(rc.getPath());
+            context.setBaseResource(rc);
         }
     }
 
@@ -510,7 +510,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Resource base
         try
         {
-            Resource resource = context.getBaseResource();
+            Resource resource = context.getResourceBase();
             if (resource == null)
             {
                 if (context.getWar() == null || context.getWar().length() == 0)

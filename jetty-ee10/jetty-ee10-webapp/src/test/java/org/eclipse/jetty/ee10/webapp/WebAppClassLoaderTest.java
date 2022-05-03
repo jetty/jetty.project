@@ -57,7 +57,7 @@ public class WebAppClassLoaderTest
         Resource webapp = new PathResource(testWebappDir);
 
         _context = new WebAppContext();
-        _context.setResourceBase(webapp.getPath());
+        _context.setBaseResource(webapp.getPath());
         _context.setContextPath("/test");
         _context.setExtraClasspath("src/test/resources/ext/*");
 

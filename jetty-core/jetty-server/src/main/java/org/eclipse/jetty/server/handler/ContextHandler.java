@@ -85,7 +85,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
-    private Path _resourceBase;
+    private Resource _resourceBase;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
@@ -630,7 +630,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * @return Returns the base resource as a string.
      */
     @ManagedAttribute("document root for context")
-    public Path getResourceBase()
+    public Resource getResourceBase()
     {
         return _resourceBase;
     }
@@ -640,11 +640,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      *
      * @param resourceBase The Path of the base resource for the context.
      */
-    public void setResourceBase(Path resourceBase)
+    public void setBaseResource(Resource resourceBase)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
         _resourceBase = resourceBase;
+    }
+
+    // TODO inline this ???
+    public void setBaseResource(Path path)
+    {
+        setBaseResource(path == null ? null : Resource.newResource(path));
     }
 
     /**
@@ -770,7 +776,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Path getResourceBase()
+        public Resource getBaseResource()
         {
             return _resourceBase;
         }

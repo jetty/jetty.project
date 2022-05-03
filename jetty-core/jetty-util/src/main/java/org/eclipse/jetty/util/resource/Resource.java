@@ -364,6 +364,12 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract URI getURI();
 
+    public URI toUri()
+    {
+        // TODO deprecate toUri or getURI
+        return getURI();
+    }
+
     /**
      * File representing the given resource.
      *

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * A Context for handling/processing a request.
@@ -41,7 +41,7 @@ public interface Context extends Attributes, Decorator, Executor
 
     ClassLoader getClassLoader();
 
-    Path getResourceBase();
+    Resource getBaseResource();
 
     Request.Processor getErrorProcessor();
 
