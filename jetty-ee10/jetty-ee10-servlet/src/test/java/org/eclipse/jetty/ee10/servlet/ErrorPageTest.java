@@ -196,7 +196,6 @@ public class ErrorPageTest
         assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: ")));
     }
 
-    @Disabled
     @Test
     public void testDeleteCannotHaveBody() throws Exception
     {
