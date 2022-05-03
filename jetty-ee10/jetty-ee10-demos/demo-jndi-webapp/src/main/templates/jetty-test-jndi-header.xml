@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the test-jndi webapp                                  -->
+<!-- =============================================================== -->
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
+    <Arg>
+      <New class="org.example.MockUserTransaction"/>
+    </Arg>
+  </New>
+
+  <Set name="contextPath">/test-jndi</Set>
+  <Set name="war"><Property name="jetty.webapps" default="."/>/test-jndi.war</Set>
+  <Set name="extractWAR">true</Set>
+  <Set name="copyWebDir">false</Set>
+  <Set name="configurationDiscovered">true</Set>
+

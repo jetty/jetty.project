@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure an HTTP2 on the ssl connector.                       -->
+<!-- ============================================================= -->
+<Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
+        <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+        <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow"/>
+        <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
+      </New>
+    </Arg>
+  </Call>
+
+  <Ref refid="sslContextFactory">
+    <Set name="CipherComparator">
+      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
+    </Set>
+    <Set name="useCipherSuitesOrder">true</Set>
+    <Call name="addExcludeProtocols">
+      <Arg>
+        <Array type="java.lang.String">
+          <Item>TLSv1.3</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Ref>
+
+</Configure>

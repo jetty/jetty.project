@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
+    <artifactId>jetty-multi-module-project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>webapp-war</artifactId>
+  <packaging>war</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <version>@jetty.servlet.api.version@</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
+      <artifactId>module-impl</artifactId>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-start-mojo.txt</jetty.port.file>
+    <jetty.deployMode>EMBED</jetty.deployMode>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <systemProperties>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              </systemProperties>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

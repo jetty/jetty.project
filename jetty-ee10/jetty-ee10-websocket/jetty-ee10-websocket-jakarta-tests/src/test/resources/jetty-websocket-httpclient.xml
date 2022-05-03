@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure class="org.eclipse.jetty.client.HttpClient">
+  <Call name="getAuthenticationStore">
+    <Call name="addAuthentication">
+      <Arg>
+        <New class="org.eclipse.jetty.client.util.BasicAuthentication">
+          <Arg>
+            <New class="java.net.URI">
+              <Arg>ws://localhost:<SystemProperty name="org.eclipse.jetty.websocket.port"/>/secured/socket</Arg>
+            </New>
+          </Arg>
+          <Arg>testRealm</Arg>
+          <Arg>user</Arg>
+          <Arg>password</Arg>
+        </New>
+      </Arg>
+    </Call>
+  </Call>
+</Configure>

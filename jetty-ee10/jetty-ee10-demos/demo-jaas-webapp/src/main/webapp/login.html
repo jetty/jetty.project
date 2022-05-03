@@ -1,0 +1,35 @@
+
+<html>
+<head><title>JAAS Authentication and Authorization Test</title>
+   <link rel="stylesheet" href="demo.css"/>
+</head>
+<body>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/demos/demo-jaas-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+   <div class="content">
+      <center>
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </center>
+
+     <h1> Enter your username and password to login </h1>
+     <i> Enter login=me and password=me in order to authenticate successfully</i>
+     <form method="POST" action="j_security_check">
+        <b>Login: </b><input type="text" name="j_username">
+        <p>
+         <b>Password: </b><input type="password" name="j_password">
+        <p>
+        <input class="test" type="submit" value="Login"/>
+     </form>
+   </div>
+
+   <div class="footer">
+      <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+   </div>
+
+</body>
+</html>

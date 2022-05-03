@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Get id="ThreadPool" name="threadPool"/>
+  <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
+    <Arg>
+      <New class="org.eclipse.jetty.client.http.HttpClientTransportOverHTTP">
+        <Arg>
+          <New class="org.eclipse.jetty.io.ClientConnector">
+            <Set name="sslContextFactory">
+              <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
+                <Set name="trustAll" type="boolean">
+                  <Property name="jetty.openid.sslContextFactory.trustAll" default="false"/>
+                </Set>
+              </New>
+            </Set>
+          </New>
+        </Arg>
+      </New>
+    </Arg>
+    <Set name="executor"><Ref refid="ThreadPool"/></Set>
+  </New>
+  <Call name="addBean">
+    <Arg>
+      <Ref refid="BaseLoginService"/>
+    </Arg>
+  </Call>
+  <Call name="addBean">
+    <Arg>
+      <New id="OpenIdConfiguration" class="org.eclipse.jetty.ee10.security.openid.OpenIdConfiguration">
+        <Arg name="issuer"><Property name="jetty.openid.provider" deprecated="jetty.openid.openIdProvider"/></Arg>
+        <Arg name="authorizationEndpoint"><Property name="jetty.openid.provider.authorizationEndpoint"/></Arg>
+        <Arg name="tokenEndpoint"><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
+        <Arg name="clientId"><Property name="jetty.openid.clientId"/></Arg>
+        <Arg name="clientSecret"><Property name="jetty.openid.clientSecret"/></Arg>
+        <Arg name="authMethod"><Property name="jetty.openid.authMethod" default="client_secret_post"/></Arg>
+        <Arg name="httpClient"><Ref refid="HttpClient"/></Arg>
+        <Set name="authenticateNewUsers">
+          <Property name="jetty.openid.authenticateNewUsers" default="false"/>
+        </Set>
+        <Call name="addScopes">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.openid.scopes"/></Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

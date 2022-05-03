@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+   metadata-complete="false"
+   version="4.0"> 
+
+  <display-name>Test WebApp</display-name>
+  
+  
+  <default-context-path>/thisIsTheDefault</default-context-path>
+  <request-character-encoding>ascii</request-character-encoding>
+  <response-character-encoding>utf-16</response-character-encoding>
+
+</web-app>
+
+

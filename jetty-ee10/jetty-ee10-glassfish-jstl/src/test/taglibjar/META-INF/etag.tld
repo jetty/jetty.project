@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+  version="2.0">
+
+  <description>eclipse jetty test taglib</description>
+  <tlib-version>1.0</tlib-version>
+
+  <short-name>jtest</short-name>
+  <uri>org.eclipse.jetty.jstl.jtest</uri>
+
+  <tag-file>
+    <name>errorhandler</name>
+    <path>/META-INF/tags/errorhandler.tag</path>
+  </tag-file>
+</taglib>

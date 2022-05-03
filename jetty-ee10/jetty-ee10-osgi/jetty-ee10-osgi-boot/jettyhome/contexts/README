@@ -1,0 +1,2 @@
+Default locations for standard context definitions.
+Those applications are unlikely to have access to the OSGi framework currently.

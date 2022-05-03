@@ -1,0 +1,50 @@
+<html>
+<head>
+    <title>JAAS Authentication and Authorization Test</title>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" href="demo.css"/>
+    </style>
+</head>
+<body>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/demos/demo-jaas-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+
+   <div class="content">
+      <center>
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </center>
+      <h1>JAAS Demo</h1>
+     <p>
+       This is a demo webapp for the <a href="http://www.eclipse.org/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
+
+       It uses a simple login module that stores its configuration in a properties file.
+     </p>
+   
+     <h2>Preparation</h2>
+     <p>To use JAAS in a base jetty instance enable the <code>jaas</code> module:
+     <pre>
+    $ cd $JETTY_BASE
+    $ java -jar $JETTY_HOME/start.jar --add-module=jaas
+    </pre>
+
+    <h2>Using the Demo</h2>
+    <p>
+    Click on the link below to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>. Use
+    username=<code>me</code> with password=<code>me</code>. All other usernames and passwords should result in authentication
+    failure.
+    </p>
+    <big><b><a href="auth.html">START</A></b></big>
+   </div>
+
+  <div class="footer">
+    <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+  </div>
+
+</body>
+</html>

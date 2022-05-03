@@ -1,0 +1,64 @@
+<html>
+<head>
+    <title>Jetty WebSocket Browser -&gt; Server Debug Tool</title>
+    <script type="text/javascript" src="websocket.js"></script>
+    <link rel="stylesheet" type="text/css" href="main.css" media="all">
+</head>
+<body>
+jetty websocket/browser/javascript -&gt; server debug tool #console
+<div id="console"></div>
+<div id="buttons">
+    <input id="connect" class="button" type="submit" name="connect" value="connect"/>
+    <input id="close" class="button" type="submit" name="close" value="close" disabled="disabled"/>
+    <input id="info" class="button" type="submit" name="info" value="info" disabled="disabled"/>
+    <input id="time" class="button" type="submit" name="time" value="time" disabled="disabled"/>
+    <input id="many" class="button" type="submit" name="many" value="many" disabled="disabled"/>
+    <input id="manythreads" class="button" type="submit" name="many" value="manythreads" disabled="disabled"/>
+    <input id="hello" class="button" type="submit" name="hello" value="hello" disabled="disabled"/>
+    <input id="there" class="button" type="submit" name="there" value="there" disabled="disabled"/>
+    <input id="json" class="button" type="submit" name="json" value="json" disabled="disabled"/>
+</div>
+<script type="text/javascript">
+    $("connect").onclick = function (event) {
+        wstool.connect();
+        return false;
+    }
+    $("close").onclick = function (event) {
+        wstool.close();
+        return false;
+    }
+    $("info").onclick = function (event) {
+        wstool.write("info:");
+        return false;
+    }
+    $("time").onclick = function (event) {
+        wstool.write("time:");
+        return false;
+    }
+    $("many").onclick = function (event) {
+        wstool.write("many:15,300");
+        return false;
+    }
+    $("manythreads").onclick = function (event) {
+        wstool.write("manythreads:20,25,60");
+        return false;
+    }
+    $("hello").onclick = function (event) {
+        wstool.write("Hello");
+        return false;
+    }
+    $("there").onclick = function (event) {
+        wstool.write("There");
+        return false;
+    }
+    $("json").onclick = function (event) {
+        wstool.write("[{\"channel\":\"/meta/subscribe\",\"subscription\":\"/chat/demo\",\"id\":\"2\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/meta/subscribe\",\"subscription\":\"/members/demo\",\"id\":\"3\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/chat/demo\",\"data\":{\"user\":\"ch\",\"membership\":\"join\",\"chat\":\"ch"
+            + " has joined\"},\"id\":\"4\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"}]");
+        return false;
+    }
+</script>
+</body>
+</html>

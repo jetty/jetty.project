@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.quickstart.origin</Arg>
+    <Arg><Property name="jetty.quickstart.origin" default="origin"/></Arg>
+  </Call>
+  
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.quickstart.xml</Arg>
+    <Arg><Property name="jetty.quickstart.xml"/></Arg>
+  </Call>
+  
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.quickstart.mode</Arg>
+    <Arg>
+      <Call class="org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration$Mode" name="valueOf">
+        <Arg><Property name="jetty.quickstart.mode" default="AUTO"/></Arg>
+      </Call>
+    </Arg>
+  </Call>
+
+  <Set name="extractWAR">true</Set>
+  <Set name="copyWebDir">false</Set>
+  <Set name="copyWebInf">false</Set>
+
+</Configure>

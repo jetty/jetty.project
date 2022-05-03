@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" 
+   version="2.5"> 
+
+  <display-name>Test WebApp</display-name>
+  
+  <context-param>
+    <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
+    <param-value>QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
+  </context-param>
+  
+
+  <servlet>
+     <servlet-name>foo.jsp</servlet-name>
+     <jsp-file>/jsp/foo/foo.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>foo.jsp</servlet-name>
+    <url-pattern>/jsp/foo/</url-pattern>
+  </servlet-mapping>
+
+
+</web-app>
+
+

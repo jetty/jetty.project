@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+   metadata-complete="false"
+   version="3.0">
+
+  <display-name>Test WebApp</display-name>
+
+  <resource-ref>
+    <res-ref-name>jdbc/mydatasource</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+    <!-- <injection-target> <injection-target-class>com.acme.JNDITest</injection-target-class> 
+      <injection-target-name>myDatasource</injection-target-name> </injection-target> -->
+  </resource-ref>
+
+  <!--  env entry for which is there is an overriding EnvEntry -->
+  <env-entry>
+    <env-entry-name>foo</env-entry-name>
+    <env-entry-type>java.lang.String</env-entry-type>
+    <env-entry-value>beer</env-entry-value>
+    <injection-target>
+      <injection-target-class>org.eclipse.jetty.ee10.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-name>foo</injection-target-name>
+    </injection-target>
+  </env-entry>
+
+  <!-- env entry for which the EnvEntry does not override  -->
+  <env-entry>
+    <env-entry-name>bah</env-entry-name>
+    <env-entry-type>java.lang.String</env-entry-type>
+    <env-entry-value>beer</env-entry-value>
+    <injection-target>
+      <injection-target-class>org.eclipse.jetty.ee10.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-name>bah</injection-target-name>
+    </injection-target>
+  </env-entry>
+
+ <!-- env entry with no value for which the EnvEntry should override -->
+  <env-entry>
+    <env-entry-name>empty</env-entry-name>
+    <env-entry-type>java.lang.String</env-entry-type>
+    <env-entry-value></env-entry-value>
+    <injection-target>
+      <injection-target-class>org.eclipse.jetty.ee10.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-name>empty</injection-target-name>
+    </injection-target>
+  </env-entry>
+  
+  <!--  env entry with no value and EnvEntry does not override -->
+  <env-entry>
+    <env-entry-name>vacuum</env-entry-name>
+    <env-entry-type>java.lang.String</env-entry-type>
+    <env-entry-value></env-entry-value>
+    <injection-target>
+      <injection-target-class>org.eclipse.jetty.ee10.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-name>vacuum</injection-target-name>
+    </injection-target>
+  </env-entry>
+
+  <!--  env entry with no matching EnvEntry -->
+  <env-entry>
+    <env-entry-name>webxmlonly</env-entry-name>
+    <env-entry-type>java.lang.String</env-entry-type>
+    <env-entry-value>WEBXMLONLY</env-entry-value>
+    <injection-target>
+      <injection-target-class>org.eclipse.jetty.ee10.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-name>webXmlOnly</injection-target-name>
+    </injection-target>
+  </env-entry>
+</web-app>

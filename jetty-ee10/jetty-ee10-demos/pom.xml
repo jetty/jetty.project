@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.ee10.demos</groupId>
+  <artifactId>jetty-ee10-demos</artifactId>
+  <name>EE10 :: Jetty Demos :: Parent</name>
+  <packaging>pom</packaging>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
+          <excludePackageNames>bogus.*</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <modules>
+    <module>demo-async-rest</module>
+    <module>demo-jaas-webapp</module>
+    <module>demo-jndi-webapp</module>
+    <module>demo-jetty-webapp</module>
+    <module>demo-proxy-webapp</module>
+    <module>demo-simple-webapp</module>
+    <module>demo-jsp-webapp</module>
+    <module>demo-mock-resources</module>
+    <module>demo-spec</module>
+    <module>demo-template</module>
+    <module>embedded</module>
+  </modules>
+</project>

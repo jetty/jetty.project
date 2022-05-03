@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="httpConnector">
+        <Call name="addEventListener">
+          <Arg>
+            <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
+              <Set name="fileName"><Property name="jetty.port.file" default="port.txt"/></Set>
+            </New>
+          </Arg>
+        </Call>
+  </Ref>
+</Configure>

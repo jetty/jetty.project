@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd" 
+   metadata-complete="true"
+   version="3.1"> 
+
+  <display-name>Test JNDI WebApp</display-name>
+  
+  <servlet>
+    <servlet-name>JNDITest</servlet-name>
+    <servlet-class>org.example.JNDITest</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>JNDITest</servlet-name>
+    <url-pattern>/test/*</url-pattern>
+  </servlet-mapping>
+
+  <env-entry>
+    <env-entry-name>wiggle</env-entry-name>
+    <env-entry-type>java.lang.Double</env-entry-type>
+    <env-entry-value>99.99</env-entry-value>
+    <injection-target>
+      <injection-target-class>org.example.JNDITest</injection-target-class>
+      <injection-target-name>wiggle</injection-target-name>
+    </injection-target>
+  </env-entry>
+
+  <resource-ref>
+    <res-ref-name>jdbc/mydatasource1</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+    <injection-target>
+      <injection-target-class>org.example.JNDITest</injection-target-class>
+      <injection-target-name>myDatasource</injection-target-name>
+    </injection-target>
+  </resource-ref>
+
+  <post-construct>
+    <lifecycle-callback-class>org.example.JNDITest</lifecycle-callback-class>
+    <lifecycle-callback-method>postConstruct</lifecycle-callback-method>
+  </post-construct>
+
+  <pre-destroy>
+    <lifecycle-callback-class>org.example.JNDITest</lifecycle-callback-class>
+    <lifecycle-callback-method>preDestroy</lifecycle-callback-method>
+  </pre-destroy>
+
+</web-app>
+
+

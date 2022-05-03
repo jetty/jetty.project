@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- ==================================================================
+Configure and deploy the test web application in $(jetty.home)/webapps/test
+
+Note. If this file did not exist or used a context path other that /test
+then the default configuration of jetty.xml would discover the test
+webapplication with a WebAppDeployer.  By specifying a context in this
+directory, additional configuration may be specified and hot deployments
+detected.
+===================================================================== -->
+
+<Configure id="testWebapp" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Required minimal context configuration :                        -->
+  <!--  + contextPath                                                  -->
+  <!--  + war OR resourceBase                                          -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="contextPath">/test</Set>
+  
+  <Get name="servletHandler">
+    <Call name="addServletWithMapping">
+      <Arg>
+        <New class="org.eclipse.jetty.ee10.servlet.ServletHolder">
+          <Set name="name">FooServlet</Set>
+          <Set name="className">org.eclipse.jetty.ee10.quickstart.FooServlet</Set>
+        </New>
+      </Arg>
+      <Arg>/outer/*</Arg>
+    </Call>
+
+    <Call name="addFilterWithMapping">
+      <Arg>
+        <New class="org.eclipse.jetty.ee10.servlet.FilterHolder">
+            <Set name="className">org.eclipse.jetty.ee10.quickstart.FooFilter</Set>
+            <Set name="name">OuterFilter</Set>
+        </New>
+      </Arg>
+      <Arg>/outer/*</Arg>
+      <Arg type="java.lang.Integer">0</Arg>
+    </Call>
+    
+    <Call name="addListener">
+       <Arg>
+          <New class="org.eclipse.jetty.ee10.servlet.ListenerHolder">
+            <Set name="listener">
+              <New class="org.eclipse.jetty.ee10.quickstart.FooContextListener"></New>
+            </Set>
+          </New>
+       </Arg>
+    </Call>
+    
+  </Get>
+
+</Configure>

@@ -1,0 +1,60 @@
+<html>
+  <head>
+    <title>Jetty WebSocket Browser -&gt; Server Debug Tool</title>
+    <script type="text/javascript" src="websocket.js"></script>
+    <link rel="stylesheet" type="text/css" href="main.css" media="all" >
+  </head>
+  <body>
+    jetty websocket/browser/javascript -&gt; server debug tool #console
+    <div id="console"></div>
+    <div id="buttons">
+      <input id="connect" class="button" type="submit" name="connect" value="connect"/>
+      <input id="close" class="button" type="submit" name="close" value="close" disabled="disabled"/>
+      <input id="info" class="button" type="submit" name="info" value="info" disabled="disabled"/>
+      <input id="ping" class="button" type="submit" name="ping" value="ping" disabled="disabled"/>
+      <input id="time" class="button" type="submit" name="time" value="time" disabled="disabled"/>
+      <input id="many" class="button" type="submit" name="many" value="many" disabled="disabled"/>
+      <input id="manythreads" class="button" type="submit" name="many" value="manythreads" disabled="disabled"/>
+      <input id="hello" class="button" type="submit" name="hello" value="hello" disabled="disabled"/>
+      <input id="there" class="button" type="submit" name="there" value="there" disabled="disabled"/>
+      <input id="dump" class="button" type="submit" name="dump" value="dump" disabled="disabled"/>
+      <input id="json" class="button" type="submit" name="json" value="json" disabled="disabled"/>
+      <input id="send10k" class="button" type="submit" name="send10k" value="send10k" disabled="disabled"/>
+      <input id="send100k" class="button" type="submit" name="send100k" value="send100k" disabled="disabled"/>
+      <input id="send1000k" class="button" type="submit" name="send1000k" value="send1000k" disabled="disabled"/>
+      <input id="send10m" class="button" type="submit" name="send10m" value="send10m" disabled="disabled"/>
+    </div>
+    <script type="text/javascript">
+    $("connect").onclick = function(event) { wstool.connect(); return false; }
+    $("close").onclick = function(event) {wstool.close(); return false; }
+    $("info").onclick = function(event) {wstool.write("info:"); return false; }
+    $("ping").onclick = function(event) {wstool.write("ping:"); return false; }
+    $("time").onclick = function(event) {wstool.write("time:"); return false; }
+    $("many").onclick = function(event) {wstool.write("many:15,300"); return false; }
+    $("manythreads").onclick = function(event) {wstool.write("manythreads:20,25,60"); return false; }
+    $("hello").onclick = function(event) {wstool.write("Hello"); return false; }
+    $("there").onclick = function(event) {wstool.write("There"); return false; }
+    $("dump").onclick = function(event) {wstool.write("dump:"); return false; }
+    $("json").onclick = function(event) {wstool.write("[{\"channel\":\"/meta/subscribe\",\"subscription\":\"/chat/demo\",\"id\":\"2\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/meta/subscribe\",\"subscription\":\"/members/demo\",\"id\":\"3\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/chat/demo\",\"data\":{\"user\":\"ch\",\"membership\":\"join\",\"chat\":\"ch"
+            + " has joined\"},\"id\":\"4\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
+            + " 12 Sep 2013 19:42:30 GMT\"}]"); return false; }
+    $("send10k").onclick =   function(event) {wstool.write(randomString(  10*1024)); return false;}
+    $("send100k").onclick =  function(event) {wstool.write(randomString( 100*1024)); return false;}
+    $("send1000k").onclick = function(event) {wstool.write(randomString(1000*1024)); return false;}
+    $("send10m").onclick =   function(event) {wstool.write(randomString(  10*1024*1024)); return false;}
+    
+    function randomString(len, charSet) {
+        charSet = charSet || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789{}	":;<>,.()[]';
+        var randomString = '';
+        var charLen = charSet.length;
+        for (var i = 0; i < len; i++) {
+        	var randomPoz = Math.floor(Math.random() * charLen);
+        	randomString += charSet.substring(randomPoz,randomPoz+1);
+        }
+        return randomString;
+    }
+    </script>
+  </body>
+</html>

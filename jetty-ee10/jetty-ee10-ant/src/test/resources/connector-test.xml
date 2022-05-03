@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Jetty-Ant integration test" basedir=".">
+  <path id="jetty.plugin.classpath">
+    <fileset dir="target/test-lib" includes="*.jar"/>
+  </path>
+	
+  <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
+ 
+	<typedef name="connector" classname="org.eclipse.jetty.ee10.ant.types.Connector"
+		classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
+
+  <target name="jetty.run">
+    <jetty.run>
+    	<connectors>
+        <connector port="0"/>	
+    	</connectors>
+    </jetty.run>
+  </target>
+</project>

@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- =========================================================== -->
+  <!-- Configure Rewrite Handler                                   -->
+  <!-- =========================================================== -->
+
+  <Call name="insertHandler">
+    <Arg>
+      <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+        <Set name="rewriteRequestURI">true</Set>
+        <Set name="rewritePathInfo">false</Set>
+        <Set name="originalPathAttribute">requestedPath</Set>
+
+        <Set name="rules">
+          <Array type="org.eclipse.jetty.rewrite.handler.Rule">
+
+            <!-- add a response rule -->
+            <!--
+            <Item>
+              <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
+                <Set name="pattern">/rewrite/session/</Set>
+                <Set name="code">401</Set>
+                <Set name="reason">Setting error code 401</Set>
+              </New>
+            </Item>
+            -->
+
+            <!-- add a simple redirect -->
+            <!--
+            <Item>
+              <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+                <Set name="pattern">/redirect/*</Set>
+                <Set name="location">/tests/</Set>
+              </New>
+            </Item>
+            -->
+
+            <!-- add a regex rewrite redirect -->
+            <Item>
+              <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
+                <Set name="regex">/redirect/(.*)</Set>
+                <Set name="location">/tests/$1</Set>
+              </New>
+            </Item>
+          </Array>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

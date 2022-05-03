@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.Handler.Collection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+    <Set name="stopAtShutdown" property="jetty.server.stopAtShutdown"/>
+    <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
+    <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
+    <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>
+
+</Configure>

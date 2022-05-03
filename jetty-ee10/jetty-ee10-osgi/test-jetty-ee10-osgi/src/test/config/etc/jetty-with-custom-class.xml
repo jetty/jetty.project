@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://wiki.eclipse.org/Jetty/Reference/jetty.xml_syntax        -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <Get name="ThreadPool">
+      <Set name="minThreads">10</Set>
+      <Set name="maxThreads">200</Set>
+    </Get>
+
+	<New class="org.eclipse.jetty.ee10.osgi.test.SomeCustomBean" id="mycustombean"></New>
+
+
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            -->
+    <!-- =========================================================== -->
+    <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+      <Set name="secureScheme">https</Set>
+      <Set name="securePort"><Property name="jetty.httpConfig.securePort" default="8443" /></Set>
+      <Set name="outputBufferSize">32768</Set>
+      <Set name="requestHeaderSize">8192</Set>
+      <Set name="responseHeaderSize">8192</Set>
+      <Set name="sendServerVersion">true</Set>
+      <Set name="sendDateHeader">false</Set>
+      <Set name="headerCacheSize">512</Set>
+    </New>
+
+
+    <!-- =========================================================== -->
+    <!-- extra options                                               -->
+    <!-- =========================================================== -->
+    <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">1000</Set>
+    <Set name="dumpAfterStart">false</Set>
+    <Set name="dumpBeforeStop">false</Set>
+
+
+    <!-- =========================================================== -->
+    <!-- Set up the list of default configuration classes            -->
+    <!-- =========================================================== -->    
+    <Call class="org.eclipse.jetty.ee10.webapp.Configurations" name="setKnown">
+      <Arg>
+        <Array type="String">
+         <Item>org.eclipse.jetty.ee10.webapp.FragmentConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.WebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.WebAppConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.ServletsConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.JspConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.JaasConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.JndiConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.webapp.JmxConfiguration</Item>
+         <Item>org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration</Item>
+         <Item>org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.osgi.annotations.AnnotationConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.osgi.boot.OSGiWebInfConfiguration</Item>
+         <Item>org.eclipse.jetty.ee10.osgi.boot.OSGiMetaInfConfiguration</Item>
+        </Array>
+      </Arg>
+    </Call>
+
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.naming.factory.initial</Arg>
+      <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
+    </Call>
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.naming.factory.url.pkgs</Arg>
+      <Arg><Property name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
+    </Call>
+
+</Configure>

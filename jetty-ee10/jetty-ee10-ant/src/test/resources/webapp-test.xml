@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Jetty-Ant integration test" basedir="." >
+  <path id="jetty.plugin.classpath">
+    <fileset dir="target/test-lib" includes="*.jar"/>
+  </path>
+	
+  <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
+ 
+  <typedef name="webapp" classname="org.eclipse.jetty.ee10.ant.AntWebAppContext"
+           classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
+
+  <target name="jetty.run">
+    <jetty.run daemon="true" scanIntervalSeconds="10" jettyPort="0">
+       <webapp  war="${basedir}/src/test/resources/foo" contextpath="/" />
+    </jetty.run>
+  </target>
+</project>

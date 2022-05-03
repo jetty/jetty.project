@@ -1,0 +1,35 @@
+<html>
+<head>
+    <title>Jetty Demo</title>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" href="demo.css"/>
+</head>
+<body>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/demos/demo-jetty-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+
+    <div class="content">
+      <h1>Welcome to Jetty 11 - REMOTE ACCESS!!</h1>
+      <p>
+       This is a demo webapp for the Eclipse Jetty HTTP Server and Servlet Container.
+      </p>
+      <p>
+       This test context serves several demo filters and servlets that are not safe for deployment on the internet, since (by design) they contain cross domain scripting vulnerabilities and reveal private information.  This page is displayed because you have accessed this context from a non local IP address.
+      </p>
+      <p>
+       You can disable the remote address checking by editing demo-base/webapps/demo-jetty.d/demo-jetty-override-web.xml, uncommenting the declaration of the TestFilter, and changing the "remote" init parameter to "true".
+      </p>
+    </div>
+
+    <div class="footer">
+      <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+    </div>
+
+</body>
+</html>

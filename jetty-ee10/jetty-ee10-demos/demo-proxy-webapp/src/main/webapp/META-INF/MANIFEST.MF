@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: TestIt
+Bundle-SymbolicName: TestIt
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: testit.Activator
+Import-Package: jakarta.servlet;version="2.6",
+ jakarta.servlet.http;version="2.6",
+ jakarta.servlet.jsp,
+ jakarta.servlet.jsp.tagext
+Require-Bundle: org.eclipse.jetty.client,
+ org.eclipse.jetty.proxy,
+ org.eclipse.jetty.http,
+ org.eclipse.jetty.io,
+ org.eclipse.jetty.util
+Bundle-ClassPath: WEB-INF/classes
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ActivationPolicy: lazy
+Web-ContextPath: /
+Class-Path: 
+

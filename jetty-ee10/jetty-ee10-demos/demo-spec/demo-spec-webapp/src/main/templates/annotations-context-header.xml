@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the test-annotations webapp                           -->
+<!-- =============================================================== -->
+
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
+    <Arg>
+      <New class="org.example.MockUserTransaction"/>
+    </Arg>
+  </New>
+
+  <!-- ContextPath set in web.xml -->
+  <Set name="war"><Property name="jetty.webapps"/>/test-spec.war</Set>
+  <Set name="configurationDiscovered">true</Set>
+
+  <Get name="securityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
+      </New>
+    </Set>
+  </Get>
+

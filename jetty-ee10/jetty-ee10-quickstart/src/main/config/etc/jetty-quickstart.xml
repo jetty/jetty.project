@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call class="org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration" name="configureMode">
+    <Arg><Ref refid="Server"/></Arg>
+    <Arg><Property name="jetty.quickstart.mode"/></Arg>
+  </Call>
+
+  <Ref refid="webappprovider">
+    <Get name="configurationManager">
+      <Get name="properties">
+        <Put name="jetty.quickstart.mode"><Property name="jetty.quickstart.mode"/></Put>
+        <Put name="jetty.quickstart.origin"><Property name="jetty.quickstart.origin"/></Put>
+        <Put name="jetty.quickstart.xml"><Property name="jetty.quickstart.xml"/></Put>
+      </Get>
+    </Get>
+  </Ref>
+
+  <Ref refid="DeploymentManager">
+    <Call name="addLifeCycleBinding">
+      <Arg>
+        <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
+          <Set name="jettyXml">
+            <Property name="jetty.base"/>/etc/quickstart-webapp.xml
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
