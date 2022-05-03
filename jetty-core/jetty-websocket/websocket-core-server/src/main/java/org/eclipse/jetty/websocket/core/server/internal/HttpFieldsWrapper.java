@@ -105,6 +105,8 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
             @Override
             public void add(HttpField httpField)
             {
+                // TODO: we don't know if this resulted from a put or an add.
+                // if (httpField != null && HttpFieldsWrapper.this.onAddField(httpField.getName(), httpField.getValue()))
                 if (_last != null && HttpFieldsWrapper.this.onAddField(_last.getName(), _last.getValue()))
                     _list.add(httpField);
             }
