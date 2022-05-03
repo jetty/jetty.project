@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+// @chxxeckstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class PathMappingsTest
 {
     private void assertMatch(PathMappings<String> pathmap, String path, String expectedValue)
@@ -63,8 +63,6 @@ public class PathMappingsTest
         p.put(new RegexPathSpec("^/animal/.*/chat$"), "animalChat");
         p.put(new RegexPathSpec("^/animal/.*/cam$"), "animalCam");
         p.put(new RegexPathSpec("^/entrance/cam$"), "entranceCam");
-
-        // dumpMappings(p);
 
         assertMatch(p, "/animal/bird/eagle", "birds");
         assertMatch(p, "/animal/fish/bass/sea", "fishes");
@@ -116,8 +114,6 @@ public class PathMappingsTest
         p.put(new UriTemplatePathSpec("/animal/{type}/{name}/cam"), "animalCam");
         p.put(new UriTemplatePathSpec("/entrance/cam"), "entranceCam");
 
-        // dumpMappings(p);
-
         assertMatch(p, "/animal/bird/eagle", "birds");
         assertMatch(p, "/animal/fish/bass/sea", "fishes");
         assertMatch(p, "/animal/peccary/javalina/evolution", "animals");
@@ -148,13 +144,31 @@ public class PathMappingsTest
         p.put(new UriTemplatePathSpec("/{var1}/d"), "endpointD");
         p.put(new UriTemplatePathSpec("/b/{var2}"), "endpointE");
 
-        // dumpMappings(p);
-
         assertMatch(p, "/a/b/c", "endpointB");
         assertMatch(p, "/a/d/c", "endpointA");
         assertMatch(p, "/a/x/y", "endpointC");
 
         assertMatch(p, "/b/d", "endpointE");
+    }
+
+    /**
+     * Test the match order rules for mixed Servlet and Regex path specs
+     */
+    @Test
+    public void testServletAndRegexMatchOrder()
+    {
+        PathMappings<String> p = new PathMappings<>();
+
+        p.put(new ServletPathSpec("/a/*"), "endpointA");
+        p.put(new RegexPathSpec("^.*/middle/.*$"), "middle");
+        p.put(new ServletPathSpec("*.do"), "endpointDo");
+        p.put(new ServletPathSpec("/"), "default");
+
+        assertMatch(p, "/a/b/c", "endpointA");
+        assertMatch(p, "/a/middle/c", "endpointA");
+        assertMatch(p, "/b/middle/c", "middle");
+        assertMatch(p, "/x/y.do", "endpointDo");
+        assertMatch(p, "/b/d", "default");
     }
 
     @Test
@@ -172,11 +186,12 @@ public class PathMappingsTest
         p.put(new ServletPathSpec("/"), "8");
         // p.put(new ServletPathSpec("/XXX:/YYY"), "9"); // special syntax from Jetty 3.1.x
         p.put(new ServletPathSpec(""), "10");
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         p.put(new ServletPathSpec("/\u20ACuro/*"), "11");
+        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
 
         p.put(new ServletPathSpec("/*"), "0");
 
-        // assertEquals("1", p.get("/abs/path"), "Get absolute path");
         assertEquals("/abs/path", p.getMatched("/abs/path").getPathSpec().getDeclaration(), "Match absolute path");
         assertEquals("1", p.getMatched("/abs/path").getResource(), "Match absolute path");
         assertEquals("0", p.getMatched("/abs/path/xxx").getResource(), "Mismatch absolute path");
@@ -202,7 +217,6 @@ public class PathMappingsTest
 
     /**
      * See JIRA issue: JETTY-88.
-     *
      */
     @Test
     public void testPathMappingsOnlyMatchOnDirectoryNames()

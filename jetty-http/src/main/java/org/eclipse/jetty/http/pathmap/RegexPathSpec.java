@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +29,20 @@ import org.eclipse.jetty.util.log.Logger;
 public class RegexPathSpec extends AbstractPathSpec
 {
     private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
+
+    private static final Map<Character, String> FORBIDDEN_ESCAPED = new HashMap<>();
+
+    static
+    {
+        FORBIDDEN_ESCAPED.put('s', "any whitespace");
+        FORBIDDEN_ESCAPED.put('n', "newline");
+        FORBIDDEN_ESCAPED.put('r', "carriage return");
+        FORBIDDEN_ESCAPED.put('t', "tab");
+        FORBIDDEN_ESCAPED.put('f', "form-feed");
+        FORBIDDEN_ESCAPED.put('b', "bell");
+        FORBIDDEN_ESCAPED.put('e', "escape");
+        FORBIDDEN_ESCAPED.put('c', "control char");
+    }
 
     private final String _declaration;
     private final PathSpecGroup _group;
@@ -43,34 +59,78 @@ public class RegexPathSpec extends AbstractPathSpec
             declaration = regex;
         int specLength = declaration.length();
         // build up a simple signature we can use to identify the grouping
-        boolean inGrouping = false;
+        boolean inTextList = false;
+        boolean inQuantifier = false;
         StringBuilder signature = new StringBuilder();
 
         int pathDepth = 0;
+        char last = 0;
         for (int i = 0; i < declaration.length(); i++)
         {
             char c = declaration.charAt(i);
             switch (c)
             {
-                case '[':
-                    inGrouping = true;
+                case '^': // ignore anchors
+                case '$': // ignore anchors
+                case '\'': // ignore escaping
                     break;
-                case ']':
-                    inGrouping = false;
+                case '+': // single char quantifier
+                case '?': // single char quantifier
+                case '*': // single char quantifier
+                case '|': // alternate match token
+                case '.': // any char token
                     signature.append('g'); // glob
                     break;
-                case '*':
+                case '{':
+                    inQuantifier = true;
+                    break;
+                case '}':
+                    inQuantifier = false;
+                    break;
+                case '[':
+                    inTextList = true;
+                    break;
+                case ']':
+                    inTextList = false;
                     signature.append('g'); // glob
                     break;
                 case '/':
-                    if (!inGrouping)
+                    if (!inTextList && !inQuantifier)
                         pathDepth++;
                     break;
                 default:
-                    if (!inGrouping && Character.isLetterOrDigit(c))
-                        signature.append('l'); // literal (exact)
+                    if (!inTextList && !inQuantifier && Character.isLetterOrDigit(c))
+                    {
+                        if (last == '\\') // escaped
+                        {
+                            String forbiddenReason = FORBIDDEN_ESCAPED.get(c);
+                            if (forbiddenReason != null)
+                            {
+                                throw new IllegalArgumentException(String.format("%s does not support \\%c (%s) for \"%s\"",
+                                    this.getClass().getSimpleName(), c, forbiddenReason));
+                            }
+                            switch (c)
+                            {
+                                case 'S': // any non-whitespace
+                                case 'd': // any digits
+                                case 'D': // any non-digits
+                                case 'w': // any word
+                                case 'W': // any non-word
+                                    signature.append('g'); // glob
+                                    break;
+                                default:
+                                    signature.append('l'); // literal (exact)
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            signature.append('l'); // literal (exact)
+                        }
+                    }
                     break;
             }
+            last = c;
         }
         Pattern pattern = Pattern.compile(declaration);
 
@@ -82,7 +142,7 @@ public class RegexPathSpec extends AbstractPathSpec
             group = PathSpecGroup.EXACT;
         else if (Pattern.matches("^l*g+", sig))
             group = PathSpecGroup.PREFIX_GLOB;
-        else if (Pattern.matches("^g+l+$", sig))
+        else if (Pattern.matches("^g+l+.*", sig))
             group = PathSpecGroup.SUFFIX_GLOB;
         else
             group = PathSpecGroup.MIDDLE_GLOB;

@@ -22,10 +22,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexPathSpecTest
@@ -33,13 +34,13 @@ public class RegexPathSpecTest
     public static void assertMatches(PathSpec spec, String path)
     {
         String msg = String.format("Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
-        assertThat(msg, spec.matches(path), is(true));
+        assertNotNull(spec.matched(path), msg);
     }
 
     public static void assertNotMatches(PathSpec spec, String path)
     {
         String msg = String.format("!Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
-        assertThat(msg, spec.matches(path), is(false));
+        assertNull(spec.matched(path), msg);
     }
 
     @Test
@@ -145,6 +146,26 @@ public class RegexPathSpecTest
         assertMatches(spec, "/abcde.do");
         assertMatches(spec, "/abc/efg.do");
 
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
+        assertNotMatches(spec, "/aa/bb.do/more");
+    }
+
+    @Test
+    public void testSuffixSpecMiddle()
+    {
+        RegexPathSpec spec = new RegexPathSpec("^.*/middle/.*$");
+        assertEquals("^.*/middle/.*$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^.*/middle/.*$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
+
+        assertMatches(spec, "/a/middle/c.do");
+        assertMatches(spec, "/a/b/c/d/middle/e/f");
+        assertMatches(spec, "/middle/");
+
+        assertNotMatches(spec, "/a.do");
         assertNotMatches(spec, "/a");
         assertNotMatches(spec, "/aa");
         assertNotMatches(spec, "/aa/bb");
