@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>test-sessions</artifactId>
+    <groupId>org.eclipse.jetty.ee9</groupId>
+    <artifactId>test-ee9-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-hazelcast-sessions</artifactId>
-  <name>Jetty Tests :: Sessions :: Hazelcast</name>
+  <artifactId>test-ee9-hazelcast-sessions</artifactId>
+  <name>Jetty EE9 Tests :: Sessions :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
   </properties>
@@ -76,8 +76,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-sessions-common</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>test-ee9-sessions-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

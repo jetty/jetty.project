@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>test-sessions</artifactId>
+    <groupId>org.eclipse.jetty.ee9</groupId>
+    <artifactId>test-ee9-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test-sessions-common</artifactId>
-  <name>Jetty Tests :: Sessions :: Common</name>
+  <artifactId>test-ee9-sessions-common</artifactId>
+  <name>Jetty EE9 Tests :: Sessions :: Common</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.common</bundle-symbolic-name>
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
