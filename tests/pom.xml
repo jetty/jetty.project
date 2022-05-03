@@ -48,7 +48,6 @@
     <!-- TODO -->
     <!-- module>jetty-jmh</module -->
     <!-- module>test-webapps</module -->
-    <module>test-sessions</module>
     <!-- module>test-distribution</module -->
     <!-- module>test-jpms</module -->
   </modules>

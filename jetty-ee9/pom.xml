@@ -70,6 +70,7 @@
 <!--    <module>jetty-ee9-websocket</module>-->
 <!--    <module>jetty-ee9-tests</module>-->
     <module>jetty-ee9-bom</module>
+    <module>test-sessions</module>
   </modules>
 
   <dependencyManagement>
