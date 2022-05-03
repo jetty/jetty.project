@@ -173,7 +173,7 @@ public class Invoker extends HttpServlet
                 String path = URIUtil.addPaths(servletPath, servlet);
                 MatchedResource<ServletHolder> entry = _servletHandler.getMatchedServlet(path);
 
-                if (entry != null && !entry.equals(_invokerEntry))
+                if (entry != null && !entry.getMappedResource().equals(_invokerEntry.getMappedResource()))
                 {
                     // Use the holder
                     holder = entry.getResource();
