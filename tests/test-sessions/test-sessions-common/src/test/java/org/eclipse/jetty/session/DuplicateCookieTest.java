@@ -60,8 +60,8 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s4422 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s4422 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "4422");
 
             client = new HttpClient();
@@ -108,16 +108,16 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2255");
 
             client = new HttpClient();
@@ -167,16 +167,16 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2255");
 
             client = new HttpClient();
@@ -227,16 +227,16 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
-            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
-            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2233 = createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2233");
             //create another invalid session
-            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s2255 =  createInvalidSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "2255");
 
             client = new HttpClient();
@@ -286,14 +286,14 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create some unexpired sessions
-            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "1234");
-            Session s5678 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s5678 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "5678");
-            Session s9111 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s9111 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "9111");
 
             client = new HttpClient();
@@ -344,8 +344,8 @@ public class DuplicateCookieTest
         try (StacklessLogging ignored = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid  unexpired session
-            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
-                contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
+            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionManager().getSessionCache(),
+                contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore(),
                 "1234");
 
             client = new HttpClient();

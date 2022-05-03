@@ -5,19 +5,20 @@
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Parent</name>
   <packaging>pom</packaging>
   <modules>
     <module>test-sessions-common</module>
-    <module>test-file-sessions</module>
-    <module>test-jdbc-sessions</module>
-    <module>test-mongodb-sessions</module>
-    <module>test-infinispan-sessions</module>
-    <module>test-gcloud-sessions</module>
-    <module>test-memcached-sessions</module>
-    <module>test-hazelcast-sessions</module>
+    <!-- module>test-file-sessions</module -->
+    <!-- module>test-jdbc-sessions</module -->
+    <!-- module>test-mongodb-sessions</module -->
+    <!-- module>test-infinispan-sessions</module -->
+    <!-- module>test-gcloud-sessions</module -->
+    <!-- module>test-memcached-sessions</module -->
+    <!-- module>test-hazelcast-sessions</module -->
   </modules>
   <dependencyManagement>
     <dependencies>

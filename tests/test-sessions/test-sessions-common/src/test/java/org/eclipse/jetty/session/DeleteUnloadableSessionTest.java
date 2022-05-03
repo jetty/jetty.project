@@ -110,7 +110,7 @@ public class DeleteUnloadableSessionTest
     public static class DelSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler)
+        public SessionDataStore getSessionDataStore(SessionManager manager)
         {
             return new DelSessionDataStore();
         }
@@ -171,7 +171,7 @@ public class DeleteUnloadableSessionTest
                 request.headers(headers -> headers.put(cookie));
                 ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
+                assertFalse(context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
             }
             finally
             {

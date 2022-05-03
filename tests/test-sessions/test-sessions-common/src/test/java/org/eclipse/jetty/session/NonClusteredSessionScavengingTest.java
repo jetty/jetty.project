@@ -25,9 +25,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.session.Session.APISession;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -45,17 +46,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
 {
     public SessionDataStore _dataStore;
-    
-    protected class MySessionHandler extends TestSessionHandler
-    {
-        /**
-         * @param size the size of the expiry candidates to check
-         */
-        public void assertCandidatesForExpiry(int size)
-        {
-            assertEquals(size, _candidateSessionIdsForExpiry.size());
-        }
-    }
 
     public void pause(int scavenge) throws InterruptedException
     {
@@ -79,7 +69,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionListener listener = new TestHttpSessionListener();
-        context1.getSessionHandler().addEventListener(listener);
+        context1.getSessionHandler().getSessionManager().addEventListener(listener);
 
         try
         {
@@ -99,19 +89,13 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 assertTrue(sessionCookie != null);
 
                 //test session was created
-                SessionManager m1 = context1.getSessionHandler();
+                SessionManager m1 = context1.getSessionHandler().getSessionManager();
                 assertEquals(1, m1.getSessionsCreated());
+                assertThat(listener.createdSessions, Matchers.contains(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 // Wait a while to ensure that the session should have expired, if the
                 //scavenger was running
                 pause(2 * inactivePeriod);
-
-                assertEquals(1, m1.getSessionsCreated());
-
-                if (m1 instanceof TestSessionHandler)
-                {
-                    ((TestSessionHandler)m1).assertCandidatesForExpiry(0);
-                }
 
                 //check the session listener did not get called
                 assertTrue(listener.destroyedSessions.isEmpty());
@@ -142,7 +126,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
+        _dataStore = context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore();
 
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";
@@ -199,7 +183,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
+        _dataStore = context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";
 

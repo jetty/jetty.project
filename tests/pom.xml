@@ -45,11 +45,12 @@
     </pluginManagement>
   </build>
   <modules>
-    <module>jetty-jmh</module>
-    <module>test-webapps</module>
+    <!-- TODO -->
+    <!-- module>jetty-jmh</module -->
+    <!-- module>test-webapps</module -->
     <module>test-sessions</module>
-    <module>test-distribution</module>
-    <module>test-jpms</module>
+    <!-- module>test-distribution</module -->
+    <!-- module>test-jpms</module -->
   </modules>
   <dependencyManagement>
     <dependencies>

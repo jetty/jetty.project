@@ -72,7 +72,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractSessionTestBase
                 String id = SessionTestSupport.extractSessionId(sessionCookie);
 
                 //check that the maxInactive is -1
-                Session s = ctxA.getSessionHandler().getSession(id);
+                Session s = ctxA.getSessionHandler().getSessionManager().getSession(id);
                 assertEquals(-1, s.getMaxInactiveInterval());
             }
             finally

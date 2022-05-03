@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.session;
 
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
 public class SessionTestSupport
@@ -64,7 +64,7 @@ public class SessionTestSupport
         _storeFactory = storeFactory;
         _contexts = new ContextHandlerCollection();
         _sessionIdManager = newSessionIdManager();
-        _server.setSessionIdManager(_sessionIdManager);
+        _server.addBean(_sessionIdManager, true);
         ((DefaultSessionIdManager)_sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
@@ -82,10 +82,10 @@ public class SessionTestSupport
         throws Exception
     {
         SessionHandler h = new SessionHandler();
-        SessionCache c = _cacheFactory.getSessionCache(h);
-        SessionDataStore s = _storeFactory.getSessionDataStore(h);
+        SessionCache c = _cacheFactory.getSessionCache(h.getSessionManager());
+        SessionDataStore s = _storeFactory.getSessionDataStore(h.getSessionManager());
         c.setSessionDataStore(s);
-        h.setSessionCache(c);
+        h.getSessionManager().setSessionCache(c);
         return h;
     }
 
@@ -115,7 +115,7 @@ public class SessionTestSupport
     {
         ServletContextHandler context = new ServletContextHandler(_contexts, contextPath);
         SessionHandler sessionHandler = newSessionHandler();
-        sessionHandler.setSessionIdManager(_sessionIdManager);
+        sessionHandler.getSessionManager().setSessionIdManager(_sessionIdManager);
         sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
         context.setSessionHandler(sessionHandler);
 
@@ -129,9 +129,10 @@ public class SessionTestSupport
 
     public WebAppContext addWebAppContext(String warPath, String contextPath) throws Exception
     {
-        WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
+        WebAppContext context = new WebAppContext(warPath, contextPath);
+        _contexts.addHandler(context);
         SessionHandler sessionHandler = newSessionHandler();
-        sessionHandler.setSessionIdManager(_sessionIdManager);
+        sessionHandler.getSessionManager().setSessionIdManager(_sessionIdManager);
         sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
         context.setSessionHandler(sessionHandler);
 

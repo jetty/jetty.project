@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;

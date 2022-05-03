@@ -94,8 +94,8 @@ public class IdleSessionTest
             
             //check that the session has been idled
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //make another request to reactivate the session
             Request request = client.newRequest(url + "?action=test");
@@ -103,18 +103,18 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
             
             //check session reactivated
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
 
             //wait again for the session to be passivated
             pause(evictionSec * 2);
 
             //check that it is
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //While passivated, take some action to ensure that a reactivate won't work, like
             //deleting the sessions in the store
-            ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionCache().getSessionDataStore())._map.clear();
+            ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore())._map.clear();
 
             //make a request
             request = client.newRequest(url + "?action=testfail");
@@ -137,8 +137,8 @@ public class IdleSessionTest
                 _server1.getHouseKeeper().stop();
 
             //check that the session is passivated
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //wait until the session should be expired
             pause(inactivePeriod + (3 * scavengePeriod));
@@ -147,8 +147,8 @@ public class IdleSessionTest
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
         }
         finally
         {
@@ -190,8 +190,8 @@ public class IdleSessionTest
 
             //the session should never be cached
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //make another request to reactivate the session
             Request request = client.newRequest(url + "?action=test");
@@ -199,12 +199,12 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
             
             //check session still not in the cache
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //While passivated, take some action to ensure that a reactivate won't work, like
             //deleting the sessions in the store
-            ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionCache().getSessionDataStore())._map.clear();
+            ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore())._map.clear();
 
             //make a request
             request = client.newRequest(url + "?action=testfail");
@@ -224,8 +224,8 @@ public class IdleSessionTest
                 _server1.getHouseKeeper().stop();
 
             //check that the session is passivated
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //wait until the session should be expired
             pause(inactivePeriod + (3 * scavengePeriod));
@@ -235,8 +235,8 @@ public class IdleSessionTest
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
             
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
         }
         finally
         {
@@ -258,12 +258,13 @@ public class IdleSessionTest
                 HttpSession session = request.getSession(true);
                 session.setAttribute("value", 1);
                 originalId = session.getId();
-                Session s = (Session)session;
+                
+                Session s = ((org.eclipse.jetty.ee9.nested.Request)request).getCoreSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());
                 }
-                _session = s;
+                _session = session;
             }
             else if ("test".equals(action))
             {

@@ -32,6 +32,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -134,7 +135,7 @@ public class RequestScopedSessionSaveTest
         public static final String ATTRIBUTE = "cheese";
         
         @Override
-        public void enterScope(Context context, Request request, Object reason)
+        public void enterScope(org.eclipse.jetty.server.Context context, Request request)
         {
             //set a request attribute
             if (request != null)
@@ -142,12 +143,14 @@ public class RequestScopedSessionSaveTest
                 request.setAttribute(ATTRIBUTE, (System.currentTimeMillis() % 2 == 0 ? "Parmigiano" : "Reblochon"));
                 __requestAttribute.set((String)request.getAttribute(ATTRIBUTE));
             }
+            ContextScopeListener.super.enterScope(context, request);
         }
 
         @Override
-        public void exitScope(Context context, Request request)
+        public void exitScope(org.eclipse.jetty.server.Context context, Request request)
         {
             __requestAttribute.remove();
+            ContextScopeListener.super.exitScope(context, request);
         }
     }
 
@@ -186,7 +189,7 @@ public class RequestScopedSessionSaveTest
         cacheFactory.setSaveOnCreate(true);
         AbstractSessionDataStoreFactory storeFactory = new AbstractSessionDataStoreFactory()
         {
-            public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+            public SessionDataStore getSessionDataStore(SessionManager handler) throws Exception
             {
                 return new RequestAwareSessionDataStore();
             }

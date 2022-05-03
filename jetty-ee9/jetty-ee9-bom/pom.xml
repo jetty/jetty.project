@@ -133,16 +133,16 @@
         <artifactId>jetty-ee9-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-servlets</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-webapp</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-servlets</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>-->

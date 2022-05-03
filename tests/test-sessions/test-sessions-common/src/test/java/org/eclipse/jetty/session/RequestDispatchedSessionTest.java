@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -60,7 +61,9 @@ public class RequestDispatchedSessionTest
         contextHandler.addServlet(ShowUserServlet.class, "/user");
         contextHandler.addServlet(DefaultServlet.class, "/");
 
-        server.setHandler(new HandlerList(contextHandler, new DefaultHandler()));
+        Handler.Collection list = new Handler.Collection();
+        list.addHandler(contextHandler);
+        list.addHandler(new DefaultHandler());
 
         server.start();
     }

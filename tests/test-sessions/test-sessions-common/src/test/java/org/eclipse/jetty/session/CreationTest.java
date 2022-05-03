@@ -76,7 +76,7 @@ public class CreationTest
         h.setListener(new MySessionListener());
         contextHandler.getServletHandler().addListener(h);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
         try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
@@ -122,7 +122,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -141,8 +141,8 @@ public class CreationTest
 
             //session should now be evicted from the cache
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
 
             //make another request for the same session
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
@@ -150,7 +150,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             
             //session should now be evicted from the cache again
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie)));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie)));
         }
         finally
         {
@@ -178,7 +178,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -193,7 +193,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -222,7 +222,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -237,7 +237,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -263,7 +263,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -278,7 +278,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
             assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }
         finally
@@ -325,8 +325,8 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the sessions exist persisted
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertTrue(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertTrue(ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -372,8 +372,8 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist 
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertFalse(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertFalse(ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
