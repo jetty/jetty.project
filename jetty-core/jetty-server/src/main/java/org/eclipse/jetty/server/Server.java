@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 public class Server extends Handler.Wrapper implements Attributes
 {
+    public static final String BASE_TEMP_DIR_ATTR = "org.eclipse.jetty.server.BaseTempDir";
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
 

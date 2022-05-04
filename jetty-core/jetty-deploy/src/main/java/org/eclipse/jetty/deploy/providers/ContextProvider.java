@@ -15,6 +15,10 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -23,11 +27,13 @@ import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
@@ -58,11 +64,11 @@ import org.slf4j.LoggerFactory;
  * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
-public class WebAppProvider extends ScanningAppProvider
+public class ContextProvider extends ScanningAppProvider
 {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAppProvider.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ContextProvider.class);
 
-    private boolean _extractWars = false;
+    private boolean _extract = false;
     private boolean _parentLoaderPriority = false;
     private ConfigurationManager _configurationManager;
     private String _defaultsDescriptor;
@@ -115,7 +121,7 @@ public class WebAppProvider extends ScanningAppProvider
         }
     }
 
-    public WebAppProvider()
+    public ContextProvider()
     {
         super();
         setFilenameFilter(new Filter());
@@ -126,21 +132,43 @@ public class WebAppProvider extends ScanningAppProvider
      * Get the extractWars.
      *
      * @return the extractWars
+     * @deprecated use {@link #isExtract()}
      */
-    @ManagedAttribute("extract war files")
+    @Deprecated
     public boolean isExtractWars()
     {
-        return _extractWars;
+        return isExtract();
+    }
+
+    /**
+     * @return True if WAR and JAR are extraced on deploy.
+     */
+    @ManagedAttribute("extract WAR and JAR files")
+    public boolean isExtract()
+    {
+        return _extract;
     }
 
     /**
      * Set the extractWars.
      *
-     * @param extractWars the extractWars to set
+     * @param extract the extractWars to set
+     * @deprecated use {@link #setExtract(boolean)}
      */
-    public void setExtractWars(boolean extractWars)
+    @Deprecated
+    public void setExtractWars(boolean extract)
     {
-        _extractWars = extractWars;
+        setExtract(extract);
+    }
+
+    /**
+     * Set to extract WAR and JAR files.
+     *
+     * @param extract the extractWars to set
+     */
+    public void setExtract(boolean extract)
+    {
+        _extract = extract;
     }
 
     /**
@@ -248,6 +276,8 @@ public class WebAppProvider extends ScanningAppProvider
         if (_configurationClasses != null)
             webapp.setConfigurationClasses(_configurationClasses);
 
+        */
+
         if (_tempDirectory != null)
         {
             // Since the Temp Dir is really a context base temp directory,
@@ -255,9 +285,8 @@ public class WebAppProvider extends ScanningAppProvider
             // instead of setting the WebAppContext.setTempDirectory(File).
             // If we used .setTempDirectory(File) all webapps will wind up in the
             // same temp / work directory, overwriting each others work.
-            webapp.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
+            webapp.setAttribute(Server.BASE_TEMP_DIR_ATTR, _tempDirectory);
         }
-        */
     }
 
     @Override
@@ -273,10 +302,13 @@ public class WebAppProvider extends ScanningAppProvider
         {
             Thread.currentThread().setContextClassLoader(environment.getClassLoader());
 
-            Resource resource = Resource.newResource(app.getOriginId());
-            File file = resource.getFile();
+            Resource resource = Resource.newResource(app.getFilename());
             if (!resource.exists())
                 throw new IllegalStateException("App resource does not exist " + resource);
+            resource = unpack(resource);
+
+            File file = resource.getFile();
+
 
             final String contextName = file.getName();
 
@@ -322,12 +354,16 @@ public class WebAppProvider extends ScanningAppProvider
             }
 
             // Build the web application
-            ContextHandler webAppContext = null; // TODO new WebAppContext();
-            webAppContext.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
-            initializeContextPath(webAppContext, contextName, !file.isDirectory());
-            initializeWebAppContextDefaults(webAppContext);
+            @SuppressWarnings("unchecked")
+            Class<? extends ContextHandler> contextHandlerClass = (Class<? extends ContextHandler>)environment.getAttribute("contextHandlerClass");
+            if (contextHandlerClass == null)
+                throw new IllegalStateException("Unknown ContextHandler class for " + app);
+            ContextHandler contextHandler = contextHandlerClass.getDeclaredConstructor().newInstance();
+            contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
+            initializeContextPath(contextHandler, contextName, !file.isDirectory());
+            initializeWebAppContextDefaults(contextHandler);
 
-            return webAppContext;
+            return contextHandler;
         }
         finally
         {
@@ -446,6 +482,10 @@ public class WebAppProvider extends ScanningAppProvider
             if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
                 return; //assume we will get added events for the war file
 
+            //is there .jar file of the same name?
+            if (exists(file.getName() + ".jar") || exists(file.getName() + ".JAR"))
+                return; //assume we will get added events for the jar file
+
             super.fileAdded(filename);
             return;
         }
@@ -504,5 +544,91 @@ public class WebAppProvider extends ScanningAppProvider
             return; //assume we will get removed events for the war file
 
         super.fileRemoved(filename);
+    }
+
+    public Resource unpack(Resource resourceBase) throws IOException
+    {
+        // Accept aliases for WAR files
+        if (resourceBase.isAlias())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} anti-aliased to {}", resourceBase, resourceBase.getAlias());
+            URI alias = resourceBase.getAlias();
+            resourceBase.close();
+            resourceBase = Resource.newResource(alias);
+        }
+
+        if (!isExtract() || resourceBase.isDirectory() || resourceBase.getFile() == null)
+            return resourceBase;
+
+        // is the extension a known extension
+        if (!resourceBase.getFile().getName().toLowerCase().endsWith(".war") &&
+            !resourceBase.getFile().getName().toLowerCase().endsWith(".jar"))
+            return resourceBase;
+
+        // Track the original web_app Resource, as this could be a PathResource.
+        // Later steps force the Resource to be a JarFileResource, which introduces
+        // URLConnection caches in such a way that it prevents Hot Redeployment
+        // on MS Windows.
+        Resource originalResource = resourceBase;
+
+        // Look for unpacked directory
+        Path path = resourceBase.getPath();
+        String name = path.getName(path.getNameCount() - 1).toString();
+        name = name.substring(0, name.length() - 4);
+        Path directory = path.getParent(); // TODO support unpacking to temp or work directory
+        File unpacked = directory.resolve(name).toFile();
+        File extractLock = directory.resolve(".extract_lock").toFile();
+
+        if (!Files.isWritable(directory))
+        {
+            LOG.warn("!Writable {} -> {}", resourceBase, directory);
+            return resourceBase;
+        }
+
+        // Does the directory already exist and is newer than the packed file?
+        if (unpacked.exists())
+        {
+            // If it is not a directory, then we can't unpack
+            if (!unpacked.isDirectory())
+            {
+                LOG.warn("Unusable {} -> {}", resourceBase, unpacked);
+                return resourceBase;
+            }
+
+            // If it is newer than the resource base and there is no partial extraction, then use it.
+            if (Files.getLastModifiedTime(directory).toMillis() >= resourceBase.lastModified() && !extractLock.exists())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Reuse {} -> {}", resourceBase, unpacked);
+                resourceBase.close();
+                return Resource.newResource(unpacked);
+            }
+
+            extractLock.createNewFile();
+            IO.delete(unpacked);
+        }
+        else
+        {
+            extractLock.createNewFile();
+        }
+
+        if (!unpacked.mkdir())
+        {
+            LOG.warn("Cannot Create {} -> {}", resourceBase, unpacked);
+            extractLock.delete();
+            return resourceBase;
+        }
+
+        LOG.debug("Unpack {} -> {}", resourceBase, unpacked);
+        try (Resource jar = JarResource.newJarResource(resourceBase))
+        {
+            jar.copyTo(unpacked);
+        }
+
+        extractLock.delete();
+        resourceBase.close();
+
+        return Resource.newResource(unpacked);
     }
 }

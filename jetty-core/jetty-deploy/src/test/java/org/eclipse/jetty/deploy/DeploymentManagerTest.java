@@ -58,7 +58,7 @@ public class DeploymentManagerTest
         // Test app get
         App actual = depman.getAppByOriginId("mock-foo-webapp-1.war");
         assertNotNull(actual, "Should have gotten app (by id)");
-        assertEquals("mock-foo-webapp-1.war", actual.getOriginId(), "Should have gotten app (by id)");
+        assertEquals("mock-foo-webapp-1.war", actual.getFilename(), "Should have gotten app (by id)");
     }
 
     @Test

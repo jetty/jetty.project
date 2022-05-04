@@ -131,7 +131,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * B. Create a directory based on global settings. The new directory
      * will be called <code>"Jetty-"+host+"-"+port+"__"+context+"-"+virtualhost+"-"+randomdigits+".dir"</code>
      * <p>
-     * If the user has specified the context attribute org.eclipse.jetty.webapp.basetempdir, the
+     * If the user has specified the context attribute {@link Server#BASE_TEMP_DIR_ATTR}, the
      * directory specified by this attribute will be the parent of the temp dir created. Otherwise,
      * the parent dir is <code>${java.io.tmpdir}</code>. Set delete on exit depends on value of persistTempDirectory.
      *

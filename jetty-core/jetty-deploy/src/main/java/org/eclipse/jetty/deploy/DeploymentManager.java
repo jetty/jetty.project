@@ -140,7 +140,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void addApp(App app)
     {
-        LOG.debug("Deployable added: {}", app.getOriginId());
+        LOG.debug("Deployable added: {}", app.getFilename());
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -293,7 +293,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
         for (AppEntry entry : _apps)
         {
-            if (originId.equals(entry.app.getOriginId()))
+            if (originId.equals(entry.app.getFilename()))
             {
                 return entry;
             }
@@ -480,7 +480,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void requestAppGoal(App app, String nodeName)
     {
-        AppEntry appentry = findAppByOriginId(app.getOriginId());
+        AppEntry appentry = findAppByOriginId(app.getFilename());
         if (appentry == null)
         {
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);

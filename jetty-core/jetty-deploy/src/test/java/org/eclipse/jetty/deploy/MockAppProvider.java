@@ -49,7 +49,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     {
         ContextHandler contextHandler = new ContextHandler();
 
-        File war = new File(webappsDir, app.getOriginId().substring(5));
+        File war = new File(webappsDir, app.getFilename().substring(5));
 
         String path = war.getName();
 

@@ -47,13 +47,11 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -74,73 +72,6 @@ import org.slf4j.LoggerFactory;
  * the default being  {@link WebXmlConfiguration} and
  * {@link JettyWebXmlConfiguration}.
  *
- *
- * <p>
- * The Start/Configuration of a WebAppContext is rather complex so as to allow
- * pluggable behaviour to be added in almost arbitrary ordering.  The
- * sequence of a WebappContext start is as follows:
- * <blockquote>
- * {@link #doStart()}:
- * <ul>
- * <li>{@link #preConfigure()}
- * <ul>
- * <li>Add all Server class inclusions from all known configurations {@link Configurations#getKnown()}</li>
- * <li>{@link #loadConfigurations()}, which uses either explicitly set Configurations or takes the server
- * default (which is all known {@link Configuration#isEnabledByDefault()} Configurations.</li>
- * <li>Sort the configurations using {@link TopologicalSort} in {@link Configurations#sort()}.</li>
- * <li>Add all Server class exclusions from this webapps {@link Configurations}</li>
- * <li>Add all System classes inclusions and exclusions for this webapps {@link Configurations}</li>
- * <li>Instantiate the WebAppClassLoader (if one not already explicitly set)</li>
- * <li>{@link Configuration#preConfigure(WebAppContext)} which calls
- * {@link Configuration#preConfigure(WebAppContext)} for this webapps {@link Configurations}</li>
- * </ul>
- * </li>
- * <li>{@link ServletContextHandler#doStart()}
- * <ul>
- * <li>{@link org.eclipse.jetty.server.handler.ContextHandler#doStart()}
- * <ul>
- * <li>Init {@link MimeTypes}</li>
- * <li>enterScope
- * <ul>
- * <li>{@link #startContext()}
- * <ul>
- * <li>{@link #configure()}
- * <ul>
- * <li>Call {@link Configuration#configure(WebAppContext)} on enabled {@link Configurations}</li>
- * </ul>
- * </li>
- * <li>{@link MetaData#resolve(WebAppContext)}</li>
- * <li>{@link #startContext()}
- * <li>QuickStart may generate here and/or abort start
- * <ul>
- * <li>{@link ServletContextHandler#startContext}
- * <ul>
- * <li>Decorate listeners</li>
- * <li>{@link org.eclipse.jetty.server.handler.ContextHandler#startContext}
- * <ul>
- * <li>add {@link org.eclipse.jetty.ee10.servlet.ManagedAttributeListener}</li>
- * <li>{@link AbstractHandler#doStart}</li>
- * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
- * </ul>
- * </li>
- * <li>{@link ServletHandler#initialize()}</li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * <li>exitScope</li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * <li>{@link #postConfigure()}</li>
- * </ul>
- *
- * </blockquote>
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
@@ -148,7 +79,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String TEMPDIR = ServletContext.TEMPDIR;
-    public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
+    public static final String BASETEMPDIR = Server.BASE_TEMP_DIR_ATTR;
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";

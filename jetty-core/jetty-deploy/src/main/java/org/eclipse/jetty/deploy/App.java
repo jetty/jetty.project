@@ -24,7 +24,7 @@ public class App
     private final DeploymentManager _manager;
     private final AppProvider _provider;
     private final String _environment;
-    private final String _originId;
+    private final String _filename;
     private ContextHandler _context;
 
     /**
@@ -33,17 +33,16 @@ public class App
      * @param manager the deployment manager
      * @param provider the app provider
      * @param environment the name of the environment or null for the server environment.
-     * @param originId the origin ID (The ID that the {@link AppProvider} knows
-     * about)
-     * @see App#getOriginId()
+     * @param filename the filename of the base resource of the application
+     * @see App#getFilename()
      * @see App#getContextPath()
      */
-    public App(DeploymentManager manager, AppProvider provider, String environment, String originId)
+    public App(DeploymentManager manager, AppProvider provider, String environment, String filename)
     {
         _manager = manager;
         _provider = provider;
         _environment = environment;
-        _originId = originId;
+        _filename = filename;
     }
 
     /**
@@ -128,14 +127,14 @@ public class App
      *
      * @return String representing the origin of this app.
      */
-    public String getOriginId()
+    public String getFilename()
     {
-        return this._originId;
+        return this._filename;
     }
 
     @Override
     public String toString()
     {
-        return "App[" + _context + "," + _originId + "]";
+        return "App[" + _context + "," + _filename + "]";
     }
 }
