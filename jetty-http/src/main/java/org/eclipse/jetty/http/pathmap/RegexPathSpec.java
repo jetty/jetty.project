@@ -337,5 +337,15 @@ public class RegexPathSpec extends AbstractPathSpec
             // default is null
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return "RegexMatchedPath[" +
+                "pathSpec=" + pathSpec +
+                ", path=\"" + path + "\"" +
+                ", matcher=" + matcher +
+                ']';
+        }
     }
 }

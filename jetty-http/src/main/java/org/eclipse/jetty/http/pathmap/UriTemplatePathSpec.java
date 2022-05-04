@@ -487,5 +487,15 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             }
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return "UriTemplateMatchedPath[" +
+                "pathSpec=" + pathSpec +
+                ", path=\"" + path + "\"" +
+                ", matcher=" + matcher +
+                ']';
+        }
     }
 }
