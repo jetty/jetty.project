@@ -33,7 +33,37 @@ public interface MatchedPath
         {
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return "MatchedPath.EMPTY";
+        }
     };
+
+    static MatchedPath from(String pathMatch, String pathInfo)
+    {
+        return new MatchedPath()
+        {
+            @Override
+            public String getPathMatch()
+            {
+                return pathMatch;
+            }
+
+            @Override
+            public String getPathInfo()
+            {
+                return pathInfo;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "MatchedPath.from[pathMatch=" + pathMatch + ", pathInfo=" + pathInfo + "]";
+            }
+        };
+    }
 
     /**
      * Return the portion of the path that matches a path spec.

@@ -291,7 +291,7 @@ public class ServletPathSpec extends AbstractPathSpec
         {
             case EXACT:
                 if (_declaration.equals(path))
-                    return new ServletMatchedPath(path, null); // TODO: return final matchedpath
+                    return MatchedPath.from(path, null);
                 break;
             case PREFIX_GLOB:
                 if (isWildcardMatch(path))
@@ -303,21 +303,21 @@ public class ServletPathSpec extends AbstractPathSpec
                         pathMatch = path.substring(0, _specLength - 2);
                         pathInfo = path.substring(_specLength - 2);
                     }
-                    return new ServletMatchedPath(pathMatch, pathInfo);
+                    return MatchedPath.from(pathMatch, pathInfo);
                 }
                 break;
             case SUFFIX_GLOB:
                 if (path.regionMatches((path.length() - _specLength) + 1, _declaration, 1, _specLength - 1))
-                    return new ServletMatchedPath(path, null);
+                    return MatchedPath.from(path, null);
                 break;
             case ROOT:
                 // Only "/" matches
                 if ("/".equals(path))
-                    return new ServletMatchedPath("", path); // TODO: review this
+                    return MatchedPath.from("", path);
                 break;
             case DEFAULT:
                 // If we reached this point, then everything matches
-                return new ServletMatchedPath(path, null);
+                return MatchedPath.from(path, null);
         }
         return null;
     }
@@ -341,30 +341,6 @@ public class ServletPathSpec extends AbstractPathSpec
                 return true;
             default:
                 return false;
-        }
-    }
-
-    public static class ServletMatchedPath implements MatchedPath
-    {
-        private final String servletName;
-        private final String pathInfo;
-
-        public ServletMatchedPath(String servletName, String pathInfo)
-        {
-            this.servletName = servletName;
-            this.pathInfo = pathInfo;
-        }
-
-        @Override
-        public String getPathMatch()
-        {
-            return this.servletName;
-        }
-
-        @Override
-        public String getPathInfo()
-        {
-            return this.pathInfo;
         }
     }
 }
