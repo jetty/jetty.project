@@ -306,9 +306,10 @@ public class AbstractSessionManagerTest
         throws Exception
     {
         int evictionPolicy = sessionManager.getSessionCache().getEvictionPolicy();
-        
-        //make a session
-        Session session = sessionManager.newSession(null, "1234");
+
+        TestableSessionConsumer consumer = new TestableSessionConsumer();
+        sessionManager.newSession(null, "1234", consumer);
+        Session session = consumer.getSession();
         String id = session.getId();
         sessionManager.commit(session);
         sessionManager.complete(session); //exit the session

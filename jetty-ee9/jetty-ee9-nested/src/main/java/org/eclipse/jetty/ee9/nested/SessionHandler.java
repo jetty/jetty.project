@@ -393,6 +393,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        System.err.println("doscope sessionhandler " + _contextHandler);
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
         {
             org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();

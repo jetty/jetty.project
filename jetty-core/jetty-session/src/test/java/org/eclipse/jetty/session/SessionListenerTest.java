@@ -55,7 +55,9 @@ public class SessionListenerTest
         try
         {
             //create the session, test that creation listener is called
-            Session session = sessionManager.newSession(null, "1234");
+            TestableSessionConsumer consumer = new TestableSessionConsumer();
+            sessionManager.newSession(null, "1234", consumer);
+            Session session = consumer.getSession();
             session.setAttribute("a", "one");
             assertEquals(1L, sessionManager._sessionCreatedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
             assertEquals(1L, sessionManager._sessionBoundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -255,8 +256,7 @@ public class Request implements HttpServletRequest
         HttpHeader.COOKIE,
         HttpHeader.AUTHORIZATION,
         HttpHeader.IF_NONE_MATCH,
-        HttpHeader.IF_MODIFIED_SINCE
-    );
+        HttpHeader.IF_MODIFIED_SINCE);
 
     @Override
     public PushBuilder newPushBuilder()
@@ -292,7 +292,7 @@ public class Request implements HttpServletRequest
         Cookie[] existingCookies = getCookies();
         if (existingCookies != null)
         {
-            for (Cookie c: getCookies())
+            for (Cookie c : getCookies())
             {
                 cookies.put(c.getName(), c.getValue());
             }
@@ -351,7 +351,7 @@ public class Request implements HttpServletRequest
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Response {} committing for session {}", this, session);
-        
+
         //try and scope to a request and context before committing the session
         HttpSession httpSession = session.getAPISession();
         ServletContext ctx = httpSession.getServletContext();
@@ -902,9 +902,7 @@ public class Request implements HttpServletRequest
             if (local == null)
                 return "";
             InetAddress address = local.getAddress();
-            String result = address == null
-                ? local.getHostString()
-                : address.getHostAddress();
+            String result = address == null ? local.getHostString() : address.getHostAddress();
 
             return HostPort.normalizeHost(result);
         }
@@ -1089,8 +1087,7 @@ public class Request implements HttpServletRequest
      */
     public InetSocketAddress getRemoteInetSocketAddress()
     {
-        return _channel.getCoreRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddr
-            ? inetSocketAddr : null;
+        return _channel.getCoreRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddr ? inetSocketAddr : null;
     }
 
     @Override
@@ -1347,7 +1344,8 @@ public class Request implements HttpServletRequest
         if (_sessionManager == null)
             throw new IllegalStateException("No SessionManager");
 
-        _coreSession = _sessionManager.newSession(getCoreRequest(), getRequestedSessionId());
+        _sessionManager.newSession(getCoreRequest(), getRequestedSessionId(), this::setCoreSession);
+
         if (_coreSession == null)
             throw new IllegalStateException("Create session failed");
 
@@ -1401,9 +1399,7 @@ public class Request implements HttpServletRequest
         HttpURI uri = metadata.getURI();
         if (uri == null)
             return null;
-        return uri.isAbsolute() && metadata.getHttpVersion() == HttpVersion.HTTP_2
-            ? uri.getPathQuery()
-            : uri.toString();
+        return uri.isAbsolute() && metadata.getHttpVersion() == HttpVersion.HTTP_2 ? uri.getPathQuery() : uri.toString();
     }
 
     public UserIdentity getUserIdentity()

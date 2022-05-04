@@ -143,6 +143,11 @@
         <artifactId>jetty-ee9-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>test-ee9-sessions-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
 <!--        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>-->

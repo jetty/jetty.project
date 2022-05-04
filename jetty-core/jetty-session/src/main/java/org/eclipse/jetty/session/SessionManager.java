@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.session;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
@@ -75,7 +77,7 @@ public interface SessionManager extends LifeCycle, SessionConfig
 
     Session getSession(String id) throws Exception;
 
-    Session newSession(Request request, String requestedSessionId);
+    void newSession(Request request, String requestedSessionId, Consumer<Session> consumer);
 
     Session getSession(Request request);
     

@@ -46,7 +46,9 @@ public class DirtyAttributeTest
         server.start();
         
         //make a session
-        Session session = sessionManager.newSession(null, "1234");
+        TestableSessionConsumer consumer = new TestableSessionConsumer();
+        sessionManager.newSession(null, "1234", consumer);
+        Session session = consumer.getSession();
         String id = session.getId();
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));

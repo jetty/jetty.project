@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -849,7 +850,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @param requestedSessionId the session id used by the request
      */
     @Override
-    public Session newSession(Request request, String requestedSessionId)
+    public void newSession(Request request, String requestedSessionId, Consumer<Session> consumer)
     {
         long created = System.currentTimeMillis();
         String id = _sessionIdManager.newSessionId(request, requestedSessionId, created);
@@ -865,13 +866,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             if (request != null && request.getConnectionMetaData().isSecure())
                 session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
 
+            consumer.accept(session);
             callSessionCreatedListeners(session);
-            return session;
         }
         catch (Exception e)
         {
             LOG.warn("Unable to add Session {}", id, e);
-            return null;
         }
     }
     

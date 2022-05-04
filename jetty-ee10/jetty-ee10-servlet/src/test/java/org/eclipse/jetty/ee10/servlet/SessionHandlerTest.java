@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.servlet.ServletException;
@@ -72,6 +73,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SessionHandlerTest
 {
     public WorkDir workDir;
+    
+    public static class SessionConsumer implements Consumer<Session>
+    {
+        private Session _session;
+        
+        @Override
+        public void accept(Session s)
+        {
+            _session = s;
+        }
+        
+        public Session getSession()
+        {
+            return _session;
+        }
+    }
     
     @Test
     public void testSessionTrackingMode()
@@ -142,7 +159,9 @@ public class SessionHandlerTest
             sessionHandler.setServer(server);
             server.start();
             //create the session
-            Session session = sessionHandler.newSession(null, "1234");
+            SessionConsumer consumer = new SessionConsumer();
+            sessionHandler.newSession(null, "1234", consumer);
+            Session session = consumer.getSession();
             String id = session.getId();
             assertNotNull(session);
 
@@ -196,11 +215,13 @@ public class SessionHandlerTest
             sessionHandler.addEventListener(listener);
             sessionHandler.setServer(server);
             server.start();
-            Session session = sessionHandler.newSession(null, "1234");
+            SessionConsumer consumer = new SessionConsumer();
+            sessionHandler.newSession(null, "1234", consumer);
+            Session session = consumer.getSession();
             String id = session.getId();
             assertNotNull(session);
             assertTrue(listener._createCalled);
-            
+
             session.invalidate();
             //check session no longer exists
             assertFalse(sch.getSessionHandler().getSessionCache().contains(id));

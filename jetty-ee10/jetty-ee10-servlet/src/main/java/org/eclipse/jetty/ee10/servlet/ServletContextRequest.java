@@ -600,7 +600,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 throw new IllegalStateException("No SessionManager");
 
             //TODO is this getBaseRequest or getRequest???
-            _coreSession = _sessionManager.newSession(ServletContextRequest.getBaseRequest(this), getRequestedSessionId());
+            _sessionManager.newSession(ServletContextRequest.getBaseRequest(this), getRequestedSessionId(), this::setCoreSession);
             if (_coreSession == null)
                 throw new IllegalStateException("Create session failed");
 

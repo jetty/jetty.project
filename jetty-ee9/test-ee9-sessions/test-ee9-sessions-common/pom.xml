@@ -11,14 +11,22 @@
   <name>Jetty EE9 Tests :: Sessions :: Common</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.common</bundle-symbolic-name>
-    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
   </properties>
-  <build></build>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- TODO -->
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>${jetty.servlet.api.version}</version>
      </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
