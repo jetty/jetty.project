@@ -65,7 +65,7 @@ pipeline {
             }
           }
         }
-        /*stage("Module : /jetty-integrations/") {
+        stage("Module : /jetty-integrations/") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
@@ -75,7 +75,7 @@ pipeline {
               }
             }
           }
-        }*/
+        }
         /*stage("Module : /jetty-home/") {
           steps {
             container('jetty-build') {
