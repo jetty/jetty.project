@@ -631,22 +631,22 @@
   </dependencyManagement>
 
   <dependencies>
-    <dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.authentication</groupId>
-      <artifactId>jakarta.authentication-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>jakarta.mail</groupId>-->
+<!--      <artifactId>jakarta.mail-api</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>jakarta.annotation</groupId>-->
+<!--      <artifactId>jakarta.annotation-api</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>jakarta.authentication</groupId>-->
+<!--      <artifactId>jakarta.authentication-api</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>jakarta.transaction</groupId>-->
+<!--      <artifactId>jakarta.transaction-api</artifactId>-->
+<!--    </dependency>-->
 
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -686,10 +686,10 @@
       <version>${project.version}</version>
     </dependency>    
     <!-- ee9 specific dependencies -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-quickstart</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-quickstart</artifactId>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
@@ -711,56 +711,59 @@
 <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
 <!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
 <!--    </dependency>-->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-apache-jsp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-glassfish-jstl</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jakarta.el</groupId>
-          <artifactId>jakarta.el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-apache-jsp</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>javax.el</groupId>-->
+<!--          <artifactId>el-api</artifactId>-->
+<!--        </exclusion>-->
+<!--        <exclusion>-->
+<!--          <groupId>jakarta.el</groupId>-->
+<!--          <artifactId>jakarta.el-api</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
+      <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-proxy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-cdi</artifactId>
-      <optional>true</optional>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-proxy</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-cdi</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-jaas</artifactId>
+      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-annotations</artifactId>
+      <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-openid</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-jaspi</artifactId>
-      <optional>true</optional>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-openid</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-jaspi</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
     <!-- ee10 specific dependencies -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
@@ -879,55 +882,55 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-conscrypt-server</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-embedded</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-embedded-query</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-remote</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>org.wildfly.common</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-remote-query</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-hazelcast</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.gcloud</groupId>
-      <artifactId>jetty-gcloud-session-manager</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.memcached</groupId>
-      <artifactId>jetty-memcached-sessions</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-nosql</artifactId>
-      <optional>true</optional>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>infinispan-embedded</artifactId>-->
+<!--      <version>${project.version}</version>-->
+<!--      <type>pom</type>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>infinispan-embedded-query</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>infinispan-remote</artifactId>-->
+<!--      <version>${project.version}</version>-->
+<!--      <type>pom</type>-->
+<!--      <optional>true</optional>-->
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>org.wildfly.common</groupId>-->
+<!--          <artifactId>*</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>infinispan-remote-query</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>jetty-hazelcast</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
+<!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
+<!--      <artifactId>jetty-memcached-sessions</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>jetty-nosql</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-keystore</artifactId>

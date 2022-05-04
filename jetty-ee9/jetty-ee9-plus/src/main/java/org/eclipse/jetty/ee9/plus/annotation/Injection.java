@@ -201,7 +201,7 @@ public class Injection
         catch (Exception e)
         {
             LOG.warn("Unable to inject field {} with {}", field, injectable, e);
-            throw new IllegalStateException("Inject failed for field " + field.getName());
+            throw new IllegalStateException("Inject failed for field " + field.getName(), e);
         }
     }
 

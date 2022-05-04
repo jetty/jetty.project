@@ -27,8 +27,8 @@ import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

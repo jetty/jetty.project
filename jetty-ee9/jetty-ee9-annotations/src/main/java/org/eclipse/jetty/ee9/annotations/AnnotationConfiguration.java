@@ -69,13 +69,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationConfiguration.class);
 
+    // TODO review if these should be in ee9 space?
     public static final String SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN = "org.eclipse.jetty.containerInitializerExclusionPattern";
     public static final String SERVLET_CONTAINER_INITIALIZER_ORDER = "org.eclipse.jetty.containerInitializerOrder";
     public static final String CLASS_INHERITANCE_MAP = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
-    public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
-    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
+    public static final String MULTI_THREADED = "org.eclipse.jetty.ee9.annotations.multiThreaded";
+    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.ee9.annotations.maxWait";
 
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */
     public static final boolean DEFAULT_MULTI_THREADED = true;

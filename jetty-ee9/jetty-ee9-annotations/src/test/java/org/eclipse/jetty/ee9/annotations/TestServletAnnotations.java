@@ -62,7 +62,7 @@ public class TestServletAnnotations
     public void testServletAnnotation() throws Exception
     {
         List<String> classes = new ArrayList<String>();
-        classes.add("org.eclipse.jetty.annotations.ServletC");
+        classes.add("org.eclipse.jetty.ee9.annotations.ServletC");
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
@@ -115,7 +115,7 @@ public class TestServletAnnotations
         m.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee9.annotations.ServletD", null);
         annotation.apply();
 
         //test that as the original servlet mapping had only 1 pathspec, then the whole
@@ -154,7 +154,7 @@ public class TestServletAnnotations
         m2.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee9.annotations.ServletD", null);
         annotation.apply();
 
         //test that only the mapping for "/" was removed from the mappings to the default servlet
@@ -197,7 +197,7 @@ public class TestServletAnnotations
         m.setServletName("foo");
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee9.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -239,7 +239,7 @@ public class TestServletAnnotations
         m2.setServletName("DServlet");
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee9.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -263,7 +263,7 @@ public class TestServletAnnotations
         servlet.setName("foo");
         wac.getServletHandler().addServlet(servlet);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee9.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();

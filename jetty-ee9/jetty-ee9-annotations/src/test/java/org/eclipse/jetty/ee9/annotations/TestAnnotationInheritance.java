@@ -50,7 +50,7 @@ public class TestAnnotationInheritance
         @Override
         public void handle(AnnotationParser.ClassInfo info, String annotation)
         {
-            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+            if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                 return;
 
             annotatedClassNames.add(info.getClassName());
@@ -59,7 +59,7 @@ public class TestAnnotationInheritance
         @Override
         public void handle(AnnotationParser.FieldInfo info, String annotation)
         {
-            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+            if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                 return;
             annotatedFields.add(info.getClassInfo().getClassName() + "." + info.getFieldName());
         }
@@ -67,7 +67,7 @@ public class TestAnnotationInheritance
         @Override
         public void handle(AnnotationParser.MethodInfo info, String annotation)
         {
-            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+            if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                 return;
             annotatedMethods.add(info.getClassInfo().getClassName() + "." + info.getMethodName());
         }
@@ -103,17 +103,17 @@ public class TestAnnotationInheritance
 
         //check we got all annotated methods on each class
         assertEquals(7, handler.annotatedMethods.size());
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.a"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.b"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.c"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.d"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.l"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.a"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.c"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.a"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.b"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.c"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.d"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.l"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassB.a"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassB.c"));
 
         //check we got all annotated fields on each class
         assertEquals(1, handler.annotatedFields.size());
-        assertEquals("org.eclipse.jetty.annotations.ClassA.m", handler.annotatedFields.get(0));
+        assertEquals("org.eclipse.jetty.ee9.annotations.ClassA.m", handler.annotatedFields.get(0));
     }
 
     @Test
@@ -128,17 +128,17 @@ public class TestAnnotationInheritance
 
         //check we got all annotated methods on each class
         assertEquals(7, handler.annotatedMethods.size());
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.a"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.b"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.c"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.d"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.l"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.a"));
-        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.c"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.a"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.b"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.c"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.d"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassA.l"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassB.a"));
+        assertTrue(handler.annotatedMethods.contains("org.eclipse.jetty.ee9.annotations.ClassB.c"));
 
         //check we got all annotated fields on each class
         assertEquals(1, handler.annotatedFields.size());
-        assertEquals("org.eclipse.jetty.annotations.ClassA.m", handler.annotatedFields.get(0));
+        assertEquals("org.eclipse.jetty.ee9.annotations.ClassA.m", handler.annotatedFields.get(0));
     }
 
     @Test
@@ -165,13 +165,13 @@ public class TestAnnotationInheritance
         assertFalse(map.isEmpty());
         assertEquals(2, map.size());
 
-        assertThat(map, hasKey("org.eclipse.jetty.annotations.ClassA"));
-        assertThat(map, hasKey("org.eclipse.jetty.annotations.InterfaceD"));
-        Set<String> classes = map.get("org.eclipse.jetty.annotations.ClassA");
-        assertThat(classes, contains("org.eclipse.jetty.annotations.ClassB"));
+        assertThat(map, hasKey("org.eclipse.jetty.ee9.annotations.ClassA"));
+        assertThat(map, hasKey("org.eclipse.jetty.ee9.annotations.InterfaceD"));
+        Set<String> classes = map.get("org.eclipse.jetty.ee9.annotations.ClassA");
+        assertThat(classes, contains("org.eclipse.jetty.ee9.annotations.ClassB"));
 
-        classes = map.get("org.eclipse.jetty.annotations.InterfaceD");
-        assertThat(classes, containsInAnyOrder("org.eclipse.jetty.annotations.ClassB",
+        classes = map.get("org.eclipse.jetty.ee9.annotations.InterfaceD");
+        assertThat(classes, containsInAnyOrder("org.eclipse.jetty.ee9.annotations.ClassB",
             Foo.class.getName()));
     }
 }

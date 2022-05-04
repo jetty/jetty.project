@@ -101,7 +101,7 @@ public class TestAnnotationParser
     @Test
     public void testSampleAnnotation() throws Exception
     {
-        String[] classNames = new String[]{"org.eclipse.jetty.annotations.ClassA"};
+        String[] classNames = new String[]{"org.eclipse.jetty.ee9.annotations.ClassA"};
         AnnotationParser parser = new AnnotationParser();
 
         class SampleAnnotationHandler extends AnnotationParser.AbstractHandler
@@ -111,16 +111,16 @@ public class TestAnnotationParser
             @Override
             public void handle(AnnotationParser.ClassInfo info, String annotation)
             {
-                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                     return;
 
-                assertEquals("org.eclipse.jetty.annotations.ClassA", info.getClassName());
+                assertEquals("org.eclipse.jetty.ee9.annotations.ClassA", info.getClassName());
             }
 
             @Override
             public void handle(AnnotationParser.FieldInfo info, String annotation)
             {
-                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                     return;
                 assertEquals("m", info.getFieldName());
                 assertEquals(org.objectweb.asm.Type.OBJECT, org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
@@ -129,11 +129,11 @@ public class TestAnnotationParser
             @Override
             public void handle(AnnotationParser.MethodInfo info, String annotation)
             {
-                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Sample".equals(annotation))
                     return;
-                assertEquals("org.eclipse.jetty.annotations.ClassA", info.getClassInfo().getClassName());
+                assertEquals("org.eclipse.jetty.ee9.annotations.ClassA", info.getClassInfo().getClassName());
                 assertThat(info.getMethodName(), is(in(methods)));
-                assertEquals("org.eclipse.jetty.annotations.Sample", annotation);
+                assertEquals("org.eclipse.jetty.ee9.annotations.Sample", annotation);
             }
         }
 
@@ -147,7 +147,7 @@ public class TestAnnotationParser
     @Test
     public void testMultiAnnotation() throws Exception
     {
-        String[] classNames = new String[]{"org.eclipse.jetty.annotations.ClassB"};
+        String[] classNames = new String[]{"org.eclipse.jetty.ee9.annotations.ClassB"};
         AnnotationParser parser = new AnnotationParser();
 
         class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
@@ -155,24 +155,24 @@ public class TestAnnotationParser
             @Override
             public void handle(AnnotationParser.ClassInfo info, String annotation)
             {
-                if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Multi".equals(annotation))
                     return;
-                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassName()));
+                assertTrue("org.eclipse.jetty.ee9.annotations.ClassB".equals(info.getClassName()));
             }
 
             @Override
             public void handle(AnnotationParser.FieldInfo info, String annotation)
             {
-                assertTrue(annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation),
+                assertTrue(annotation == null || !"org.eclipse.jetty.ee9.annotations.Multi".equals(annotation),
                     "There should not be any");
             }
 
             @Override
             public void handle(AnnotationParser.MethodInfo info, String annotation)
             {
-                if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.ee9.annotations.Multi".equals(annotation))
                     return;
-                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassInfo().getClassName()));
+                assertTrue("org.eclipse.jetty.ee9.annotations.ClassB".equals(info.getClassInfo().getClassName()));
                 assertTrue("a".equals(info.getMethodName()));
             }
         }
