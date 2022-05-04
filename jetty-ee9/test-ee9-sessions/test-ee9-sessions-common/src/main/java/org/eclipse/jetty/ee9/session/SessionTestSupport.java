@@ -106,7 +106,6 @@ public class SessionTestSupport
     {
         // server -> contexts collection -> context handler -> session handler -> servlet handler
         _server.setHandler(_contexts);
-        _server.setDumpAfterStart(true);
         _server.start();
     }
 
