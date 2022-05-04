@@ -17,9 +17,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee9.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -28,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * ClusteredOrphanedSessionTest
  */
+//TODO
+@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {

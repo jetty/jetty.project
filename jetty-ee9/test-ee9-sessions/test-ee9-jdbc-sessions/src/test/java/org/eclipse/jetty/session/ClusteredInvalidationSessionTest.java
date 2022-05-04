@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.session;
 
+import org.eclipse.jetty.ee9.session.AbstractClusteredInvalidationSessionTest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredInvalidationSessionTest
  */
+//TODO
+@Disabled
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {

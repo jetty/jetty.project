@@ -26,6 +26,8 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

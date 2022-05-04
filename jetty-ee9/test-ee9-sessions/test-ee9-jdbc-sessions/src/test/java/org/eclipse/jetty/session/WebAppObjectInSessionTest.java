@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.session;
 
+import org.eclipse.jetty.ee9.session.AbstractWebAppObjectInSessionTest;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * WebAppObjectInSessionTest
  */
+//TODO
+@Disabled
 @Testcontainers(disabledWithoutDocker = true)
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {

@@ -3,8 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <artifactId>test-ee9-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-file-sessions</artifactId>
   <name>Jetty EE9 Tests :: Sessions :: File</name>
@@ -27,6 +28,12 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-session</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>

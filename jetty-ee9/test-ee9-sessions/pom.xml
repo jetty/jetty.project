@@ -12,9 +12,9 @@
   <packaging>pom</packaging>
   <modules>
     <module>test-ee9-sessions-common</module>
-    <!-- module>test-ee9-file-sessions</module -->
-    <!-- module>test-ee9-jdbc-sessions</module -->
-    <!-- module>test-ee9-mongodb-sessions</module -->
+    <module>test-ee9-file-sessions</module>
+    <module>test-ee9-jdbc-sessions</module>
+    <module>test-ee9-mongodb-sessions</module>
     <!-- module>test-ee9-infinispan-sessions</module -->
     <!-- module>test-ee9-gcloud-sessions</module -->
     <!-- module>test-ee9-memcached-sessions</module -->

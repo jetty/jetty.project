@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.ee9.session.SessionTestSupport;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -38,9 +40,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
 /**
  * ReloadedSessionMissingClassTest
  */
+//TODO
+@Disabled
 @ExtendWith(WorkDirExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 public class ReloadedSessionMissingClassTest

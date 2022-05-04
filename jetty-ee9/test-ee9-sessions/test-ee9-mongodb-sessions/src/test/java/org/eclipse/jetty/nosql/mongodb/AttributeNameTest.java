@@ -20,15 +20,16 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.ee9.session.SessionTestSupport;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionTestSupport;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -136,20 +137,20 @@ public class AttributeNameTest
             String action = request.getParameter("action");
             if ("init".equals(action))
             {
-                Session session = (Session)request.getSession(true);
+                HttpSession session = request.getSession(true);
                 session.setAttribute("a.b.c", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
                 sendResult(session, httpServletResponse.getWriter());
             }
             else
             {
-                Session session = (Session)request.getSession(false);
+                HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 assertNotNull(session.getAttribute("a.b.c"));
                 sendResult(session, httpServletResponse.getWriter());
             }
         }
 
-        private void sendResult(Session session, PrintWriter writer)
+        private void sendResult(HttpSession session, PrintWriter writer)
         {
             if (session != null)
             {

@@ -279,6 +279,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-session</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-session</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+        <type>test-jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-slf4j-impl</artifactId>
         <version>10.0.8-SNAPSHOT</version>
       </dependency>

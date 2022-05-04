@@ -18,7 +18,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,9 +121,10 @@ public class SessionTableSchemaTest
         try (Connection con = _da.getConnection())
         {
             //make a root context
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             //test the load statement
             PreparedStatement s = _tableSchema.getLoadStatement(con, id, sc);
             ResultSet rs = s.executeQuery();
@@ -146,9 +148,10 @@ public class SessionTableSchemaTest
         //test if it can be seen
         try (Connection con = _da.getConnection())
         {
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getCheckSessionExistsStatement(con, sc);
             s.setString(1, id);
             ResultSet rs = s.executeQuery();
@@ -172,9 +175,10 @@ public class SessionTableSchemaTest
         //test if it can be deleted
         try (Connection con = _da.getConnection())
         {
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getDeleteStatement(con, id, sc);
             assertEquals(1, s.executeUpdate());
 
@@ -197,9 +201,10 @@ public class SessionTableSchemaTest
 
         try (Connection con = _da.getConnection())
         {
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getExpiredSessionsStatement(con,
                 sc.getCanonicalContextPath(),
                 sc.getVhost(),
@@ -225,9 +230,12 @@ public class SessionTableSchemaTest
 
         try (Connection con = _da.getConnection())
         {
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
+            idMgr.setWorkerName("0");
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getMyExpiredSessionsStatement(con,
                 sc,
                 (System.currentTimeMillis() + 100L));
@@ -252,9 +260,10 @@ public class SessionTableSchemaTest
 
         try (Connection con = _da.getConnection())
         {
-            ContextHandler handler = new ContextHandler();
+            ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
-            SessionContext sc = new SessionContext("0", handler.getServletContext());
+            SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getUpdateStatement(con,
                 id,
                 sc);
