@@ -95,11 +95,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
 
-        res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject())
-            .imports("javax.net.ssl,*")
-            .exports("org.conscrypt;version=" + System.getProperty("conscrypt-version"))
-            .instructions("Bundle-NativeCode=META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
-            .start());
+        res.add(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
