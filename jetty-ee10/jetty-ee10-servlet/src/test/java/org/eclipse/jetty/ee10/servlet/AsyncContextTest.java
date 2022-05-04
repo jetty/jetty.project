@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -274,7 +273,6 @@ public class AsyncContextTest
         assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there"));
     }
 
-    @Disabled
     @Test
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {
@@ -290,13 +288,13 @@ public class AsyncContextTest
 
         assertThat("servlet gets right path", responseBody, containsString("doGet:getServletPath:/servletPath2"));
         assertThat("async context gets right path in get", responseBody, containsString("doGet:async:getServletPath:/servletPath2"));
-        assertThat("servlet path attr is original", responseBody, containsString("async:run:attr:servletPath:/path with spaces/servletPath"));
+        assertThat("servlet path attr is original", responseBody, containsString("async:run:attr:servletPath:/path%20with%20spaces/servletPath"));
         assertThat("path info attr is correct", responseBody, containsString("async:run:attr:pathInfo:null"));
         assertThat("query string attr is correct", responseBody, containsString("async:run:attr:queryString:dispatch=true&queryStringWithEncoding=space%20space"));
         assertThat("context path attr is correct", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("request uri attr is correct", responseBody, containsString("async:run:attr:requestURI:/ctx/path%20with%20spaces/servletPath"));
-        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:path with spaces/servletPath"));
-        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/path with spaces/servletPath"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:path%20with%20spaces/servletPath"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/path%20with%20spaces/servletPath"));
         assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }

@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -1274,7 +1275,9 @@ public class ServletHandler extends Handler.Wrapper
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
-                PathSpec servletPathSpec = asPathSpec(pathSpec);
+                // TODO: review.
+                String normalizePathSpec = URIUtil.normalizePath(pathSpec);
+                PathSpec servletPathSpec = asPathSpec(normalizePathSpec);
                 MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }
