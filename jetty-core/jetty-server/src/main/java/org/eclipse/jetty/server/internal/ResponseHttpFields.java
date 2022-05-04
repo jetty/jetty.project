@@ -299,14 +299,14 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
     {
-        if (_committed.get())
+        if (!_committed.get())
             _fields.computeField(header, computeFn);
     }
 
     @Override
     public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
     {
-        if (_committed.get())
+        if (!_committed.get())
             _fields.computeField(name, computeFn);
     }
 
