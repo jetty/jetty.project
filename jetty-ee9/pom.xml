@@ -74,6 +74,7 @@
 
   <dependencyManagement>
     <dependencies>
+
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
@@ -161,7 +162,7 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
         <version>${project.version}</version>
       </dependency>

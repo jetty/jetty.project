@@ -15,7 +15,6 @@
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
     <jetty-setuid-version>1.0.4</jetty-setuid-version>
     <spotbugs.skip>true</spotbugs.skip>
-    <ee.version>ee9</ee.version>
   </properties>
 
   <build>
@@ -123,7 +122,7 @@
           </execution>
 
           <execution>
-            <id>copy-lib-deps</id>
+            <id>copy-jetty-core-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -131,7 +130,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.demo,org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.${ee.version},org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.demo,org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
                 apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
@@ -141,7 +140,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-src-deps</id>
+            <id>copy-jetty-core-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -149,7 +148,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.${ee.version},org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
                 apache-jsp,glassfish-jstl,jetty-start
@@ -208,7 +207,7 @@
               <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/core/websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -218,8 +217,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.${ee.version}</includeGroupIds>
-              <includeArtifactIds>jetty-jakarta-websocket-api,jetty-${ee.version}-websocket-*</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
+              <excludeArtifactIds>jetty-jakarta-servet-api,jetty-schemas,jetty-test-helper</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
@@ -231,8 +230,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.${ee.version}</includeGroupIds>
-              <includeArtifactIds>jetty-jakarta-websocket-api,jetty-${ee.version}-websocket-*</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee10.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
@@ -315,38 +313,6 @@
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/fcgi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-servlet-api-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet.api.version}.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-servlet-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/servlet-api</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -463,6 +429,63 @@
               <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
           </execution>
+
+          <execution>
+            <id>copy-ee9-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
+<!--              <includeArtifactIds></includeArtifactIds>-->
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
+<!--              <includeArtifactIds></includeArtifactIds>-->
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>copy-ee10-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
+              <!--              <includeArtifactIds></includeArtifactIds>-->
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee10-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
+              <!--              <includeArtifactIds></includeArtifactIds>-->
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+
           <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
@@ -564,14 +587,42 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireUpperBoundDeps>
+                  <excludes combine.children="append">
+                    <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty.${ee.version}</groupId>
-        <artifactId>jetty-${ee.version}-bom</artifactId>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
         <version>${project.version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -629,42 +680,44 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-quickstart</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-start</artifactId>
       <classifier>shaded</classifier>
       <version>${project.version}</version>
+    </dependency>    
+    <!-- ee9 specific dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-quickstart</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-servlet</artifactId>
+    </dependency>
+    <!-- not ready yet -->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+<!--      <artifactId>jetty-ee9-websocket-servlet</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+<!--      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+<!--      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+<!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
+<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-apache-jsp</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-apache-jsp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-glassfish-jstl</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-glassfish-jstl</artifactId>
       <exclusions>
         <exclusion>
           <groupId>javax.el</groupId>
@@ -677,16 +730,115 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-plus</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-plus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-proxy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-cdi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-jaas</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-openid</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-jaspi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- ee10 specific dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-quickstart</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-apache-jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-glassfish-jstl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-plus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-proxy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-cdi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jaas</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-openid</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jaspi</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-proxy</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -702,21 +854,7 @@
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-cdi</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-jaas</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-annotations</artifactId>
-    </dependency>
+    </dependency>    
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
@@ -738,18 +876,8 @@
       <artifactId>jetty-alpn-java-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-openid</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-conscrypt-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-jaspi</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
