@@ -22,6 +22,7 @@ import java.util.Iterator;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
@@ -82,7 +83,10 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      */
     public MappedResource<WebSocketCreator> getMatch(String target)
     {
-        return this.mappings.getMatched(target).getMappedResource();
+        MatchedResource<WebSocketCreator> matched = this.mappings.getMatched(target);
+        if (matched == null)
+            return null;
+        return matched.getMappedResource();
     }
 
     /**
