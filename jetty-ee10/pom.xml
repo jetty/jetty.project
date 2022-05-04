@@ -151,42 +151,42 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-api</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
