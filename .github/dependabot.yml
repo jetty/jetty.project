@@ -65,8 +65,6 @@ updates:
         versions: [ ">=12" ]
       - dependency-name: "jakarta.xml.bind:*"
         versions: [ ">=3.0.0" ]
-      - dependency-name: "jakarta.xml.bind:*"
-        versions: [ ">=3.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
