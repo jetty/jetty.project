@@ -133,7 +133,7 @@
       <artifactId>jetty-ee10-jaas</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>

@@ -7,6 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.ee9.websocket</groupId>
   <artifactId>jetty-ee9-websocket</artifactId>
   <name>EE 9 APIs :: Parent</name>
   <packaging>pom</packaging>
