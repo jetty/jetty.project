@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee10.servlet.security.SpnegoUserIdentity;
 import org.eclipse.jetty.ee10.servlet.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
@@ -119,8 +118,8 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 
         ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
 
-        HttpField header = req.getHeaders().getField(HttpHeader.AUTHORIZATION);
-        String spnegoToken = getSpnegoToken(header.getValue());
+        String header = req.getHeaders().get(HttpHeader.AUTHORIZATION);
+        String spnegoToken = getSpnegoToken(header);
         HttpSession httpSession = servletContextRequest.getServletApiRequest().getSession(false);
 
         // We have a token from the client, so run the login.

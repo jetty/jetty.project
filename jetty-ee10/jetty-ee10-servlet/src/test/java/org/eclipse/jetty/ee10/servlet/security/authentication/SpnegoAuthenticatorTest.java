@@ -13,190 +13,71 @@
 
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.EmptyLoginService;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.security.Constraint;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
-@Disabled
 public class SpnegoAuthenticatorTest
 {
-    private ConfigurableSpnegoAuthenticator _authenticator;
+    private Server _server;
+    private LocalConnector _localConnector;
 
     @BeforeEach
-    public void setup()
+    public void setup() throws Exception
     {
-        _authenticator = new ConfigurableSpnegoAuthenticator();
+        ConfigurableSpnegoAuthenticator authenticator = new ConfigurableSpnegoAuthenticator();
+        _server = new Server();
+        _localConnector = new LocalConnector(_server);
+        _server.addConnector(_localConnector);
+
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        _server.setHandler(contextHandler);
+        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+        contextHandler.setSecurityHandler(securityHandler);
+        securityHandler.setAuthenticator(authenticator);
+        securityHandler.setLoginService(new EmptyLoginService());
+        Constraint adminConstraint = new Constraint();
+        adminConstraint.setName(Constraint.__OPENID_AUTH);
+        adminConstraint.setRoles(new String[]{"admin"});
+        adminConstraint.setAuthenticate(true);
+        ConstraintMapping adminMapping = new ConstraintMapping();
+        adminMapping.setConstraint(adminConstraint);
+        adminMapping.setPathSpec("/*");
+        securityHandler.addConstraintMapping(adminMapping);
+        _server.start();
+    }
+
+    @AfterEach
+    public void after() throws Exception
+    {
+        _server.stop();
     }
 
     @Test
     public void testChallengeSentWithNoAuthorization() throws Exception
     {
-        /*
-        HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
-        {
-            @Override
-            public Server getServer()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean failed(Throwable x)
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean eof()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean needContent()
-            {
-                return false;
-            }
-
-            @Override
-            public HttpInput.Content produceContent()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean failAllContent(Throwable failure)
-            {
-                return false;
-            }
-
-            @Override
-            protected HttpOutput newHttpOutput()
-            {
-                return new HttpOutput(this)
-                {
-                    @Override
-                    public void close() {}
-
-                    @Override
-                    public void flush() throws IOException {}
-                };
-            }
-        };
-        Request req = channel.getRequest();
-        Response res = channel.getResponse();
-        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost"), null, HttpFields.EMPTY);
-        req.setMetaData(metadata);
-
-        assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
-        assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
-        assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
-         */
-        fail("re-write test case");
+        String response = _localConnector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, containsString("WWW-Authenticate: Negotiate"));
     }
 
     @Test
     public void testChallengeSentWithUnhandledAuthorization() throws Exception
     {
-        /*
-        HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
-        {
-            @Override
-            public Server getServer()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean failed(Throwable x)
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean eof()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean needContent()
-            {
-                return false;
-            }
-
-            @Override
-            public HttpInput.Content produceContent()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean failAllContent(Throwable failure)
-            {
-                return false;
-            }
-
-            @Override
-            protected HttpOutput newHttpOutput()
-            {
-                return new HttpOutput(this)
-                {
-                    @Override
-                    public void close() {}
-
-                    @Override
-                    public void flush() throws IOException {}
-                };
-            }
-        };
-        Request req = channel.getRequest();
-        Response res = channel.getResponse();
-
         // Create a bogus Authorization header. We don't care about the actual credentials.
-
-        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost"), null,
-            HttpFields.build().add(HttpHeader.AUTHORIZATION, "Basic asdf"));
-        req.setMetaData(metadata);
-
-        assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
-        assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
-        assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
-         */
-        fail("re-write test case");
-    }
-
-    class MockConnector extends AbstractConnector
-    {
-        public MockConnector()
-        {
-            super(new Server(), null, null, null, 0);
-        }
-
-        @Override
-        protected void accept(int acceptorID) throws IOException, InterruptedException
-        {
-        }
-
-        @Override
-        public Object getTransport()
-        {
-            return null;
-        }
-
-        @Override
-        public String dumpSelf()
-        {
-            return null;
-        }
+        String response = _localConnector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\nAuthorization:basic asdf\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, containsString("WWW-Authenticate: Negotiate"));
     }
 }
 
