@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -79,6 +82,9 @@ public class Environment
 
     public void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
     {
+        if (!"core".equalsIgnoreCase(getName()))
+            throw new IllegalStateException("Property files not supported in non core environments");
+
         if (!FS.canReadFile(propertyFile))
         {
             throw new IOException("Cannot read file: " + propertyFileRef);
@@ -285,6 +291,67 @@ public class Environment
     protected List<Path> getPropertyFiles()
     {
         return _propertyFiles;
+    }
+
+    public void generateXml(Environment coreEnvironment, Path envPath) throws IOException
+    {
+        try (OutputStream out = Files.newOutputStream(envPath))
+        {
+            String todo = """
+                          <Put name="propertyA">valueA</Put>
+                          <Item>lib/feature/foo.jar</Item>
+                          <Item>etc/foo.xml</Item>
+                """;
+
+            StringBuilder properties = new StringBuilder();
+            for (Props.Prop prop: coreEnvironment.getProperties())
+                properties.append("    <Put name=\"").append(prop.key).append("\">").append(prop.value).append("</Put>\n");
+            properties.append("    <!-- Environment properties -->\n");
+            for (Props.Prop prop: getProperties())
+                properties.append("    <Put name=\"").append(prop.key).append("\">").append(prop.value).append("</Put>\n");
+
+            StringBuilder classpaths = new StringBuilder();
+            for (File classpath : getClasspath().getElements())
+                classpaths.append("          <Item>").append(classpath.getAbsolutePath()).append("</Item>\n");
+
+            StringBuilder xmls = new StringBuilder();
+            for (Path xml : getXmlFiles())
+                xmls.append("          <Item>").append(xml.toAbsolutePath()).append("</Item>\n");
+
+            out.write("""
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10.dtd">
+                <Configure id="Server" class="org.eclipse.jetty.server.Server">
+                  <New class="org.eclipse.jetty.xml.EnvironmentBuilder">
+                    <Arg name="name">%s</Arg>
+                    <Call name="putId">
+                      <Arg>Server</Arg>
+                      <Arg><Ref id="Server"/></Arg>
+                    </Call>
+                
+                    <!-- Core Properties -->
+                %s
+                    <Call name="addClassPath">
+                      <Arg>
+                        <Array type="String">
+                %s        </Array>
+                      </Arg>
+                    </Call>
+                               
+                    <Call name="addXml">
+                      <Arg>
+                        <Array type="String">
+                %s        </Array>
+                      </Arg>
+                    </Call>
+                    <Call id="%s" name="build"/>
+                  </New>
+                  <Call name="addEnvironment">
+                    <Arg><Ref id="%s"/></Arg>
+                  </Call>
+                </Configure>
+                """.formatted(getName(), properties, classpaths, xmls, getName(), getName()).getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     @Override

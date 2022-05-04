@@ -71,6 +71,7 @@ Report Commands:
                      o  "path" - the JVM class-path and/or the JPMS module-path
                      o  "main" - the main class to run
                      o  "args" - the arguments passed to the main class
+                     o  "envs" - the generated XML files to create the environments
 
 Configure Commands:
 -------------------

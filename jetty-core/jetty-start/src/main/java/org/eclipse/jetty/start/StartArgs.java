@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.ManifestUtils;
 public class StartArgs
 {
     public static final String VERSION;
-    public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args");
+    public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args", "envs");
     public static final Set<String> ARG_PARTS = Set.of("args");
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
@@ -483,7 +483,6 @@ public class StartArgs
             parts = ALL_PARTS;
 
         CommandLineBuilder cmd = new CommandLineBuilder();
-        Environment environment = getCoreEnvironment();
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -508,11 +507,11 @@ public class StartArgs
                     String value = assign.length == 1 ? "" : assign[1];
 
                     Prop p = processSystemProperty(key, value, null);
-                    cmd.addRawArg("-D" + p.key + "=" + environment.getProperties().expand(p.value));
+                    cmd.addRawArg("-D" + p.key + "=" + coreEnvironment.getProperties().expand(p.value));
                 }
                 else
                 {
-                    cmd.addRawArg(environment.getProperties().expand(x));
+                    cmd.addRawArg(coreEnvironment.getProperties().expand(x));
                 }
             }
 
@@ -528,7 +527,7 @@ public class StartArgs
         {
             if (isJPMS())
             {
-                Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(environment.getClasspath().spliterator(), false)
+                Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
                     .collect(Collectors.groupingBy(File::isDirectory));
                 List<File> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
@@ -554,7 +553,7 @@ public class StartArgs
             else
             {
                 cmd.addRawArg("--class-path");
-                cmd.addRawArg(environment.getClasspath().toString());
+                cmd.addRawArg(coreEnvironment.getClasspath().toString());
             }
         }
 
@@ -565,18 +564,20 @@ public class StartArgs
             cmd.addRawArg(getMainClassname());
         }
 
-        // pass properties as args or as a file
+        // do properties and xmls
         if (parts.contains("args"))
         {
             if (dryRun && execProperties == null)
             {
-                for (Prop p : environment.getProperties())
+                // pass properties as args
+                for (Prop p : coreEnvironment.getProperties())
                 {
                     cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
                 }
             }
-            else if (environment.getProperties().size() > 0)
+            else if (coreEnvironment.getProperties().size() > 0)
             {
+                // pass properties as a temp property file
                 Path propPath;
                 if (execProperties == null)
                 {
@@ -588,19 +589,34 @@ public class StartArgs
 
                 try (OutputStream out = Files.newOutputStream(propPath))
                 {
-                    environment.getProperties().store(out, "start.jar properties");
+                    coreEnvironment.getProperties().store(out, "start.jar properties");
                 }
                 cmd.addRawArg(propPath.toAbsolutePath().toString());
             }
 
-            for (Path xml : environment.getXmlFiles())
+            for (Path xml : coreEnvironment.getXmlFiles())
             {
                 cmd.addRawArg(xml.toAbsolutePath().toString());
             }
 
-            for (Path propertyFile : environment.getPropertyFiles())
+            for (Path propertyFile : coreEnvironment.getPropertyFiles())
             {
                 cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+            }
+        }
+
+        if (parts.contains("envs"))
+        {
+            for (Environment environment : getEnvironments())
+            {
+                if (environment == coreEnvironment)
+                    continue;
+
+                Path envPath = Files.createTempFile("env_%s_".formatted(environment.getName()), ".xml");
+                environment.generateXml(coreEnvironment, envPath);
+                if (!isDryRun())
+                    envPath.toFile().deleteOnExit();
+                cmd.addRawArg(envPath.toAbsolutePath().toString());
             }
         }
 
