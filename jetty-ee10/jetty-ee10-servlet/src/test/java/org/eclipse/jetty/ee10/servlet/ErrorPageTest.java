@@ -49,7 +49,6 @@ import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -420,19 +419,19 @@ public class ErrorPageTest
         }
     }
 
-    @Disabled
     @Test
     public void testNoop() throws Exception
     {
+        // The ServletContextHandler does not handle so should go to the servers ErrorProcessor.
         String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-        assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
-        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
-        assertThat(response, Matchers.containsString("ERROR_CODE: 404"));
-        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
-        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.DefaultServlet-"));
-        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /noop/info"));
+        assertThat(response, not(Matchers.containsString("DISPATCH: ERROR")));
+        assertThat(response, not(Matchers.containsString("ERROR_PAGE: /GlobalErrorPage")));
+        assertThat(response, not(Matchers.containsString("ERROR_CODE: 404")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION: null")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: null")));
+        assertThat(response, not(Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.DefaultServlet-")));
+        assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: /noop/info")));
     }
 
     @Test

@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocking;
@@ -468,7 +469,7 @@ public class ServletChannel implements Runnable
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            ensureConsumeAllOrNotPersistent();
+                            Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
@@ -554,7 +555,7 @@ public class ServletChannel implements Runnable
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                ensureConsumeAllOrNotPersistent();
+                                Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
                         }
 
 
@@ -597,19 +598,6 @@ public class ServletChannel implements Runnable
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
-    }
-
-    private void ensureConsumeAllOrNotPersistent()
-    {
-        while (true)
-        {
-            Content content = getRequest().readContent();
-            if (content == null)
-                break;
-            content.release();
-            if (content.isLast())
-                break;
-        }
     }
 
     /**

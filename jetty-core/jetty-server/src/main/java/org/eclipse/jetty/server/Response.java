@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -26,6 +28,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
@@ -270,6 +273,8 @@ public interface Response extends Content.Writer
             return;
         }
 
+        Response.ensureConsumeAllOrNotPersistent(request, response);
+
         if (status <= 0)
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         if (message == null)
@@ -315,6 +320,79 @@ public interface Response extends Content.Writer
         if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
+    }
+
+    static void ensureConsumeAllOrNotPersistent(Request request, Response response)
+    {
+        switch (request.getConnectionMetaData().getHttpVersion())
+        {
+            case HTTP_1_0:
+                if (consumeAll(request))
+                    return;
+
+                // Remove any keep-alive value in Connection headers
+                response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return null;
+                    String v = fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                        .collect(Collectors.joining(", "));
+                    if (StringUtil.isEmpty(v))
+                        return null;
+
+                    return new HttpField(HttpHeader.CONNECTION, v);
+                });
+                break;
+
+            case HTTP_1_1:
+                if (consumeAll(request))
+                    return;
+
+                // Add close value to Connection headers
+                response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return HttpFields.CONNECTION_CLOSE;
+
+                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                    {
+                        if (fields.size() == 1)
+                        {
+                            HttpField f = fields.get(0);
+                            if (HttpFields.CONNECTION_CLOSE.equals(f))
+                                return f;
+                        }
+
+                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                            .collect(Collectors.joining(", ")));
+                    }
+
+                    return new HttpField(HttpHeader.CONNECTION,
+                        Stream.concat(fields.stream()
+                                    .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
+                                Stream.of(HttpHeaderValue.CLOSE.asString()))
+                            .collect(Collectors.joining(", ")));
+                });
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    static boolean consumeAll(Request request)
+    {
+        while (true)
+        {
+            Content content = request.readContent();
+            if (content == null)
+                return false;
+            content.release();
+            if (content.isLast())
+                return true;
+        }
     }
 
     class Wrapper implements Response
