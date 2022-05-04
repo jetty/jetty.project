@@ -43,6 +43,17 @@ pipeline {
             }
           }
         }
+        stage("Module : /jetty-integrations/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
+                }
+              }
+            }
+          }
+        }
         stage("Module : /jetty-ee9/") {
           steps {
             container('jetty-build') {
@@ -60,17 +71,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
-                }
-              }
-            }
-          }
-        }
-        stage("Module : /jetty-integrations/") {
-          steps {
-            container('jetty-build') {
-              timeout(time: 120, unit: 'MINUTES') {
-                dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
                 }
               }
             }
