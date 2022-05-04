@@ -79,6 +79,7 @@ public class WebSocketHttpFieldsWrapper extends HttpFieldsWrapper
 
         if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
         {
+            // TODO: why add extensions??
             _response.addExtensions(Collections.emptyList());
             return false;
         }
