@@ -19,6 +19,9 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -58,9 +61,51 @@ public class SocketChannelEndPointOpenCloseTest
     private EndPointPair newConnection() throws Exception
     {
         EndPointPair c = new EndPointPair();
+        SelectionKey k = new SelectionKey()
+        {
+            @Override
+            public SelectableChannel channel()
+            {
+                throw new UnsupportedOperationException();
+            }
 
-        c.client = new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()), null, null, null);
-        c.server = new SocketChannelEndPoint(connector.accept(), null, null, null);
+            @Override
+            public Selector selector()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean isValid()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void cancel()
+            {
+            }
+
+            @Override
+            public int interestOps()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public SelectionKey interestOps(int ops)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int readyOps()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+        c.client = new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()), null, k, null);
+        c.server = new SocketChannelEndPoint(connector.accept(), null, k, null);
         return c;
     }
 

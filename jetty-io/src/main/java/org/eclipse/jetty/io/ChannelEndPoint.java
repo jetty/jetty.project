@@ -207,8 +207,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.debug("doClose {}", this);
         try
         {
-            if (_key != null)
-                _key.cancel();
+            _key.cancel();
             _channel.close();
         }
         catch (IOException e)
