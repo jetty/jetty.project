@@ -111,6 +111,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             if (session == null && create)
             {
                 newSession(this, _requestedSessionId, this::setCoreSession);
+                session = _session.get();
                 HttpCookie cookie = getSessionCookie(session, getContext().getContextPath(), getConnectionMetaData().isSecure());
                 if (cookie != null)
                     Response.replaceCookie(_response, cookie);
