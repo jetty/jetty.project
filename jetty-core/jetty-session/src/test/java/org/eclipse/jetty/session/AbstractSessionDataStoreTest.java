@@ -94,7 +94,7 @@ public abstract class AbstractSessionDataStoreTest
     /**
      * Cannot be a BeforeEach, because this 
      * BeforeEach is executed before the subclass one, but it
-     * one relies on BeforeEach behaviour in the subclass!
+     * relies on BeforeEach behaviour in the subclass!
      */
     public void setUp()
     {

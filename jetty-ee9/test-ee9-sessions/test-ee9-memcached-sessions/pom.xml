@@ -5,6 +5,7 @@
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>test-ee9-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-memcached-sessions</artifactId>
   <name>Jetty EE9 Tests :: Sessions :: Memcached</name>
@@ -40,7 +41,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>test-ee9-sessions-common</artifactId>
       <scope>test</scope>
     </dependency>

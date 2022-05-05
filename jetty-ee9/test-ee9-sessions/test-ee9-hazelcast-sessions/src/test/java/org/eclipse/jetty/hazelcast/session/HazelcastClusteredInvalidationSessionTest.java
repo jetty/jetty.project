@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.ee9.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 
+//TODO
+@Disabled
 public class HazelcastClusteredInvalidationSessionTest
     extends AbstractClusteredInvalidationSessionTest
 {

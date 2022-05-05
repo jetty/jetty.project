@@ -5,6 +5,7 @@
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>test-ee9-sessions</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-ee9-gcloud-sessions</artifactId>
   <name>Jetty EE9 Tests :: Sessions :: GCloud</name>
@@ -28,6 +29,12 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-session</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
+      <scope>test</scope>
+      <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>

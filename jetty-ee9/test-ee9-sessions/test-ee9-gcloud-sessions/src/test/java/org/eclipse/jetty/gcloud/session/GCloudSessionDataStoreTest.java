@@ -36,7 +36,7 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll
-    public static void setUp() throws Exception
+    public static void configure() throws Exception
     {
         __testSupport = new GCloudSessionTestSupport();
         __testSupport.setUp();

@@ -29,7 +29,7 @@ import org.eclipse.jetty.session.CachingSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.SessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -136,7 +136,7 @@ public class MemcachedTestHelper
     {
 
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        public SessionDataStore getSessionDataStore(SessionManager manager) throws Exception
         {
             return new MockDataStore();
         }

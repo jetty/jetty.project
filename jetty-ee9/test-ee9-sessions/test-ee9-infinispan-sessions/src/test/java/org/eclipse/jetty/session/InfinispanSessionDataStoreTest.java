@@ -54,7 +54,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
     
     @BeforeEach
-    public void setup() throws Exception
+    public void configure() throws Exception
     {
         _testSupport = new InfinispanTestSupport();
         _testSupport.setup(workDir.getEmptyPathDir());
@@ -119,14 +119,17 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void testLoadSessionFails() throws Exception
     {
+        setUp();
+
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.getSessionHandler().getSessionManager().setSessionIdManager(_sessionIdManager);
         context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler().getSessionManager());
+        SessionContext sessionContext = new SessionContext(context.getSessionHandler().getSessionManager());
         store.initialize(sessionContext);
 
         //persist a session

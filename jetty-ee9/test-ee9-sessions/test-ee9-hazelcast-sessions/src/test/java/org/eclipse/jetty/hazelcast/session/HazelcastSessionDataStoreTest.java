@@ -14,8 +14,10 @@
 package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
@@ -46,7 +48,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
 
     @BeforeEach
-    public void setUp()
+    public void configure()
     {
         _testHelper = new HazelcastTestHelper();
     }
@@ -107,13 +109,15 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Test
     public void testLoadSessionFails() throws Exception
     {
+        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
         // create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler().getSessionManager());
+        SessionContext sessionContext = new SessionContext(context.getSessionHandler().getSessionManager());
         store.initialize(sessionContext);
 
         // persist a session

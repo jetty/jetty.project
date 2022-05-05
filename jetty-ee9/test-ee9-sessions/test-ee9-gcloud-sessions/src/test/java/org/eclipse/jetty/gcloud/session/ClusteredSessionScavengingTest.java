@@ -13,15 +13,17 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredSessionScavengingTest
  */
+@Disabled
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {

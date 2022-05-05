@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.session;
 
+import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * ClusteredSessionScavengingTest
  */
+//TODO
+@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
