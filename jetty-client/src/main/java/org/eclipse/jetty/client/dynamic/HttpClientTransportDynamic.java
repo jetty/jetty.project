@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
  * // Configure the clientConnector.
  *
  * // Prepare the application protocols.
- * ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP;
+ * ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
  * HTTP2Client http2Client = new HTTP2Client(clientConnector);
- * ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
+ * ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
  *
  * // Create the HttpClientTransportDynamic, preferring h2 over h1.
  * HttpClientTransport transport = new HttpClientTransportDynamic(clientConnector, h2, h1);

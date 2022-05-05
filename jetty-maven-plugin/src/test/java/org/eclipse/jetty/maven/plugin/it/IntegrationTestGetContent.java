@@ -61,6 +61,7 @@ public class IntegrationTestGetContent
             }
             String contentCheck = System.getProperty("contentCheck");
             String pathToCheck = System.getProperty("pathToCheck");
+            System.out.println("contentCheck: " + contentCheck);
             if (StringUtils.isNotBlank(contentCheck))
             {
                 String url = "http://localhost:" + port + contextPath;

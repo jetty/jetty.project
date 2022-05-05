@@ -345,7 +345,7 @@ public class ServletPathSpec extends AbstractPathSpec
             case PREFIX_GLOB:
                 if (path.length() == (_specLength - 2))
                     return null;
-                return path.substring(_specLength - 2);
+                return _specLength == 2 ? path : path.substring(_specLength - 2);
 
             default:
                 return null;
