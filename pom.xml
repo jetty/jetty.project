@@ -326,8 +326,6 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <exclude>**/org/eclipse/jetty/maven/**</exclude>
-            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
@@ -341,6 +339,7 @@
             <!-- test classes -->
             <exclude>**/org/eclipse/jetty/tests/**</exclude>
             <exclude>**/org/eclipse/jetty/test/**</exclude>
+            <exclude>**/org/eclipse/jetty/maven/its/**</exclude>
           </excludes>
         </configuration>
         <executions>
