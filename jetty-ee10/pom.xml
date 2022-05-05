@@ -51,7 +51,6 @@
     <!-- TODO -->
     <!-- module>jetty-ee10-ant</module -->
     <module>jetty-ee10-cdi</module>
-    <module>jetty-ee10-http-spi</module>
     <module>jetty-ee10-jaas</module>
     <module>jetty-ee10-jaspi</module>
     <module>jetty-ee10-jspc-maven-plugin</module>
