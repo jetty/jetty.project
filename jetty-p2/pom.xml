@@ -12,7 +12,7 @@
   <description>Generates a (maven based) P2 Updatesite</description>
   <packaging>pom</packaging>
   <properties>
-    <tycho-version>2.7.0</tycho-version>
+    <tycho-version>2.7.2</tycho-version>
   </properties>
   <build>
     <plugins>
@@ -26,9 +26,7 @@
               <categoryName>Jetty Bundles</categoryName>
               <includeReactor>true</includeReactor>
               <includeDependencies>false</includeDependencies>
-              <!-- due to a bug in tycho PGP signatures should be disabled until it is resolved -->
-              <!-- https://github.com/eclipse/tycho/issues/808 -->
-              <includePGPSignature>false</includePGPSignature>
+              <includePGPSignature>true</includePGPSignature>
             </configuration>
             <id>maven-p2-site</id>
             <phase>prepare-package</phase>
