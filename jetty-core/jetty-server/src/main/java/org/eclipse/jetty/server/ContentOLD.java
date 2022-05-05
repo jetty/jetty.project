@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * the semantics of multiple methods like flush, close, onError, etc. to be
  * included in the read/write APIs.
  */
-public interface Content
+public interface ContentOLD
 {
     ByteBuffer getByteBuffer();
 
@@ -94,22 +95,22 @@ public interface Content
         return length;
     }
 
-    static Throwable getError(Content content)
+    static Throwable getError(ContentOLD content)
     {
         return (content instanceof Error error) ? error.getCause() : null;
     }
 
-    static Content from(ByteBuffer buffer)
+    static ContentOLD from(ByteBuffer buffer)
     {
         return from(buffer, false);
     }
 
-    static Content from(ByteBuffer buffer, boolean last)
+    static ContentOLD from(ByteBuffer buffer, boolean last)
     {
         return new Buffer(buffer, last);
     }
 
-    static Content last(Content content)
+    static ContentOLD last(ContentOLD content)
     {
         if (content == null)
             return EOF;
@@ -136,7 +137,7 @@ public interface Content
      * @param content The current content
      * @return The next content if known, else null
      */
-    static Content next(Content content)
+    static ContentOLD next(ContentOLD content)
     {
         if (content != null)
         {
@@ -150,7 +151,7 @@ public interface Content
         return null;
     }
 
-    static int skip(Content content, int length)
+    static int skip(ContentOLD content, int length)
     {
         ByteBuffer byteBuffer = content.getByteBuffer();
         length = Math.min(byteBuffer.remaining(), length);
@@ -158,7 +159,7 @@ public interface Content
         return length;
     }
 
-    abstract class Abstract implements Content
+    abstract class Abstract implements ContentOLD
     {
         private final boolean _special;
         private final boolean _last;
@@ -221,7 +222,7 @@ public interface Content
         }
     }
 
-    Content EOF = new Abstract(true, true)
+    ContentOLD EOF = new Abstract(true, true)
     {
         @Override
         public boolean isLast()
@@ -301,7 +302,7 @@ public interface Content
      */
     interface Reader
     {
-        Content readContent();
+        Content.Chunk readContent();
 
         void demandContent(Runnable onContentAvailable);
     }
@@ -316,7 +317,7 @@ public interface Content
             {
                 while (true)
                 {
-                    Content c = reader.readContent();
+                    Content.Chunk c = reader.readContent();
                     if (c == null)
                     {
                         reader.demandContent(this);
@@ -329,8 +330,8 @@ public interface Content
                     }
                     if (c.isLast())
                     {
-                        if (c instanceof Content.Error)
-                            content.failed(((Content.Error)c).getCause());
+                        if (c instanceof ContentOLD.Error)
+                            content.failed(((ContentOLD.Error)c).getCause());
                         else
                             content.succeeded(out.takeByteBuffer());
                         return;
@@ -377,7 +378,7 @@ public interface Content
             {
                 while (true)
                 {
-                    Content c = reader.readContent();
+                    Content.Chunk c = reader.readContent();
                     if (c == null)
                     {
                         reader.demandContent(this);
@@ -390,8 +391,8 @@ public interface Content
                     }
                     if (c.isLast())
                     {
-                        if (c instanceof Content.Error)
-                            content.failed(((Content.Error)c).getCause());
+                        if (c instanceof ContentOLD.Error)
+                            content.failed(((ContentOLD.Error)c).getCause());
                         else
                             content.succeeded(builder.toString());
                         return;
@@ -439,7 +440,7 @@ public interface Content
             {
                 while (true)
                 {
-                    Content content = reader.readContent();
+                    Content.Chunk content = reader.readContent();
                     if (content == null)
                     {
                         reader.demandContent(this);
@@ -484,7 +485,7 @@ public interface Content
         }
     }
 
-    class ContentPublisher implements Flow.Publisher<Content>
+    class ContentPublisher implements Flow.Publisher<Content.Chunk>
     {
         private final Reader _reader;
         private final AtomicReference<TheSubscription> _theSubscription = new AtomicReference<>();
@@ -495,7 +496,7 @@ public interface Content
         }
 
         @Override
-        public void subscribe(Flow.Subscriber<? super Content> subscriber)
+        public void subscribe(Flow.Subscriber<? super Content.Chunk> subscriber)
         {
             TheSubscription theSubscription = new TheSubscription(subscriber);
             if (_theSubscription.compareAndSet(null, theSubscription))
@@ -506,10 +507,10 @@ public interface Content
 
         private class TheSubscription implements Flow.Subscription, Runnable
         {
-            private final Flow.Subscriber<? super Content> _subscriber;
+            private final Flow.Subscriber<? super Content.Chunk> _subscriber;
             private final AtomicLong _demand = new AtomicLong();
 
-            private TheSubscription(Flow.Subscriber<? super Content> subscriber)
+            private TheSubscription(Flow.Subscriber<? super Content.Chunk> subscriber)
             {
                 _subscriber = subscriber;
             }
@@ -532,7 +533,7 @@ public interface Content
             {
                 while (true)
                 {
-                    Content content = _reader.readContent();
+                    Content.Chunk content = _reader.readContent();
                     if (content == null)
                     {
                         _reader.demandContent(this);
@@ -547,9 +548,9 @@ public interface Content
                             return;
                     }
 
-                    if (content instanceof Content.Error)
+                    if (content instanceof ContentOLD.Error)
                     {
-                        _subscriber.onError(((Content.Error)content).getCause());
+                        _subscriber.onError(((ContentOLD.Error)content).getCause());
                         return;
                     }
 
@@ -589,7 +590,7 @@ public interface Content
             private final AutoLock _lock = new AutoLock();
             private boolean _iterating;
             private long _demand;
-            private Content _content;
+            private Content.Chunk _content;
             private Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO use CharsetStringBuilder
             private String _name;
             private boolean _last;
@@ -670,7 +671,7 @@ public interface Content
 
                             if (_content instanceof Error)
                             {
-                                error = ((Content.Error)_content).getCause();
+                                error = ((ContentOLD.Error)_content).getCause();
                                 _content.release();
                                 _iterating = false;
                                 break;
@@ -680,7 +681,7 @@ public interface Content
                         field = parse(_content.getByteBuffer(), _last);
                         if (field == null)
                         {
-                            if (_content.isEmpty())
+                            if (!_content.hasRemaining())
                             {
                                 _content.release();
                                 _content = null;
@@ -759,7 +760,7 @@ public interface Content
         {
             private final Blocking.Shared _blocking = new Blocking.Shared();
             private final byte[] _oneByte = new byte[1];
-            private Content _content;
+            private Content.Chunk _content;
 
             void blockForContent() throws IOException
             {
@@ -799,10 +800,10 @@ public interface Content
             public int read() throws IOException
             {
                 blockForContent();
-                if (_content.isLast() && _content.isEmpty())
+                if (_content.isLast() && !_content.hasRemaining())
                     return -1;
-                _content.fill(_oneByte, 0, 1);
-                if (_content.isEmpty())
+                _content.get(_oneByte, 0, 1);
+                if (!_content.hasRemaining())
                 {
                     _content.release();
                     _content = null;
@@ -820,10 +821,10 @@ public interface Content
             public int read(byte[] b, int off, int len) throws IOException
             {
                 blockForContent();
-                if (_content.isLast() && _content.isEmpty())
+                if (_content.isLast() && !_content.hasRemaining())
                     return -1;
-                int l = _content.fill(b, off, len);
-                if (_content.isEmpty())
+                int l = _content.get(b, off, len);
+                if (!_content.hasRemaining())
                 {
                     _content.release();
                     _content = null;
@@ -832,23 +833,23 @@ public interface Content
             }
 
             @Override
-            public int available() throws IOException
+            public int available()
             {
                 if (_content != null)
                 {
-                    if (_content.isLast() && _content.isEmpty())
+                    if (_content.isLast() && !_content.hasRemaining())
                         return -1;
-                    return _content.remaining();
+                    return _content.getByteBuffer().remaining();
                 }
                 return 0;
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
                 if (_content != null && _content.hasRemaining())
                     _content.release();
-                _content = Content.EOF;
+                _content = Content.Chunk.EOF;
             }
         };
     }
@@ -944,12 +945,12 @@ public interface Content
 
     class Copy implements Runnable, Invocable, Callback
     {
-        private static final Content ITERATING = new Content.Abstract(true, false){};
+        private static final Content.Chunk ITERATING = Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false);
         private final Reader _reader;
         private final Writer _writer;
         private final Consumer<HttpFields> _trailers;
         private final Callback _callback;
-        private final AtomicReference<Content> _content = new AtomicReference<>();
+        private final AtomicReference<Content.Chunk> _chunk = new AtomicReference<>();
 
         Copy(Reader provider, Writer writer, Consumer<HttpFields> trailers, Callback callback)
         {
@@ -970,44 +971,44 @@ public interface Content
         {
             while (true)
             {
-                Content content = _reader.readContent();
-                if (content == null)
+                Content.Chunk chunk = _reader.readContent();
+                if (chunk == null)
                 {
                     _reader.demandContent(this);
                     return;
                 }
 
-                if (content instanceof Error error)
+                if (chunk instanceof Error error)
                 {
                     _callback.failed(error.getCause());
                     return;
                 }
 
-                if (content instanceof Content.Trailers trailers && _trailers != null)
+                if (chunk instanceof ContentOLD.Trailers trailers && _trailers != null)
                     _trailers.accept(trailers.getTrailers());
 
-                if (!content.hasRemaining() && content.isLast())
+                if (!chunk.hasRemaining() && chunk.isLast())
                 {
-                    content.release();
+                    chunk.release();
                     _callback.succeeded();
                     return;
                 }
 
-                _content.set(ITERATING);
-                _writer.write(content.isLast(), this, content.getByteBuffer());
-                if (_content.compareAndSet(ITERATING, content))
+                _chunk.set(ITERATING);
+                _writer.write(chunk.isLast(), this, chunk.getByteBuffer());
+                if (_chunk.compareAndSet(ITERATING, chunk))
                     return;
-                content.release();
+                chunk.release();
             }
         }
 
         @Override
         public void succeeded()
         {
-            Content content = _content.getAndSet(null);
-            if (content == ITERATING)
+            Content.Chunk chunk = _chunk.getAndSet(null);
+            if (chunk == ITERATING)
                 return;
-            content.release();
+            chunk.release();
             run();
         }
 

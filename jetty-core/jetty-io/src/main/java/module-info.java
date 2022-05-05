@@ -21,5 +21,6 @@ module org.eclipse.jetty.io
     requires static org.eclipse.jetty.jmx;
 
     exports org.eclipse.jetty.io;
+    exports org.eclipse.jetty.io.content;
     exports org.eclipse.jetty.io.ssl;
 }

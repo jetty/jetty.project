@@ -64,9 +64,9 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -794,7 +794,7 @@ public class StreamResetTest extends AbstractTest
                     readLatch.await();
 
                     // Attempt to read after reset must throw.
-                    Content.readAllBytes(request);
+                    Content.Source.asByteBuffer(request);
                 }
                 catch (IOException expected)
                 {

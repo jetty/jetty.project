@@ -51,7 +51,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.AbstractRequestContent;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesRequestContent;
@@ -66,9 +65,9 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
@@ -342,7 +341,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
@@ -373,7 +372,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
             }
         });
 
@@ -403,7 +402,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
             }
         });
 
@@ -525,7 +524,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.setContentLength(0);
                 response.setStatus(HttpStatus.OK_200);
                 org.eclipse.jetty.server.Response.write(response, true);
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
             }
         });
 
@@ -599,30 +598,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
+        AsyncRequestContent body = new AsyncRequestContent();
+        body.write(false, Callback.NOOP, BufferUtil.allocate(512));
+        body.write(false, Callback.NOOP, BufferUtil.allocate(512));
+        body.write(new Content.Chunk.Error(new IOException("explicitly_thrown_by_test")), Callback.NOOP);
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .body(new AbstractRequestContent("application/octet-stream")
-            {
-                @Override
-                protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
-                {
-                    return new AbstractSubscription(consumer, emitInitialContent)
-                    {
-                        private int count;
-
-                        @Override
-                        protected boolean produceContent(Producer producer) throws Exception
-                        {
-                            if (count == 2)
-                                throw new IOException("explicitly_thrown_by_test");
-                            ByteBuffer buffer = BufferUtil.allocate(512);
-                            ++count;
-                            return producer.produce(buffer, false, Callback.NOOP);
-                        }
-                    };
-                }
-            })
+            .body(body)
             .send(new Response.Listener.Adapter()
             {
                 @Override
@@ -1350,7 +1333,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
                 int count = requests.incrementAndGet();
                 if (count == maxRetries)
                     latch.countDown();

@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
@@ -26,13 +27,12 @@ public interface HttpStream extends Callback
     /**
      * @return an ID unique within the lifetime scope of the associated protocol connection.
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
-     * @see HttpStream#getId();
      */
     String getId();
 
     long getNanoTimeStamp();
 
-    Content readContent();
+    Content.Chunk readContent();
 
     void demandContent(); // Calls back on Channel#onDataAvailable
 
@@ -58,7 +58,7 @@ public interface HttpStream extends Callback
         while (true)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content content = readContent();
+            Content.Chunk content = readContent();
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
@@ -68,8 +68,8 @@ public interface HttpStream extends Callback
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Content.Error)
-                return ((Content.Error)content).getCause();
+            if (content instanceof Content.Chunk.Error error)
+                return error.getCause();
 
             if (content.isLast())
                 return null;
@@ -103,7 +103,7 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk readContent()
         {
             return _wrapped.readContent();
         }

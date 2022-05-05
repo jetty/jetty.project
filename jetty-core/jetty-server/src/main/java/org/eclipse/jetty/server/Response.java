@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * An asynchronous HTTP response.
  * TODO Javadoc
  */
-public interface Response extends Content.Writer
+public interface Response extends Content.Sink
 {
     Logger LOG = LoggerFactory.getLogger(Response.class);
 
@@ -57,18 +57,10 @@ public interface Response extends Content.Writer
 
     HttpFields.Mutable getHeaders();
 
-    // TODO: change this to trailers(Supplier<HttpFields> supplier)
-    //  so that the method name is less confusing?
-    //  (it has a side effect, but looks like a normal getter).
-    HttpFields.Mutable getTrailers();
+    HttpFields.Mutable getOrCreateTrailers();
 
     @Override
-    void write(boolean last, Callback callback, ByteBuffer... content);
-
-    default void write(boolean last, Callback callback, String utf8Content)
-    {
-        write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
-    }
+    public void write(boolean last, Callback callback, ByteBuffer... buffers);
 
     boolean isCommitted();
 
@@ -123,7 +115,7 @@ public interface Response extends Content.Writer
             callback.block();
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
     {
@@ -157,11 +149,11 @@ public interface Response extends Content.Writer
         {
             while (true)
             {
-                Content content = response.getRequest().readContent();
-                if (content == null)
+                Content.Chunk chunk = response.getRequest().read();
+                if (chunk == null)
                     break; // TODO really? shouldn't we just asynchronously wait?
-                content.release();
-                if (content.isLast())
+                chunk.release();
+                if (chunk.isLast())
                     break;
             }
         }
@@ -327,7 +319,7 @@ public interface Response extends Content.Writer
         switch (request.getConnectionMetaData().getHttpVersion())
         {
             case HTTP_1_0:
-                if (consumeAll(request))
+                if (consumeAvailable(request))
                     return;
 
                 // Remove any keep-alive value in Connection headers
@@ -346,7 +338,7 @@ public interface Response extends Content.Writer
                 break;
 
             case HTTP_1_1:
-                if (consumeAll(request))
+                if (consumeAvailable(request))
                     return;
 
                 // Add close value to Connection headers
@@ -382,15 +374,15 @@ public interface Response extends Content.Writer
         }
     }
 
-    static boolean consumeAll(Request request)
+    static boolean consumeAvailable(Request request)
     {
         while (true)
         {
-            Content content = request.readContent();
-            if (content == null)
+            Content.Chunk chunk = request.read();
+            if (chunk == null)
                 return false;
-            content.release();
-            if (content.isLast())
+            chunk.release();
+            if (chunk.isLast())
                 return true;
         }
     }
@@ -416,7 +408,7 @@ public interface Response extends Content.Writer
         {
             return _wrapped;
         }
-        
+
         @Override
         public int getStatus()
         {
@@ -436,15 +428,15 @@ public interface Response extends Content.Writer
         }
 
         @Override
-        public HttpFields.Mutable getTrailers()
+        public HttpFields.Mutable getOrCreateTrailers()
         {
-            return getWrapped().getTrailers();
+            return getWrapped().getOrCreateTrailers();
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-            getWrapped().write(last, callback, content);
+            getWrapped().write(last, callback, buffers);
         }
 
         @Override
@@ -469,7 +461,7 @@ public interface Response extends Content.Writer
     // TODO test and document
     static OutputStream asOutputStream(Response response)
     {
-        return Content.asOutputStream(response);
+        return Content.Sink.asOutputStream(response);
     }
 
     // TODO test and document
@@ -490,6 +482,7 @@ public interface Response extends Content.Writer
         return new WritableByteChannel()
         {
             private boolean closed;
+
             @Override
             public int write(ByteBuffer src) throws IOException
             {

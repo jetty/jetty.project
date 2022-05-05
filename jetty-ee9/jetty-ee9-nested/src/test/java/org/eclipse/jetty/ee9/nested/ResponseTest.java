@@ -49,10 +49,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -2333,15 +2333,20 @@ public class ResponseTest
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
-            return Content.EOF;
+            return Content.Chunk.EOF;
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
-            onContentAvailable.run();
+            demandCallback.run();
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
         }
 
         @Override
@@ -2400,7 +2405,7 @@ public class ResponseTest
         }
 
         @Override
-        public HttpFields.Mutable getTrailers()
+        public HttpFields.Mutable getOrCreateTrailers()
         {
             return null;
         }

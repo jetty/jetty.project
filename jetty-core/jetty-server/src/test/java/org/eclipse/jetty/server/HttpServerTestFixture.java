@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -145,12 +146,12 @@ public class HttpServerTestFixture
             int offset = 0;
             while (offset < len)
             {
-                Content c = request.readContent();
+                Content.Chunk c = request.read();
                 if (c == null)
                 {
                     try (Blocking.Runnable blocker = Blocking.runnable())
                     {
-                        request.demandContent(blocker);
+                        request.demand(blocker);
                         blocker.block();
                     }
                     continue;
@@ -159,7 +160,7 @@ public class HttpServerTestFixture
                 if (c.hasRemaining())
                 {
                     int r = c.remaining();
-                    c.fill(content, offset, r);
+                    c.get(content, offset, r);
                     offset += r;
                     c.release();
                 }
@@ -180,7 +181,7 @@ public class HttpServerTestFixture
         public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            Content.readAll(request, Promise.from(
+            Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
                 s -> response.write(true, callback, "read %d%n" + s.length()),
                 t -> response.write(true, callback, String.format("caught %s%n", t))
             ));
@@ -199,7 +200,7 @@ public class HttpServerTestFixture
         {
             response.setStatus(200);
 
-            String input = Content.readAll(request);
+            String input = Content.Source.asString(request);
             Fields fields = Request.extractQueryParameters(request);
 
             String tmp = fields.getValue("writes");

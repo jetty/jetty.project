@@ -163,7 +163,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
-        public Mutable getTrailers()
+        public Mutable getOrCreateTrailers()
         {
             return null;
         }

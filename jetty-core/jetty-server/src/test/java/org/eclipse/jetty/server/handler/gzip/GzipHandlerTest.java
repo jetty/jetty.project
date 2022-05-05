@@ -32,7 +32,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
@@ -243,8 +243,7 @@ public class GzipHandlerTest
             if (contentType != null)
                 response.getHeaders().add(contentType);
 
-            IO.copy(Content.asInputStream(request), Content.asOutputStream(response));
-            callback.succeeded();
+            Content.copy(request, response, callback);
         }
     }
 

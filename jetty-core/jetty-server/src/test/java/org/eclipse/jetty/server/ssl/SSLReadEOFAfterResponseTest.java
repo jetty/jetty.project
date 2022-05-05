@@ -22,7 +22,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -68,12 +68,12 @@ public class SSLReadEOFAfterResponseTest
                 int length = bytes.length;
                 while (length > 0)
                 {
-                    Content c = request.readContent();
+                    Content.Chunk c = request.read();
                     if (c == null)
                     {
                         try (Blocking.Runnable blocker = Blocking.runnable())
                         {
-                            request.demandContent(blocker);
+                            request.demand(blocker);
                             blocker.block();
                         }
                         continue;
@@ -83,7 +83,7 @@ public class SSLReadEOFAfterResponseTest
                         length -= c.remaining();
                         c.release();
                     }
-                    if (c == Content.EOF)
+                    if (c == Content.Chunk.EOF)
                         callback.failed(new IllegalStateException());
                 }
 
@@ -98,8 +98,8 @@ public class SSLReadEOFAfterResponseTest
                 sleep(idleTimeout / 2);
 
                 // Third, read the EOF.
-                Content content = request.readContent();
-                if (!content.isLast())
+                Content.Chunk chunk = request.read();
+                if (!chunk.isLast())
                     throw new IllegalStateException();
                 callback.succeeded();
             }

@@ -187,7 +187,7 @@ public class AsyncProxyServlet extends ProxyServlet
 
         protected void onRequestContent(HttpServletRequest request, Request proxyRequest, AsyncRequestContent content, byte[] buffer, int offset, int length, Callback callback)
         {
-            content.offer(ByteBuffer.wrap(buffer, offset, length), callback);
+            content.write(ByteBuffer.wrap(buffer, offset, length), callback);
         }
 
         @Override

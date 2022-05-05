@@ -25,7 +25,7 @@ import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -52,7 +52,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
 
                 response.setContentLength(data.length);
                 response.write(true, callback, ByteBuffer.wrap(data));
@@ -143,7 +143,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
 
                 try (Blocking.Callback block = Blocking.callback())
                 {
@@ -186,7 +186,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             if (result.isFailed())
                 resultLatch.countDown();
         });
-        content.offer(ByteBuffer.allocate(8));
+        content.write(ByteBuffer.allocate(8), Callback.NOOP);
         content.close();
 
         assertTrue(resultLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));

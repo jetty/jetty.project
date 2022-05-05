@@ -32,6 +32,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -276,6 +277,8 @@ public class IO
 
     public static IOException rethrow(Throwable cause)
     {
+        if (cause instanceof ExecutionException xx)
+            cause = xx.getCause();
         if (cause instanceof IOException)
             return (IOException)cause;
         if (cause instanceof Error)

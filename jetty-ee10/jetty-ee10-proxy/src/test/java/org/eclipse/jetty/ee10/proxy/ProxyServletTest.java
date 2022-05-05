@@ -86,6 +86,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -1500,7 +1501,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
+        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
@@ -1523,7 +1524,7 @@ public class ProxyServletTest
 
         // Wait a while and then offer more content.
         Thread.sleep(1000);
-        requestContent.offer(ByteBuffer.wrap(content, chunk1, content.length - chunk1));
+        requestContent.write(ByteBuffer.wrap(content, chunk1, content.length - chunk1), Callback.NOOP);
         requestContent.close();
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -1560,7 +1561,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
+        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))

@@ -30,10 +30,10 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -224,18 +224,18 @@ public class ContextHandlerTest
                         super.succeeded();
                     }
                 });
-                request.demandContent(() ->
+                request.demand(() ->
                 {
                     assertInContext(request);
                     scopeListener.assertInContext(request.getContext(), request);
-                    Content content = request.readContent();
-                    assertTrue(content.hasRemaining());
-                    assertTrue(content.isLast());
+                    Content.Chunk chunk = request.read();
+                    assertTrue(chunk.hasRemaining());
+                    assertTrue(chunk.isLast());
                     response.setStatus(200);
                     response.write(true, Callback.from(
                         () ->
                         {
-                            content.release();
+                            chunk.release();
                             assertInContext(request);
                             scopeListener.assertInContext(request.getContext(), request);
                             callback.succeeded();
@@ -243,7 +243,7 @@ public class ContextHandlerTest
                         t ->
                         {
                             throw new IllegalStateException();
-                        }), content.getByteBuffer());
+                        }), chunk.getByteBuffer());
                 });
             }
         };
@@ -293,7 +293,7 @@ public class ContextHandlerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                request.demandContent(() ->
+                request.demand(() ->
                 {
                     assertInContext(request);
                     scopeListener.assertInContext(request.getContext(), request);
@@ -302,11 +302,11 @@ public class ContextHandlerTest
 
                 blocking.countDown();
                 assertTrue(latch.await(10, TimeUnit.SECONDS));
-                Content content = request.readContent();
-                assertNotNull(content);
-                assertTrue(content.hasRemaining());
-                assertTrue(content.isLast());
-                content.release();
+                Content.Chunk chunk = request.read();
+                assertNotNull(chunk);
+                assertTrue(chunk.hasRemaining());
+                assertTrue(chunk.isLast());
+                chunk.release();
                 response.setStatus(200);
                 callback.succeeded();
             }

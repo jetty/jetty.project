@@ -37,6 +37,7 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -456,33 +457,33 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 long read = 0;
                 while (read < contentLength)
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
                     {
                         try (Blocking.Runnable blocker = Blocking.runnable())
                         {
-                            request.demandContent(blocker);
+                            request.demand(blocker);
                             blocker.block();
                         }
                         continue;
                     }
 
-                    if (content instanceof Content.Error)
+                    if (chunk instanceof Content.Chunk.Error error)
                     {
                         earlyEOFException.countDown();
-                        content.checkError();
+                        throw IO.rethrow(error.getCause());
                     }
 
-                    if (content.hasRemaining())
+                    if (chunk.hasRemaining())
                     {
-                        read += content.remaining();
-                        content.getByteBuffer().clear();
-                        content.release();
+                        read += chunk.remaining();
+                        chunk.getByteBuffer().clear();
+                        chunk.release();
                         if (!fourBytesRead.get() && read >= 4)
                             fourBytesRead.set(true);
                     }
 
-                    if (content.isLast())
+                    if (chunk.isLast())
                     {
                         callback.succeeded();
                         break;
@@ -1677,7 +1678,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testHoldContent() throws Exception
     {
-        Queue<Content> contents = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> contents = new ConcurrentLinkedQueue<>();
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
@@ -1696,22 +1697,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 });
                 while (true)
                 {
-                    Content content = request.readContent();
+                    Content.Chunk chunk = request.read();
 
-                    if (content == null)
+                    if (chunk == null)
                     {
                         try (Blocking.Runnable blocker = Blocking.runnable())
                         {
-                            request.demandContent(blocker);
+                            request.demand(blocker);
                             blocker.block();
                             continue;
                         }
                     }
 
-                    if (content.hasRemaining())
-                        contents.add(content);
+                    if (chunk.hasRemaining())
+                        contents.add(chunk);
 
-                    if (content.isLast())
+                    if (chunk.isLast())
                         break;
                 }
 
@@ -1762,12 +1763,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         assertTrue(closed.await(10, TimeUnit.SECONDS));
 
-        long total = contents.stream().mapToLong(Content::remaining).sum();
+        long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
         ArrayRetainableByteBufferPool pool = _connector.getBean(ArrayRetainableByteBufferPool.class);
         long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-        contents.forEach(Content::release);
+        contents.forEach(Content.Chunk::release);
         long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
         assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
         assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
@@ -1794,9 +1795,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             Request.Wrapper wrapper = new Request.Wrapper(request)
             {
                 @Override
-                public Content readContent()
+                public Content.Chunk read()
                 {
-                    Content c = super.readContent();
+                    Content.Chunk c = super.read();
                     if (c != null && c.hasRemaining())
                         hasContent.set(true);
                     return c;

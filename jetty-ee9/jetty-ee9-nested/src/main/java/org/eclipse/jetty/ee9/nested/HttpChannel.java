@@ -44,12 +44,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -865,7 +865,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    void onContent(Content content)
+    void onContent(Content.Chunk content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);

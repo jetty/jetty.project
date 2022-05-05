@@ -16,7 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -229,7 +229,7 @@ public class BufferedResponseHandlerTest
             if (_mimeType != null)
                 response.setContentType(_mimeType);
 
-            try (OutputStream outputStream = Content.asOutputStream(response))
+            try (OutputStream outputStream = Content.Sink.asOutputStream(response))
             {
                 for (int i = 0; i < _writes; i++)
                 {

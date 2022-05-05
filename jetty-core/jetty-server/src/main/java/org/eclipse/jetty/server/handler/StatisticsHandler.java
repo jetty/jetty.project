@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -100,12 +100,12 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public Content readContent()
+            public Content.Chunk readContent()
             {
-                Content content =  super.readContent();
-                if (content != null)
-                    statisticsRequest._bytesRead.add(content.remaining());
-                return content;
+                Content.Chunk chunk =  super.readContent();
+                if (chunk != null)
+                    statisticsRequest._bytesRead.add(chunk.getByteBuffer().remaining());
+                return chunk;
             }
 
             @Override
@@ -339,7 +339,7 @@ public class StatisticsHandler extends Handler.Wrapper
         private class MinimumDataRateRequest extends Request.WrapperProcessor
         {
             private StatisticsRequest _statisticsRequest;
-            private Content.Error _errorContent;
+            private Content.Chunk.Error _errorContent;
 
             private MinimumDataRateRequest(Request request)
             {
@@ -353,7 +353,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public void demandContent(Runnable onContentAvailable)
+            public void demand(Runnable demandCallback)
             {
                 if (_minimumReadRate > 0)
                 {
@@ -361,18 +361,18 @@ public class StatisticsHandler extends Handler.Wrapper
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
-                        _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
-                        onContentAvailable.run();
+                        _errorContent = new Content.Chunk.Error(new TimeoutException("read rate is too low: " + rr));
+                        demandCallback.run();
                         return;
                     }
                 }
-                super.demandContent(onContentAvailable);
+                super.demand(demandCallback);
             }
 
             @Override
-            public Content readContent()
+            public Content.Chunk read()
             {
-                return _errorContent != null ? _errorContent : super.readContent();
+                return _errorContent != null ? _errorContent : super.read();
             }
 
             @Override
@@ -408,7 +408,7 @@ public class StatisticsHandler extends Handler.Wrapper
                         if (wr < _minimumWriteRate)
                         {
                             TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
-                            request._errorContent = new Content.Error(cause);
+                            request._errorContent = new Content.Chunk.Error(cause);
                             callback.failed(cause);
                             return;
                         }

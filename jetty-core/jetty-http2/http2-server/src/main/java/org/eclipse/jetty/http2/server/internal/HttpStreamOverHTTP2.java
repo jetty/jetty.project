@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -49,7 +50,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HttpChannel _httpChannel;
     private final IStream _stream;
     private final long _nanoTimeStamp;
-    private Content _content;
+    private Content.Chunk _chunk;
     private MetaData.Response _metaData;
     private boolean committed;
     private boolean _demand;
@@ -83,7 +84,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             Runnable handler = _httpChannel.onRequest(request);
 
             if (frame.isEndStream())
-                _content = Content.EOF;
+                _chunk = Content.Chunk.EOF;
 
             HttpFields fields = request.getFields();
 
@@ -118,20 +119,20 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk readContent()
     {
         while (true)
         {
-            Content content = _content;
-            _content = Content.next(content);
-            if (content != null)
-                return content;
+            Content.Chunk chunk = _chunk;
+            _chunk = Content.Chunk.next(chunk);
+            if (chunk != null)
+                return chunk;
 
             IStream.Data data = _stream.readData();
             if (data == null)
                 return null;
 
-            _content = newContent(data.frame(), data::complete);
+            _chunk = newChunk(data.frame(), data::complete);
         }
     }
 
@@ -149,7 +150,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onData(DataFrame frame, Callback callback)
     {
         _demand = false;
-        _content = newContent(frame, callback::succeeded);
+        _chunk = newChunk(frame, callback::succeeded);
 
         if (LOG.isDebugEnabled())
         {
@@ -163,22 +164,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         return _httpChannel.onContentAvailable();
     }
 
-    private Content.Abstract newContent(DataFrame frame, Runnable complete)
+    private Content.Chunk newChunk(DataFrame frame, Runnable complete)
     {
-        return new Content.Abstract(false, frame.isEndStream())
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return frame.getData();
-            }
-
-            @Override
-            public void release()
-            {
-                complete.run();
-            }
-        };
+        return Content.Chunk.from(frame.getData(), frame.isEndStream(), complete);
     }
 
     @Override
@@ -191,7 +179,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                     System.lineSeparator(), trailers);
         }
-        _content = new Content.Trailers(trailers);
+        _chunk = new Trailers(trailers);
         return _httpChannel.onContentAvailable();
     }
 

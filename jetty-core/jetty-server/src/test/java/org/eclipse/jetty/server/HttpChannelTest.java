@@ -31,7 +31,9 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
@@ -288,11 +290,11 @@ public class HttpChannelTest
         {
             int i = 0;
             @Override
-            public Content readContent()
+            public Content.Chunk readContent()
             {
                 if (i < parts.length)
-                    return Content.from(BufferUtil.toBuffer(parts[i++]), false);
-                return Content.EOF;
+                    return Content.Chunk.from(BufferUtil.toBuffer(parts[i++]), false);
+                return Content.Chunk.EOF;
             }
         };
 
@@ -719,7 +721,7 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
-        assertThat(stream.readContent(), sameInstance(Content.EOF));
+        assertThat(stream.readContent(), sameInstance(Content.Chunk.EOF));
     }
 
     @Test
@@ -854,7 +856,7 @@ public class HttpChannelTest
     }
 
     @Test
-    public void testWhenStreamEvent() throws Exception
+    public void testStreamWrapper() throws Exception
     {
         EchoHandler echoHandler = new EchoHandler();
         _server.setHandler(echoHandler);
@@ -866,7 +868,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public Content readContent()
+            public Content.Chunk readContent()
             {
                 return super.readContent();
             }
@@ -897,11 +899,11 @@ public class HttpChannelTest
             new HttpStream.Wrapper(s)
             {
                 @Override
-                public Content readContent()
+                public Content.Chunk readContent()
                 {
-                    Content content = super.readContent();
-                    history.add("readContent: " + content);
-                    return content;
+                    Content.Chunk chunk = super.readContent();
+                    history.add("readContent: " + chunk);
+                    return chunk;
                 }
 
                 @Override
@@ -994,8 +996,6 @@ public class HttpChannelTest
         assertThat(timeline.next(), allOf(startsWith("readContent: "), containsString("<<<echo>>>"), containsString("l=true")));
         // send the last part
         assertThat(timeline.next(), allOf(startsWith("send 0 l=true "), containsString("<<<echo>>>")));
-        // ensure all data is consumed
-        assertThat(timeline.next(), allOf(startsWith("readContent: EOF")));
         // succeed the stream
         assertThat(timeline.next(), allOf(startsWith("succeeded")));
         // End of history
@@ -1017,15 +1017,15 @@ public class HttpChannelTest
         {
             int i = 0;
             @Override
-            public Content readContent()
+            public Content.Chunk readContent()
             {
                 if (i < parts.length)
-                    return Content.from(BufferUtil.toBuffer(parts[i++]), false);
+                    return Content.Chunk.from(BufferUtil.toBuffer(parts[i++]), false);
 
                 if (i++ == parts.length)
-                    return new Content.Trailers(trailers);
+                    return new Trailers(trailers);
 
-                return Content.EOF;
+                return Content.Chunk.EOF;
             }
         };
 
@@ -1069,16 +1069,16 @@ public class HttpChannelTest
                     @Override
                     public void run()
                     {
-                        Content content = request.readContent();
-                        contentSize.add(content.remaining());
-                        content.release();
-                        if (content.isLast())
+                        Content.Chunk chunk = request.read();
+                        contentSize.add(chunk.remaining());
+                        chunk.release();
+                        if (chunk.isLast())
                             latch.countDown();
                         else
-                            request.demandContent(this);
+                            request.demand(this);
                     }
                 };
-                request.demandContent(onContentAvailable);
+                request.demand(onContentAvailable);
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
@@ -1100,12 +1100,12 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public Content readContent()
+            public Content.Chunk readContent()
             {
                 int c = count.decrementAndGet();
                 if (c >= 0)
-                    return Content.from(data.slice(), false);
-                return Content.EOF;
+                    return Content.Chunk.from(data.slice(), false);
+                return Content.Chunk.EOF;
             }
 
             @Override
@@ -1183,15 +1183,14 @@ public class HttpChannelTest
 
         // but now we cannot read, demand nor write
         Request rq = handling.get().getRequest();
-        Content read = rq.readContent();
-        assertTrue(read.isSpecial());
-        assertTrue(read.isLast());
-        assertInstanceOf(Content.Error.class, read);
-        assertThat(((Content.Error)read).getCause(), sameInstance(failure));
+        Content.Chunk chunk = rq.read();
+        assertTrue(chunk.isLast());
+        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
         // Callback serialized until after onError task
-        rq.demandContent(demand::countDown);
+        rq.demand(demand::countDown);
         assertThat(demand.getCount(), is(1L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();

@@ -65,7 +65,7 @@ public interface HttpChannel extends Invocable
     /**
      * <p>{@link HttpStream} invokes this method when more HTTP request content is available.</p>
      *
-     * @return the last {@code Runnable} passed to {@link Request#demandContent(Runnable)},
+     * @return the last {@code Runnable} passed to {@link Request#demand(Runnable)},
      * or {@code null} if there is no demand for content.
      */
     Runnable onContentAvailable();

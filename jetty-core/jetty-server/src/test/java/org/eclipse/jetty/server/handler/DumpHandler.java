@@ -22,15 +22,14 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +64,7 @@ public class DumpHandler extends Handler.Processor
             LOG.debug("dump {}", request);
         HttpURI httpURI = request.getHttpURI();
 
-        MultiMap<String> params = UrlEncoded.decodeQuery(httpURI.getQuery());
+        Fields params = Request.extractQueryParameters(request);
 
         if (Boolean.parseBoolean(params.getValue("flush")))
         {
@@ -90,45 +89,44 @@ public class DumpHandler extends Handler.Processor
             int len = Integer.parseInt(params.getValue("read"));
             byte[] buffer = new byte[8192];
 
-            Content content = null;
+            Content.Chunk chunk = null;
             while (len > 0)
             {
-                if (content == null)
+                if (chunk == null)
                 {
-                    content = request.readContent();
-                    if (content == null)
+                    chunk = request.read();
+                    if (chunk == null)
                     {
                         try (Blocking.Runnable blocker = _blocker.runnable())
                         {
-                            request.demandContent(blocker);
+                            request.demand(blocker);
                             blocker.block();
                         }
                         continue;
                     }
                 }
 
-                if (content instanceof Content.Error)
+                if (chunk instanceof Content.Chunk.Error error)
                 {
-                    callback.failed(((Content.Error)content).getCause());
+                    callback.failed(error.getCause());
                     return;
                 }
 
-                int l = Math.min(buffer.length, Math.min(len, content.remaining()));
-                content.fill(buffer, 0, l);
-                read.append(buffer, 0, l);
-                len -= l;
+                int l = Math.min(buffer.length, Math.min(len, chunk.remaining()));
+                int r = chunk.get(buffer, 0, l);
+                read.append(buffer, 0, r);
+                len -= r;
 
-                if (content.isEmpty())
+                if (!chunk.hasRemaining())
                 {
-                    content.release();
-                    if (content.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                         break;
-                    if (!content.isSpecial())
-                        content = null;
+                    chunk = null;
                 }
             }
-            if (content != null)
-                content.release();
+            if (chunk != null)
+                chunk.release();
         }
 
         if (params.getValue("date") != null)
@@ -183,7 +181,7 @@ public class DumpHandler extends Handler.Processor
         if (read != null)
             writer.write(read.toString());
         else
-            writer.write(Content.readAll(request));
+            writer.write(Content.Source.asString(request));
 
         writer.write("</pre>\n");
         writer.write("</html>\n");
@@ -194,7 +192,6 @@ public class DumpHandler extends Handler.Processor
             response.setContentLength(buf.size() + 1000);
 
         response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
-
 
         try (Blocking.Callback blocker = _blocker.callback())
         {
@@ -210,6 +207,7 @@ public class DumpHandler extends Handler.Processor
         try (Blocking.Callback blocker = _blocker.callback())
         {
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
+            blocker.block();
         }
 
         callback.succeeded();

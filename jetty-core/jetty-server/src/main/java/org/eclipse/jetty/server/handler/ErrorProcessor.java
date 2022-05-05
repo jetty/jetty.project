@@ -40,7 +40,7 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -530,15 +530,15 @@ public class ErrorProcessor implements Request.Processor
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
-            return Content.EOF;
+            return Content.Chunk.EOF;
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
-            onContentAvailable.run();
+            demandCallback.run();
         }
 
         @Override

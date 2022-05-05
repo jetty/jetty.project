@@ -42,10 +42,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -55,7 +57,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
@@ -995,7 +996,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public boolean content(ByteBuffer buffer)
         {
             HttpStreamOverHTTP1 stream = _stream.get();
-            if (stream == null || stream._content != null || _retainableByteBuffer == null)
+            if (stream == null || stream._chunk != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
 
             _retainableByteBuffer.retain();
@@ -1003,24 +1004,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
-            stream._content = new Content.Abstract(false, false)
+            RetainableByteBuffer retainable = _retainableByteBuffer;
+            stream._chunk = Content.Chunk.from(buffer, false, () ->
             {
-                final RetainableByteBuffer _retainable = _retainableByteBuffer;
-
-                @Override
-                public void release()
-                {
-                    _retainable.release();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), _retainable, HttpConnection.this);
-                }
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return buffer;
-                }
-            };
+                retainable.release();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), retainable, this);
+            });
             return true;
         }
 
@@ -1033,23 +1023,34 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public boolean messageComplete()
-        {
-            HttpStreamOverHTTP1 stream = _stream.get();
-            stream._content = Content.last(stream._content);
-            if (_trailers != null && (stream._content == null || stream._content == Content.EOF))
-                stream._content = new Content.Trailers(_trailers.asImmutable());
-            else
-                stream._content = Content.last(stream._content);
-            return false;
-        }
-
-        @Override
         public void parsedTrailer(HttpField field)
         {
             if (_trailers == null)
                 _trailers = HttpFields.build();
             _trailers.add(field);
+        }
+
+        @Override
+        public boolean messageComplete()
+        {
+            // TODO: Not sure what this logic was doing.
+//            HttpStreamOverHTTP1 stream = _stream.get();
+//            stream._chunk = ContentOLD.last(stream._chunk);
+//            if (_trailers != null && (stream._chunk == null || stream._chunk == Content.Chunk.EOF))
+//                stream._chunk = new Trailers(_trailers.asImmutable());
+//            else
+//                stream._chunk = ContentOLD.last(stream._chunk);
+//            return false;
+
+            // TODO: verify this new, simpler, logic.
+            HttpStreamOverHTTP1 stream = _stream.get();
+            if (stream._chunk != null)
+                throw new IllegalStateException();
+            if (_trailers != null)
+                stream._chunk = new Trailers(_trailers.asImmutable());
+            else
+                stream._chunk = Content.Chunk.EOF;
+            return false;
         }
 
         @Override
@@ -1093,13 +1094,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             {
                 BadMessageException bad = new BadMessageException("Early EOF");
 
-                if (stream._content instanceof Error error)
+                if (stream._chunk instanceof Error error)
                     error.getCause().addSuppressed(bad);
                 else
                 {
-                    if (stream._content != null)
-                        stream._content.release();
-                    stream._content = new Content.Error(bad);
+                    if (stream._chunk != null)
+                        stream._chunk.release();
+                    stream._chunk = new Content.Chunk.Error(bad);
                 }
 
                 Runnable todo = _httpChannel.onFailure(bad);
@@ -1149,7 +1150,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private HttpField _upgrade = null;
         private Connection _upgradeConnection;
 
-        Content _content;
+        Content.Chunk _chunk;
         private boolean _connectionClose = false;
         private boolean _connectionKeepAlive = false;
         private boolean _connectionUpgrade = false;
@@ -1371,18 +1372,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk readContent()
         {
-            if (_content == null)
+            if (_chunk == null)
             {
                 if (_parser.isTerminated())
-                    _content = Content.EOF;
+                    _chunk = Content.Chunk.EOF;
                 else
                     parseAndFillForContent();
             }
 
-            Content content = _content;
-            _content = Content.next(content);
+            Content.Chunk content = _chunk;
+            _chunk = Content.Chunk.next(content);
             if (content != null && _expect100Continue && content.hasRemaining())
                 _expect100Continue = false;
 
@@ -1392,7 +1393,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void demandContent()
         {
-            if (_content != null)
+            if (_chunk != null)
             {
                 Runnable onContentAvailable = _httpChannel.onContentAvailable();
                 if (onContentAvailable != null)
@@ -1400,7 +1401,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 return;
             }
             parseAndFillForContent();
-            if (_content != null)
+            if (_chunk != null)
             {
                 Runnable onContentAvailable = _httpChannel.onContentAvailable();
                 if (onContentAvailable != null)

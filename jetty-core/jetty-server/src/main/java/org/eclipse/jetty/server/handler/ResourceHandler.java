@@ -50,13 +50,12 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -1385,7 +1384,7 @@ public class ResourceHandler extends Handler.Wrapper
     private static class ContentWriterIteratingCallback extends IteratingCallback
     {
         private final ReadableByteChannel source;
-        private final Content.Writer target;
+        private final Content.Sink target;
         private final Callback callback;
         private final ByteBuffer byteBuffer;
 
@@ -1415,7 +1414,7 @@ public class ResourceHandler extends Handler.Wrapper
             if (read == -1)
             {
                 IO.close(source);
-                target.write(true, this, BufferUtil.EMPTY_BUFFER);
+                target.write(Content.Chunk.EOF, this);
                 return Action.SCHEDULED;
             }
             byteBuffer.flip();

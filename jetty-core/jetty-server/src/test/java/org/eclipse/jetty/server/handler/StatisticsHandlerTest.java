@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -89,14 +89,14 @@ public class StatisticsHandlerTest
             {
                 while (true)
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
                     {
-                        request.demandContent(() -> process(request, response, callback));
+                        request.demand(() -> process(request, response, callback));
                         return;
                     }
-                    content.release();
-                    if (content.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                     {
                         Long rr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
                         readRate.set(rr);
@@ -218,21 +218,21 @@ public class StatisticsHandlerTest
             {
                 while (true)
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
                     {
-                        request.demandContent(() -> process(request, response, callback));
+                        request.demand(() -> process(request, response, callback));
                         return;
                     }
 
-                    if (content instanceof Content.Error errorContent)
+                    if (chunk instanceof Content.Chunk.Error errorContent)
                     {
                         callback.failed(errorContent.getCause());
                         return;
                     }
 
-                    content.release();
-                    if (content.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                     {
                         callback.succeeded();
                         return;

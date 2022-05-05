@@ -1293,7 +1293,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        HttpFields trailers = response.getTrailers();
+        HttpFields trailers = response.getOrCreateTrailers();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
@@ -1304,7 +1304,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
         b.append('-');
-        HttpFields trailers = response.getTrailers();
+        HttpFields trailers = response.getOrCreateTrailers();
         if (trailers != null)
             append(b, trailers.get(arg));
         else

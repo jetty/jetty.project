@@ -37,14 +37,15 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -153,7 +154,7 @@ public class HttpChannelState implements HttpChannel, Components
     private ResponseHttpFields _responseTrailers;
     private Runnable _onContentAvailable;
     private Callback _writeCallback;
-    private Content.Error _error;
+    private Content.Chunk.Error _error;
     private Predicate<Throwable> _onError;
     private Map<String, Object> _cache;
 
@@ -167,7 +168,7 @@ public class HttpChannelState implements HttpChannel, Components
             protected void onError(Runnable task, Throwable failure)
             {
                 ChannelRequest request;
-                Content.Error error;
+                Content.Chunk.Error error;
                 boolean completed;
                 try (AutoLock ignore = _lock.lock())
                 {
@@ -444,7 +445,7 @@ public class HttpChannelState implements HttpChannel, Components
             // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error.
             if (_error == null)
             {
-                _error = new Content.Error(x);
+                _error = new Content.Chunk.Error(x);
             }
             else if (_error.getCause() != x)
             {
@@ -629,7 +630,7 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = x;
             }
             if (failure != null)
-                ((Callback)request._callback).failed(failure);
+                request._callback.failed(failure);
 
             HttpStream stream;
             boolean complete;
@@ -910,32 +911,32 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
                 HttpChannelState httpChannel = lockedGetHttpChannel();
 
-                Content error = httpChannel._error;
+                Content.Chunk error = httpChannel._error;
                 if (error != null)
                     return error;
 
                 if (httpChannel._state.ordinal() < State.PROCESSING.ordinal())
-                    return new Content.Error(new IllegalStateException("not processing"));
+                    return new Content.Chunk.Error(new IllegalStateException("not processing"));
 
                 stream = httpChannel._stream;
             }
 
-            Content content = stream.readContent();
-            if (content != null && content.hasRemaining())
-                _contentBytesRead.add(content.remaining());
+            Content.Chunk chunk = stream.readContent();
+            if (chunk != null && chunk.hasRemaining())
+                _contentBytesRead.add(chunk.getByteBuffer().remaining());
 
-            return content;
+            return chunk;
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
             boolean error;
             HttpStream stream;
@@ -948,7 +949,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (httpChannel._onContentAvailable != null)
                         throw new IllegalArgumentException("demand pending");
-                    httpChannel._onContentAvailable = onContentAvailable;
+                    httpChannel._onContentAvailable = demandCallback;
                 }
 
                 stream = httpChannel._stream;
@@ -956,9 +957,15 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (error)
                 // TODO: can we avoid re-grabbing the lock to get the HttpChannel?
-                getHttpChannel()._serializedInvoker.run(onContentAvailable);
+                getHttpChannel()._serializedInvoker.run(demandCallback);
             else
                 stream.demandContent();
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            // TODO
         }
 
         @Override
@@ -1050,9 +1057,8 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public HttpFields.Mutable getTrailers()
+        public HttpFields.Mutable getOrCreateTrailers()
         {
-            // TODO: getter with side effects, perhaps use a Supplier like in Jetty 11?
             try (AutoLock ignored = _request._lock.lock())
             {
                 HttpChannelState httpChannel = _request.lockedGetHttpChannel();
@@ -1071,6 +1077,22 @@ public class HttpChannelState implements HttpChannel, Components
             if (trailers != null)
                 trailers.commit();
             return trailers;
+        }
+
+        @Override
+        public void write(Content.Chunk chunk, Callback callback)
+        {
+            if (chunk instanceof Trailers trailersChunk)
+            {
+                ResponseHttpFields trailers = _request.getHttpChannel()._responseTrailers;
+                if (trailers != null)
+                    trailers.add(trailersChunk.getTrailers());
+                callback.succeeded();
+            }
+            else
+            {
+                Response.super.write(chunk, callback);
+            }
         }
 
         @Override

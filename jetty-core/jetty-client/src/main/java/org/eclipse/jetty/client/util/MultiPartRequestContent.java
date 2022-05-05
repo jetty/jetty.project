@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -27,8 +26,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * &lt;/form&gt;
  * </pre>
  */
-public class MultiPartRequestContent extends AbstractRequestContent implements Closeable
+public class MultiPartRequestContent /*extends AbstractRequestContent*/ implements Request.Content, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartRequestContent.class);
     private static final byte[] COLON_SPACE_BYTES = new byte[]{':', ' '};
@@ -75,13 +74,13 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
     }
 
     private final List<Part> parts = new ArrayList<>();
+    private final String contentType;
     private final ByteBuffer firstBoundary;
     private final ByteBuffer middleBoundary;
     private final ByteBuffer onlyBoundary;
     private final ByteBuffer lastBoundary;
     private long length;
     private boolean closed;
-    private Subscription subscription;
 
     public MultiPartRequestContent()
     {
@@ -90,7 +89,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
 
     public MultiPartRequestContent(String boundary)
     {
-        super("multipart/form-data; boundary=" + boundary);
+        this.contentType = "multipart/form-data; boundary=" + boundary;
         String firstBoundaryLine = "--" + boundary + "\r\n";
         this.firstBoundary = ByteBuffer.wrap(firstBoundaryLine.getBytes(StandardCharsets.US_ASCII));
         String middleBoundaryLine = "\r\n" + firstBoundaryLine;
@@ -103,11 +102,34 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
     }
 
     @Override
+    public String getContentType()
+    {
+        return contentType;
+    }
+
+    @Override
     public long getLength()
     {
         return length;
     }
 
+    @Override
+    public Content.Chunk read()
+    {
+        return null;
+    }
+
+    @Override
+    public void demand(Runnable demandCallback)
+    {
+    }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+    }
+
+/*
     @Override
     protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
     {
@@ -126,6 +148,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
             .map(part -> part.content)
             .forEach(content -> content.fail(failure));
     }
+*/
 
     /**
      * <p>Adds a field part with the given {@code name} as field name, and the given
@@ -284,6 +307,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         }
     }
 
+/*
     private class SubscriptionImpl extends AbstractSubscription implements Consumer
     {
         private State state = State.FIRST_BOUNDARY;
@@ -379,6 +403,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
                 subscription.fail(failure);
         }
     }
+*/
 
     private enum State
     {

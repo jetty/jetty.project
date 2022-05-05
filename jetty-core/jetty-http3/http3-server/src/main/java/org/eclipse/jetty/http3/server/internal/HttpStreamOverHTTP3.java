@@ -25,12 +25,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,7 +47,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
-    private Content content;
+    private Content.Chunk chunk;
     private MetaData.Response metaData;
     private boolean committed;
 
@@ -78,7 +79,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             Runnable handler = httpChannel.onRequest(request);
 
             if (frame.isLast())
-                content = Content.EOF;
+                chunk = Content.Chunk.EOF;
 
             HttpFields fields = request.getFields();
 
@@ -120,20 +121,20 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk readContent()
     {
         while (true)
         {
-            Content content = this.content;
-            this.content = Content.next(content);
-            if (content != null)
-                return content;
+            Content.Chunk chunk = this.chunk;
+            this.chunk = Content.Chunk.next(chunk);
+            if (chunk != null)
+                return chunk;
 
             Stream.Data data = stream.readData();
             if (data == null)
                 return null;
 
-            this.content = newContent(data);
+            this.chunk = newChunk(data);
         }
     }
 
@@ -158,26 +159,13 @@ public class HttpStreamOverHTTP3 implements HttpStream
             return null;
         }
 
-        content = newContent(data);
+        chunk = newChunk(data);
         return httpChannel.onContentAvailable();
     }
 
-    private Content.Abstract newContent(Stream.Data data)
+    private Content.Chunk newChunk(Stream.Data data)
     {
-        return new Content.Abstract(false, data.isLast())
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return data.getByteBuffer();
-            }
-
-            @Override
-            public void release()
-            {
-                data.complete();
-            }
-        };
+        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data::complete);
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -189,7 +177,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailers);
         }
-        content = new Content.Trailers(trailers);
+        chunk = new Trailers(trailers);
         return httpChannel.onContentAvailable();
     }
 

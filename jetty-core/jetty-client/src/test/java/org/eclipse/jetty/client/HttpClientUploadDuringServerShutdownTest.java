@@ -24,8 +24,8 @@ import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -59,19 +59,19 @@ public class HttpClientUploadDuringServerShutdownTest
                 {
                     while (true)
                     {
-                        Content content = request.readContent();
-                        if (content == null)
+                        Content.Chunk chunk = request.read();
+                        if (chunk == null)
                         {
                             try (Blocking.Runnable blocker = _blocking.runnable())
                             {
-                                request.demandContent(blocker);
+                                request.demand(blocker);
                             }
                         }
                         else
                         {
-                            if (content.hasRemaining())
-                                content.release();
-                            if (content.isLast())
+                            if (chunk.hasRemaining())
+                                chunk.release();
+                            if (chunk.isLast())
                                 break;
                             long now = System.nanoTime();
                             long sleep = TimeUnit.MICROSECONDS.toNanos(1);

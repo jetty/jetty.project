@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocking;
@@ -655,7 +656,7 @@ public class CustomRequestLogTest
             }
 
             if (request.getContentLength() > 0)
-                Content.readAllBytes(request);
+                Content.Source.consumeAll(request);
 
             callback.succeeded();
         }

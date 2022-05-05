@@ -66,10 +66,10 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-//import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -396,7 +396,7 @@ public class AsyncMiddleManServletTest
             .body(content)
             .send(listener);
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
-        content.offer(ByteBuffer.wrap(gzip(bytes)));
+        content.write(ByteBuffer.wrap(gzip(bytes)), Callback.NOOP);
         sleep(1000);
         content.close();
 
@@ -557,9 +557,9 @@ public class AsyncMiddleManServletTest
                         latch.countDown();
                 });
 
-            content.offer(ByteBuffer.allocate(512));
+            content.write(ByteBuffer.allocate(512), Callback.NOOP);
             sleep(1000);
-            content.offer(ByteBuffer.allocate(512));
+            content.write(ByteBuffer.allocate(512), Callback.NOOP);
             content.close();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -770,9 +770,9 @@ public class AsyncMiddleManServletTest
                 if (result.getResponse().getStatus() == 500)
                     latch.countDown();
             });
-        content.offer(ByteBuffer.allocate(512));
+        content.write(ByteBuffer.allocate(512), Callback.NOOP);
         sleep(1000);
-        content.offer(ByteBuffer.allocate(512));
+        content.write(ByteBuffer.allocate(512), Callback.NOOP);
         content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1373,12 +1373,12 @@ public class AsyncMiddleManServletTest
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.offer(chunk1);
+        content.write(chunk1, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.offer(chunk2);
+        content.write(chunk2, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
@@ -1421,12 +1421,12 @@ public class AsyncMiddleManServletTest
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.offer(chunk1);
+        content.write(chunk1, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.offer(chunk2);
+        content.write(chunk2, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
@@ -1492,12 +1492,12 @@ public class AsyncMiddleManServletTest
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.offer(chunk1);
+        content.write(chunk1, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.offer(chunk2);
+        content.write(chunk2, Callback.NOOP);
         assertTrue(proxyRequestLatch.await(5, TimeUnit.SECONDS));
 
         // Finish the content.

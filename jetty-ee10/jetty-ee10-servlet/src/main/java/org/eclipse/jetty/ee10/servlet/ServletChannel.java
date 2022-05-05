@@ -30,10 +30,10 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -93,11 +93,11 @@ public class ServletChannel implements Runnable
         //       success or failure.   This should just be releaseAllContent()
         while (true)
         {
-            Content content = _request.readContent();
+            Content.Chunk content = _request.read();
             if (content == null)
                 return false;
 
-            if (content.isSpecial())
+            if (content.isTerminal())
             {
                 content.release();
                 return content.isLast();

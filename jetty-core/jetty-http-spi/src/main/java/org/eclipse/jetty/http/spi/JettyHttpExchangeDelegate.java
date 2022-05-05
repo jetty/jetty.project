@@ -27,7 +27,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
@@ -57,8 +57,8 @@ public class JettyHttpExchangeDelegate extends HttpExchange
         this._httpContext = httpSpiContext;
         this._request = request;
         this._response = response;
-        this._inputStream = Content.asInputStream(request);
-        this._outputStream = Content.asOutputStream(response);
+        this._inputStream = Content.Source.asInputStream(request);
+        this._outputStream = Content.Sink.asOutputStream(response);
     }
 
     @Override

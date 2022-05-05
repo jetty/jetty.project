@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -114,32 +115,32 @@ public class TrailersTest extends AbstractTest
             {
                 _request = request;
                 _callback = callback;
-                request.demandContent(this::firstRead);
+                request.demand(this::firstRead);
             }
 
             private void firstRead()
             {
-                Content content = _request.readContent();
+                Content.Chunk chunk = _request.read();
 
                 // No trailers yet.
-                assertThat(content, not(instanceOf(Content.Trailers.class)));
+                assertThat(chunk, not(instanceOf(Trailers.class)));
 
                 trailerLatch.countDown();
 
-                _request.demandContent(this::otherReads);
+                _request.demand(this::otherReads);
             }
 
             private void otherReads()
             {
                 while (true)
                 {
-                    Content content = _request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = _request.read();
+                    if (chunk == null)
                     {
-                        _request.demandContent(this::otherReads);
+                        _request.demand(this::otherReads);
                         return;
                     }
-                    if (content instanceof Content.Trailers contentTrailers)
+                    if (chunk instanceof Trailers contentTrailers)
                     {
                         HttpFields trailers = contentTrailers.getTrailers();
                         assertNotNull(trailers.get("X-Trailer"));
@@ -259,7 +260,7 @@ public class TrailersTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                HttpFields.Mutable trailers = response.getTrailers();
+                HttpFields.Mutable trailers = response.getOrCreateTrailers();
                 Response.write(response, false, UTF_8.encode("hello_trailers"));
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
@@ -349,7 +350,7 @@ public class TrailersTest extends AbstractTest
             {
                 try
                 {
-                    Content.consumeAll(request);
+                    Content.Source.consumeAll(request);
                 }
                 catch (IOException x)
                 {

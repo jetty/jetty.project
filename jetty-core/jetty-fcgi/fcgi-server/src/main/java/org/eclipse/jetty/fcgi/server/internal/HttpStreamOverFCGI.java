@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,7 +56,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private String _path;
     private String _query;
     private String _version;
-    private Content _content;
+    private Content.Chunk _chunk;
     private boolean _committed;
     private boolean _shutdown;
     private boolean _aborted;
@@ -154,24 +154,24 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk readContent()
     {
-        if (_content == null)
+        if (_chunk == null)
             _connection.parseAndFill();
-        Content content = _content;
-        _content = Content.next(content);
-        return content;
+        Content.Chunk chunk = _chunk;
+        _chunk = Content.Chunk.next(chunk);
+        return chunk;
     }
 
     @Override
     public void demandContent()
     {
-        if (_content != null)
+        if (_chunk != null)
             return;
 
         _connection.parseAndFill();
 
-        if (_content != null)
+        if (_chunk != null)
         {
             notifyContentAvailable();
             return;
@@ -187,14 +187,18 @@ public class HttpStreamOverFCGI implements HttpStream
             onContentAvailable.run();
     }
 
-    public void onContent(Content content)
+    public void onContent(Content.Chunk chunk)
     {
-        _content = content;
+        _chunk = chunk;
     }
 
     public void onComplete()
     {
-        _content = Content.last(_content);
+        if (_chunk == null)
+            _chunk = Content.Chunk.EOF;
+        // TODO: paranoid check, maybe remove it.
+        else if (!_chunk.isLast() && !(_chunk instanceof Content.Chunk.Error))
+            throw new IllegalStateException();
     }
 
     @Override

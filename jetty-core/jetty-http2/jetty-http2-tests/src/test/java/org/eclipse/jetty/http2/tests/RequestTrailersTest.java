@@ -129,7 +129,7 @@ public class RequestTrailersTest extends AbstractTest
 
         // Send async content after a while.
         Thread.sleep(1000);
-        content.offer(ByteBuffer.wrap("async_content".getBytes(StandardCharsets.UTF_8)));
+        content.write(ByteBuffer.wrap("async_content".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
         content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));

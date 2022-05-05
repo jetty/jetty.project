@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -164,29 +164,29 @@ public class ConnectionPoolTest
                             response.setContentLength(contentLength);
                         while (true)
                         {
-                            Content content = request.readContent();
-                            if (content == null)
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
                             {
                                 try (Blocking.Runnable block = _blocking.runnable())
                                 {
-                                    request.demandContent(block);
+                                    request.demand(block);
                                     block.block();
                                     continue;
                                 }
                             }
-                            if (content instanceof Content.Error error)
+                            if (chunk instanceof Content.Chunk.Error error)
                                 throw error.getCause();
 
-                            if (content.hasRemaining())
+                            if (chunk.hasRemaining())
                             {
                                 try (Blocking.Callback callback = _blocking.callback())
                                 {
-                                    response.write(true, callback, content.getByteBuffer());
+                                    response.write(true, callback, chunk.getByteBuffer());
                                     callback.block();
                                 }
                             }
-                            content.release();
-                            if (content.isLast())
+                            chunk.release();
+                            if (chunk.isLast())
                                 break;
                         }
                     }

@@ -76,7 +76,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
-            _request.demandContent(this);
+            _request.demand(this);
         }
 
         @Override

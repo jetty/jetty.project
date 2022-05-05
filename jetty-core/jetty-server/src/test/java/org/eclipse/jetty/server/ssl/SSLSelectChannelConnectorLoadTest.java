@@ -33,7 +33,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -336,7 +336,7 @@ public class SSLSelectChannelConnectorLoadTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            ByteBuffer input = Content.readAllBytes(request);
+            ByteBuffer input = Content.Source.asByteBuffer(request);
             response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
         }
     }

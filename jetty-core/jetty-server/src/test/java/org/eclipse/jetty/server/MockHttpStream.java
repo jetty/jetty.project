@@ -26,15 +26,16 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
-    private static final Content DEMAND = new Content.Abstract(true, false) {};
+    private static final Content.Chunk DEMAND = Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false);
     private final long nano = System.nanoTime();
-    private final AtomicReference<Content> _content = new AtomicReference<>();
+    private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
     private final ByteBufferAccumulator _accumulator = new ByteBufferAccumulator();
@@ -54,7 +55,7 @@ public class MockHttpStream implements HttpStream
         _channel = channel;
         channel.setHttpStream(this);
         if (atEof)
-            _content.set(Content.EOF);
+            _content.set(Content.Chunk.EOF);
     }
 
     public boolean isDemanding()
@@ -64,7 +65,7 @@ public class MockHttpStream implements HttpStream
 
     public Runnable addContent(ByteBuffer buffer, boolean last)
     {
-        return addContent((last && BufferUtil.isEmpty(buffer)) ? Content.EOF : Content.from(buffer, last));
+        return addContent((last && BufferUtil.isEmpty(buffer)) ? Content.Chunk.EOF : Content.Chunk.from(buffer, last));
     }
 
     public Runnable addContent(String content, boolean last)
@@ -72,12 +73,12 @@ public class MockHttpStream implements HttpStream
         return addContent(BufferUtil.toBuffer(content), last);
     }
 
-    public Runnable addContent(Content content)
+    public Runnable addContent(Content.Chunk chunk)
     {
-        content = _content.getAndSet(content);
-        if (content == DEMAND)
+        chunk = _content.getAndSet(chunk);
+        if (chunk == DEMAND)
             return _channel.onContentAvailable();
-        else if (content != null)
+        else if (chunk != null)
             throw new IllegalStateException();
         return null;
     }
@@ -131,15 +132,15 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk readContent()
     {
-        Content content = _content.get();
-        if (content == null || content == DEMAND)
+        Content.Chunk chunk = _content.get();
+        if (chunk == null || chunk == DEMAND)
             return null;
 
-        _content.set(Content.next(content));
+        _content.set(Content.Chunk.next(chunk));
 
-        return content;
+        return chunk;
     }
 
     @Override
@@ -185,7 +186,11 @@ public class MockHttpStream implements HttpStream
         {
             Supplier<HttpFields> trailersSupplier = _response.get().getTrailerSupplier();
             if (trailersSupplier != null)
-                _responseTrailers = HttpFields.build(trailersSupplier.get());
+            {
+                HttpFields trailers = trailersSupplier.get();
+                if (trailers != null)
+                    _responseTrailers = HttpFields.build(trailers);
+            }
 
             if (!_out.compareAndSet(null, _accumulator.takeByteBuffer()))
             {
