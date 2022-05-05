@@ -340,6 +340,7 @@
             <exclude>**/org/eclipse/jetty/tests/**</exclude>
             <exclude>**/org/eclipse/jetty/test/**</exclude>
             <exclude>**/org/eclipse/jetty/maven/its/**</exclude>
+            <exclude>**/org/eclipse/jetty/its/**</exclude>
           </excludes>
         </configuration>
         <executions>
