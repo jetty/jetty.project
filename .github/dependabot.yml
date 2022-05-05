@@ -57,12 +57,14 @@ updates:
         versions: [ ">=4.0.0" ]
       - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
         versions: [ ">=3.0.0" ]
-      - dependency-name: "com.sun.xml.ws:jaxws*"
+      - dependency-name: "com.sun.xml.ws:jaxws-rt"
         versions: [ ">=3.0.0" ]
       - dependency-name: "jakarta.transaction:*"
         versions: [ ">=2.0.0" ]
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "jakarta.xml.bind:*"
+        versions: [ ">=3.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
