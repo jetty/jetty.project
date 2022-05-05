@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.9-SNAPSHOT</version>
+    <version>10.0.10-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,7 +13,7 @@
   <name>Jetty :: GCloud</name>
 
   <properties>
-    <gcloud.version>2.2.9</gcloud.version>
+    <gcloud.version>2.4.0</gcloud.version>
   </properties>
 
   <modules>

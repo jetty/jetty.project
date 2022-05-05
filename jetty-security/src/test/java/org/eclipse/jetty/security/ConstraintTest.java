@@ -1868,6 +1868,44 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 403 "));
     }
 
+    @Test
+    public void testDefaultConstraint() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+
+        ConstraintMapping forbidDefault = new ConstraintMapping();
+        forbidDefault.setPathSpec("/");
+        forbidDefault.setConstraint(_forbidConstraint);
+        _security.addConstraintMapping(forbidDefault);
+
+        ConstraintMapping allowRoot = new ConstraintMapping();
+        allowRoot.setPathSpec("");
+        allowRoot.setConstraint(_relaxConstraint);
+        _security.addConstraintMapping(allowRoot);
+
+        _server.start();
+        String response;
+
+        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        response = _connector.getResponse("GET /ctx/anything HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+
+        response = _connector.getResponse("GET /ctx/admin/relax/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+    }
+
     private static String authBase64(String authorization)
     {
         byte[] raw = authorization.getBytes(ISO_8859_1);
