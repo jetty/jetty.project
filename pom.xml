@@ -34,7 +34,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.1</checkstyle.version>
+    <checkstyle.version>10.2</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
@@ -44,13 +44,13 @@
     <felix.version>7.0.3</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <google.errorprone.version>2.13.1</google.errorprone.version>
-    <grpc.version>1.45.1</grpc.version>
+    <grpc.version>1.46.0</grpc.version>
     <gson.version>2.9.0</gson.version>
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.14.5</hawtio.version>
-    <hazelcast.version>4.2.4</hazelcast.version>
+    <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.2.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.2</jackson.annotations.version>
@@ -80,7 +80,7 @@
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <jboss.logging.version>3.5.0.Final</jboss.logging.version>
     <jboss-logmanager.version>2.1.18.Final</jboss-logmanager.version>
     <jboss-threads.version>3.1.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
