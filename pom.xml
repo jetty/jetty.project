@@ -32,7 +32,7 @@
     <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asm.version>9.3</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>5.3.0</bndlib.version>
+    <bndlib.version>6.2.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.2</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -113,6 +113,8 @@
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
+    <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
+    <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
     <slf4j.version>2.0.0-alpha6</slf4j.version>
@@ -1965,13 +1967,30 @@
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
+        <!-- older artifact location, some of our transitive deps still use this coordinate -->
         <artifactId>org.osgi.core</artifactId>
+        <version>${org.osgi.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <!-- newer artifact location, some of our transitive deps use this up to date coordinate -->
+        <artifactId>osgi.core</artifactId>
         <version>${org.osgi.core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>osgi.annotation</artifactId>
         <version>${org.osgi.annotation.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.function</artifactId>
+        <version>${org.osgi.util.function.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${org.osgi.util.promise.version}</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
