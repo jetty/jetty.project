@@ -32,7 +32,12 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
 
     public GzipHttpInputInterceptor(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
     {
-        _decoder = new Decoder(inflaterPool, pool, bufferSize);
+        this(inflaterPool, pool, bufferSize, false);
+    }
+
+    public GzipHttpInputInterceptor(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize, boolean useDirectBuffers)
+    {
+        _decoder = new Decoder(inflaterPool, pool, bufferSize, useDirectBuffers);
     }
 
     @Override
@@ -71,9 +76,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
 
     private class Decoder extends GZIPContentDecoder
     {
-        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
+        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize, boolean useDirectBuffers)
         {
-            super(inflaterPool, bufferPool, bufferSize);
+            super(inflaterPool, bufferPool, bufferSize, useDirectBuffers);
         }
 
         @Override

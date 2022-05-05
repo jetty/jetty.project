@@ -10,6 +10,24 @@
         <Set name="extractWAR">true</Set>
         <Set name="copyWebDir">false</Set>
         <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+
+        <!-- comment out this section when you have security configured -->
+        <Call class="org.slf4j.LoggerFactory" name="getLogger">
+          <Arg>org.eclipse.jetty</Arg>
+          <Call name="warn">
+            <Arg>The jolokia webapp is deployed, but does not have users and security configured. (see ${jetty.base}/etc/jolokia.xml)</Arg>
+          </Call>
+        </Call>
+
+        <Get name="securityHandler">
+          <Set name="loginService">
+            <New class="org.eclipse.jetty.security.HashLoginService">
+              <Set name="name">Jolokia Realm</Set>
+              <!-- Edit the contents ot the etc/jolokia-realm.properties -->
+              <Set name="config"><Property name="jetty.base" default="."/>/etc/jolokia-realm.properties</Set>
+            </New>
+          </Set>
+        </Get>
       </New>
     </Arg>
   </Call>

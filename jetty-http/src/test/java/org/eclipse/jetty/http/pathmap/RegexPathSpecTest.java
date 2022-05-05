@@ -19,7 +19,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexPathSpecTest
 {
@@ -69,6 +71,20 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/rest/admin/delete");
         assertNotMatches(spec, "/rest/list");
+    }
+
+    @Test
+    public void testPathInfo()
+    {
+        RegexPathSpec spec = new RegexPathSpec("^/test(/.*)?$");
+        assertTrue(spec.matches("/test/info"));
+        assertThat(spec.getPathMatch("/test/info"), equalTo("/test"));
+        assertThat(spec.getPathInfo("/test/info"), equalTo("/info"));
+
+        spec = new RegexPathSpec("^/[Tt]est(/.*)?$");
+        assertTrue(spec.matches("/test/info"));
+        assertThat(spec.getPathMatch("/test/info"), equalTo("/test/info"));
+        assertThat(spec.getPathInfo("/test/info"), nullValue());
     }
 
     @Test

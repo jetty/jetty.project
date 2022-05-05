@@ -1154,6 +1154,11 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getScheduler();
     }
 
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return getHttpConfiguration().isUseInputDirectByteBuffers();
+    }
+
     public boolean isUseOutputDirectByteBuffers()
     {
         return getHttpConfiguration().isUseOutputDirectByteBuffers();
