@@ -708,7 +708,6 @@ public class ConstraintTest
         return scenarios.stream();
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("basicScenarios")
     public void testBasic(Scenario scenario) throws Exception

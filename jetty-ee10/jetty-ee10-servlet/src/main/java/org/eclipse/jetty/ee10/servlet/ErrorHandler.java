@@ -83,6 +83,11 @@ public class ErrorHandler implements Request.Processor
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
+        if (!errorPageForMethod(request.getMethod()))
+        {
+            callback.succeeded();
+            return;
+        }
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
 

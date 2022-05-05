@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 
 public class HttpFieldsWrapper implements HttpFields.Mutable
 {
@@ -27,8 +31,6 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
         _fields = fields;
     }
 
-    // TODO a signature that took HttpField would be better.
-    // TODO Do we need Put? Could it just be done as a onRemoveField then an onAddField?
     public boolean onPutField(String name, String value)
     {
         return true;
@@ -43,71 +45,122 @@ public class HttpFieldsWrapper implements HttpFields.Mutable
     {
         return true;
     }
+    
+    @Override
+    public Mutable add(String name, String value)
+    {
+        if (onAddField(name, value))
+            return _fields.add(name, value);
+        return this;
+    }
+
+    @Override
+    public Mutable add(HttpHeader header, HttpHeaderValue value)
+    {
+        if (onAddField(header.name(), value.asString()))
+            return _fields.add(header, value);
+        return this;
+    }
+
+    @Override
+    public Mutable add(HttpHeader header, String value)
+    {
+        if (onAddField(header.name(), value))
+            return _fields.add(header, value);
+        return this;
+    }
+
+    @Override
+    public Mutable add(HttpField field)
+    {
+        if (onAddField(field.getName(), field.getValue()))
+            return _fields.add(field);
+        return this;
+    }
+
+    @Override
+    public Mutable add(HttpFields fields)
+    {
+        for (HttpField field : fields)
+        {
+            add(field);
+        }
+        return this;
+    }
+
+    @Override
+    public Mutable clear()
+    {
+        return _fields.clear();
+    }
+
+    @Override
+    public Iterator<HttpField> iterator()
+    {
+        return _fields.iterator();
+    }
 
     @Override
     public ListIterator<HttpField> listIterator()
     {
-        return new ListIterator<>()
+        return _fields.listIterator();
+    }
+
+    @Override
+    public Mutable put(HttpField field)
+    {
+        if (onPutField(field.getName(), field.getValue()))
+            return _fields.put(field);
+        return this;
+    }
+
+    @Override
+    public Mutable put(String name, String value)
+    {
+        if (onPutField(name, value))
+            return _fields.put(name, value);
+        return this;
+    }
+
+    @Override
+    public Mutable put(HttpHeader header, HttpHeaderValue value)
+    {
+        if (onPutField(header.name(), value.asString()))
+            return _fields.put(header, value);
+        return this;
+    }
+
+    @Override
+    public Mutable put(HttpHeader header, String value)
+    {
+        if (onPutField(header.name(), value))
+            return _fields.put(header, value);
+        return this;
+    }
+
+    @Override
+    public Mutable remove(HttpHeader header)
+    {
+        if (onRemoveField(header.name()))
+            return _fields.remove(header);
+        return this;
+    }
+
+    @Override
+    public Mutable remove(EnumSet<HttpHeader> fields)
+    {
+        for (HttpHeader header : fields)
         {
-            final ListIterator<HttpField> _list = _fields.listIterator();
-            HttpField _last;
+            remove(header);
+        }
+        return this;
+    }
 
-            @Override
-            public boolean hasNext()
-            {
-                return _list.hasNext();
-            }
-
-            @Override
-            public HttpField next()
-            {
-                return _last = _list.next();
-            }
-
-            @Override
-            public boolean hasPrevious()
-            {
-                return _list.hasPrevious();
-            }
-
-            @Override
-            public HttpField previous()
-            {
-                return _last = _list.previous();
-            }
-
-            @Override
-            public int nextIndex()
-            {
-                return _list.nextIndex();
-            }
-
-            @Override
-            public int previousIndex()
-            {
-                return _list.previousIndex();
-            }
-
-            @Override
-            public void remove()
-            {
-                if (_last != null && HttpFieldsWrapper.this.onRemoveField(_last.getName()))
-                    _list.remove();
-            }
-
-            @Override
-            public void set(HttpField httpField)
-            {
-                if (_last != null && HttpFieldsWrapper.this.onPutField(_last.getName(), _last.getValue()))
-                    _list.set(httpField);
-            }
-
-            @Override
-            public void add(HttpField httpField)
-            {
-                if (_last != null && HttpFieldsWrapper.this.onAddField(_last.getName(), _last.getValue()))
-                    _list.add(httpField);
-            }
-        };
+    @Override
+    public Mutable remove(String name)
+    {
+        if (onRemoveField(name))
+            return _fields.remove(name);
+        return this;
     }
 }
