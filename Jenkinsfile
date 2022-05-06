@@ -17,8 +17,8 @@ pipeline {
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
                                // build tools
-                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
-                               ',**/org/eclipse/jetty/jspc/**' +
+                               '**/org/eclipse/jetty/ant/**,*/org/eclipse/jetty/maven/its/**' +
+                               ',**/org/eclipse/jetty/its/**' +
                                // example code / documentation
                                ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
                                ',**/org/eclipse/jetty/demo/**' +
