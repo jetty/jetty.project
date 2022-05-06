@@ -64,9 +64,12 @@
         <configuration>
           <instructions>
             <Bundle-Description>Jetty Websocket Server</Bundle-Description>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
+              osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,
+              osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
             </Provide-Capability>
           </instructions>
         </configuration>
