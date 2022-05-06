@@ -30,6 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -418,6 +421,60 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
         barrier[3].await();
+    }
+
+    @Test
+    public void testThrownResponse() throws Exception
+    {
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
+            {
+                try
+                {
+                    throw new IllegalStateException("expected");
+                }
+                catch (IllegalStateException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new IOException(e);
+                }
+            }
+        });
+        _server.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
+        {
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString("HTTP/1.1 500 Server Error"));
+        }
+
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+
+        assertEquals(0, _statsHandler.getAsyncRequests());
+        assertEquals(0, _statsHandler.getAsyncDispatches());
+        assertEquals(0, _statsHandler.getExpires());
+
+        // We get no recorded status, but we get a recorded thrown response.
+        assertEquals(0, _statsHandler.getResponses1xx());
+        assertEquals(0, _statsHandler.getResponses2xx());
+        assertEquals(0, _statsHandler.getResponses3xx());
+        assertEquals(0, _statsHandler.getResponses4xx());
+        assertEquals(0, _statsHandler.getResponses5xx());
+        assertEquals(1, _statsHandler.getResponsesThrown());
     }
 
     @Test
