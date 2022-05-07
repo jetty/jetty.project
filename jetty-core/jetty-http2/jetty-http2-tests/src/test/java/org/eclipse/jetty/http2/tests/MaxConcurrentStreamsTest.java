@@ -66,6 +66,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -248,6 +249,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     }
 
     @Test
+    @Disabled // TODO
     public void testTwoConcurrentStreamsThirdWaits() throws Exception
     {
         int maxStreams = 2;
