@@ -462,41 +462,40 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (super.addEventListener(listener))
         {
-            if (listener instanceof ContextScopeListener)
+            if (listener instanceof ContextScopeListener contextScopeListener)
             {
-                _contextListeners.add((ContextScopeListener)listener);
+                _contextListeners.add(contextScopeListener);
                 if (__context.get() != null)
-                    ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
+                    contextScopeListener.enterScope(__context.get(), null, "Listener registered");
             }
 
-            if (listener instanceof ServletContextListener)
+            if (listener instanceof ServletContextListener servletContextListener)
             {
                 if (_contextStatus == ContextStatus.INITIALIZED)
                 {
-                    ServletContextListener scl = (ServletContextListener)listener;
-                    _destroyServletContextListeners.add(scl);
+                    _destroyServletContextListeners.add(servletContextListener);
                     if (isStarting())
                     {
-                        LOG.warn("ContextListener {} added whilst starting {}", scl, this);
-                        callContextInitialized(scl, new ServletContextEvent(_apiContext));
+                        LOG.warn("ContextListener {} added whilst starting {}", servletContextListener, this);
+                        callContextInitialized(servletContextListener, new ServletContextEvent(_apiContext));
                     }
                     else
                     {
-                        LOG.warn("ContextListener {} added after starting {}", scl, this);
+                        LOG.warn("ContextListener {} added after starting {}", servletContextListener, this);
                     }
                 }
 
                 _servletContextListeners.add((ServletContextListener)listener);
             }
 
-            if (listener instanceof ServletContextAttributeListener)
-                _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
+            if (listener instanceof ServletContextAttributeListener servletContextAttributeListener)
+                _servletContextAttributeListeners.add(servletContextAttributeListener);
 
-            if (listener instanceof ServletRequestListener)
-                _servletRequestListeners.add((ServletRequestListener)listener);
+            if (listener instanceof ServletRequestListener servletRequestListener)
+                _servletRequestListeners.add(servletRequestListener);
 
-            if (listener instanceof ServletRequestAttributeListener)
-                _servletRequestAttributeListeners.add((ServletRequestAttributeListener)listener);
+            if (listener instanceof ServletRequestAttributeListener servletRequestAttributeListener)
+                _servletRequestAttributeListeners.add(servletRequestAttributeListener);
 
             return true;
         }
@@ -2512,41 +2511,46 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            return new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
+            httpChannel.onRequest(coreContextRequest);
+            return coreContextRequest;
         }
 
         @Override
-        protected void enterScope(org.eclipse.jetty.server.Request request)
+        protected void enterScope(org.eclipse.jetty.server.Request coreRequest)
         {
             __context.set(_apiContext);
-            super.enterScope(request);
-
-            // TODO get the servlet base request
-            ContextHandler.this.enterScope(null, null);
+            super.enterScope(coreRequest);
+            Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
+                ? coreContextRequest.getHttpChannel().getRequest()
+                : null;
+            ContextHandler.this.enterScope(request, "Entered core context");
         }
 
         @Override
-        protected void exitScope(org.eclipse.jetty.server.Request request)
+        public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
         {
-            // TODO get the servlet base request
+            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+            httpChannel.onProcess(response, callback);
+
+            httpChannel.handle();
+        }
+
+        @Override
+        protected void exitScope(org.eclipse.jetty.server.Request coreRequest)
+        {
             try
             {
-                ContextHandler.this.exitScope(null);
-                super.exitScope(request);
+                Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
+                    ? coreContextRequest.getHttpChannel().getRequest()
+                    : null;
+                ContextHandler.this.exitScope(request);
+                super.exitScope(coreRequest);
             }
             finally
             {
                 __context.set(null);
             }
-        }
-
-        @Override
-        public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
-        {
-            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(request, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-            httpChannel.onRequest(request, response, callback);
-
-            httpChannel.handle();
         }
 
         class CoreContext extends org.eclipse.jetty.server.handler.ContextHandler.Context

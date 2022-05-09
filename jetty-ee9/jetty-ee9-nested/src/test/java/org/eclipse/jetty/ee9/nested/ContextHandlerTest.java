@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -634,6 +638,82 @@ public class ContextHandlerTest
             assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
             assertThat(response.getContent(), containsString("Buongiorno /ctxB"));
         }
+    }
+
+    @Test
+    public void testContextListeners() throws Exception
+    {
+        Queue<String> history = new ConcurrentLinkedQueue<>();
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                history.add("Handling");
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                response.getOutputStream().print("Hello\n");
+            }
+        });
+
+        _contextHandler.getCoreContextHandler().addEventListener(new org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener()
+        {
+            @Override
+            public void enterScope(Context context, org.eclipse.jetty.server.Request request)
+            {
+                if (request != null)
+                    history.add("Core enter " + request.getHttpURI());
+            }
+
+            @Override
+            public void exitScope(Context context, org.eclipse.jetty.server.Request request)
+            {
+                if (request != null)
+                    history.add("Core exit " + request.getHttpURI());
+            }
+        });
+        _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
+        {
+            @Override
+            public void enterScope(ContextHandler.APIContext context, Request request, Object reason)
+            {
+                if (request != null)
+                    history.add("EE9 enter " + request.getRequestURI());
+            }
+
+            @Override
+            public void exitScope(ContextHandler.APIContext context, Request request)
+            {
+                if (request != null)
+                    history.add("EE9 exit " + request.getRequestURI());
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+
+        assertThat(history, contains(
+            // Enter once for handle(request)
+            "Core enter http://0.0.0.0/",
+            "EE9 enter /",
+            "EE9 exit /",
+            "Core exit http://0.0.0.0/",
+            // Enter again for process(request, response, callback)
+            "Core enter http://0.0.0.0/",
+            "EE9 enter /",
+            "Handling",
+            "EE9 exit /",
+            "Core exit http://0.0.0.0/"));
     }
 
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper

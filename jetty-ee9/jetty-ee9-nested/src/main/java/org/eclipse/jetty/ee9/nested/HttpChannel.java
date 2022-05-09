@@ -830,30 +830,36 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
-    public void onRequest(org.eclipse.jetty.server.Request coreRequest,
-                          org.eclipse.jetty.server.Response coreResponse,
-                          Callback coreCallback)
+    public void onRequest(org.eclipse.jetty.server.Request coreRequest)
     {
         _coreRequest = coreRequest;
-        _coreResponse = coreResponse;
-        _coreCallback = coreCallback;
-
         _requests.incrementAndGet();
         _request.setTimeStamp(_coreRequest.getTimeStamp());
+        _request.onRequest(coreRequest);
+        _combinedListener.onRequestBegin(_request);
+        if (LOG.isDebugEnabled())
+        {
+            MetaData.Request metaData = _request.getMetaData();
+            LOG.debug("onRequest for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
+                metaData.getMethod(), metaData.getURIString(), metaData.getHttpVersion(), System.lineSeparator(),
+                metaData.getFields());
+        }
+    }
+
+    public void onProcess(org.eclipse.jetty.server.Response coreResponse, Callback coreCallback)
+    {
+        _coreResponse = coreResponse;
+        _coreCallback = coreCallback;
 
         long idleTO = _configuration.getIdleTimeout();
         _oldIdleTimeout = getIdleTimeout();
         if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
-        _request.onRequest(coreRequest);
-
-        _combinedListener.onRequestBegin(_request);
-
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
+            LOG.debug("onProcess for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
                 metaData.getMethod(), metaData.getURIString(), metaData.getHttpVersion(), System.lineSeparator(),
                 metaData.getFields());
         }

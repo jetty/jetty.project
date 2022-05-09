@@ -2241,7 +2241,8 @@ public class ResponseTest
         org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
-        _channel.onRequest(coreRequest, coreResponse, Callback.NOOP);
+        _channel.onRequest(coreRequest);
+        _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
         return _channel.getResponse();
