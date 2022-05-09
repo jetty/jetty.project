@@ -38,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * While a request is still active in a context, make another
  * request to it to ensure both share same session.
- * 
- * TODO covered by unit tests, but maybe copy to ee10 anyway
  */
 public class ReentrantRequestSessionTest
 {

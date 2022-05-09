@@ -43,16 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * DeleteUnloadableSessionTest
- * 
- * TODO - maybe move this test to ee10? 
- */
 public class DeleteUnloadableSessionTest
 {
-    /**
-     * DelSessionDataStore
-     */
     public static class DelSessionDataStore extends AbstractSessionDataStore
     {
         Object o = new Object();

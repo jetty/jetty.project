@@ -44,8 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * RemoveSessionTest
  *
  * Test that invalidating a session does not return the session on the next request.
- * 
- * TODO Consider moving to ee10
  */
 public class RemoveSessionTest
 {
