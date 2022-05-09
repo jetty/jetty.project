@@ -1092,7 +1092,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                                 //request exits
                                 requestedSessionId = id;
                                 session = s;
-                                //request.setAttribute(__Resolved_Session, session);
 
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Selected session {}", session);
@@ -1121,9 +1120,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                                 Session s = getSession(id);
                                 if (s != null && s.isValid())
                                 {
-                                    //TODO release the session straight away??
+                                    //release both sessions straight away??
                                     try
                                     {
+                                        _sessionCache.release(session);
                                         _sessionCache.release(s);
                                     }
                                     catch (Exception x)

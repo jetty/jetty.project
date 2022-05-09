@@ -12,17 +12,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.common</bundle-symbolic-name>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- TODO -->
-          <skipTests>true</skipTests>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.ee9.nested.SessionHandler.ServletAPISession;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
@@ -101,7 +101,7 @@ public class SessionRenewTest
             {
 
                 @Override
-                public void verify(WebAppContext context, String oldSessionId, String newSessionId) throws Exception
+                public void verify(ServletContextHandler context, String oldSessionId, String newSessionId) throws Exception
                 {
                     //null cache means it should contain neither session
                     assertFalse(context.getSessionHandler().getSessionManager().getSessionCache().contains(newSessionId));
@@ -128,7 +128,7 @@ public class SessionRenewTest
         {
 
             @Override
-            public void verify(WebAppContext context, String oldSessionId, String newSessionId)
+            public void verify(ServletContextHandler context, String oldSessionId, String newSessionId)
                 throws Exception
             {
                 //verify the contents of the cache changed
@@ -150,12 +150,10 @@ public class SessionRenewTest
         
         String contextPathA = "";
         String servletMapping = "/server";
-        WebAppContext contextA = _server.addWebAppContext(".", contextPathA);
-        contextA.setParentLoaderPriority(true);
+        ServletContextHandler contextA = _server.addContext(contextPathA);
         contextA.addServlet(TestServlet.class, servletMapping);
         
-        WebAppContext contextB = _server.addWebAppContext(".", "/B");
-        contextB.setParentLoaderPriority(true);
+        ServletContextHandler contextB = _server.addContext("/B");
 
         HttpClient client = new HttpClient();
         try
@@ -210,8 +208,8 @@ public class SessionRenewTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        WebAppContext context = _server.addWebAppContext(".", contextPath);
-        context.setParentLoaderPriority(true);
+        //WebAppContext context = _server.addWebAppContext(".", contextPath);
+        ServletContextHandler context = _server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
         context.addEventListener(testListener);
@@ -257,7 +255,7 @@ public class SessionRenewTest
      */
     public class RenewalVerifier
     {
-        public void verify(WebAppContext context, String oldSessionId, String newSessionId)
+        public void verify(ServletContextHandler context, String oldSessionId, String newSessionId)
             throws Exception
         {
             //verify that the session id changed in the session store

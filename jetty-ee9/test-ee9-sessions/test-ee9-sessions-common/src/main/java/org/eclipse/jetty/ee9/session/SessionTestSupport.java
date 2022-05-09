@@ -27,7 +27,6 @@ import org.eclipse.jetty.session.SessionCacheFactory;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionIdManager;
-import org.eclipse.jetty.session.SessionManager;
 
 public class SessionTestSupport
 {
@@ -137,14 +136,8 @@ public class SessionTestSupport
 
     public WebAppContext addWebAppContext(String warPath, String contextPath) throws Exception
     {
-        WebAppContext context = new WebAppContext(warPath, contextPath);
-        _contexts.addHandler(context);
-        SessionHandler sessionHandler = newSessionHandler();
-        sessionHandler.getSessionManager().setSessionIdManager(_sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
-        context.setSessionHandler(sessionHandler);
-
-        return context;
+        //TODO
+        throw new UnsupportedOperationException("TODO!");
     }
 
     public Server getServer()

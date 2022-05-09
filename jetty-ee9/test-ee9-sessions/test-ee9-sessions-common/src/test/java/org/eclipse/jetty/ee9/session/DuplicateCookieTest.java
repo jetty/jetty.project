@@ -204,6 +204,7 @@ public class DuplicateCookieTest
         HttpClient client = null;
 
         TestSessionCacheFactory cacheFactory = new TestSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
@@ -264,6 +265,7 @@ public class DuplicateCookieTest
         HttpClient client = null;
 
         TestSessionCacheFactory cacheFactory = new TestSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
@@ -323,6 +325,7 @@ public class DuplicateCookieTest
         HttpClient client = null;
 
         TestSessionCacheFactory cacheFactory = new TestSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
@@ -381,6 +384,7 @@ public class DuplicateCookieTest
         HttpClient client = null;
 
         TestSessionCacheFactory cacheFactory = new TestSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
