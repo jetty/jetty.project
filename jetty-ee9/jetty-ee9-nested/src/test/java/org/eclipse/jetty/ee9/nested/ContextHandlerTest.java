@@ -610,7 +610,7 @@ public class ContextHandlerTest
         _server.setHandler(contexts);
         _server.start();
 
-        try(LocalConnector.LocalEndPoint endp = _connector.connect())
+        try (LocalConnector.LocalEndPoint endp = _connector.connect())
         {
             endp.addInput("""
                 GET /ctxA/ HTTP/1.1
