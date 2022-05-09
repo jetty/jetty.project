@@ -14,10 +14,12 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
@@ -29,13 +31,65 @@ public class ServerUpgradeRequest extends Request.Wrapper
 {
     private final Request request;
     private final WebSocketNegotiation negotiation;
+    private final Attributes attributes = new Attributes.Lazy();
+    private boolean upgraded = false;
 
-    public ServerUpgradeRequest(WebSocketNegotiation negotiation) throws BadMessageException
+    public ServerUpgradeRequest(WebSocketNegotiation negotiation, Request baseRequest) throws BadMessageException
     {
-        super(negotiation.getRequest());
-
+        super(baseRequest);
         this.negotiation = negotiation;
-        this.request = negotiation.getRequest();
+        this.request = baseRequest;
+    }
+
+    public void upgrade()
+    {
+        attributes.clearAttributes();
+        for (String name : request.getAttributeNameSet())
+        {
+            attributes.setAttribute(name, request.getAttribute(name));
+        }
+        upgraded = true;
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        if (upgraded)
+            return attributes.removeAttribute(name);
+        return super.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        if (upgraded)
+            return attributes.setAttribute(name, attribute);
+        return super.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        if (upgraded)
+            return attributes.getAttribute(name);
+        return super.getAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        if (upgraded)
+            return attributes.getAttributeNameSet();
+        return super.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        if (upgraded)
+            attributes.clearAttributes();
+        else
+            super.clearAttributes();
     }
 
     /**

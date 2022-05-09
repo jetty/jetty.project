@@ -35,12 +35,16 @@ import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {
+    private final URI requestURI;
+    private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
     private final HttpServletRequest httpServletRequest;
     private List<HttpCookie> cookies;
@@ -48,9 +52,27 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        upgradeRequest = request;
-        ServletContextRequest servletContextRequest = Request.as(upgradeRequest, ServletContextRequest.class);
-        this.httpServletRequest = servletContextRequest.getHttpServletRequest();
+        this(request, Request.as(request, ServletContextRequest.class).getHttpServletRequest());
+    }
+
+    public DelegatedServerUpgradeRequest(ServerUpgradeRequest request, HttpServletRequest servletRequest)
+    {
+        this.upgradeRequest = request;
+        this.httpServletRequest = servletRequest;
+        this.queryString = httpServletRequest.getQueryString();
+
+        try
+        {
+            StringBuffer uri = httpServletRequest.getRequestURL();
+            if (this.queryString != null)
+                uri.append("?").append(this.queryString);
+            uri.replace(0, uri.indexOf(":"), request.isSecure() ? "wss" : "ws");
+            this.requestURI = new URI(uri.toString());
+        }
+        catch (Throwable t)
+        {
+            throw new BadMessageException("Bad WebSocket UpgradeRequest", t);
+        }
     }
 
     @Override
@@ -159,13 +181,13 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getQueryString()
     {
-        return upgradeRequest.getHttpURI().getQuery();
+        return queryString;
     }
 
     @Override
     public URI getRequestURI()
     {
-        return upgradeRequest.getHttpURI().toURI();
+        return requestURI;
     }
 
     @Override
@@ -207,7 +229,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public HttpServletRequest getHttpServletRequest()
     {
-        return getHttpServletRequest();
+        return httpServletRequest;
     }
 
     @Override
@@ -237,13 +259,13 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getRequestPath()
     {
-        return upgradeRequest.getPathInContext();
+        return URIUtil.addPaths(httpServletRequest.getServletPath(), httpServletRequest.getPathInfo());
     }
 
     @Override
     public Object getServletAttribute(String name)
     {
-        return upgradeRequest.getAttribute(name);
+        return httpServletRequest.getAttribute(name);
     }
 
     @Override

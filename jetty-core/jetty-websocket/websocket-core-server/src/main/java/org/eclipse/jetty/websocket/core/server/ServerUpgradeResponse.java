@@ -31,11 +31,11 @@ public class ServerUpgradeResponse extends Response.Wrapper
     private final WebSocketNegotiation negotiation;
     private final HttpFields.Mutable fields;
 
-    public ServerUpgradeResponse(WebSocketNegotiation negotiation)
+    public ServerUpgradeResponse(WebSocketNegotiation negotiation, Response baseResponse)
     {
-        super(negotiation.getRequest(), negotiation.getResponse());
+        super(baseResponse.getRequest(), baseResponse);
         this.negotiation = negotiation;
-        this.response = negotiation.getResponse();
+        this.response = baseResponse;
         this.fields = new WebSocketHttpFieldsWrapper(response.getHeaders(), this, negotiation);
     }
 

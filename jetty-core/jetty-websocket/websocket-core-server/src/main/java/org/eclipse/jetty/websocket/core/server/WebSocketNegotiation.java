@@ -31,8 +31,8 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public abstract class WebSocketNegotiation
 {
-    private final Request request;
-    private final Response response;
+    private final ServerUpgradeRequest request;
+    private final ServerUpgradeResponse response;
     private final Callback callback;
     private final WebSocketComponents components;
     private String version;
@@ -43,18 +43,18 @@ public abstract class WebSocketNegotiation
 
     public WebSocketNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
-        this.request = request;
-        this.response = response;
+        this.request = new ServerUpgradeRequest(this, request);
+        this.response = new ServerUpgradeResponse(this, response);
         this.callback = callback;
         this.components = webSocketComponents;
     }
 
-    public Request getRequest()
+    public ServerUpgradeRequest getRequest()
     {
         return request;
     }
 
-    public Response getResponse()
+    public ServerUpgradeResponse getResponse()
     {
         return response;
     }

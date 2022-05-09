@@ -51,8 +51,8 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
     public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
     {
         Context context = negotiation.getRequest().getContext();
-        ServerUpgradeRequest upgradeRequest = new ServerUpgradeRequest(negotiation);
-        ServerUpgradeResponse upgradeResponse = new ServerUpgradeResponse(negotiation);
+        ServerUpgradeRequest upgradeRequest = negotiation.getRequest();
+        ServerUpgradeResponse upgradeResponse = negotiation.getResponse();
 
         Object websocketPojo;
         try

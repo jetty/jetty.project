@@ -145,6 +145,8 @@ public abstract class AbstractHandshaker implements Handshaker
             }
         });
 
+        negotiation.getRequest().upgrade();
+
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
         response.write(true, callback);
