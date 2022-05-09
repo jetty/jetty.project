@@ -88,7 +88,7 @@
     <!-- the request is not handled is the DefaultHandler invoked    -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
+      <New id="Handlers" class="org.eclipse.jetty.server.Handler$Collection">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>

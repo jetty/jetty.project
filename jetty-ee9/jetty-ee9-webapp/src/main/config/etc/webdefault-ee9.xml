@@ -10,7 +10,7 @@
   <!-- This file contains the default descriptor for web applications.       -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- The intent of this descriptor is to include jetty specific or common  -->
-  <!-- configuration for all webapps.   If a context has a webdefault.xml    -->
+  <!-- configuration for all webapps.   If a context has a webdefault-ee9.xml    -->
   <!-- descriptor, it is applied before the context's own web.xml file       -->
   <!--                                                                       -->
   <!-- A context may be assigned a default descriptor by calling             -->

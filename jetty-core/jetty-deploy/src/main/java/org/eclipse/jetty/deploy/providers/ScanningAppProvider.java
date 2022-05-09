@@ -49,6 +49,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private int _scanInterval = 10;
     private Scanner _scanner;
     private boolean _useRealPaths;
+    private String _defaultEnvironment = "ee9"; // TODO null or ee10?
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -80,6 +81,16 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     {
         _filenameFilter = filter;
         addBean(_appMap);
+    }
+
+    public String getDefaultEnvironment()
+    {
+        return _defaultEnvironment;
+    }
+
+    public void setDefaultEnvironment(String defaultEnvironment)
+    {
+        _defaultEnvironment = defaultEnvironment;
     }
 
     /**
@@ -125,7 +136,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     protected App createApp(String filename)
     {
         // TODO otherways to work out the environment????
-        String environment = getDeploymentManager().getDefaultEnvironment();
+        String environment = getDefaultEnvironment();
 
         return new App(_deploymentManager, this, environment, filename);
     }
