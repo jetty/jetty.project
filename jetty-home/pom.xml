@@ -218,7 +218,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <excludeArtifactIds>jetty-jakarta-servet-api,jetty-schemas,jetty-test-helper</excludeArtifactIds>
+              <excludeArtifactIds>jetty-jakarta-servlet-api,jetty-schemas,jetty-test-helper</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
