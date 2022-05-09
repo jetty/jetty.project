@@ -40,6 +40,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.LocalConnector;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -686,6 +688,49 @@ public class GzipHandlerTest
         IO.copy(testIn, testOut);
 
         assertEquals(__icontent, testOut.toString("UTF8"));
+    }
+
+    @Test
+    public void testIncludeExcludeGzipHandlerInflate() throws Exception
+    {
+        gzipHandler.addExcludedInflationPaths("/ctx/echo/exclude");
+        gzipHandler.addIncludedInflationPaths("/ctx/echo/include");
+
+        String message = "hello world";
+        byte[] gzippedMessage = gzipContent(message);
+
+        // The included path does deflate the content.
+        HttpTester.Response response = sendGzipRequest("/ctx/echo/include", message);
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), equalTo(message));
+
+        // The excluded path does not deflate the content.
+        response = sendGzipRequest("/ctx/echo/exclude", message);
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentBytes(), equalTo(gzippedMessage));
+    }
+
+    private byte[] gzipContent(String content) throws IOException
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(content.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        return baos.toByteArray();
+    }
+
+    private HttpTester.Response sendGzipRequest(String uri, String data) throws Exception
+    {
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setURI(uri);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("Content-Type", "text/plain");
+        request.setHeader("Content-Encoding", "gzip");
+        request.setContent(gzipContent(data));
+
+        return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
     @Test
