@@ -101,7 +101,7 @@
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
-    <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
+    <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.17.2</log4j2.version>
     <logback.version>1.3.0-alpha14</logback.version>
     <mariadb.version>3.0.4</mariadb.version>
