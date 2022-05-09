@@ -27,9 +27,9 @@ import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -53,16 +53,17 @@ public class RequestDispatchedSessionTest
         connector.setPort(0);
         server.addConnector(connector);
 
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
+
         // Default session behavior
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        contextHandler.setContextPath("/");
+        ServletContextHandler contextHandler = new ServletContextHandler(handlers, "/", ServletContextHandler.SESSIONS);
         contextHandler.addServlet(LoginServlet.class, "/login");
         contextHandler.addServlet(ShowUserServlet.class, "/user");
         contextHandler.addServlet(DefaultServlet.class, "/");
 
-        Handler.Collection list = new Handler.Collection();
-        list.addHandler(contextHandler);
-        list.addHandler(new DefaultHandler());
+        handlers.addHandler(new DefaultHandler());
+        
+        server.setHandler(handlers);
 
         server.start();
     }

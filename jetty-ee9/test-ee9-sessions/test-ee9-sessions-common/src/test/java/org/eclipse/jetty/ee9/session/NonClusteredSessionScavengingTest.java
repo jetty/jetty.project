@@ -75,7 +75,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionListener listener = new TestHttpSessionListener();
-        context1.getSessionHandler().getSessionManager().addEventListener(listener);
+        context1.getSessionHandler().addEventListener(listener);
 
         try
         {

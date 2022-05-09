@@ -500,7 +500,11 @@ public class Session
 
     public Set<String> getNames()
     {
-        return Collections.unmodifiableSet(_sessionData.getKeys());
+        try (AutoLock l = _lock.lock())
+        {
+            checkValidForRead();
+            return Collections.unmodifiableSet(_sessionData.getKeys());
+        }
     }
 
     public void setAttribute(String name, Object value)

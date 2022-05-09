@@ -136,12 +136,9 @@ public class ClientCrossContextSessionTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
-            System.err.println("IN TESTSERVLETB");
-            System.err.flush();
             HttpSession session = request.getSession(false);
             if (session == null)
                 session = request.getSession(true);
-            System.err.println("Setting session id = " + (session == null ? "null" : session.getId()));
             sessionId = session.getId();
 
             // Add something to the session

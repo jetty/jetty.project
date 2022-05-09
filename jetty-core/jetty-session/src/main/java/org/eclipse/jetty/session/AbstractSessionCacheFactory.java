@@ -21,7 +21,7 @@ package org.eclipse.jetty.session;
  */
 public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
 {
-    int _evictionPolicy;
+    int _evictionPolicy = SessionCache.NEVER_EVICT;
     boolean _saveOnInactiveEvict;
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
