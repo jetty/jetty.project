@@ -275,7 +275,7 @@ public class IdleSessionTest
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 assertEquals(originalId, session.getId());
-                Session s = (Session)session;
+                Session s = ((org.eclipse.jetty.ee9.nested.Request)request).getCoreSession();
                 try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());

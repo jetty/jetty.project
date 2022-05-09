@@ -125,7 +125,7 @@ public class ContextHandlerCollection extends Handler.Collection
     public Request.Processor handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
-
+        //
         // Handle no contexts
         if (handlers == null || handlers.isEmpty())
             return null;

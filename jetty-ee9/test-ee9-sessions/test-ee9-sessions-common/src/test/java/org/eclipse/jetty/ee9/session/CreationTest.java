@@ -252,8 +252,6 @@ public class CreationTest
     /**
      * Create and then invalidate and then create a session in the same request
      */
-    //TODO not working
-    @Disabled
     @Test
     public void testSessionCreateInvalidateCreate() throws Exception
     {
