@@ -13,6 +13,7 @@
   <packaging>pom</packaging>
 
   <properties>
+    <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
     <!-- TODO: Remove these javax.* entries? -->
