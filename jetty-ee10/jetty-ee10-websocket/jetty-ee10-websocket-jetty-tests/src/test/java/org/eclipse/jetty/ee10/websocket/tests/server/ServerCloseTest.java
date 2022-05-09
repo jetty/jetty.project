@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -193,7 +192,6 @@ public class ServerCloseTest
         }
     }
 
-    @Disabled
     @Test
     public void dropConnection() throws Exception
     {
@@ -230,7 +228,6 @@ public class ServerCloseTest
      *
      * @throws Exception on test failure
      */
-    @Disabled
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
