@@ -2502,9 +2502,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().put(HttpChannel.class.getName(), httpChannel);
             }
-            else
+            else if (httpChannel.getContextHandler() == ContextHandler.this)
             {
                 httpChannel.recycle();
+            }
+            else
+            {
+                // Don't use cached channel for secondary context
+                httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
             return new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);

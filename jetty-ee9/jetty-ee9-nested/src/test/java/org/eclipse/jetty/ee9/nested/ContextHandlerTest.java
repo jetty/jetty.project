@@ -30,6 +30,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,40 +182,42 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET /one HTTP/1.1
-            Host: localhost
-            
-            GET /two HTTP/1.1
-            Host: localhost
-            
-            """);
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        {
+            endPoint.addInput("""
+                GET /one HTTP/1.1
+                Host: localhost
+                            
+                GET /two HTTP/1.1
+                Host: localhost
+                            
+                """);
 
-        String rawResponse = endPoint.getResponse();
-        System.err.println(rawResponse);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        Properties one = new Properties();
-        one.load(new StringReader(response.getContent()));
+            String rawResponse = endPoint.getResponse();
+            System.err.println(rawResponse);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+            Properties one = new Properties();
+            one.load(new StringReader(response.getContent()));
 
-        rawResponse = endPoint.getResponse();
-        System.err.println(rawResponse);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        Properties two = new Properties();
-        two.load(new StringReader(response.getContent()));
+            rawResponse = endPoint.getResponse();
+            System.err.println(rawResponse);
+            response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+            Properties two = new Properties();
+            two.load(new StringReader(response.getContent()));
 
-        assertThat(one.getProperty("baseRequest.hashCode"), notNullValue());
-        assertThat(one.getProperty("baseRequest.hashCode"), equalTo(two.getProperty("baseRequest.hashCode")));
+            assertThat(one.getProperty("baseRequest.hashCode"), notNullValue());
+            assertThat(one.getProperty("baseRequest.hashCode"), equalTo(two.getProperty("baseRequest.hashCode")));
 
-        assertThat(one.getProperty("coreRequest.connectionMetaData.id"), notNullValue());
-        assertThat(one.getProperty("coreRequest.connectionMetaData.id"), equalTo(two.getProperty("coreRequest.connectionMetaData.id")));
+            assertThat(one.getProperty("coreRequest.connectionMetaData.id"), notNullValue());
+            assertThat(one.getProperty("coreRequest.connectionMetaData.id"), equalTo(two.getProperty("coreRequest.connectionMetaData.id")));
 
-        assertThat(one.getProperty("coreRequest.id"), notNullValue());
-        assertThat(one.getProperty("coreRequest.id"), not(equalTo(two.getProperty("coreRequest.id"))));
+            assertThat(one.getProperty("coreRequest.id"), notNullValue());
+            assertThat(one.getProperty("coreRequest.id"), not(equalTo(two.getProperty("coreRequest.id"))));
+        }
     }
 
     @Test
@@ -569,6 +572,68 @@ public class ContextHandlerTest
         assertThat(response.getStatus(), is(503));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("ERROR /errorPage"));
+    }
+
+    @Test
+    public void testTwoContexts() throws Exception
+    {
+        _contextHandler.setContextPath("/ctxA");
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                response.getOutputStream().print("Hello %s\n".formatted(baseRequest.getContext().getContextPath()));
+            }
+        });
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/ctxB");
+        contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                response.getOutputStream().print("Buongiorno %s\n".formatted(baseRequest.getContext().getContextPath()));
+            }
+        });
+
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.addHandler(_contextHandler);
+        contexts.addHandler(contextHandler);
+        _server.setHandler(contexts);
+        _server.start();
+
+        try(LocalConnector.LocalEndPoint endp = _connector.connect())
+        {
+            endp.addInput("""
+                GET /ctxA/ HTTP/1.1
+                Host: localhost
+                            
+                """);
+            String raw = endp.getResponse();
+            HttpTester.Response response = HttpTester.parseResponse(raw);
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+            assertThat(response.getContent(), containsString("Hello /ctxA"));
+
+            endp.addInput("""
+                GET /ctxB/ HTTP/1.1
+                Host: localhost
+                            
+                """);
+            raw = endp.getResponse();
+            response = HttpTester.parseResponse(raw);
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+            assertThat(response.getContent(), containsString("Buongiorno /ctxB"));
+        }
     }
 
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
