@@ -13,6 +13,9 @@ session
 [depends]
 server
 
+[lib]
+lib/jetty-session-${jetty.version}.jar
+
 [xml]
 etc/sessions/id-manager.xml
 

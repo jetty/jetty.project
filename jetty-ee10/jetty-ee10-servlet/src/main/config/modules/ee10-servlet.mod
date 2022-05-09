@@ -5,6 +5,7 @@ Enables standard Servlet handling.
 
 [depend]
 server
+sessions
 
 [lib]
-lib/jetty-servlet-${jetty.version}.jar
+lib/jetty-ee10-servlet-${jetty.version}.jar

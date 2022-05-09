@@ -6,7 +6,7 @@ ee9
 
 [depend]
 deploy
-webapp-ee9
+ee9-webapp
 
 [lib]
 

@@ -8,11 +8,9 @@ ee9
 
 [depend]
 server
-
-#add a session dependency rather than the jar below
+sessions
 
 [lib]
-lib/jetty-session-${jetty.version}.jar
 lib/jetty-jakarta-servlet-api-5.0.2.jar
 lib/jetty-ee9-nested-${jetty.version}.jar
 lib/jetty-ee9-servlet-${jetty.version}.jar

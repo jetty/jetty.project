@@ -4,19 +4,15 @@
 Adds support for servlet specification web applications to the server classpath.
 Without this, only Jetty-specific handlers may be deployed.
 
-[environment]
-ee9
-
 [depend]
-servlet-ee9
-security-ee9
+ee10-servlet
+ee10-security
 
 [xml]
-etc/jetty-ee9-webapp.xml
+etc/jetty-ee10-webapp.xml
 
 [lib]
-lib/jetty-ee9-webapp-${jetty.version}.jar
-
+lib/jetty-ee10-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Add to the server wide default jars and packages protected or hidden from webapps.

@@ -7,4 +7,4 @@ Adds servlet standard security handling to the classpath.
 server
 
 [lib]
-lib/jetty-security-${jetty.version}.jar
+lib/jetty-ee10-security-${jetty.version}.jar
