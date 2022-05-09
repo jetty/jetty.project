@@ -18,6 +18,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,14 @@ public class EnvironmentBuilder extends AbstractMap<String, String>
             throw new IllegalStateException("Name not set");
 
         Environment environment = new BuiltEnvironment(_name, _classpath);
+
+        System.err.println("Environment " + environment);
+        System.err.println("Classloader " + environment.getClassLoader());
+        if (environment.getClassLoader() instanceof URLClassLoader urlClassLoader)
+            Arrays.stream(urlClassLoader.getURLs()).forEach(System.err::println);
+
         _idMap.put(_environmentId, environment);
+        System.err.println(_idMap);
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(environment.getClassLoader());
@@ -119,6 +127,7 @@ public class EnvironmentBuilder extends AbstractMap<String, String>
             XmlConfiguration last = null;
             for (Resource xml : _xmls)
             {
+                System.err.println("XML " + xml);
                 XmlConfiguration configuration = new XmlConfiguration(xml);
                 configuration.getIdMap().putAll(last == null ? _idMap : last.getIdMap());
                 configuration.getProperties().putAll(_properties);

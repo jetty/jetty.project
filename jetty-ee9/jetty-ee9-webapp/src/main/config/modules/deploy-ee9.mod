@@ -5,7 +5,8 @@ Enables web application deployment from the $JETTY_BASE/webapps/ directory.
 ee9
 
 [depend]
-webapp
+deploy
+webapp-ee9
 
 [lib]
 

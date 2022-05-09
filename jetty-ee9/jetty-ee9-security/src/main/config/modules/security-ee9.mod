@@ -3,8 +3,11 @@
 [description]
 Adds servlet standard security handling to the classpath.
 
+[environment]
+ee9
+
 [depend]
 server
 
 [lib]
-lib/jetty-security-${jetty.version}.jar
+lib/jetty-ee9-security-${jetty.version}.jar

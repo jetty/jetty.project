@@ -8,7 +8,7 @@
 <!-- AppProvider interface.                                          -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Ref id="DeploymentManager">
+  <Ref refid="DeploymentManager">
     <Call name="addAppProvider">
       <Arg>
         <New id="WebAppProvider" class="org.eclipse.jetty.ee10.deployer.WebAppProvider">

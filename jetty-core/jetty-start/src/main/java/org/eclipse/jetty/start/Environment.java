@@ -326,7 +326,7 @@ public class Environment
                     <Arg name="name">%s</Arg>
                     <Call name="putId">
                       <Arg>Server</Arg>
-                      <Arg><Ref id="Server"/></Arg>
+                      <Arg><Ref refid="Server"/></Arg>
                     </Call>
                 
                     <!-- Core Properties -->
@@ -347,7 +347,7 @@ public class Environment
                     <Call id="%s" name="build"/>
                   </New>
                   <Call name="addEnvironment">
-                    <Arg><Ref id="%s"/></Arg>
+                    <Arg><Ref refid="%s"/></Arg>
                   </Call>
                 </Configure>
                 """.formatted(getName(), properties, classpaths, xmls, getName(), getName()).getBytes(StandardCharsets.UTF_8));

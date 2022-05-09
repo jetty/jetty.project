@@ -924,7 +924,6 @@ public class StartArgs
             ConfigSource source = iter.previous();
             for (RawArgs.Entry arg : source.getArgs())
                 environment = parse(environment, arg.getLine(), arg.getOrigin());
-
         }
     }
 
@@ -1173,7 +1172,7 @@ public class StartArgs
             enableModules(source, moduleNames);
             Module module = getAllModules().get(moduleNames.get(moduleNames.size() - 1));
             String envName = module.getEnvironment();
-            return envName == null ? environment : getEnvironment(envName);
+            return envName == null ? coreEnvironment : getEnvironment(envName);
         }
 
         // Skip [files] validation on a module
