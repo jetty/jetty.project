@@ -436,7 +436,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public CompletableFuture<Void> shutdown()
     {
         // TODO
-        return null;
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        completableFuture.complete(null);
+        return completableFuture;
     }
 
     /**
