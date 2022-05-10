@@ -25,11 +25,15 @@
                   <Array type="String"><Item>index.html</Item></Array>
                 </Set>
                 <Set name="baseResource">
-                  <Call class="java.nio.file.Paths" name="get">
-                      <Arg>
-                          <Property name="fileserver.baseresource" default="." />
-                      </Arg>
-                  </Call>
+                  <New class="org.eclipse.jetty.util.resource.PathResource">
+                    <Arg>
+                      <Call class="java.nio.file.Paths" name="get">
+                        <Arg>
+                            <Property name="fileserver.baseresource" default="." />
+                        </Arg>
+                      </Call>
+                    </Arg>
+                  </New>
                 </Set>
               </New>
             </Item>
