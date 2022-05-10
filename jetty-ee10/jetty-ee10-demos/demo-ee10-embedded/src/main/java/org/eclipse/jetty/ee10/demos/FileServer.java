@@ -45,7 +45,7 @@ public class FileServer
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
         resourceHandler.setDirAllowed(true);
         resourceHandler.setWelcomeFiles(Arrays.asList(new String[]{"index.html"}));
-        resourceHandler.setBaseResource(baseResource.getPath());
+        resourceHandler.setBaseResource(baseResource);
 
         // Add the ResourceHandler to the server.
         server.setHandler(new Handler.Collection(resourceHandler, new DefaultHandler()));

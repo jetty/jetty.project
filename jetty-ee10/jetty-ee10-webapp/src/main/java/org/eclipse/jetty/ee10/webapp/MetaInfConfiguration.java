@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,8 +39,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
+import org.eclipse.jetty.util.resource.PathCollectionResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -311,21 +312,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
-        {
-            if (resources.size() == 1)
-                context.setBaseResource(resources.stream().findFirst().get());
-            else
-            {
-                Resource[] collection = new Resource[resources.size() + 1];
-                int i = 0;
-                collection[i++] = context.getResourceBase();
-                for (Resource resource : resources)
-                {
-                    collection[i++] = resource;
-                }
-                context.setBaseResource(new ResourceCollection(collection));
-            }
-        }
+            context.setBaseResource(new PathCollectionResource(resources.stream().map(Resource::getPath).toArray(Path[]::new)));
     }
 
     protected void scanJars(WebAppContext context) throws Exception

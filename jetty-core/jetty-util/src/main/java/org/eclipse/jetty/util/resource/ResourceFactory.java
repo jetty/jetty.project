@@ -18,7 +18,7 @@ import java.io.IOException;
 /**
  * ResourceFactory.
  */
-// TODO remove
+@Deprecated(forRemoval = true)
 public interface ResourceFactory
 {
     /**
@@ -35,5 +35,6 @@ public interface ResourceFactory
      * @return The resource, that might not actually exist (yet).
      * @throws IOException if unable to create Resource
      */
+    // TODO this should move to Resource and be renamed resolve()
     Resource getResource(String path) throws IOException;
 }

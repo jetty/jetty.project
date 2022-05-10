@@ -36,7 +36,9 @@ import org.eclipse.jetty.util.URIUtil;
  * The first resource in the collection is the main resource.
  * If a resource is not found in the main resource, it looks it up in
  * the order the resources were constructed.
+ * @deprecated
  */
+@Deprecated(forRemoval = true)
 public class ResourceCollection extends Resource
 {
     private List<Resource> _resources;
@@ -445,12 +447,6 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void copyTo(File destination)
         throws IOException
     {
@@ -475,13 +471,6 @@ public class ResourceCollection extends Resource
         }
 
         return String.valueOf(_resources);
-    }
-
-    @Override
-    public boolean isContainedIn(Resource r)
-    {
-        // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
-        return false;
     }
 
     private void assertResourcesSet()

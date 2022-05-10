@@ -31,6 +31,7 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.component;
     exports org.eclipse.jetty.util.compression;
     exports org.eclipse.jetty.util.log;
+    exports org.eclipse.jetty.util.paths;
     exports org.eclipse.jetty.util.preventers;
     exports org.eclipse.jetty.util.resource;
     exports org.eclipse.jetty.util.security;

@@ -380,22 +380,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testIsContainedIn(Class<PathResource> resourceClass) throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-        Path foo = dir.resolve("foo");
-        Files.createFile(foo);
-
-        try (Resource base = newResource(resourceClass, dir.toFile()))
-        {
-            Resource res = base.addPath("foo");
-            assertThat("is contained in", res.isContainedIn(base), is(true));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("fsResourceProvider")
     public void testIsDirectory(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();

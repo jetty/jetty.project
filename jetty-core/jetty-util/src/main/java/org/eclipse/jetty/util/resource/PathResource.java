@@ -489,20 +489,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
-    {
-        try
-        {
-            PathResource pr = PathResource.class.cast(r);
-            return (path.startsWith(pr.getPath()));
-        }
-        catch (ClassCastException e)
-        {
-            return false;
-        }
-    }
-
-    @Override
     public boolean isDirectory()
     {
         return Files.isDirectory(path, FOLLOW_LINKS);
@@ -592,29 +578,6 @@ public class PathResource extends Resource
             LOG.debug("Directory list access failure", e);
         }
         return null;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        if (dest instanceof PathResource)
-        {
-            PathResource destRes = (PathResource)dest;
-            try
-            {
-                Path result = Files.move(path, destRes.path);
-                return Files.exists(result, NO_FOLLOW_LINKS);
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
     }
 
     @Override

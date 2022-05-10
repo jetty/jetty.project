@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated(forRemoval = true)
 public class JarFileResource extends JarResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(JarFileResource.class);
@@ -363,28 +364,6 @@ public class JarFileResource extends JarResource
             return _entry.getSize();
 
         return -1;
-    }
-
-    /**
-     * Check if this jar:file: resource is contained in the
-     * named resource. Eg <code>jar:file:///a/b/c/foo.jar!/x.html</code> isContainedIn <code>file:///a/b/c/foo.jar</code>
-     *
-     * @param resource the resource to test for
-     * @return true if resource is contained in the named resource
-     * @throws MalformedURLException if unable to process is contained due to invalid URL format
-     */
-    @Override
-    public boolean isContainedIn(Resource resource)
-        throws MalformedURLException
-    {
-        String string = _urlString;
-        int index = string.lastIndexOf("!/");
-        if (index > 0)
-            string = string.substring(0, index);
-        if (string.startsWith("jar:"))
-            string = string.substring(4);
-        URL url = new URL(string);
-        return url.sameFile(resource.getURI().toURL());
     }
 
     public File getJarFile()

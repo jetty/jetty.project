@@ -55,7 +55,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-//TODO remove
+// TODO Resource API should be cleaned up and simplified
+// TODO Resource review all impls and figure out which ones to keep
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
@@ -298,7 +299,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     public static boolean isContainedIn(Resource r, Resource containingResource) throws MalformedURLException
     {
-        return r.isContainedIn(containingResource);
+        return containingResource.getPath().startsWith(r.getPath());
     }
 
     public Path getPath()
@@ -312,8 +313,6 @@ public abstract class Resource implements ResourceFactory, Closeable
             throw new RuntimeException(e);
         }
     }
-
-    public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
 
     /**
      * Return true if the passed Resource represents the same resource as the Resource.
@@ -416,16 +415,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         throws SecurityException;
 
     /**
-     * Rename the given resource
-     *
-     * @param dest the destination name for the resource
-     * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     * @throws SecurityException if unable to rename due to permissions
-     */
-    public abstract boolean renameTo(Resource dest)
-        throws SecurityException;
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      *
@@ -445,6 +434,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
      * a relative path attempts to access above the root resource.
      */
+    // TODO this is getResource() -> remove
     public abstract Resource addPath(String path)
         throws IOException, MalformedURLException;
 

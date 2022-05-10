@@ -146,12 +146,6 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public Path getPath()
-    {
-        return _path;
-    }
-
-    @Override
     public Resource getResource()
     {
         return _resource;

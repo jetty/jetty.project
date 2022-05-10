@@ -99,24 +99,6 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileIsContainedIn()
-        throws Exception
-    {
-        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        Resource r = Resource.newResource(s);
-        Resource container = Resource.newResource(testZip);
-
-        assertThat(r, instanceOf(JarFileResource.class));
-        JarFileResource jarFileResource = (JarFileResource)r;
-
-        assertTrue(jarFileResource.isContainedIn(container));
-
-        container = Resource.newResource(testZip.getParent());
-        assertFalse(jarFileResource.isContainedIn(container));
-    }
-
-    @Test
     public void testJarFileLastModified()
         throws Exception
     {

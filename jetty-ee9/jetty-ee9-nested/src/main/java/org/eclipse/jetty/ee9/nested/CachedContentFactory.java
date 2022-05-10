@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -436,12 +435,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         public boolean isCached()
         {
             return _key != null;
-        }
-
-        @Override
-        public Path getPath()
-        {
-            return _resource.getPath();
         }
 
         @Override

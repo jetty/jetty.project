@@ -253,16 +253,6 @@ public class URLResource extends Resource
     }
 
     /**
-     * Rename the given resource
-     */
-    @Override
-    public boolean renameTo(Resource dest)
-        throws SecurityException
-    {
-        throw new SecurityException("RenameTo not supported");
-    }
-
-    /**
      * Returns a list of resource names contained in the given resource
      */
     @Override
@@ -309,11 +299,5 @@ public class URLResource extends Resource
     public boolean getUseCaches()
     {
         return _useCaches;
-    }
-
-    @Override
-    public boolean isContainedIn(Resource containingResource) throws MalformedURLException
-    {
-        return false;
     }
 }

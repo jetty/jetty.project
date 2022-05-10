@@ -34,12 +34,6 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r) throws MalformedURLException
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
     }
@@ -100,12 +94,6 @@ public class EmptyResource extends Resource
 
     @Override
     public boolean delete() throws SecurityException
-    {
-        return false;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
     {
         return false;
     }

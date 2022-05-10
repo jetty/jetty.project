@@ -95,12 +95,6 @@ public class OrderingTest
         }
 
         @Override
-        public boolean isContainedIn(Resource r) throws MalformedURLException
-        {
-            return false;
-        }
-
-        @Override
         public boolean isDirectory()
         {
             return false;
@@ -127,12 +121,6 @@ public class OrderingTest
         @Override
         public void close()
         {
-        }
-
-        @Override
-        public boolean renameTo(Resource dest) throws SecurityException
-        {
-            return false;
         }
     }
 
