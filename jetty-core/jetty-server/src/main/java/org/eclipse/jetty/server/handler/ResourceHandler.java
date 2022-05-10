@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.List;
 
+import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -22,7 +23,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -36,14 +39,17 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * Missing:
  *  - current context' mime types
- *  - getContent in HttpContent should go
- *  - Default stylesheet (needs Path impl for classpath resources)
+ *  - Default stylesheet (needs Resource impl for classpath resources)
  *  - request ranges
  *  - a way to configure caching or not
  */
 public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
+
+    private Resource _resourceBase;
+    private MimeTypes _mimeTypes;
+    private List<String> _welcomes = List.of("index.html");
 
     public ResourceHandler()
     {
@@ -53,21 +59,47 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        if (_resourceService.getResourceBase() == null)
+        if (_resourceBase == null)
         {
             Context context = ContextHandler.getCurrentContext();
             if (context != null)
-            {
-                Resource resourceBase = context.getBaseResource();
-                if (resourceBase != null)
-                    setBaseResource(resourceBase);
-            }
+                _resourceBase = context.getBaseResource();
         }
+
 // TODO
-//        if (_mimeTypes == null)
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+        if (_mimeTypes == null)
+            _mimeTypes = new MimeTypes();
+
+        setupContentFactory();
 
         super.doStart();
+    }
+
+    private void setupContentFactory()
+    {
+        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(_resourceBase, _mimeTypes, _resourceService.getPrecompressedFormats()));
+        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setWelcomeFactory(pathInContext ->
+        {
+            if (_welcomes == null)
+                return null;
+
+            for (String welcome : _welcomes)
+            {
+                // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
+                //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
+                //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
+                //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
+                //          EVEN IF the file does not exist.
+                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                Resource welcomePath = _resourceBase.addPath(pathInContext).addPath(welcome);
+                if (welcomePath != null && welcomePath.exists())
+                    return welcomeInContext;
+            }
+            // not found
+            return null;
+        });
     }
 
     @Override
@@ -79,7 +111,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContentFactory().getContent(request.getPathInContext(), request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+        HttpContent content = _resourceService.getContent(request.getPathInContext(), request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
         if (content == null)
         {
             // no content - try other handlers
@@ -104,7 +136,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getResourceBase()
     {
-        return _resourceService.getResourceBase();
+        return _resourceBase;
     }
 
     /**
@@ -125,7 +157,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     public MimeTypes getMimeTypes()
     {
-        return _resourceService.getMimeTypes();
+        return _mimeTypes;
     }
 
     /**
@@ -138,7 +170,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     public List<String> getWelcomeFiles()
     {
-        return _resourceService.getWelcomeFiles();
+        return _welcomes;
     }
 
     /**
@@ -203,7 +235,8 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setBaseResource(Resource base)
     {
-        _resourceService.setBaseResource(base);
+        _resourceBase = base;
+        setupContentFactory();
     }
 
     /**
@@ -245,6 +278,7 @@ public class ResourceHandler extends Handler.Wrapper
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _resourceService.setPrecompressedFormats(precompressedFormats);
+        setupContentFactory();
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -259,7 +293,8 @@ public class ResourceHandler extends Handler.Wrapper
 
     public void setMimeTypes(MimeTypes mimeTypes)
     {
-        _resourceService.setMimeTypes(mimeTypes);
+        _mimeTypes = mimeTypes;
+        setupContentFactory();
     }
 
     /**
@@ -291,6 +326,6 @@ public class ResourceHandler extends Handler.Wrapper
 
     public void setWelcomeFiles(List<String> welcomeFiles)
     {
-        _resourceService.setWelcomeFiles(welcomeFiles);
+        _welcomes = welcomeFiles;
     }
 }

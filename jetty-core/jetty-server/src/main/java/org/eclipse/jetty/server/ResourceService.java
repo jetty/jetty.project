@@ -22,12 +22,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
@@ -36,12 +34,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.http.ResourceHttpContent;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -64,19 +59,15 @@ public class ResourceService
     private static final int NO_CONTENT_LENGTH = -1;
     private static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private ContextHandler _context;
     private Resource _defaultStylesheet;
-    private MimeTypes _mimeTypes = new MimeTypes();
     private Resource _stylesheet;
-    private List<String> _welcomes = List.of("index.html");
-    private Resource _resourceBase;
     private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
-    private Welcomer _welcomer = new DefaultWelcomer();
+    private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
-    private HttpContent.ContentFactory _contentFactory = new CachingContentFactory(new PathContentFactory());
+    private HttpContent.ContentFactory _contentFactory;
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private String[] _preferredEncodingOrder = new String[0];
     private int _encodingCacheSize = 100;
@@ -88,6 +79,11 @@ public class ResourceService
     {
     }
 
+    public HttpContent getContent(String servletPath, int outputBufferSize) throws IOException
+    {
+        return _contentFactory.getContent(servletPath, outputBufferSize);
+    }
+
     public HttpContent.ContentFactory getContentFactory()
     {
         return _contentFactory;
@@ -96,24 +92,6 @@ public class ResourceService
     public void setContentFactory(HttpContent.ContentFactory contentFactory)
     {
         _contentFactory = contentFactory;
-    }
-
-    public Welcomer getWelcomer()
-    {
-        return _welcomer;
-    }
-
-    public void setWelcomer(Welcomer welcomer)
-    {
-        _welcomer = welcomer;
-    }
-
-    /**
-     * @return Returns the resourceBase.
-     */
-    public Resource getResourceBase()
-    {
-        return _resourceBase;
     }
 
     /**
@@ -130,11 +108,6 @@ public class ResourceService
     public List<String> getGzipEquivalentFileExtensions()
     {
         return _gzipEquivalentFileExtensions;
-    }
-
-    public MimeTypes getMimeTypes()
-    {
-        return _mimeTypes;
     }
 
     /**
@@ -161,11 +134,6 @@ public class ResourceService
         // TODO the returned path should point to the classpath.
         // This points to a non-existent file '/jetty-dir.css'.
         return new PathResource(Path.of("/jetty-dir.css"));
-    }
-
-    public List<String> getWelcomeFiles()
-    {
-        return _welcomes;
     }
 
     public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
@@ -458,11 +426,48 @@ public class ResourceService
         }
 
         // look for a welcome file
-        if (_welcomer.welcome(request, response, callback))
+        if (welcome(request, response, callback))
             return;
 
         if (!passConditionalHeaders(request, response, content, callback))
             sendDirectory(request, response, content, callback, pathInContext);
+    }
+
+    private boolean welcome(Request request, Response response, Callback callback) throws IOException
+    {
+        String pathInContext = request.getPathInContext();
+        String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
+        if (welcome != null)
+        {
+            String contextPath = request.getContext().getContextPath();
+
+            if (_pathInfoOnly)
+                welcome = URIUtil.addPaths(contextPath, welcome);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("welcome={}", welcome);
+
+            if (_redirectWelcome)
+            {
+                // Redirect to the index
+                response.setContentLength(0);
+
+                // TODO need helper code to edit URIs
+                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
+                String q = request.getHttpURI().getQuery();
+                if (q != null && !q.isEmpty())
+                    uri += "?" + q;
+
+                Response.sendRedirect(request, response, callback, uri);
+                return true;
+            }
+
+            // Serve welcome file
+            HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+            sendData(request, response, callback, c, null);
+            return true;
+        }
+        return false;
     }
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
@@ -720,21 +725,17 @@ public class ResourceService
         return _redirectWelcome;
     }
 
+    public WelcomeFactory getWelcomeFactory()
+    {
+        return _welcomeFactory;
+    }
+
     /**
      * @param acceptRanges If true, range requests and responses are supported
      */
     public void setAcceptRanges(boolean acceptRanges)
     {
         _acceptRanges = acceptRanges;
-    }
-
-    /**
-     * @param base The resourceBase to server content from. If null the
-     * context resource base is used.
-     */
-    public void setBaseResource(Resource base)
-    {
-        _resourceBase = base;
     }
 
     /**
@@ -791,11 +792,6 @@ public class ResourceService
         return _encodingCacheSize;
     }
 
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
-    }
-
     /**
      * @param pathInfoOnly true, only the path info will be applied to the resourceBase
      */
@@ -812,6 +808,11 @@ public class ResourceService
     public void setRedirectWelcome(boolean redirectWelcome)
     {
         _redirectWelcome = redirectWelcome;
+    }
+
+    public void setWelcomeFactory(WelcomeFactory welcomeFactory)
+    {
+        _welcomeFactory = welcomeFactory;
     }
 
     /**
@@ -833,54 +834,6 @@ public class ResourceService
         {
             LOG.warn("Invalid StyleSheet reference: {}", stylesheet, e);
             throw new IllegalArgumentException(stylesheet);
-        }
-    }
-
-    public void setWelcomeFiles(List<String> welcomeFiles)
-    {
-        _welcomes = welcomeFiles;
-    }
-
-    // TODO this should be ResourceContentFactory. Resolve.
-    private class PathContentFactory implements HttpContent.ContentFactory
-    {
-        @Override
-        public HttpContent getContent(String path, int maxBuffer) throws IOException
-        {
-            if (_precompressedFormats.length > 0)
-            {
-                // Is the precompressed content cached?
-                Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>();
-                for (CompressedContentFormat format : _precompressedFormats)
-                {
-                    String compressedPathInContext = path + format.getExtension();
-
-                    // Is there a precompressed resource?
-                    HttpContent compressedContent = load(compressedPathInContext, null, maxBuffer);
-                    if (compressedContent != null)
-                        compressedContents.put(format, compressedContent);
-                }
-                if (!compressedContents.isEmpty())
-                    return load(path, compressedContents, maxBuffer);
-            }
-
-            return load(path, null, maxBuffer);
-        }
-
-        private HttpContent load(String path, Map<CompressedContentFormat, HttpContent> compressedEquivalents, int maxBuffer)
-        {
-            try
-            {
-                Resource resolved = _resourceBase.getResource(path);
-                if (resolved == null || !resolved.exists())
-                    return null;
-                String mimeType = _mimeTypes.getMimeByExtension(resolved.getPath().getFileName().toString());
-                return new ResourceHttpContent(resolved, mimeType, maxBuffer, compressedEquivalents);
-            }
-            catch (IOException e)
-            {
-                return null;
-            }
         }
     }
 
@@ -939,83 +892,15 @@ public class ResourceService
         }
     }
 
-    // TODO this mechanism does not help DefaultServlet impl, rework it
-    public interface Welcomer
+    public interface WelcomeFactory
     {
+
         /**
-         * @return true if the request was processed, false otherwise.
+         * Finds a matching welcome file for the supplied {@link Resource}.
+         *
+         * @param pathInContext the path of the request
+         * @return The path of the matching welcome file in context or null.
          */
-        boolean welcome(Request request, Response response, Callback callback) throws Exception;
-    }
-
-    private class DefaultWelcomer implements Welcomer
-    {
-        @Override
-        public boolean welcome(Request request, Response response, Callback callback) throws Exception
-        {
-            String pathInContext = request.getPathInContext();
-            String welcome = getWelcomeFile(pathInContext);
-            if (welcome != null)
-            {
-                String contextPath = request.getContext().getContextPath();
-
-                if (_pathInfoOnly)
-                    welcome = URIUtil.addPaths(contextPath, welcome);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("welcome={}", welcome);
-
-                if (_redirectWelcome)
-                {
-                    // Redirect to the index
-                    response.setContentLength(0);
-
-                    // TODO need helper code to edit URIs
-                    String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
-                    String q = request.getHttpURI().getQuery();
-                    if (q != null && !q.isEmpty())
-                        uri += "?" + q;
-
-                    Response.sendRedirect(request, response, callback, uri);
-                    return true;
-                }
-
-                // Serve welcome file
-                HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
-                sendData(request, response, callback, c, null);
-                return true;
-            }
-            return false;
-        }
-
-        private String getWelcomeFile(String pathInContext)
-        {
-            if (_welcomes == null)
-                return null;
-
-            for (String welcome : _welcomes)
-            {
-                // TODO this logic is similar to the one in PathContentFactory.getContent()
-                // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
-                //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
-                //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
-                //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
-                //          EVEN IF the file does not exist.
-                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                try
-                {
-                    Resource welcomePath = _resourceBase.addPath(pathInContext).addPath(welcome);
-                    if (welcomePath != null && welcomePath.exists())
-                        return welcomeInContext;
-                }
-                catch (IOException e)
-                {
-                    // not found
-                    return null;
-                }
-            }
-            // not found
-            return null;
-        }
+        String getWelcomeFile(String pathInContext) throws IOException;
     }
 }

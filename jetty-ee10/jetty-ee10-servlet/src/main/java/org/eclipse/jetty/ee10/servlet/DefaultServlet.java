@@ -30,17 +30,21 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.CachingContentFactory;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -57,7 +61,9 @@ public class DefaultServlet extends HttpServlet
         ContextHandler contextHandler = initContextHandler(config.getServletContext());
 
         _resourceService = new ResourceService();
-        _resourceService.setBaseResource(contextHandler.getResourceBase());
+        MimeTypes mimeTypes = new MimeTypes();
+        CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
+        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(contextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
 
         // TODO init other settings
     }
@@ -98,7 +104,7 @@ public class DefaultServlet extends HttpServlet
             outputBufferSize = resp.getBufferSize();
         }
 
-        HttpContent content = _resourceService.getContentFactory().getContent(req.getServletPath(), outputBufferSize);
+        HttpContent content = _resourceService.getContent(req.getServletPath(), outputBufferSize);
         if (content == null)
         {
             // no content
