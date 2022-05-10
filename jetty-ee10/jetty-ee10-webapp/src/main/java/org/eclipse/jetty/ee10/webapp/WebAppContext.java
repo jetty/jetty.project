@@ -750,7 +750,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return null;
 
         // Iw there a WEB-INF directory?
-        Resource webInf = getResourceBase().addPath("WEB-INF/");
+        Resource webInf = getResourceBase().getResource("WEB-INF/");
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
@@ -867,7 +867,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else if (getResourceBase() != null)
             {
-                name = getResourceBase().toUri().toASCIIString();
+                name = getResourceBase().getURI().toASCIIString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
                     name = name.substring(webapps + 8);

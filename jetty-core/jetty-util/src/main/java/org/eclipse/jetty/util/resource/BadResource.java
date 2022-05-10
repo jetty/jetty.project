@@ -80,13 +80,6 @@ class BadResource extends URLResource
     }
 
     @Override
-    public boolean renameTo(Resource dest)
-        throws SecurityException
-    {
-        throw new SecurityException(_message);
-    }
-
-    @Override
     public String[] list()
     {
         return null;

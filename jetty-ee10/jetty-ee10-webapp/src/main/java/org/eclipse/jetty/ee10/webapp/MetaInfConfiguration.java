@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,17 +312,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (resources != null && !resources.isEmpty())
         {
             if (resources.size() == 1)
+            {
                 context.setBaseResource(resources.stream().findFirst().get());
+            }
             else
             {
-                Resource[] collection = new Resource[resources.size() + 1];
-                int i = 0;
-                collection[i++] = context.getResourceBase();
-                for (Resource resource : resources)
-                {
-                    collection[i++] = resource;
-                }
-                context.setBaseResource(new ResourceCollection(collection));
+                Collection<Resource> collection = new ArrayList<>(resources.size() + 1);
+                collection.add(context.getResourceBase());
+                collection.addAll(resources);
+                context.setBaseResource(Resource.newResource(collection));
             }
         }
     }
@@ -460,7 +457,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (target.isDirectory())
             {
                 //TODO think  how to handle an unpacked jar file (eg for osgi)
-                resourcesDir = target.addPath("/META-INF/resources");
+                resourcesDir = target.getResource("/META-INF/resources");
             }
             else
             {
@@ -765,7 +762,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         List<Resource> jarResources = new ArrayList<Resource>();
-        Resource webInfLib = webInf.addPath("/lib");
+        Resource webInfLib = webInf.getResource("/lib");
         if (webInfLib.exists() && webInfLib.isDirectory())
         {
             String[] files = webInfLib.list();
@@ -777,7 +774,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 try
                 {
-                    Resource file = webInfLib.addPath(files[f]);
+                    Resource file = webInfLib.getResource(files[f]);
                     String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
@@ -833,7 +830,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.addPath("classes/");
+            Resource classes = webInf.getResource("classes/");
             if (classes.exists())
                 return classes;
         }

@@ -55,12 +55,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-//TODO remove
+// TODO Resource API should be cleaned up and simplified
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
-    volatile Object _associate;
 
     /**
      * Change the default setting for url connection caches.
@@ -204,6 +203,17 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static Resource newResource(Path path)
     {
         return new PathResource(path);
+    }
+
+    /**
+     * Construct a Resource from provided resources collection
+     *
+     * @param resources the resources collection
+     * @return the Resource for the provided resources collection
+     */
+    public static Resource newResource(Collection<Resource> resources)
+    {
+        return new ResourceCollection(resources);
     }
 
     /**
@@ -364,12 +374,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract URI getURI();
 
-    public URI toUri()
-    {
-        // TODO deprecate toUri or getURI
-        return getURI();
-    }
-
     /**
      * File representing the given resource.
      *
@@ -416,16 +420,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         throws SecurityException;
 
     /**
-     * Rename the given resource
-     *
-     * @param dest the destination name for the resource
-     * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     * @throws SecurityException if unable to rename due to permissions
-     */
-    public abstract boolean renameTo(Resource dest)
-        throws SecurityException;
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      *
@@ -438,38 +432,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns the resource contained inside the current resource with the
      * given name, which may or may not exist.
      *
-     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
+     * @param segment The path segment to add, which is not encoded.  The path may be non canonical, but if so then
      * the resulting Resource will return true from {@link #isAlias()}.
      * @return the Resource for the resolved path within this Resource, never null
      * @throws IOException if unable to resolve the path
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
      * a relative path attempts to access above the root resource.
      */
-    public abstract Resource addPath(String path)
-        throws IOException, MalformedURLException;
-
-    /**
-     * Get a resource from within this resource.
-     */
-    @Override
-    public Resource getResource(String path) throws IOException
-    {
-        return addPath(path);
-    }
-
-    // FIXME: this appears to not be used
-    @SuppressWarnings("javadoc")
-    public Object getAssociate()
-    {
-        return _associate;
-    }
-
-    // FIXME: this appear to not be used
-    @SuppressWarnings("javadoc")
-    public void setAssociate(Object o)
-    {
-        _associate = o;
-    }
+    public abstract Resource getResource(String segment) throws IOException, MalformedURLException;
 
     /**
      * @return true if this Resource is an alias to another real Resource
@@ -544,7 +514,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = addPath(l);
+            Resource item = getResource(l);
             items.add(item);
         }
 
@@ -915,7 +885,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 {
                     for (String i : list)
                     {
-                        Resource r = addPath(i);
+                        Resource r = getResource(i);
                         if (r.isDirectory())
                             deep.addAll(r.getAllResources());
                         else
@@ -929,18 +899,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Generate a properly encoded URL from a {@link File} instance.
-     *
-     * @param file Target file.
-     * @return URL of the target file.
-     * @throws MalformedURLException if unable to convert File to URL
-     */
-    public static URL toURL(File file) throws MalformedURLException
-    {
-        return file.toURI().toURL();
     }
 
     /**
@@ -1008,7 +966,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         {
                             try
                             {
-                                Resource resource = dirResource.addPath(entry);
+                                Resource resource = dirResource.getResource(entry);
                                 if (!resource.isDirectory())
                                 {
                                     returnedResources.add(resource);

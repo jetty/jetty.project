@@ -105,19 +105,13 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        return false;
-    }
-
-    @Override
     public String[] list()
     {
         return null;
     }
 
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource getResource(String segment) throws IOException, MalformedURLException
     {
         return this;
     }

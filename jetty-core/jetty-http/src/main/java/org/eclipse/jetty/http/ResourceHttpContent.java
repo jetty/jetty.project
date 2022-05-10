@@ -13,16 +13,11 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -34,7 +29,6 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ResourceHttpContent implements HttpContent
 {
     final Resource _resource;
-    final Path _path;
     final String _contentType;
     final int _maxBuffer;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
@@ -53,7 +47,6 @@ public class ResourceHttpContent implements HttpContent
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource = resource;
-        _path = resource.getPath();
         _contentType = contentType;
         _maxBuffer = maxBuffer;
         if (precompressedContents == null)
@@ -143,12 +136,6 @@ public class ResourceHttpContent implements HttpContent
     public long getContentLengthValue()
     {
         return _resource.length();
-    }
-
-    @Override
-    public Path getPath()
-    {
-        return _path;
     }
 
     @Override

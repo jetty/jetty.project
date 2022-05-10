@@ -153,7 +153,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         if (_baseResource != null)
         {
-            r = _baseResource.addPath(path);
+            r = _baseResource.getResource(path);
 
             if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
             {

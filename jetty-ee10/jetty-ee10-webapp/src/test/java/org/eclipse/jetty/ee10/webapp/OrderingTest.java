@@ -47,7 +47,7 @@ public class OrderingTest
         }
 
         @Override
-        public Resource addPath(String path) throws IOException, MalformedURLException
+        public Resource getResource(String segment) throws IOException, MalformedURLException
         {
             return null;
         }
@@ -127,12 +127,6 @@ public class OrderingTest
         @Override
         public void close()
         {
-        }
-
-        @Override
-        public boolean renameTo(Resource dest) throws SecurityException
-        {
-            return false;
         }
     }
 

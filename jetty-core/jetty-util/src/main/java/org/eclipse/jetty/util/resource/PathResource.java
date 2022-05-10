@@ -22,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -348,15 +347,15 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subPath) throws IOException
+    public Resource getResource(final String segment) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subPath) == null)
-            throw new MalformedURLException(subPath);
+        if (URIUtil.canonicalPath(segment) == null)
+            throw new MalformedURLException(segment);
 
-        if ("/".equals(subPath))
+        if ("/".equals(segment))
             return this;
 
         // Sub-paths are always under PathResource
@@ -364,7 +363,7 @@ public class PathResource extends Resource
         // where default resolve behavior would be
         // to treat that like an absolute path
 
-        return new PathResource(this, subPath);
+        return new PathResource(this, segment);
     }
 
     private void assertValidPath(Path path)
@@ -453,7 +452,7 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        return Files.newInputStream(path, StandardOpenOption.READ);
+        return Files.newInputStream(getPath(), StandardOpenOption.READ);
     }
 
     @Override
@@ -465,12 +464,7 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return newSeekableByteChannel();
-    }
-
-    public SeekableByteChannel newSeekableByteChannel() throws IOException
-    {
-        return Files.newByteChannel(path, StandardOpenOption.READ);
+        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
     @Override
@@ -592,29 +586,6 @@ public class PathResource extends Resource
             LOG.debug("Directory list access failure", e);
         }
         return null;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        if (dest instanceof PathResource)
-        {
-            PathResource destRes = (PathResource)dest;
-            try
-            {
-                Path result = Files.move(path, destRes.path);
-                return Files.exists(result, NO_FOLLOW_LINKS);
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
     }
 
     @Override

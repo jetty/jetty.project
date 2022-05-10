@@ -253,16 +253,6 @@ public class URLResource extends Resource
     }
 
     /**
-     * Rename the given resource
-     */
-    @Override
-    public boolean renameTo(Resource dest)
-        throws SecurityException
-    {
-        throw new SecurityException("RenameTo not supported");
-    }
-
-    /**
      * Returns a list of resource names contained in the given resource
      */
     @Override
@@ -276,16 +266,16 @@ public class URLResource extends Resource
      * given name
      */
     @Override
-    public Resource addPath(String path)
+    public Resource getResource(String segment)
         throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(path) == null)
-            throw new MalformedURLException(path);
+        if (URIUtil.canonicalPath(segment) == null)
+            throw new MalformedURLException(segment);
 
-        return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(), URIUtil.encodePath(path)), _useCaches);
+        return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(), URIUtil.encodePath(segment)), _useCaches);
     }
 
     @Override

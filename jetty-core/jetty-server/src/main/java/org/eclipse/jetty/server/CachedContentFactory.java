@@ -13,13 +13,9 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -273,7 +269,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getPath()).toMillis() >= resource.lastModified())
+                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getResource().getPath()).toMillis() >= resource.lastModified())
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
@@ -441,12 +437,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         public boolean isCached()
         {
             return _key != null;
-        }
-
-        @Override
-        public Path getPath()
-        {
-            return _resource.getPath();
         }
 
         @Override
