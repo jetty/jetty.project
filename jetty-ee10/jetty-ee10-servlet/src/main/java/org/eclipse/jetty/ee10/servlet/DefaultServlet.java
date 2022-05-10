@@ -324,7 +324,8 @@ public class DefaultServlet extends HttpServlet
             return () ->
             {
                 // TODO implement on top of servletResponse.getHeaderNames() / servletResponse.getHeaders() / servletResponse.setHeader()
-                return new ListIterator<>() {
+                return new ListIterator<>()
+                {
                     @Override
                     public boolean hasNext()
                     {
@@ -388,7 +389,8 @@ public class DefaultServlet extends HttpServlet
             return () ->
             {
                 // TODO implement on top of servletResponse.getHeaderNames() / servletResponse.getHeaders() / servletResponse.setHeader()
-                return new ListIterator<>() {
+                return new ListIterator<>()
+                {
                     @Override
                     public boolean hasNext()
                     {
