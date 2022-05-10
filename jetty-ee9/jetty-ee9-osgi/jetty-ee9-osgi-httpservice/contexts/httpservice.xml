@@ -3,7 +3,7 @@
 <Configure class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
   <!-- this configures the servlet session manager -->
   <Set name="SessionHandler">
-    <New class="org.eclipse.jetty.server.session.SessionHandler"/>
+    <New class="org.eclipse.jetty.session.SessionHandler"/>
   </Set>
   <!-- this servlet provides the OSGi HTTP Service once it is initialized -->
   <Call name="addServlet">

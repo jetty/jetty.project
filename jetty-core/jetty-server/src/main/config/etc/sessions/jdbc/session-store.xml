@@ -7,14 +7,14 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
     <Arg>
-      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.JDBCSessionDataStoreFactory">
+      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.JDBCSessionDataStoreFactory">
         <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
         <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
         <Set name="databaseAdaptor">
           <Ref refid="databaseAdaptor" />
         </Set>
         <Set name="sessionTableSchema">
-          <New class="org.eclipse.jetty.server.session.JDBCSessionDataStore$SessionTableSchema">
+          <New class="org.eclipse.jetty.session.JDBCSessionDataStore$SessionTableSchema">
             <Set name="accessTimeColumn">
               <Property name="jetty.session.jdbc.schema.accessTimeColumn" default="accessTime" />
             </Set>

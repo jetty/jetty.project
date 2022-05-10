@@ -15,7 +15,7 @@
 
   <Call name="addBean">
    <Arg>
-    <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">
+    <New class="org.eclipse.jetty.session.CachingSessionDataStoreFactory">
        <Set name="sessionStoreFactory"><Ref refid="sessionDataStoreFactory"/></Set>
        <Set name="sessionDataMapFactory"><Ref refid="sessionDataMapFactory"/></Set>
     </New>

@@ -25,10 +25,10 @@ Below is an example of how you could configure a the xref:og-session-filesystem[
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Call id="sh" name="getSessionHandler">
     <Set name="sessionCache">
-      <New class="org.eclipse.jetty.server.session.DefaultSessionCache">
+      <New class="org.eclipse.jetty.session.DefaultSessionCache">
         <Arg><Ref id="sh"/></Arg>
         <Set name="sessionDataStore">
-           <New class="org.eclipse.jetty.server.session.FileSessionDataStore">
+           <New class="org.eclipse.jetty.session.FileSessionDataStore">
              <Set name="storeDir">/tmp/sessions</Set>
            </New>
         </Set>

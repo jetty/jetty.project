@@ -53,7 +53,7 @@ public class RemoteInfinispanTestSupport
     private final String _name;
     public RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
-            LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
+            LoggerFactory.getLogger("org.eclipse.jetty.session.remote.infinispanLogs");
 
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");

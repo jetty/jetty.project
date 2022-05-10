@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
+  <New id="databaseAdaptor" class="org.eclipse.jetty.session.DatabaseAdaptor">
     <Set name="DatasourceName" property="jetty.session.jdbc.datasourceName"/>
     <Set name="blobType" property="jetty.session.jdbc.blobType"/>
     <Set name="longType" property="jetty.session.jdbc.longType"/>

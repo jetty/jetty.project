@@ -68,7 +68,7 @@
             <Import-Package>
                 org.eclipse.jetty.server.handler;version="[10,11.0)",
                 org.eclipse.jetty.util.component;version="[10,11.0)", 
-                org.eclipse.jetty.server.session;version="[10,11.0)",
+                org.eclipse.jetty.session;version="[10,11.0)",
                 org.eclipse.jetty.servlet;version="[10,11.0)",
                 org.eclipse.equinox.http.servlet, *
             </Import-Package>

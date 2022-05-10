@@ -6,7 +6,7 @@
   <!-- Configure a SessionIdManager                                          -->
   <!-- ===================================================================== -->
   <Set name="sessionIdManager">
-    <New id="idMgr" class="org.eclipse.jetty.server.session.DefaultSessionIdManager">
+    <New id="idMgr" class="org.eclipse.jetty.session.DefaultSessionIdManager">
       <Arg>
         <Ref refid="Server"/>
       </Arg>
@@ -27,7 +27,7 @@
       <!-- Configure a session housekeeper to help with scavenging               -->
       <!-- ===================================================================== -->
       <Set name="sessionHouseKeeper"> 
-       <New class="org.eclipse.jetty.server.session.HouseKeeper">
+       <New class="org.eclipse.jetty.session.HouseKeeper">
            <Set name="intervalSec" property="jetty.sessionScavengeInterval.seconds"/>
        </New>
       </Set>

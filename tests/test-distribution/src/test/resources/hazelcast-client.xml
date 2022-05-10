@@ -13,7 +13,7 @@
   </network>
   <serialization>
     <serializers>
-      <serializer type-class="org.eclipse.jetty.server.session.SessionData"
+      <serializer type-class="org.eclipse.jetty.session.SessionData"
                   class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />
     </serializers>
   </serialization>    

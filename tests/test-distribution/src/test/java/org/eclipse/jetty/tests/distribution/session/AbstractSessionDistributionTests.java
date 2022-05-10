@@ -108,7 +108,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             Files.deleteIfExists(logFile);
             try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
             {
-                writer.write("org.eclipse.jetty.server.session.LEVEL=" + sessionLogLevel);
+                writer.write("org.eclipse.jetty.session.LEVEL=" + sessionLogLevel);
             }
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))

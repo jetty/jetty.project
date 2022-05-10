@@ -26,8 +26,6 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JdbcTestHelper
 {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcTestHelper.class);
-    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.server.session.MariaDbLogs");
+    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.session.MariaDbLogs");
 
     public static String DRIVER_CLASS;
     public static String DEFAULT_CONNECTION_URL;

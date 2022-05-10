@@ -8,6 +8,9 @@
 <!-- AppProvider interface.                                          -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call id="DeploymentManager" name="getBean">
+    <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.deploy.DeploymentManager</Arg></Call></Arg>
+  </Call>
   <Ref refid="DeploymentManager">
     <Call name="addAppProvider">
       <Arg>

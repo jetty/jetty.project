@@ -8,7 +8,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
+      <New class="org.eclipse.jetty.session.DefaultSessionCacheFactory">
         <Set name="evictionPolicy"><Property name="jetty.session.evictionPolicy" default="-1" /></Set>
         <Set name="saveOnInactiveEviction"><Property name="jetty.session.saveOnInactiveEviction" default="false" /></Set>
         <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>

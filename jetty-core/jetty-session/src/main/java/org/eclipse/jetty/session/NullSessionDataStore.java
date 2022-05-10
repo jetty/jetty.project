@@ -64,7 +64,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     * @see org.eclipse.jetty.session.SessionDataStore#isPassivating()
      */
     @ManagedAttribute(value = "does this store serialize sessions", readonly = true)
     @Override

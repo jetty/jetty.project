@@ -406,7 +406,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * Remove an id from use by telling all contexts to remove a session with this id.
      *
-     * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
+     * @see org.eclipse.jetty.sessionIdManager#expireAll(java.lang.String)
      */
     @Override
     public void expireAll(String id)

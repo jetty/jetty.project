@@ -8,7 +8,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.FileSessionDataStoreFactory">
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.FileSessionDataStoreFactory">
        <Set name="deleteUnrestorableFiles" property="jetty.session.file.deleteUnrestorableFiles"/>
        <Set name="storeDir" property="jetty.session.file.storeDir"/>
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
