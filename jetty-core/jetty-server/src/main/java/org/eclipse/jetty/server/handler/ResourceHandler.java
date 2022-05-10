@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.PathCollators;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,7 +242,7 @@ public class ResourceHandler extends Handler.Wrapper
         try
         {
             // Directory?
-            if (Files.isDirectory(content.getPath()))
+            if (Files.isDirectory(content.getResource().getPath()))
             {
                 sendWelcome(content, pathInContext, endsWithSlash, request, response, callback);
                 return;
@@ -469,7 +468,7 @@ public class ResourceHandler extends Handler.Wrapper
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
-                if (ifmsl != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 <= ifmsl / 1000)
+                if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
                     Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
@@ -477,7 +476,7 @@ public class ResourceHandler extends Handler.Wrapper
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 > ifums / 1000)
+            if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
             {
                 Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return true;
@@ -526,7 +525,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
     {
-        Path resource = httpContent.getPath();
+        Path resource = httpContent.getResource().getPath();
         if (!_dirAllowed)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -1350,12 +1349,6 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         @Override
-        public Path getPath()
-        {
-            return _path;
-        }
-
-        @Override
         public Resource getResource()
         {
             // TODO cache or create in constructor?
@@ -1395,7 +1388,7 @@ public class ResourceHandler extends Handler.Wrapper
 //            FileChannel fileChannel = (FileChannel) source;
 //            fileChannel.transferTo(0, contentLength, c);
 
-            this.source = Files.newByteChannel(content.getPath());
+            this.source = Files.newByteChannel(content.getResource().getPath());
             this.target = target;
             this.callback = callback;
             HttpConfiguration httpConfiguration = target.getRequest().getConnectionMetaData().getHttpConfiguration();
