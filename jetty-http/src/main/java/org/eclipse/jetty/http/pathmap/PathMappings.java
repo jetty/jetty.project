@@ -160,6 +160,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             // Run servlet spec optimizations on first hit of specific groups
             if (group != lastGroup)
             {
+                // New group, reset skip logic
+                skipRestOfGroup = false;
+
                 // New group in list, so let's look for an optimization
                 switch (group)
                 {
