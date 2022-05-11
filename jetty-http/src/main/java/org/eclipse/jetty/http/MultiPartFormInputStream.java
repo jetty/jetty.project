@@ -638,7 +638,10 @@ public class MultiPartFormInputStream
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
             if (key.equalsIgnoreCase("content-transfer-encoding"))
-                _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+            {
+                if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                    _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+            }
         }
 
         @Override
