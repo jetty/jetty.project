@@ -54,23 +54,29 @@ public interface MultiParts extends Closeable
     {
         private final MultiPartFormInputStream _httpParser;
         private final ContextHandler.Context _context;
+        private final Request _request;
 
         public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
         {
             _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
             _context = request.getContext();
+            _request = request;
         }
 
         @Override
         public Collection<Part> getParts() throws IOException
         {
-            return _httpParser.getParts();
+            Collection<Part> parts = _httpParser.getParts();
+            setNonComplianceViolationsOnRequest();
+            return parts;
         }
 
         @Override
         public Part getPart(String name) throws IOException
         {
-            return _httpParser.getPart(name);
+            Part part = _httpParser.getPart(name);
+            setNonComplianceViolationsOnRequest();
+            return part;
         }
 
         @Override
@@ -89,6 +95,22 @@ public interface MultiParts extends Closeable
         public Context getContext()
         {
             return _context;
+        }
+
+        private void setNonComplianceViolationsOnRequest()
+        {
+            @SuppressWarnings("unchecked")
+            List<String> violations = (List<String>)_request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
+            if (violations != null)
+                return;
+
+            EnumSet<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _httpParser.getNonComplianceWarnings();
+            violations = new ArrayList<>();
+            for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
+            {
+                violations.add(nc.name() + ": " + nc.getURL());
+            }
+            _request.setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
         }
     }
 
