@@ -17,7 +17,7 @@
     <pax.url.version>2.6.2</pax.url.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
-    <spifly.version>1.3.4</spifly.version>
+    <spifly.version>1.3.5</spifly.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->

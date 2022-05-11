@@ -61,20 +61,18 @@
             <goals>
               <goal>manifest</goal>
             </goals>
-            <configuration>
-              <instructions>
-                <Bundle-Description>jakarta.websocket.server Implementation</Bundle-Description>
-                <Export-Package>
-                  org.eclipse.jetty.websocket.jakarta.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                </Export-Package>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>
+        <configuration>
+          <instructions>
+            <Bundle-Description>jakarta.websocket.server Implementation</Bundle-Description>
+            <Export-Package>
+              org.eclipse.jetty.websocket.jakarta.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+            </Export-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>
                   osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=jakarta.websocket.server.ServerEndpointConfig$Configurator
-                </Provide-Capability>
-              </instructions>
-            </configuration>
-          </execution>
-        </executions>
+            </Provide-Capability>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>
