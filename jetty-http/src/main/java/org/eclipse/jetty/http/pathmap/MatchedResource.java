@@ -18,34 +18,53 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Map;
+
 public class MatchedResource<E>
 {
-    private final MappedResource<E> mappedResource;
+    private final E resource;
+    private final PathSpec pathSpec;
     private final MatchedPath matchedPath;
 
-    public MatchedResource(MappedResource<E> resource, MatchedPath matchedPath)
+    public MatchedResource(E resource, PathSpec pathSpec, MatchedPath matchedPath)
     {
-        this.mappedResource = resource;
+        this.resource = resource;
+        this.pathSpec = pathSpec;
         this.matchedPath = matchedPath;
     }
 
-    public MappedResource<E> getMappedResource()
+    public static <E> MatchedResource<E> of(Map.Entry<PathSpec, E> mapping, MatchedPath matchedPath)
     {
-        return this.mappedResource;
+        return new MatchedResource<>(mapping.getValue(), mapping.getKey(), matchedPath);
     }
 
     public PathSpec getPathSpec()
     {
-        return mappedResource.getPathSpec();
+        return this.pathSpec;
     }
 
     public E getResource()
     {
-        return mappedResource.getResource();
+        return this.resource;
     }
 
-    public MatchedPath getMatchedPath()
+    /**
+     * Return the portion of the path that matches a path spec.
+     *
+     * @return the path name portion of the match.
+     */
+    public String getPathMatch()
     {
-        return matchedPath;
+        return matchedPath.getPathMatch();
+    }
+
+    /**
+     * Return the portion of the path that is after the path spec.
+     *
+     * @return the path info portion of the match, or null if there is no portion after the {@link #getPathMatch()}
+     */
+    public String getPathInfo()
+    {
+        return matchedPath.getPathInfo();
     }
 }

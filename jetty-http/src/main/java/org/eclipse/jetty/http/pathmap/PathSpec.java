@@ -25,6 +25,17 @@ package org.eclipse.jetty.http.pathmap;
  */
 public interface PathSpec extends Comparable<PathSpec>
 {
+    static PathSpec from(String pathSpecString)
+    {
+        if (pathSpecString == null)
+            throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
+
+        if (pathSpecString.length() == 0)
+            return new ServletPathSpec("");
+
+        return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString) : new ServletPathSpec(pathSpecString);
+    }
+
     /**
      * The length of the spec.
      *
@@ -101,6 +112,7 @@ public interface PathSpec extends Comparable<PathSpec>
 
     /**
      * Get the complete matched details of the provided path.
+     *
      * @param path the path to test
      * @return the matched details, if a match was possible, or null if not able to be matched.
      */

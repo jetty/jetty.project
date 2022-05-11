@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -49,8 +48,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     private static final Logger LOG = Log.getLogger(PathMappings.class);
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
+    private boolean _optimizedExact = true;
     private Trie<MappedResource<E>> _exactMap = new ArrayTernaryTrie<>(false);
+    private boolean _optimizedPrefix = true;
     private Trie<MappedResource<E>> _prefixMap = new ArrayTernaryTrie<>(false);
+    private boolean _optimizedSuffix = true;
     private Trie<MappedResource<E>> _suffixMap = new ArrayTernaryTrie<>(false);
 
     @Override
@@ -89,6 +91,26 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     }
 
     /**
+     * Return a list of MatchedResource matches for the specified path.
+     *
+     * @param path the path to return matches on
+     * @return the list of mapped resource the path matches on
+     */
+    public List<MatchedResource<E>> getMatchedList(String path)
+    {
+        List<MatchedResource<E>> ret = new ArrayList<>();
+        for (MappedResource<E> mr : _mappings)
+        {
+            MatchedPath matchedPath = mr.getPathSpec().matched(path);
+            if (matchedPath != null)
+            {
+                ret.add(new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath));
+            }
+        }
+        return ret;
+    }
+
+    /**
      * Return a list of MappedResource matches for the specified path.
      *
      * @param path the path to return matches on
@@ -108,11 +130,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         ret.add(mr);
                     break;
                 case DEFAULT:
-                    if (isRootPath || mr.getPathSpec().matches(path))
+                    if (isRootPath || mr.getPathSpec().matched(path) != null)
                         ret.add(mr);
                     break;
                 default:
-                    if (mr.getPathSpec().matches(path))
+                    if (mr.getPathSpec().matched(path) != null)
                         ret.add(mr);
                     break;
             }
@@ -122,7 +144,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public MatchedResource<E> getMatched(String path)
     {
-        MatchedPath matchedPath = null;
+        MatchedPath matchedPath;
         PathSpecGroup lastGroup = null;
 
         // Search all the mappings
@@ -136,53 +158,80 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                 {
                     case EXACT:
                     {
-                        int i = path.length();
-                        final Trie<MappedResource<E>> exact_map = _exactMap;
-                        while (i >= 0)
+                        if (_optimizedExact)
                         {
-                            MappedResource<E> candidate = exact_map.getBest(path, 0, i);
-                            if (candidate == null)
-                                break;
+                            int i = path.length();
+                            final Trie<MappedResource<E>> exact_map = _exactMap;
+                            while (i >= 0)
+                            {
+                                MappedResource<E> candidate = exact_map.getBest(path, 0, i);
+                                if (candidate == null)
+                                    break;
 
-                            matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = candidate.getPathSpec().matched(path);
+                                if (matchedPath != null)
+                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                i = candidate.getPathSpec().getDeclaration().length() - 1;
+                            }
+                        }
+                        else
+                        {
+                            matchedPath = mr.getPathSpec().matched(path);
                             if (matchedPath != null)
-                                return new MatchedResource<>(candidate, matchedPath);
-                            i = candidate.getPathSpec().getPrefix().length() - 1;
+                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
                         }
                         break;
                     }
 
                     case PREFIX_GLOB:
                     {
-                        int i = path.length();
-                        final Trie<MappedResource<E>> prefix_map = _prefixMap;
-                        while (i >= 0)
+                        if (_optimizedPrefix)
                         {
-                            MappedResource<E> candidate = prefix_map.getBest(path, 0, i);
-                            if (candidate == null)
-                                break;
+                            int i = path.length();
+                            final Trie<MappedResource<E>> prefix_map = _prefixMap;
+                            while (i >= 0)
+                            {
+                                MappedResource<E> candidate = prefix_map.getBest(path, 0, i);
+                                if (candidate == null)
+                                    break;
 
-                            matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = candidate.getPathSpec().matched(path);
+                                if (matchedPath != null)
+                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                                i = candidate.getPathSpec().getPrefix().length() - 1;
+                            }
+                        }
+                        else
+                        {
+                            matchedPath = mr.getPathSpec().matched(path);
                             if (matchedPath != null)
-                                return new MatchedResource<>(candidate, matchedPath);
-                            i = candidate.getPathSpec().getPrefix().length() - 1;
+                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
                         }
                         break;
                     }
 
                     case SUFFIX_GLOB:
                     {
-                        int i = 0;
-                        final Trie<MappedResource<E>> suffix_map = _suffixMap;
-                        while ((i = path.indexOf('.', i + 1)) > 0)
+                        if (_optimizedSuffix)
                         {
-                            MappedResource<E> candidate = suffix_map.get(path, i + 1, path.length() - i - 1);
-                            if (candidate == null)
-                                break;
+                            int i = 0;
+                            final Trie<MappedResource<E>> suffix_map = _suffixMap;
+                            while ((i = path.indexOf('.', i + 1)) > 0)
+                            {
+                                MappedResource<E> candidate = suffix_map.get(path, i + 1, path.length() - i - 1);
+                                if (candidate == null)
+                                    break;
 
-                            matchedPath = candidate.getPathSpec().matched(path);
+                                matchedPath = candidate.getPathSpec().matched(path);
+                                if (matchedPath != null)
+                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                            }
+                        }
+                        else
+                        {
+                            matchedPath = mr.getPathSpec().matched(path);
                             if (matchedPath != null)
-                                return new MatchedResource<>(candidate, matchedPath);
+                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
                         }
                         break;
                     }
@@ -193,7 +242,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
             matchedPath = mr.getPathSpec().matched(path);
             if (matchedPath != null)
-                return new MatchedResource<>(mr, matchedPath);
+                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
 
             lastGroup = group;
         }
@@ -207,7 +256,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @Deprecated
     public MappedResource<E> getMatch(String path)
     {
-        return getMatched(path).getMappedResource();
+        throw new UnsupportedOperationException("Use .getMatched(String) instead");
     }
 
     @Override
@@ -216,32 +265,27 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return _mappings.iterator();
     }
 
+    /**
+     * @deprecated use {@link PathSpec#from(String)} instead
+     */
+    @Deprecated
     public static PathSpec asPathSpec(String pathSpecString)
     {
-        if (pathSpecString == null)
-            throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
-
-        if (pathSpecString.length() == 0)
-            return new ServletPathSpec("");
-
-        return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString) : new ServletPathSpec(pathSpecString);
+        return PathSpec.from(pathSpecString);
     }
 
     public E get(PathSpec spec)
     {
-        Optional<E> optionalResource = _mappings.stream()
+        return _mappings.stream()
             .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
-            .map(mappedResource -> mappedResource.getResource())
-            .findFirst();
-        if (!optionalResource.isPresent())
-            return null;
-
-        return optionalResource.get();
+            .map(MappedResource::getResource)
+            .findFirst()
+            .orElse(null);
     }
 
     public boolean put(String pathSpecString, E resource)
     {
-        return put(asPathSpec(pathSpecString), resource);
+        return put(PathSpec.from(pathSpecString), resource);
     }
 
     public boolean put(PathSpec pathSpec, E resource)
@@ -250,24 +294,48 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         switch (pathSpec.getGroup())
         {
             case EXACT:
-                String exact = pathSpec.getPrefix();
-                while (exact != null && !_exactMap.put(exact, entry))
+                if (pathSpec instanceof ServletPathSpec)
                 {
-                    _exactMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_exactMap, 1.5);
+                    String exact = pathSpec.getDeclaration();
+                    while (exact != null && !_exactMap.put(exact, entry))
+                    {
+                        _exactMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_exactMap, 1.5);
+                    }
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Exact
+                    _optimizedExact = false;
                 }
                 break;
             case PREFIX_GLOB:
-                String prefix = pathSpec.getPrefix();
-                while (prefix != null && !_prefixMap.put(prefix, entry))
+                if (pathSpec instanceof ServletPathSpec)
                 {
-                    _prefixMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap, 1.5);
+                    String prefix = pathSpec.getPrefix();
+                    while (prefix != null && !_prefixMap.put(prefix, entry))
+                    {
+                        _prefixMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap, 1.5);
+                    }
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Prefix
+                    _optimizedPrefix = false;
                 }
                 break;
             case SUFFIX_GLOB:
-                String suffix = pathSpec.getSuffix();
-                while (suffix != null && !_suffixMap.put(suffix, entry))
+                if (pathSpec instanceof ServletPathSpec)
                 {
-                    _suffixMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap, 1.5);
+                    String suffix = pathSpec.getSuffix();
+                    while (suffix != null && !_suffixMap.put(suffix, entry))
+                    {
+                        _suffixMap = new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap, 1.5);
+                    }
+                }
+                else
+                {
+                    // This is not a Servlet mapping, turn off optimization on Suffix
+                    _optimizedSuffix = false;
                 }
                 break;
             default:
@@ -282,21 +350,31 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @SuppressWarnings("incomplete-switch")
     public boolean remove(PathSpec pathSpec)
     {
-        String prefix = pathSpec.getPrefix();
-        String suffix = pathSpec.getSuffix();
         switch (pathSpec.getGroup())
         {
             case EXACT:
-                if (prefix != null)
-                    _exactMap.remove(prefix);
+                String exact = pathSpec.getDeclaration();
+                if (exact != null)
+                {
+                    _exactMap.remove(exact);
+                    // TODO: recalculate _optimizeExact
+                }
                 break;
             case PREFIX_GLOB:
+                String prefix = pathSpec.getPrefix();
                 if (prefix != null)
+                {
                     _prefixMap.remove(prefix);
+                    // TODO: recalculate _optimizePrefix
+                }
                 break;
             case SUFFIX_GLOB:
+                String suffix = pathSpec.getSuffix();
                 if (suffix != null)
+                {
                     _suffixMap.remove(suffix);
+                    // TODO: recalculate _optimizeSuffix
+                }
                 break;
         }
 

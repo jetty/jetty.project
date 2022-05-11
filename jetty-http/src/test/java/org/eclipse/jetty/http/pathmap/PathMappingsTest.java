@@ -267,8 +267,8 @@ public class PathMappingsTest
         assertThat(p.put(new UriTemplatePathSpec("/a/{var2}/c"), "resourceAA"), is(false));
         assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceB"), is(true));
         assertThat(p.put(new UriTemplatePathSpec("/a/b/c"), "resourceBB"), is(false));
-        assertThat(p.put(new ServletPathSpec("/a/b/c"), "resourceBB"), is(false));
-        assertThat(p.put(new RegexPathSpec("/a/b/c"), "resourceBB"), is(false));
+        assertThat(p.put(new ServletPathSpec("/a/b/c"), "resourceBB"), is(true));
+        assertThat(p.put(new RegexPathSpec("/a/b/c"), "resourceBB"), is(true));
 
         assertThat(p.put(new ServletPathSpec("/*"), "resourceC"), is(true));
         assertThat(p.put(new RegexPathSpec("/(.*)"), "resourceCC"), is(true));
@@ -418,14 +418,14 @@ public class PathMappingsTest
     @Test
     public void testAsPathSpec()
     {
-        assertThat(PathMappings.asPathSpec(""), instanceOf(ServletPathSpec.class));
-        assertThat(PathMappings.asPathSpec("/"), instanceOf(ServletPathSpec.class));
-        assertThat(PathMappings.asPathSpec("/*"), instanceOf(ServletPathSpec.class));
-        assertThat(PathMappings.asPathSpec("/foo/*"), instanceOf(ServletPathSpec.class));
-        assertThat(PathMappings.asPathSpec("*.jsp"), instanceOf(ServletPathSpec.class));
+        assertThat(PathSpec.from(""), instanceOf(ServletPathSpec.class));
+        assertThat(PathSpec.from("/"), instanceOf(ServletPathSpec.class));
+        assertThat(PathSpec.from("/*"), instanceOf(ServletPathSpec.class));
+        assertThat(PathSpec.from("/foo/*"), instanceOf(ServletPathSpec.class));
+        assertThat(PathSpec.from("*.jsp"), instanceOf(ServletPathSpec.class));
 
-        assertThat(PathMappings.asPathSpec("^$"), instanceOf(RegexPathSpec.class));
-        assertThat(PathMappings.asPathSpec("^.*"), instanceOf(RegexPathSpec.class));
-        assertThat(PathMappings.asPathSpec("^/"), instanceOf(RegexPathSpec.class));
+        assertThat(PathSpec.from("^$"), instanceOf(RegexPathSpec.class));
+        assertThat(PathSpec.from("^.*"), instanceOf(RegexPathSpec.class));
+        assertThat(PathSpec.from("^/"), instanceOf(RegexPathSpec.class));
     }
 }

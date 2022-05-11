@@ -76,17 +76,30 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     }
 
     /**
-     * Get the matching {@link MappedResource} for the provided target.
+     * Get the matching {@link MatchedResource} for the provided target.
      *
      * @param target the target path
      * @return the matching resource, or null if no match.
      */
+    public MatchedResource<WebSocketCreator> getMatched(String target)
+    {
+        return this.mappings.getMatched(target);
+    }
+
+    /**
+     * Get the matching {@link MappedResource} for the provided target.
+     *
+     * @param target the target path
+     * @return the matching resource, or null if no match.
+     * @deprecated use {@link #getMatched(String)} instead.
+     */
+    @Deprecated
     public MappedResource<WebSocketCreator> getMatch(String target)
     {
         MatchedResource<WebSocketCreator> matched = this.mappings.getMatched(target);
         if (matched == null)
             return null;
-        return matched.getMappedResource();
+        return new MappedResource<>(matched.getPathSpec(), matched.getResource());
     }
 
     /**

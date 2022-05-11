@@ -55,13 +55,13 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
             return (PathSpec)o;
         }
 
-        return PathMappings.asPathSpec(Objects.toString(o));
+        return PathSpec.from(Objects.toString(o));
     }
 
     @Override
     public boolean add(String s)
     {
-        return specs.put(PathMappings.asPathSpec(s), Boolean.TRUE);
+        return specs.put(PathSpec.from(s), Boolean.TRUE);
     }
 
     @Override
