@@ -90,7 +90,7 @@ public class BadURITest
         server.addBean(new ErrorHandler()
         {
             @Override
-            public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
+            public ByteBuffer badMessageError(int status, String reason, HttpFields fields)
             {
                 // Return a very large buffer that will cause HTTP/2 flow control exhaustion and/or TCP congestion.
                 return ByteBuffer.allocateDirect(128 * 1024 * 1024);
@@ -108,7 +108,7 @@ public class BadURITest
             // Use an ambiguous path parameter so that the URI is invalid.
             "/foo/..;/bar",
             HttpVersion.HTTP_2,
-            HttpFields.EMPTY,
+            new HttpFields(),
             -1
         );
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -135,7 +135,7 @@ public class BadURITest
                 new HostPortHttpField("localhost:" + connector.getLocalPort()),
                 "/valid",
                 HttpVersion.HTTP_2,
-                HttpFields.EMPTY,
+                new HttpFields(),
                 -1
             );
             generator.control(lease, new HeadersFrame(3, metaData2, null, true));
