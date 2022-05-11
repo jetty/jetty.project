@@ -143,13 +143,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x);
-            return null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest", x);
+            return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
-            return null;
+            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
@@ -175,13 +175,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x);
-            return null;
+            return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
-            return null;
+            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
