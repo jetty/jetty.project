@@ -147,11 +147,17 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         MatchedPath matchedPath;
         PathSpecGroup lastGroup = null;
 
+        boolean skipRestOfGroup = false;
         // Search all the mappings
         for (MappedResource<E> mr : _mappings)
         {
-            boolean skipMatch = false;
             PathSpecGroup group = mr.getPathSpec().getGroup();
+            if (group == lastGroup && skipRestOfGroup)
+            {
+                continue; // skip
+            }
+
+            // Run servlet spec optimizations on first hit of specific groups
             if (group != lastGroup)
             {
                 // New group in list, so let's look for an optimization
@@ -178,7 +184,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                 i--;
                             }
                             // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
-                            skipMatch = true;
+                            skipRestOfGroup = true;
                         }
                         break;
                     }
@@ -201,7 +207,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                 i--;
                             }
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
-                            skipMatch = true;
+                            skipRestOfGroup = true;
                         }
                         break;
                     }
@@ -223,7 +229,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                             }
                             // If we reached here, there's NO optimized SUFFIX Match possible, skip simple match below
-                            skipMatch = true;
+                            skipRestOfGroup = true;
                         }
                         break;
                     }
@@ -232,13 +238,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                 }
             }
 
-            // Only perform simple match if optimized match lets us
-            if (!skipMatch)
-            {
-                matchedPath = mr.getPathSpec().matched(path);
-                if (matchedPath != null)
-                    return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
-            }
+            matchedPath = mr.getPathSpec().matched(path);
+            if (matchedPath != null)
+                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
 
             lastGroup = group;
         }
