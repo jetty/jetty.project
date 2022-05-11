@@ -377,7 +377,10 @@ public class ServletHandler extends ScopedHandler
     public MappedResource<ServletHolder> getHolderEntry(String target)
     {
         if (target.startsWith("/"))
-            return getMatchedServlet(target).getMappedResource();
+        {
+            MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+            return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
+        }
         return null;
     }
 
@@ -474,8 +477,8 @@ public class ServletHandler extends ScopedHandler
 
             if (matched.getPathSpec() != null)
             {
-                String servletPath = matched.getMatchedPath().getPathMatch();
-                String pathInfo = matched.getMatchedPath().getPathInfo();
+                String servletPath = matched.getPathMatch();
+                String pathInfo = matched.getPathInfo();
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
@@ -577,8 +580,7 @@ public class ServletHandler extends ScopedHandler
         ServletHolder holder = _servletNameMap.get(target);
         if (holder == null)
             return null;
-        MappedResource<ServletHolder> mappedResource = new MappedResource<>(null, holder);
-        return new MatchedResource<>(mappedResource, MatchedPath.EMPTY);
+        return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
     }
 
     /**
@@ -591,7 +593,8 @@ public class ServletHandler extends ScopedHandler
     @Deprecated
     public MappedResource<ServletHolder> getMappedServlet(String target)
     {
-        return getMatchedServlet(target).getMappedResource();
+        MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+        return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)

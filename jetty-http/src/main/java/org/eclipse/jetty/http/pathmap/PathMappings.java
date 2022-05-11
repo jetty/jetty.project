@@ -150,6 +150,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         // Search all the mappings
         for (MappedResource<E> mr : _mappings)
         {
+            boolean skipMatch = false;
             PathSpecGroup group = mr.getPathSpec().getGroup();
             if (group != lastGroup)
             {
@@ -161,6 +162,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         if (_optimizedExact)
                         {
                             int i = path.length();
+
                             final Trie<MappedResource<E>> exact_map = _exactMap;
                             while (i >= 0)
                             {
@@ -170,15 +172,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
+                                {
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                                i = candidate.getPathSpec().getDeclaration().length() - 1;
+                                }
+                                i--;
                             }
-                        }
-                        else
-                        {
-                            matchedPath = mr.getPathSpec().matched(path);
-                            if (matchedPath != null)
-                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
+                            // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
+                            skipMatch = true;
                         }
                         break;
                     }
@@ -198,14 +198,10 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                                i = candidate.getPathSpec().getPrefix().length() - 1;
+                                i--;
                             }
-                        }
-                        else
-                        {
-                            matchedPath = mr.getPathSpec().matched(path);
-                            if (matchedPath != null)
-                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
+                            // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
+                            skipMatch = true;
                         }
                         break;
                     }
@@ -226,12 +222,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                             }
-                        }
-                        else
-                        {
-                            matchedPath = mr.getPathSpec().matched(path);
-                            if (matchedPath != null)
-                                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
+                            // If we reached here, there's NO optimized SUFFIX Match possible, skip simple match below
+                            skipMatch = true;
                         }
                         break;
                     }
@@ -240,9 +232,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                 }
             }
 
-            matchedPath = mr.getPathSpec().matched(path);
-            if (matchedPath != null)
-                return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
+            // Only perform simple match if optimized match lets us
+            if (!skipMatch)
+            {
+                matchedPath = mr.getPathSpec().matched(path);
+                if (matchedPath != null)
+                    return new MatchedResource<>(mr.getResource(), mr.getPathSpec(), matchedPath);
+            }
 
             lastGroup = group;
         }
