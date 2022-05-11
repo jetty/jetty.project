@@ -101,9 +101,9 @@
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
-    <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
+    <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.17.2</log4j2.version>
-    <logback.version>1.3.0-alpha14</logback.version>
+    <logback.version>1.3.0-alpha15</logback.version>
     <mariadb.version>3.0.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -141,7 +141,7 @@
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.5</maven.bundle.plugin.version>
+    <maven.bundle.plugin.version>5.1.4</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
@@ -815,7 +815,6 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
-          <extensions>true</extensions>
           <configuration>
             <supportedProjectTypes>
               <supportedProjectType>jar</supportedProjectType>
