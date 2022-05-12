@@ -60,7 +60,7 @@
     <!-- =========================================================== -->
     <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
       <Set name="secureScheme" property="jetty.httpConfig.secureScheme"/>
-      <Set name="securePort" property="jetty.httpConfig.securePort"/>
+      <Set name="securePort"><Property name="jetty.httpConfig.securePort" default="8443"/></Set>
       <Set name="outputBufferSize" property="jetty.httpConfig.outputBufferSize"/>
       <Set name="outputAggregationSize" property="jetty.httpConfig.outputAggregationSize"/>
       <Set name="requestHeaderSize" property="jetty.httpConfig.requestHeaderSize"/>
