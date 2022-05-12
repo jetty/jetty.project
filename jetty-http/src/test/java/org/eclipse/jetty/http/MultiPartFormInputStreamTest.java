@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ReadListener;
@@ -34,6 +35,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.http.MultiPartFormInputStream.NonCompliance;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -887,6 +890,8 @@ public class MultiPartFormInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p3.getInputStream(), baos);
         assertEquals("the end", baos.toString("US-ASCII"));
+
+        assertThat(mpis.getNonComplianceWarnings(), equalTo(EnumSet.of(NonCompliance.TRANSFER_ENCODING)));
     }
 
     @Test
@@ -1016,6 +1021,8 @@ public class MultiPartFormInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertEquals("truth=3Dbeauty", baos.toString("US-ASCII"));
+
+        assertThat(mpis.getNonComplianceWarnings(), equalTo(EnumSet.of(NonCompliance.TRANSFER_ENCODING)));
     }
 
     @Test

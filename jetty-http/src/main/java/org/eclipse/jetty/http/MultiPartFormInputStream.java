@@ -35,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -62,6 +63,7 @@ public class MultiPartFormInputStream
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
     private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
     private final MultiMap<Part> _parts;
+    private final EnumSet<NonCompliance> _nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
     private InputStream _in;
     private MultipartConfigElement _config;
     private String _contentType;
@@ -71,6 +73,31 @@ public class MultiPartFormInputStream
     private boolean _writeFilesWithFilenames;
     private boolean _parsed;
     private int _bufferSize = 16 * 1024;
+
+    public enum NonCompliance
+    {
+        TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
+
+        final String _rfcRef;
+
+        NonCompliance(String rfcRef)
+        {
+            _rfcRef = rfcRef;
+        }
+
+        public String getURL()
+        {
+            return _rfcRef;
+        }
+    }
+
+    /**
+     * @return an EnumSet of non compliances with the RFC that were accepted by this parser
+     */
+    public EnumSet<NonCompliance> getNonComplianceWarnings()
+    {
+        return _nonComplianceWarnings;
+    }
 
     public class MultiPart implements Part
     {
@@ -610,7 +637,11 @@ public class MultiPartFormInputStream
 
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
-
+            if (key.equalsIgnoreCase("content-transfer-encoding"))
+            {
+                if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                    _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+            }
         }
 
         @Override
