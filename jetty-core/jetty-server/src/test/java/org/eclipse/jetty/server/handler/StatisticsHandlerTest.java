@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -629,9 +630,9 @@ public class StatisticsHandlerTest
         barrier[0].await();
 
         assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(0, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(0, _statsHandler.getProcessingsMax());
@@ -658,6 +659,43 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
     }
+
+    @Test
+    public void testThrownResponse() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                throw new IllegalStateException("expected");
+            }
+        });
+        _server.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString("HTTP/1.1 500 Server Error"));
+        }
+
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(0, _statsHandler.getRequestsActiveMax());
+
+        // We get no recorded status, but we get a recorded thrown response.
+        assertEquals(0, _statsHandler.getResponses1xx());
+        assertEquals(0, _statsHandler.getResponses2xx());
+        assertEquals(0, _statsHandler.getResponses3xx());
+        assertEquals(0, _statsHandler.getResponses4xx());
+        assertEquals(0, _statsHandler.getResponses5xx());
+        assertEquals(1, _statsHandler.getResponsesThrown());
+    }
+
 //
 //    @Test
 //    public void waitForSuspendedRequestTest() throws Exception
@@ -928,12 +966,12 @@ public class StatisticsHandlerTest
         barrier[0].await();
 
         assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
 //        assertEquals(1, _statsHandler.getDispatched());
 //        assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
         barrier[2].await();
         assertTrue(_latchHandler.await());
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
