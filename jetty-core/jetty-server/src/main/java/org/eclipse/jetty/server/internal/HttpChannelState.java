@@ -66,18 +66,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Channel represents a sequence of request cycles from the same connection. However only a single
- * request cycle may be active at once for each channel.    This is some, but not all of the
- * behaviour of the current HttpChannel class, specifically it does not include the mutual exclusion
- * of handling required by the servlet spec and currently encapsulated in HttpChannelState.
- *
- * Note how Runnables are returned to indicate that further work is needed. These
+ * A Channel represents a sequence of request cycles from the same connection with only a single
+ * request cycle may be active at once for each channel.
+ * <p>
+ * Many methods return {@link Runnable}s to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
 public class HttpChannelState implements HttpChannel, Components
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
-    private static final Throwable NO_SEND = new Throwable("No Send");
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {
         @Override
@@ -131,7 +128,7 @@ public class HttpChannelState implements HttpChannel, Components
         PROCESSING,
 
         /** The Request.Processor call has returned prior to callback completion.
-         * The Content.Reader APIs are enabled. */
+         * The Content APIs are enabled. */
         PROCESSED,
     }
 
@@ -141,16 +138,13 @@ public class HttpChannelState implements HttpChannel, Components
     enum WriteState
     {
         /** Not yet written */
-        IDLE,
-
-        /** Written but not yet last */
-        WRITTEN,
+        NOT_LAST,
 
         /** Last content written, but write not yet completed */
         LAST_WRITTEN,
 
         /** Last content written and completed */
-        LAST_WRITE_COMPLETE,
+        LAST_WRITE_COMPLETED,
     }
 
     private final AutoLock _lock = new AutoLock();
@@ -160,7 +154,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private ProcessState _processState = ProcessState.IDLE;
-    private WriteState _writeState = WriteState.IDLE;
+    private WriteState _writeState = WriteState.NOT_LAST;
     private boolean _completed = false;
     private Throwable _failure;
     private ChannelRequest _request;
@@ -243,7 +237,7 @@ public class HttpChannelState implements HttpChannel, Components
             _requestAttributes.clearAttributes();
             _responseHeaders.reset();
             _processState = ProcessState.IDLE;
-            _writeState = WriteState.IDLE;
+            _writeState = WriteState.NOT_LAST;
             _completed = false;
             _failure = null;
             _committedContentLength = -1;
@@ -341,9 +335,10 @@ public class HttpChannelState implements HttpChannel, Components
      * Start request handling by returning a Runnable that will call {@link Handler#handle(Request)}.
      *
      * @param request The request metadata to handle.
-     * @return A Runnable that will call {@link Handler#handle(Request)}.  Unlike all other Runnables
-     * returned by HttpChannel methods, this runnable is not mutually excluded or serialized against the other
-     * Runnables.
+     * @return A Runnable that will call {@link Handler#handle(Request)}.  Unlike all other {@link Runnable}s
+     * returned by HttpChannel methods, this runnable should not be mutually excluded or serialized. Specifically
+     * other {@link Runnable}s returned by methods on this class can be run concurrently with the {@link Runnable}
+     * returned from this method.
      */
     public Runnable onRequest(MetaData.Request request)
     {
@@ -563,17 +558,19 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    private Throwable checkWrite(boolean last, long length)
+    private Throwable lockedCheckWrite(boolean last, long length)
     {
+        assert _request._lock.isHeldByCurrentThread();
+
         return switch (_writeState)
         {
-            case IDLE, WRITTEN ->
+            case NOT_LAST ->
             {
-                _writeState = last ? WriteState.LAST_WRITTEN : WriteState.WRITTEN;
+                _writeState = last ? WriteState.LAST_WRITTEN : WriteState.NOT_LAST;
                 _request._response._contentBytesWritten += length;
                 yield null;
             }
-            case LAST_WRITTEN, LAST_WRITE_COMPLETE -> (length > 0) ? new IllegalStateException("last already written") : NO_SEND;
+            case LAST_WRITTEN, LAST_WRITE_COMPLETED -> new IllegalStateException("last already written");
         };
     }
 
@@ -582,7 +579,14 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return String.format("%s@%x{s=%s,r=%s}", this.getClass().getSimpleName(), hashCode(), _processState, _request);
+            return String.format("%s@%x{processState=%s, writeState=%s, completed=%b, writeCallback=%s, request=%s}",
+                this.getClass().getSimpleName(),
+                hashCode(),
+                _processState,
+                _writeState,
+                _completed,
+                _writeCallback,
+                _request);
         }
     }
 
@@ -666,7 +670,7 @@ public class HttpChannelState implements HttpChannel, Components
                     failure = _failure;
                 }
 
-                completeStream = _completed && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETE);
+                completeStream = _completed && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
                 stream = _stream;
             }
             if (completeStream)
@@ -683,8 +687,9 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
-                _writeState = WriteState.LAST_WRITE_COMPLETE;
-                completeStream = _completed && _processState == ProcessState.PROCESSED;
+                _writeState = WriteState.LAST_WRITE_COMPLETED;
+                assert _completed;
+                completeStream = _processState == ProcessState.PROCESSED;
                 stream = _stream;
             }
 
@@ -702,8 +707,9 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
-                _writeState = WriteState.LAST_WRITE_COMPLETE;
-                completeStream = _completed && _processState == ProcessState.PROCESSED;
+                _writeState = WriteState.LAST_WRITE_COMPLETED;
+                assert _completed;
+                completeStream = _processState == ProcessState.PROCESSED;
                 stream = _stream;
                 if (_failure == null)
                     _failure = failure;
@@ -734,11 +740,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
-                    // TODO _serializedInvoker.run(stream::succeeded);
-                    //      That would wait for all callback to be completed.
                     stream.succeeded();
                 else
-                    stream.failed(_failure);
+                    stream.failed(failure);
             }
         }
 
@@ -1105,7 +1109,7 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (httpChannel._error != null)
                     failure = httpChannel._error.getCause();
                 else
-                    failure = httpChannel.checkWrite(last, length);
+                    failure = httpChannel.lockedCheckWrite(last, length);
 
                 if (failure == null)
                 {
@@ -1138,10 +1142,6 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 stream.send(_request._metaData, responseMetaData, last, this, content);
             }
-            else if (failure == NO_SEND)
-            {
-                httpChannel._serializedInvoker.run(callback::succeeded);
-            }
             else
             {
                 Throwable t = failure;
@@ -1161,7 +1161,7 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = httpChannel._writeCallback;
                 httpChannel._writeCallback = null;
                 if (httpChannel._writeState == WriteState.LAST_WRITTEN)
-                    httpChannel._writeState = WriteState.LAST_WRITE_COMPLETE;
+                    httpChannel._writeState = WriteState.LAST_WRITE_COMPLETED;
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("write succeeded {}", callback);
@@ -1273,9 +1273,9 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
-                onComplete();
+                lockedOnComplete();
                 httpChannelState = _request._httpChannel;
-                completeStream = httpChannelState._processState == ProcessState.PROCESSED && httpChannelState._writeState == WriteState.LAST_WRITE_COMPLETE;
+                completeStream = httpChannelState._processState == ProcessState.PROCESSED && httpChannelState._writeState == WriteState.LAST_WRITE_COMPLETED;
 
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
@@ -1288,8 +1288,8 @@ public class HttpChannelState implements HttpChannel, Components
 
                 needLastWrite = switch (httpChannelState._writeState)
                 {
-                    case IDLE, WRITTEN -> true;
-                    case LAST_WRITTEN, LAST_WRITE_COMPLETE -> false;
+                    case NOT_LAST -> true;
+                    case LAST_WRITTEN, LAST_WRITE_COMPLETED -> false;
                 };
                 stream = httpChannelState._stream;
 
@@ -1333,7 +1333,7 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
-                onComplete();
+                lockedOnComplete();
 
                 httpChannelState = _request._httpChannel;
                 httpChannelState._failure = failure;
@@ -1354,7 +1354,7 @@ public class HttpChannelState implements HttpChannel, Components
                     // Cannot log or recycle just yet, since we need to generate the error response.
                     _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
                     httpChannelState._responseHeaders.reset();
-                    httpChannelState._writeState = WriteState.IDLE;
+                    httpChannelState._writeState = WriteState.NOT_LAST;
                 }
             }
 
@@ -1372,8 +1372,10 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
-        private void onComplete()
+        private void lockedOnComplete()
         {
+            assert _request._lock.isHeldByCurrentThread();
+
             HttpChannelState httpChannelState = _request._httpChannel;
             if (httpChannelState == null)
             {
@@ -1404,7 +1406,6 @@ public class HttpChannelState implements HttpChannel, Components
     private static class ErrorResponse extends Response.Wrapper implements Callback
     {
         private final ChannelRequest _request;
-        private final ChannelResponse _response;
         private final HttpStream _stream;
         private final Throwable _failure;
 
@@ -1412,7 +1413,6 @@ public class HttpChannelState implements HttpChannel, Components
         {
             super(request, request._response);
             _request = request;
-            _response = request._response;
             _stream = stream;
             _failure = failure;
         }
@@ -1431,15 +1431,13 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 httpChannel = _request.lockedGetHttpChannel();
                 httpChannel._writeCallback = callback;
-                failure = httpChannel.checkWrite(last, length);
+                failure = httpChannel.lockedCheckWrite(last, length);
                 if (httpChannel._responseHeaders.commit())
                     responseMetaData = _request._response.lockedPrepareResponse(httpChannel, last);
             }
 
             if (failure == null)
                 _stream.send(_request._metaData, responseMetaData, last, last ? Callback.from(this::lastWriteCompleted, callback) : callback, content);
-            else if (failure == NO_SEND)
-                httpChannel._serializedInvoker.run(callback::succeeded);
             else
                 httpChannel._serializedInvoker.run(() -> callback.failed(failure));
         }
@@ -1448,7 +1446,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             try (AutoLock ignored = _request._lock.lock())
             {
-                _request.lockedGetHttpChannel()._writeState = WriteState.LAST_WRITE_COMPLETE;
+                _request.lockedGetHttpChannel()._writeState = WriteState.LAST_WRITE_COMPLETED;
             }
         }
 

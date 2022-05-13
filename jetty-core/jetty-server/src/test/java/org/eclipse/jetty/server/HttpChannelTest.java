@@ -1294,24 +1294,24 @@ public class HttpChannelTest
         WRITE,
         SUCCEED,
         FAIL,
-        SENT
+        STREAM_COMPLETE
     }
 
     public static Stream<List<CompletionTestEvent>> completionEvents()
     {
         return Stream.of(
-            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.SENT, CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED),
-            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.SENT, CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED),
-            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.PROCESSED, CompletionTestEvent.SENT, CompletionTestEvent.SUCCEED),
-            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.WRITE, CompletionTestEvent.SENT, CompletionTestEvent.SUCCEED),
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED),
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED),
 
-            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.SENT, CompletionTestEvent.PROCESSED),
-            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED, CompletionTestEvent.SENT),
-            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED, CompletionTestEvent.SENT),
+            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED, CompletionTestEvent.STREAM_COMPLETE),
 
-            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.SENT, CompletionTestEvent.PROCESSED),
-            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.PROCESSED, CompletionTestEvent.SENT),
-            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.FAIL, CompletionTestEvent.SENT)
+            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.FAIL, CompletionTestEvent.STREAM_COMPLETE)
         );
     }
 
@@ -1414,7 +1414,7 @@ public class HttpChannelTest
                     assertFalse(processor.isAlive());
                 }
 
-                case SENT ->
+                case STREAM_COMPLETE ->
                 {
                     if (sendCallback.get() != null)
                         sendCallback.get().succeeded();
