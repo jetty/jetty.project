@@ -102,7 +102,7 @@ public class QpackTestUtil
         return toMetaData(method, path, scheme, (HttpField)null);
     }
 
-    public static MetaData toMetaData(String method, String path, String scheme, HttpField ...fields)
+    public static MetaData toMetaData(String method, String path, String scheme, HttpField... fields)
     {
         HttpFields.Mutable httpFields = HttpFields.build();
         for (HttpField field : fields)
