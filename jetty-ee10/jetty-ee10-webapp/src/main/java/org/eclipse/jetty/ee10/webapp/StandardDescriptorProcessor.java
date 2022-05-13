@@ -1154,7 +1154,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //an error page setup was set in web.xml/webdefault.xml/web-override.xml, only allow other web xml descriptors to override it
+                //an error page setup was set in web.xml/webdefault-ee10.xml/web-override.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     //if set twice in the same descriptor, its an error
@@ -2007,7 +2007,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void visitRequestCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
-        //allow it to be specified in webdefault.xml, web.xml, and web-override.xml.
+        //allow it to be specified in webdefault-ee10.xml, web.xml, and web-override.xml.
         if (!(descriptor instanceof FragmentDescriptor))
         {
             String encoding = node.toString(false, true);
@@ -2029,7 +2029,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void visitResponseCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
-        //allow it to be specified in webdefault.xml, web.xml, and web-override.xml.
+        //allow it to be specified in webdefault-ee10.xml, web.xml, and web-override.xml.
         if (!(descriptor instanceof FragmentDescriptor))
         {
             String encoding = node.toString(false, true);

@@ -940,7 +940,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-9.8">RFC 2616 (section 9.8)</a>
      */
     @Test
-    @Disabled("Introduction of fix for realm-less security constraints has rendered this test invalid due to default configuration preventing use of TRACE in webdefault.xml")
+    @Disabled("Introduction of fix for realm-less security constraints has rendered this test invalid due to default configuration preventing use of TRACE in webdefault-ee9.xml")
     public void test98() throws Exception
     {
 

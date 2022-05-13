@@ -243,7 +243,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                     _webApp.setDescriptor(webXml.getAbsolutePath());
             }
 
-            //webdefault.xml
+            //webdefault-ee10.xml
             tmp = (String)_properties.get(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {

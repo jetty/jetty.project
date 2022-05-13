@@ -10,7 +10,7 @@
   <!-- This file contains the default descriptor for web applications.       -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- The intent of this descriptor is to include jetty specific or common  -->
-  <!-- configuration for all webapps.   If a context has a webdefault.xml    -->
+  <!-- configuration for all webapps.   If a context has a webdefault-ee10.xml    -->
   <!-- descriptor, it is applied before the context's own web.xml file       -->
   <!--                                                                       -->
   <!-- A context may be assigned a default descriptor by calling             -->
@@ -34,7 +34,7 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->
   <listener>
-   <listener-class>org.eclipse.jetty.ee9.servlet.listener.ELContextCleaner</listener-class>
+   <listener-class>org.eclipse.jetty.ee10.servlet.listener.ELContextCleaner</listener-class>
   </listener>
   
   <!-- ==================================================================== -->
@@ -42,7 +42,7 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->  
   <listener>
-   <listener-class>org.eclipse.jetty.ee9.servlet.listener.IntrospectorCleaner</listener-class>
+   <listener-class>org.eclipse.jetty.ee10.servlet.listener.IntrospectorCleaner</listener-class>
   </listener>
   
 
@@ -52,15 +52,15 @@
   <!--
     UNCOMMENT TO ACTIVATE 
     <context-param> 
-      <param-name>org.eclipse.jetty.ee9.servlet.SessionDomain</param-name>
+      <param-name>org.eclipse.jetty.ee10.servlet.SessionDomain</param-name>
       <param-value>127.0.0.1</param-value> 
     </context-param> 
     <context-param>
-      <param-name>org.eclipse.jetty.ee9.servlet.SessionPath</param-name>
+      <param-name>org.eclipse.jetty.ee10.servlet.SessionPath</param-name>
       <param-value>/</param-value>
     </context-param>
     <context-param>
-      <param-name>org.eclipse.jetty.ee9.servlet.MaxAge</param-name>
+      <param-name>org.eclipse.jetty.ee10.servlet.MaxAge</param-name>
       <param-value>-1</param-value>
     </context-param>
   -->
@@ -142,7 +142,7 @@
  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee9.servlet.DefaultServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee10.servlet.DefaultServlet</servlet-class>
     <init-param>
       <param-name>acceptRanges</param-name>
       <param-value>true</param-value>

@@ -10,7 +10,7 @@
   <!-- This file contains the default descriptor for web applications.       -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- The intent of this descriptor is to include jetty specific or common  -->
-  <!-- configuration for all webapps.   If a context has a webdefault.xml    -->
+  <!-- configuration for all webapps.   If a context has a webdefault-ee10.xml    -->
   <!-- descriptor, it is applied before the context's own web.xml file       -->
   <!--                                                                       -->
   <!-- A context may be assigned a default descriptor by calling             -->
@@ -34,7 +34,7 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->
   <listener>
-   <listener-class>org.eclipse.jetty.ee9.servlet.listener.ELContextCleaner</listener-class>
+   <listener-class>org.eclipse.jetty.ee10.servlet.listener.ELContextCleaner</listener-class>
   </listener>
   
   <!-- ==================================================================== -->
@@ -42,7 +42,7 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->  
   <listener>
-   <listener-class>org.eclipse.jetty.ee9.servlet.listener.IntrospectorCleaner</listener-class>
+   <listener-class>org.eclipse.jetty.ee10.servlet.listener.IntrospectorCleaner</listener-class>
   </listener>
   
 
@@ -52,15 +52,15 @@
   <!--
     UNCOMMENT TO ACTIVATE 
     <context-param> 
-      <param-name>org.eclipse.jetty.ee9.servlet.SessionDomain</param-name>
+      <param-name>org.eclipse.jetty.servlet.SessionDomain</param-name> 
       <param-value>127.0.0.1</param-value> 
     </context-param> 
     <context-param>
-      <param-name>org.eclipse.jetty.ee9.servlet.SessionPath</param-name>
+      <param-name>org.eclipse.jetty.servlet.SessionPath</param-name>
       <param-value>/</param-value>
     </context-param>
     <context-param>
-      <param-name>org.eclipse.jetty.ee9.servlet.MaxAge</param-name>
+      <param-name>org.eclipse.jetty.servlet.MaxAge</param-name>
       <param-value>-1</param-value>
     </context-param>
   -->
@@ -82,7 +82,7 @@
  *                    resources could be found. If false, then a welcome
  *                    file must exist on disk. If "exact", then exact
  *                    servlet matches are supported without an existing file.
- *                    Default is true.
+ *                    Default is false.
  *
  *                    This must be false if you want directory listings,
  *                    but have index.jsp in your welcome file list.
@@ -92,7 +92,15 @@
  *
  *  gzip              If set to true, then static content will be served as
  *                    gzip content encoded if a matching resource is
- *                    found ending with ".gz"
+ *                    found ending with ".gz" (default false) 
+ *                    (deprecated: use precompressed)
+ *                    
+ *  precompressed     If set to a comma separated list of encoding types (that may be
+ *                    listed in a requests Accept-Encoding header) to file
+ *                    extension mappings to look for and serve. For example:
+ *                    "br=.br,gzip=.gz,bzip2=.bz".
+ *                    If set to a boolean True, then a default set of compressed formats
+ *                    will be used, otherwise no precompressed formats.
  *
  *  resourceBase      Set to replace the context resource base
  *
@@ -108,9 +116,6 @@
  *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
- *
- *  aliases           If True, aliases of resources are allowed (eg. symbolic
- *                    links and caps variations). May bypass security constraints.
  *                    
  *  etags             If True, weak etags will be generated and handled.
  *
@@ -127,15 +132,17 @@
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
  *
+ * encodingHeaderCacheSize
+ *                    Max entries in a cache of ACCEPT-ENCODING headers.
+ *
+ * otherGzipFileExtensions  
+ *                    defaults to .svgz but a comma separated list of gzip equivalent file extensions can be supplied
+ *
  -->
  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee9.servlet.DefaultServlet</servlet-class>
-    <init-param>
-      <param-name>aliases</param-name>
-      <param-value>false</param-value>
-    </init-param>
+    <servlet-class>org.eclipse.jetty.ee10.servlet.DefaultServlet</servlet-class>
     <init-param>
       <param-name>acceptRanges</param-name>
       <param-value>true</param-value>
@@ -165,10 +172,6 @@
       <param-value>2048</param-value>
     </init-param>
     <init-param>
-      <param-name>gzip</param-name>
-      <param-value>false</param-value>
-    </init-param>
-    <init-param>
       <param-name>etags</param-name>
       <param-value>false</param-value>
     </init-param>
@@ -176,18 +179,6 @@
       <param-name>useFileMappedBuffer</param-name>
       <param-value>true</param-value>
     </init-param>
-    <!--
-    <init-param>
-      <param-name>resourceCache</param-name>
-      <param-value>resourceCache</param-value>
-    </init-param>
-    -->
-    <!--
-    <init-param>
-      <param-name>cacheControl</param-name>
-      <param-value>max-age=3600,public</param-value>
-    </init-param>
-    -->
     <load-on-startup>0</load-on-startup>
   </servlet>
 
@@ -203,107 +194,25 @@
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <!-- The JSP page compiler and execution servlet, which is the mechanism  -->
   <!-- used by the jsp container to support JSP pages.  Traditionally,      -->
-  <!-- this servlet is mapped to URL pattern "*.jsp".  This servlet         -->
-  <!-- supports the following initialization parameters (default values     -->
-  <!-- are in square brackets):                                             -->
-  <!--                                                                      -->
-  <!--   checkInterval       If development is false and reloading is true, -->
-  <!--                       background compiles are enabled. checkInterval -->
-  <!--                       is the time in seconds between checks to see   -->
-  <!--                       if a JSP page needs to be recompiled. [300]    -->
-  <!--                                                                      -->
-  <!--   compiler            Which compiler Ant should use to compile JSP   -->
-  <!--                       pages.  See the Ant documentation for more     -->
-  <!--                       information. [javac]                           -->
-  <!--                                                                      -->
-  <!--   classdebuginfo      Should the class file be compiled with         -->
-  <!--                       debugging information?  [true]                 -->
-  <!--                                                                      -->
-  <!--   classpath           What class path should I use while compiling   -->
-  <!--                       generated servlets?  [Created dynamically      -->
-  <!--                       based on the current web application]          -->
-  <!--                       Set to ? to make the container explicitly set  -->
-  <!--                       this parameter.                                -->
-  <!--                                                                      -->
-  <!--   development         Is Jasper used in development mode (will check -->
-  <!--                       for JSP modification on every access)?  [true] -->
-  <!--                                                                      -->
-  <!--   enablePooling       Determines whether tag handler pooling is      -->
-  <!--                       enabled  [true]                                -->
-  <!--                                                                      -->
-  <!--   fork                Tell Ant to fork compiles of JSP pages so that -->
-  <!--                       a separate JVM is used for JSP page compiles   -->
-  <!--                       from the one Tomcat is running in. [true]      -->
-  <!--                                                                      -->
-  <!--   ieClassId           The class-id value to be sent to Internet      -->
-  <!--                       Explorer when using <jsp:plugin> tags.         -->
-  <!--                       [clsid:8AD9C840-044E-11D1-B3E9-00805F499D93]   -->
-  <!--                                                                      -->
-  <!--   javaEncoding        Java file encoding to use for generating java  -->
-  <!--                       source files. [UTF-8]                          -->
-  <!--                                                                      -->
-  <!--   keepgenerated       Should we keep the generated Java source code  -->
-  <!--                       for each page instead of deleting it? [true]   -->
-  <!--                                                                      -->
-  <!--   logVerbosityLevel   The level of detailed messages to be produced  -->
-  <!--                       by this servlet.  Increasing levels cause the  -->
-  <!--                       generation of more messages.  Valid values are -->
-  <!--                       FATAL, ERROR, WARNING, INFORMATION, and DEBUG. -->
-  <!--                       [WARNING]                                      -->
-  <!--                                                                      -->
-  <!--   mappedfile          Should we generate static content with one     -->
-  <!--                       print statement per input line, to ease        -->
-  <!--                       debugging?  [false]                            -->
-  <!--                                                                      -->
-  <!--                                                                      -->
-  <!--   reloading           Should Jasper check for modified JSPs?  [true] -->
-  <!--                                                                      -->
-  <!--   suppressSmap        Should the generation of SMAP info for JSR45   -->
-  <!--                       debugging be suppressed?  [false]              -->
-  <!--                                                                      -->
-  <!--   dumpSmap            Should the SMAP info for JSR45 debugging be    -->
-  <!--                       dumped to a file? [false]                      -->
-  <!--                       False if suppressSmap is true                  -->
-  <!--                                                                      -->
-  <!--   scratchdir          What scratch directory should we use when      -->
-  <!--                       compiling JSP pages?  [default work directory  -->
-  <!--                       for the current web application]               -->
-  <!--                                                                      -->
-  <!--   tagpoolMaxSize      The maximum tag handler pool size  [5]         -->
-  <!--                                                                      -->
-  <!--   xpoweredBy          Determines whether X-Powered-By response       -->
-  <!--                       header is added by generated servlet  [false]  -->
-  <!--                                                                      -->
+  <!-- this servlet is mapped to URL pattern "*.jsp".                       -->
+  <!-- See http://https://www.eclipse.org/jetty/documentation/              -->
+  <!-- for applicable configuration params.                                 -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet id="jsp">
     <servlet-name>jsp</servlet-name>
     <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
-    <init-param>
-      <param-name>logVerbosityLevel</param-name>
-      <param-value>DEBUG</param-value>
-    </init-param>
-    <init-param>
-      <param-name>fork</param-name>
-      <param-value>false</param-value>
-    </init-param>
     <init-param>
       <param-name>xpoweredBy</param-name>
       <param-value>false</param-value>
     </init-param>
     <init-param>
       <param-name>compilerTargetVM</param-name>
-      <param-value>1.7</param-value>
+      <param-value>1.8</param-value>
     </init-param>
     <init-param>
       <param-name>compilerSourceVM</param-name>
-      <param-value>1.7</param-value>
+      <param-value>1.8</param-value>
     </init-param>
-    <!--  
-    <init-param>
-        <param-name>classpath</param-name>
-        <param-value>?</param-value>
-    </init-param>
-    -->
     <load-on-startup>0</load-on-startup>
   </servlet>
 
