@@ -15,14 +15,11 @@ package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredSessionScavengingTest
  */
-//TODO
-@Disabled
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {

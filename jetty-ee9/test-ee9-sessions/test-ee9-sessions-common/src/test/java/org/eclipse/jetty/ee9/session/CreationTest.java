@@ -259,6 +259,8 @@ public class CreationTest
         int scavengePeriod = 3;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setSaveOnCreate(false); //don't immediately save a new session
+        cacheFactory.setFlushOnResponseCommit(true); //ensure session saved before response returned
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();

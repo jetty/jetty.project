@@ -55,6 +55,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
         int scavengeInterval = 1;
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory1.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengeInterval);
 

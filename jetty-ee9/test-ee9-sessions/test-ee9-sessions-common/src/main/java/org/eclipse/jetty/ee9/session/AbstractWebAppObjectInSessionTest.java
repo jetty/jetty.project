@@ -94,6 +94,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
