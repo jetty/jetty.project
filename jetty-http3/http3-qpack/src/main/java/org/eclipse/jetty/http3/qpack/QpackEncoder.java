@@ -106,6 +106,11 @@ public class QpackEncoder implements Dumpable
         _parser = new EncoderInstructionParser(_instructionHandler);
     }
 
+    Map<Long, StreamInfo> getStreamInfoMap()
+    {
+        return _streamInfoMap;
+    }
+
     public int getMaxBlockedStreams()
     {
         return _maxBlockedStreams;
@@ -193,7 +198,15 @@ public class QpackEncoder implements Dumpable
                         requiredInsertCount = entryRequiredInsertCount;
                 }
 
+                // We should not expect section acknowledgements for 0 required insert count.
                 sectionInfo.setRequiredInsertCount(requiredInsertCount);
+                if (requiredInsertCount == 0)
+                {
+                    streamInfo.remove(sectionInfo);
+                    if (streamInfo.isEmpty())
+                        _streamInfoMap.remove(streamId);
+                }
+
                 int base = dynamicTable.getBase();
                 int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
                 boolean signBit = base < requiredInsertCount;
@@ -472,8 +485,12 @@ public class QpackEncoder implements Dumpable
 
             // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
             StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+            boolean wasBlocked = sectionInfo.isBlocking();
             sectionInfo.release();
             _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
+
+            if (wasBlocked && !streamInfo.isBlocked())
+                _blockedStreams--;
 
             // If we have no more outstanding section acknowledgments remove the StreamInfo.
             if (streamInfo.isEmpty())

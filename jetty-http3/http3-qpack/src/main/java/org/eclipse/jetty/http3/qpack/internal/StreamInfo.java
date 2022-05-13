@@ -106,6 +106,7 @@ public class StreamInfo implements Iterable<StreamInfo.SectionInfo>
             {
                 entry.release();
             }
+            _block = false;
             _entries.clear();
         }
 
