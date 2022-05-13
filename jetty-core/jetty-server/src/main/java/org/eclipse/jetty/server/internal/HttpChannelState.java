@@ -75,7 +75,7 @@ import org.slf4j.LoggerFactory;
 public class HttpChannelState implements HttpChannel, Components
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
-    private static final Throwable NO_SEND = new Throwable("No Send");
+    private static final Throwable DO_NOT_SEND = new Throwable("No Send");
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {
         @Override
@@ -573,11 +573,11 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // There are many instances of code that wants to ensure the output is closed, so
-            // it does a redundant write(true, callback).  The NO_SEND option supports this by
+            // it does a redundant write(true, callback).  The DO_NOT_SEND option supports this by
             // turning such writes into a NOOP.
             case LAST_WRITTEN, LAST_WRITE_COMPLETED -> (length > 0)
                 ? new IllegalStateException("last already written")
-                : NO_SEND;
+                : DO_NOT_SEND;
         };
     }
 
@@ -1149,7 +1149,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 stream.send(_request._metaData, responseMetaData, last, this, content);
             }
-            else if (failure == NO_SEND)
+            else if (failure == DO_NOT_SEND)
             {
                 httpChannel._serializedInvoker.run(callback::succeeded);
             }
@@ -1449,7 +1449,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (failure == null)
                 _stream.send(_request._metaData, responseMetaData, last, last ? Callback.from(this::lastWriteCompleted, callback) : callback, content);
-            else if (failure == NO_SEND)
+            else if (failure == DO_NOT_SEND)
                 httpChannel._serializedInvoker.run(callback::succeeded);
             else
                 httpChannel._serializedInvoker.run(() -> callback.failed(failure));
