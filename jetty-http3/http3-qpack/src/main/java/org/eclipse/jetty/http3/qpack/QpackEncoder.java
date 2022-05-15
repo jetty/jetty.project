@@ -193,7 +193,15 @@ public class QpackEncoder implements Dumpable
                         requiredInsertCount = entryRequiredInsertCount;
                 }
 
+                // We should not expect section acknowledgements for 0 required insert count.
                 sectionInfo.setRequiredInsertCount(requiredInsertCount);
+                if (requiredInsertCount == 0)
+                {
+                    streamInfo.remove(sectionInfo);
+                    if (streamInfo.isEmpty())
+                        _streamInfoMap.remove(streamId);
+                }
+
                 int base = dynamicTable.getBase();
                 int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
                 boolean signBit = base < requiredInsertCount;
