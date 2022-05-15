@@ -32,7 +32,7 @@
     <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asm.version>9.3</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>5.3.0</bndlib.version>
+    <bndlib.version>6.2.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.2</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -49,9 +49,9 @@
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.14.5</hawtio.version>
+    <hawtio.version>2.15.0</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
-    <infinispan.protostream.version>4.4.2.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.2</jackson.annotations.version>
     <jackson.core.version>2.13.2</jackson.core.version>
@@ -101,18 +101,20 @@
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
-    <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
+    <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.17.2</log4j2.version>
-    <logback.version>1.3.0-alpha14</logback.version>
+    <logback.version>1.3.0-alpha15</logback.version>
     <mariadb.version>3.0.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.8.0</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
-    <mongodb.version>3.2.2</mongodb.version>
+    <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
+    <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
+    <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
     <slf4j.version>2.0.0-alpha6</slf4j.version>
@@ -813,7 +815,6 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
-          <extensions>true</extensions>
           <configuration>
             <supportedProjectTypes>
               <supportedProjectType>jar</supportedProjectType>
@@ -1965,13 +1966,30 @@
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
+        <!-- older artifact location, some of our transitive deps still use this coordinate -->
         <artifactId>org.osgi.core</artifactId>
+        <version>${org.osgi.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <!-- newer artifact location, some of our transitive deps use this up to date coordinate -->
+        <artifactId>osgi.core</artifactId>
         <version>${org.osgi.core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>osgi.annotation</artifactId>
         <version>${org.osgi.annotation.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.function</artifactId>
+        <version>${org.osgi.util.function.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${org.osgi.util.promise.version}</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>

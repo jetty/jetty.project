@@ -170,7 +170,8 @@ public class QpackDecoder implements Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
                 _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
-                _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+                if (requiredInsertCount > 0)
+                    _instructions.add(new SectionAcknowledgmentInstruction(streamId));
             }
             else
             {
@@ -247,7 +248,8 @@ public class QpackDecoder implements Dumpable
         while (iterator.hasNext())
         {
             EncodedFieldSection encodedFieldSection = iterator.next();
-            if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
+            int requiredInsertCount = encodedFieldSection.getRequiredInsertCount();
+            if (requiredInsertCount <= insertCount)
             {
                 iterator.remove();
                 long streamId = encodedFieldSection.getStreamId();
@@ -258,7 +260,8 @@ public class QpackDecoder implements Dumpable
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
 
                 _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, encodedFieldSection.getHandler()));
-                _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+                if (requiredInsertCount > 0)
+                    _instructions.add(new SectionAcknowledgmentInstruction(streamId));
             }
         }
     }
