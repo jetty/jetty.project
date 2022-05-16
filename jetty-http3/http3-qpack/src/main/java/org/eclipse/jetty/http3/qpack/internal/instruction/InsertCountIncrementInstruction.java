@@ -29,6 +29,11 @@ public class InsertCountIncrementInstruction implements Instruction
         _increment = increment;
     }
 
+    public int getIncrement()
+    {
+        return _increment;
+    }
+
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
