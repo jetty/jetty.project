@@ -99,16 +99,27 @@ public class QpackTestUtil
 
     public static MetaData toMetaData(String method, String path, String scheme)
     {
-        return toMetaData(method, path, scheme, null);
+        return toMetaData(method, path, scheme, (HttpField)null);
+    }
+
+    public static MetaData toMetaData(String method, String path, String scheme, HttpField... fields)
+    {
+        HttpFields.Mutable httpFields = HttpFields.build();
+        for (HttpField field : fields)
+        {
+            httpFields.add(field);
+        }
+
+        return toMetaData(method, path, scheme, httpFields);
     }
 
     public static MetaData toMetaData(String method, String path, String scheme, HttpFields.Mutable fields)
     {
-        if (fields == null)
-            fields = HttpFields.build();
-        fields.put(":scheme", scheme);
-        fields.put(":method", method);
-        fields.put(":path", path);
+        fields = HttpFields.build()
+            .put(":scheme", scheme)
+            .put(":method", method)
+            .put(":path", path)
+            .add(fields);
         return new MetaData(HttpVersion.HTTP_3, fields);
     }
 

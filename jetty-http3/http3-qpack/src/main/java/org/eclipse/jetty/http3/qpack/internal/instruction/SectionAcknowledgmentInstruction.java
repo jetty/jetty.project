@@ -29,6 +29,11 @@ public class SectionAcknowledgmentInstruction implements Instruction
         _streamId = streamId;
     }
 
+    public long getStreamId()
+    {
+        return _streamId;
+    }
+
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
