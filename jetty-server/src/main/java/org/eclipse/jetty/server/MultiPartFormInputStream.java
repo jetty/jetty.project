@@ -30,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,6 +92,7 @@ public class MultiPartFormInputStream
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
+    private final EnumSet<NonCompliance> _nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
     private final InputStream _in;
     private final MultipartConfigElement _config;
     private final File _contextTmpDir;
@@ -101,6 +103,31 @@ public class MultiPartFormInputStream
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
+
+    public enum NonCompliance
+    {
+        TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
+
+        final String _rfcRef;
+
+        NonCompliance(String rfcRef)
+        {
+            _rfcRef = rfcRef;
+        }
+
+        public String getURL()
+        {
+            return _rfcRef;
+        }
+    }
+
+    /**
+     * @return an EnumSet of non compliances with the RFC that were accepted by this parser
+     */
+    public EnumSet<NonCompliance> getNonComplianceWarnings()
+    {
+        return _nonComplianceWarnings;
+    }
 
     public class MultiPart implements Part
     {
@@ -671,7 +698,11 @@ public class MultiPartFormInputStream
 
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
-
+            if (key.equalsIgnoreCase("content-transfer-encoding"))
+            {
+                if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                    _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+            }
         }
 
         @Override
