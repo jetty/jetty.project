@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -231,11 +230,6 @@ public class PathCollectionResource extends Resource
 
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return newSeekableByteChannel();
-    }
-
-    public SeekableByteChannel newSeekableByteChannel() throws IOException
     {
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
