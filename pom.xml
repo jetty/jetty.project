@@ -53,7 +53,7 @@
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
-    <jackson.annotations.version>2.13.2</jackson.annotations.version>
+    <jackson.annotations.version>2.13.3</jackson.annotations.version>
     <jackson.core.version>2.13.3</jackson.core.version>
     <jackson.databind.version>2.13.2.2</jackson.databind.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
