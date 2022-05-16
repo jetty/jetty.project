@@ -256,13 +256,13 @@ public class StatisticsHandler extends Handler.Wrapper
     @ManagedAttribute("number of requests that threw an exception during processing")
     public int getProcessThrows()
     {
-        return _handleThrows.intValue();
+        return _processThrows.intValue();
     }
 
     @ManagedAttribute("")
     public int getHandlings()
     {
-        return (int)_handleStats.getCurrent();
+        return (int)_handleStats.getTotal();
     }
 
     @ManagedAttribute("")

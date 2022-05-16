@@ -661,7 +661,7 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testThrownResponse() throws Exception
+    public void testThrownHandles() throws Exception
     {
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
@@ -693,7 +693,48 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(0, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getResponsesThrown());
+        assertEquals(1, _statsHandler.getHandleThrows());
+        assertEquals(0, _statsHandler.getProcessThrows());
+    }
+
+    @Test
+    public void testThrownProcesses() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                return (req, resp, cp) ->
+                {
+                    throw new IllegalStateException("expected");
+                };
+            }
+        });
+        _server.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString("HTTP/1.1 500 Server Error"));
+        }
+
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+
+        // We get no recorded status, but we get a recorded thrown response.
+        assertEquals(0, _statsHandler.getResponses1xx());
+        assertEquals(0, _statsHandler.getResponses2xx());
+        assertEquals(0, _statsHandler.getResponses3xx());
+        assertEquals(0, _statsHandler.getResponses4xx());
+        assertEquals(1, _statsHandler.getResponses5xx());
+        assertEquals(0, _statsHandler.getHandleThrows());
+        assertEquals(1, _statsHandler.getProcessThrows());
     }
 
 //
