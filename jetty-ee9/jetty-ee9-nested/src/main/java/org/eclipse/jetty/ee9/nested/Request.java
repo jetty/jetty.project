@@ -65,6 +65,7 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -2000,6 +2001,7 @@ public class Request implements HttpServletRequest
 
             _multiParts = newMultiParts(config);
             Collection<Part> parts = _multiParts.getParts();
+            setNonComplianceViolationsOnRequest();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2058,6 +2060,22 @@ public class Request implements HttpServletRequest
         }
 
         return _multiParts.getParts();
+    }
+
+    private void setNonComplianceViolationsOnRequest()
+    {
+        @SuppressWarnings("unchecked")
+        List<String> violations = (List<String>)getAttribute(HttpCompliance.VIOLATIONS_ATTR);
+        if (violations != null)
+            return;
+
+        EnumSet<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
+        violations = new ArrayList<>();
+        for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
+        {
+            violations.add(nc.name() + ": " + nc.getURL());
+        }
+        setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
     }
 
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException

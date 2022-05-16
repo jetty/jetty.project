@@ -486,6 +486,7 @@ public class RequestTest
             "Host: whatever\r\n" +
             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
             "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Content-Transfer-Encoding: something\r\n" +
             "\r\n" +
             multipart;
 
@@ -500,7 +501,9 @@ public class RequestTest
             "\r\n";
 
         endPoint.addInput(cleanupRequest);
-        assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
+        String response = endPoint.getResponse();
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertThat(response, containsString("Violation: TRANSFER_ENCODING"));
         assertThat("File Count in dir: " + testTmpDir, getFileCount(testTmpDir), is(0L));
     }
 
