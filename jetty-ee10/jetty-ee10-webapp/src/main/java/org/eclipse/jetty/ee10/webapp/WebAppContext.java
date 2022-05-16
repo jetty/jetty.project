@@ -80,7 +80,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String TEMPDIR = ServletContext.TEMPDIR;
     public static final String BASETEMPDIR = Server.BASE_TEMP_DIR_ATTR;
-    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault.xml";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";

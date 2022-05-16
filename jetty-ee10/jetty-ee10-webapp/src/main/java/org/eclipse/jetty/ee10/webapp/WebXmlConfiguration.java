@@ -39,7 +39,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        //parse webdefault.xml
+        //parse webdefault-ee10.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {

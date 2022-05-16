@@ -70,6 +70,7 @@
     <module>jetty-ee10-tests</module>
     <module>jetty-examples</module>
     <module>jetty-ee10-bom</module>
+    <module>test-ee10-sessions</module>
   </modules>
 
   <dependencyManagement>

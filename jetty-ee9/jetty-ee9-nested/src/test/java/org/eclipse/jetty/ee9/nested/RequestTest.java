@@ -478,6 +478,7 @@ public class RequestTest
             "--AaB03x\r\n" +
             "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n" +
             "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+            "Content-Transfer-Encoding: something\r\n" +
             "\r\n" +
             "000000000000000000000000000000000000000000000000000\r\n" +
             "--AaB03x--\r\n";
@@ -491,7 +492,9 @@ public class RequestTest
 
         LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput(request);
-        assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
+        String response = endPoint.getResponse();
+        assertThat(response, startsWith("HTTP/1.1 200"));
+        assertThat(response, containsString("Violation: TRANSFER_ENCODING"));
 
         // We know the previous request has completed if another request can be processed on the same connection.
         String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
@@ -500,7 +503,8 @@ public class RequestTest
             "\r\n";
 
         endPoint.addInput(cleanupRequest);
-        assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
+        response = endPoint.getResponse();
+        assertTrue(response.startsWith("HTTP/1.1 200"));
         assertThat("File Count in dir: " + testTmpDir, getFileCount(testTmpDir), is(0L));
     }
 

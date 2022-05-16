@@ -111,7 +111,7 @@ public class LikeJettyXml
 //
 //        WebAppProvider webAppProvider = new WebAppProvider();
 //        webAppProvider.setMonitoredDirName(webappsDir.toString());
-//        webAppProvider.setDefaultsDescriptor(configDir.resolve("webdefault.xml").toString());
+//        webAppProvider.setDefaultsDescriptor(configDir.resolve("webdefault-ee10.xml").toString());
 //        webAppProvider.setScanInterval(1);
 //        webAppProvider.setExtractWars(true);
 //        webAppProvider.setConfigurationManager(new PropertiesConfigurationManager());

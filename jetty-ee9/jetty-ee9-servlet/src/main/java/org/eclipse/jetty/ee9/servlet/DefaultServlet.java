@@ -108,7 +108,7 @@ import org.slf4j.LoggerFactory;
  *                    when using NIO connector. Setting this value to false means that
  *                    a direct buffer will be used instead of a mapped file buffer.
  *                    This is set to false by default by this class, but may be overridden
- *                    by eg webdefault.xml
+ *                    by eg webdefault-ee9.xml
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.

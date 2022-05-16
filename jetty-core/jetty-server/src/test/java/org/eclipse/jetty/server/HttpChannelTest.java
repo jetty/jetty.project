@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
@@ -41,12 +43,15 @@ import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -602,7 +607,9 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setContentLength(10);
-                response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
+                response.write(false,
+                    Callback.from(() ->
+                        response.write(true, callback)), BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -1278,5 +1285,160 @@ public class HttpChannelTest
         assertTrue(completed.await(5, TimeUnit.SECONDS));
         assertTrue(stream.isComplete());
         assertFalse(stream.isDemanding());
+    }
+
+    enum CompletionTestEvent
+    {
+        PROCESSED,
+        WRITE,
+        SUCCEED,
+        FAIL,
+        STREAM_COMPLETE
+    }
+
+    public static Stream<List<CompletionTestEvent>> completionEvents()
+    {
+        return Stream.of(
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED),
+            List.of(CompletionTestEvent.WRITE, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.WRITE, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.SUCCEED),
+
+            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.SUCCEED, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.SUCCEED, CompletionTestEvent.STREAM_COMPLETE),
+
+            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.STREAM_COMPLETE, CompletionTestEvent.PROCESSED),
+            List.of(CompletionTestEvent.FAIL, CompletionTestEvent.PROCESSED, CompletionTestEvent.STREAM_COMPLETE),
+            List.of(CompletionTestEvent.PROCESSED, CompletionTestEvent.FAIL, CompletionTestEvent.STREAM_COMPLETE)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("completionEvents")
+    public void testCompletion(List<CompletionTestEvent> events) throws Exception
+    {
+        testCompletion(events, null, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("completionEvents")
+    public void testCompletionNoWriteErrorProcessor(List<CompletionTestEvent> events) throws Exception
+    {
+        Request.Processor errorProcessor = (request, response, callback) -> callback.succeeded();
+        testCompletion(events, errorProcessor, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("completionEvents")
+    public void testCompletionFailedErrorProcessor(List<CompletionTestEvent> events) throws Exception
+    {
+        Request.Processor errorProcessor = (request, response, callback) -> callback.failed(new QuietException.Exception("Error processor failed"));
+        testCompletion(events, errorProcessor, false);
+    }
+
+    private void testCompletion(List<CompletionTestEvent> events, Request.Processor errorProcessor, boolean expectErrorResponse) throws Exception
+    {
+        CountDownLatch processing = new CountDownLatch(1);
+        CountDownLatch processed = new CountDownLatch(1);
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+
+        Handler handler = new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.setHeader("Test", "Value");
+                responseRef.set(response);
+                callbackRef.set(callback);
+                processing.countDown();
+                processed.await();
+            }
+        };
+
+        _server.setHandler(handler);
+        if (errorProcessor != null)
+            _server.setErrorProcessor(errorProcessor);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+
+        AtomicReference<Callback> sendCallback = new AtomicReference<>();
+        MockHttpStream stream = new MockHttpStream(channel)
+        {
+            @Override
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            {
+                sendCallback.set(callback);
+                super.send(request, response, last, NOOP, content);
+            }
+        };
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+
+        // Process the request
+        Thread processor = new Thread(task);
+        processor.start();
+        assertTrue(processing.await(5, TimeUnit.SECONDS));
+
+        Response response = responseRef.get();
+        Callback callback = callbackRef.get();
+        FutureCallback written = null;
+
+        for (CompletionTestEvent event : events)
+        {
+            switch (event)
+            {
+                case WRITE ->
+                {
+                    if (written != null)
+                        throw new IllegalStateException();
+                    written = new FutureCallback();
+                    response.write(true, written);
+                }
+
+                case SUCCEED -> callback.succeeded();
+
+                case FAIL -> callback.failed(new QuietException.Exception("FAILED"));
+
+                case PROCESSED ->
+                {
+                    processed.countDown();
+                    processor.join(10000);
+                    assertFalse(processor.isAlive());
+                }
+
+                case STREAM_COMPLETE ->
+                {
+                    if (sendCallback.get() != null)
+                        sendCallback.get().succeeded();
+                    if (written != null)
+                    {
+                        written.get(5, TimeUnit.SECONDS);
+                        assertTrue(written.isDone());
+                    }
+                }
+            }
+        }
+
+        boolean failed = events.contains(CompletionTestEvent.FAIL);
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), failed ? notNullValue() : nullValue());
+        if (!failed || expectErrorResponse)
+        {
+            assertThat(stream.getResponse(), notNullValue());
+            assertThat(stream.getResponse().getStatus(), equalTo(failed ? 500 : 200));
+            assertThat(stream.getResponseHeaders().get("Test"), failed ? nullValue() : equalTo("Value"));
+        }
+        else
+        {
+            assertThat(stream.getResponse(), nullValue());
+        }
     }
 }

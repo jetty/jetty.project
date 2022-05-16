@@ -176,10 +176,10 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //check the url-patterns
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a
             //webxml or fragment descriptor the annotation is ignored.
-            //However, we want to be able to replace mappings that were given in webdefault.xml
+            //However, we want to be able to replace mappings that were given in webdefault-ee10.xml
             List<ServletMapping> existingMappings = getServletMappingsForServlet(servletName);
 
-            //if any mappings for this servlet already set by a descriptor that is not webdefault.xml forget
+            //if any mappings for this servlet already set by a descriptor that is not webdefault-ee10.xml forget
             //about processing these url mappings
             if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
@@ -190,8 +190,8 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             }
         }
 
-        //We also want to be able to replace mappings that were defined in webdefault.xml
-        //that were for a different servlet eg a mapping in webdefault.xml for / to the jetty
+        //We also want to be able to replace mappings that were defined in webdefault-ee10.xml
+        //that were for a different servlet eg a mapping in webdefault-ee10.xml for / to the jetty
         //default servlet should be able to be replaced by an annotation for / to a different
         //servlet
         if (mapping != null)

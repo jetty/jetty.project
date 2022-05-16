@@ -56,6 +56,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
         int inactivePeriod = 5;
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory1.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         if (storeFactory1 instanceof AbstractSessionDataStoreFactory)
         {
