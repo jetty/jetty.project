@@ -628,7 +628,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        if (_inflateBufferSize > 0)
+        if (_inflateBufferSize > 0 && !baseRequest.isHandled())
         {
             boolean inflate = false;
             for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -671,6 +671,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     return new HttpField("X-Content-Length", length);
                 });
             }
+        }
+
+        // From here on out, the response output gzip determination is made
+
+        // Don't attempt to modify the response output if it's already committed.
+        if (response.isCommitted())
+        {
+            _handler.handle(target, baseRequest, request, response);
+            return;
         }
 
         // Are we already being gzipped?
