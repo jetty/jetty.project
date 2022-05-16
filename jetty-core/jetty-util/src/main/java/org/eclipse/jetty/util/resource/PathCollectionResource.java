@@ -116,20 +116,20 @@ public class PathCollectionResource extends Resource
     }
 
     @Override
-    public Resource addPath(String subPath) throws IOException
+    public Resource addPath(String segment) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subPath) == null)
-            throw new MalformedURLException(subPath);
+        if (URIUtil.canonicalPath(segment) == null)
+            throw new MalformedURLException(segment);
 
-        if ("/".equals(subPath))
+        if ("/".equals(segment))
             return this;
 
-        String toResolve = subPath.startsWith("/") ? subPath.substring(1) : subPath;
-        Path resolvedPath = pathCollection.resolveFirst(toResolve, (x) -> true);
-        return resolvedPath == null ? null : new PathResource(resolvedPath);
+        String toResolve = segment.startsWith("/") ? segment.substring(1) : segment;
+        List<Path> resolvedPaths = pathCollection.resolveAll(toResolve, Files::exists);
+        return resolvedPaths.size() == 1 ? new PathResource(resolvedPaths.get(0)) : new PathCollectionResource(resolvedPaths.toArray(new Path[0]));
     }
 
     private void assertValidPath(Path path)

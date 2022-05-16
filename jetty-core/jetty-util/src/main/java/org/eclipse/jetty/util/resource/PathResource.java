@@ -348,15 +348,15 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subPath) throws IOException
+    public Resource addPath(final String segment) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subPath) == null)
-            throw new MalformedURLException(subPath);
+        if (URIUtil.canonicalPath(segment) == null)
+            throw new MalformedURLException(segment);
 
-        if ("/".equals(subPath))
+        if ("/".equals(segment))
             return this;
 
         // Sub-paths are always under PathResource
@@ -364,7 +364,7 @@ public class PathResource extends Resource
         // where default resolve behavior would be
         // to treat that like an absolute path
 
-        return new PathResource(this, subPath);
+        return new PathResource(this, segment);
     }
 
     private void assertValidPath(Path path)

@@ -427,7 +427,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns the resource contained inside the current resource with the
      * given name, which may or may not exist.
      *
-     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
+     * @param segment The path segment to add, which is not encoded.  The path may be non canonical, but if so then
      * the resulting Resource will return true from {@link #isAlias()}.
      * @return the Resource for the resolved path within this Resource, never null
      * @throws IOException if unable to resolve the path
@@ -435,16 +435,16 @@ public abstract class Resource implements ResourceFactory, Closeable
      * a relative path attempts to access above the root resource.
      */
     // TODO this is getResource() -> remove
-    public abstract Resource addPath(String path)
+    public abstract Resource addPath(String segment)
         throws IOException, MalformedURLException;
 
     /**
      * Get a resource from within this resource.
      */
     @Override
-    public Resource getResource(String path) throws IOException
+    public Resource getResource(String segment) throws IOException
     {
-        return addPath(path);
+        return addPath(segment);
     }
 
     // FIXME: this appears to not be used
