@@ -49,7 +49,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return true if EOF was reached.
      */
-    boolean consumeAll();
+    boolean consumeAvailable();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.
@@ -65,7 +65,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return the byte count produced by the underlying {@link Content.Source}.
      */
-    long getRawContentArrived();
+    long getRawBytesArrived();
 
     /**
      * Get the byte count that can immediately be read from this
@@ -79,14 +79,14 @@ public interface ContentProducer
 
     /**
      * Check if this {@link ContentProducer} instance contains some
-     * content without querying the underlying {@link Content.Source}.
+     * content chunk without querying the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
      * Doesn't query the HttpChannel.
      * @return true if this {@link ContentProducer} instance contains content, false otherwise.
      */
-    boolean hasContent();
+    boolean hasChunk();
 
     /**
      * Check if the underlying {@link Content.Source} reached an error content.
@@ -98,27 +98,27 @@ public interface ContentProducer
     boolean isError();
 
     /**
-     * Get the next content that can be read from or that describes the special condition
+     * Get the next content chunk that can be read from or that describes the terminal condition
      * that was reached (error, eof).
      * This call may or may not block until some content is available, depending on the implementation.
      * The returned content is decoded by the interceptor set with {@link #setInterceptor(HttpInput.Interceptor)}
      * or left as-is if no intercept is set.
      * After this call, state can be either of UNREADY or IDLE.
      *
-     * @return the next content that can be read from or null if the implementation does not block
+     * @return the next content chunk that can be read from or null if the implementation does not block
      * and has no available content.
      */
-    Content.Chunk nextContent();
+    Content.Chunk nextChunk();
 
     /**
      * Free up the content by calling {@link Content.Chunk#release()} on it
-     * and updating this instance' internal state.
+     * and updating this instance's internal state.
      */
-    void reclaim(Content.Chunk content);
+    void reclaim(Content.Chunk chunk);
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.
-     * If there is some, the next call to {@link #nextContent()} will not block.
+     * If there is some, the next call to {@link #nextChunk()} will not block.
      * If there isn't any and the implementation does not block, this method will trigger a
      * {@link jakarta.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.

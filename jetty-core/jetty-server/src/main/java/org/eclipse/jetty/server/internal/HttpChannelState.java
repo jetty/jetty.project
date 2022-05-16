@@ -458,7 +458,7 @@ public class HttpChannelState implements HttpChannel, Components
             // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error.
             if (_error == null)
             {
-                _error = new Content.Chunk.Error(x);
+                _error = Content.Chunk.from(x);
             }
             else if (_error.getCause() != x)
             {
@@ -513,7 +513,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         // Consume content as soon as possible to open any flow control window.
-        Throwable unconsumed = stream.consumeAll();
+        Throwable unconsumed = stream.consumeAvailable();
         if (unconsumed != null && LOG.isDebugEnabled())
             LOG.debug("consuming content during error {}", unconsumed.toString());
 
@@ -925,7 +925,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public long getContentLength()
+        public long getLength()
         {
             return _metaData.getContentLength();
         }
@@ -943,12 +943,12 @@ public class HttpChannelState implements HttpChannel, Components
                     return error;
 
                 if (httpChannel._processState.ordinal() < ProcessState.PROCESSING.ordinal())
-                    return new Content.Chunk.Error(new IllegalStateException("not processing"));
+                    return Content.Chunk.from(new IllegalStateException("not processing"));
 
                 stream = httpChannel._stream;
             }
 
-            Content.Chunk chunk = stream.readContent();
+            Content.Chunk chunk = stream.read();
             if (chunk != null && chunk.hasRemaining())
                 _contentBytesRead.add(chunk.getByteBuffer().remaining());
 
@@ -979,7 +979,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // TODO: can we avoid re-grabbing the lock to get the HttpChannel?
                 getHttpChannel()._serializedInvoker.run(demandCallback);
             else
-                stream.demandContent();
+                stream.demand();
         }
 
         @Override
@@ -1107,7 +1107,7 @@ public class HttpChannelState implements HttpChannel, Components
                 ResponseHttpFields trailers = _request.getHttpChannel()._responseTrailers;
                 if (trailers != null)
                     trailers.add(trailersChunk.getTrailers());
-                callback.succeeded();
+                Response.super.write(Content.Chunk.EOF, callback);
             }
             else
             {
@@ -1235,6 +1235,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public boolean isCompletedSuccessfully()
         {
+            // TODO: this should return whether the last write (or the stream) is completed
+            //  not _completed because the last write may still be pending.
             try (AutoLock ignored = _request._lock.lock())
             {
                 if (_request._httpChannel == null)
@@ -1336,7 +1338,7 @@ public class HttpChannelState implements HttpChannel, Components
                     failure = httpChannelState._failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
 
                 // is the request fully consumed?
-                Throwable unconsumed = stream.consumeAll();
+                Throwable unconsumed = stream.consumeAvailable();
                 if (LOG.isDebugEnabled())
                     LOG.debug("consumeAll: {} {} ", unconsumed == null, httpChannelState);
 
@@ -1378,7 +1380,7 @@ public class HttpChannelState implements HttpChannel, Components
                 request = _request;
 
                 // Consume any input.
-                Throwable unconsumed = stream.consumeAll();
+                Throwable unconsumed = stream.consumeAvailable();
                 if (unconsumed != null && !TypeUtil.isAssociated(unconsumed, failure))
                     failure.addSuppressed(unconsumed);
 

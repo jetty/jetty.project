@@ -75,7 +75,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 if (request.getPathInContext().endsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
-                    response.setContentLength(0);
+                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
                     Response.write(response, false);
                     request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
@@ -83,7 +83,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.setContentLength(0);
+                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                     response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 }
             }
@@ -107,7 +107,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.setContentLength(0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
             }
         });
@@ -123,7 +123,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.setContentLength(0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 Response.write(response, false);
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
             }

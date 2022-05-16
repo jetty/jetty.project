@@ -51,7 +51,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             // TODO remove this setting from HttpConfig?
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
-            if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+            if (request.getLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
 
             return new UntilContentProcessor(request, processor);

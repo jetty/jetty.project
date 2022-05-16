@@ -202,7 +202,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         String value = HttpHeader.NEGOTIATE.asString();
         if (token != null)
             value += " " + token;
-        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
     }
 
     private String getSpnegoToken(String header)

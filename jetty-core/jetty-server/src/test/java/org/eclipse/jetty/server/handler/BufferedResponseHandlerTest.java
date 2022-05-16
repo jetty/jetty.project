@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -227,20 +228,20 @@ public class BufferedResponseHandlerTest
             if (_bufferSize > 0)
                 request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
             if (_mimeType != null)
-                response.setContentType(_mimeType);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
             try (OutputStream outputStream = Content.Sink.asOutputStream(response))
             {
                 for (int i = 0; i < _writes; i++)
                 {
-                    response.addHeader("Write", Integer.toString(i));
+                    response.getHeaders().add("Write", Integer.toString(i));
                     outputStream.write(_content);
                     if (_flush)
                         outputStream.flush();
                 }
             }
 
-            response.addHeader("Written", "true");
+            response.getHeaders().add("Written", "true");
             callback.succeeded();
         }
     }

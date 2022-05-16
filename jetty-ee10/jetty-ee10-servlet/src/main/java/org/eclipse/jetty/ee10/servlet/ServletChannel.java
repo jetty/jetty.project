@@ -86,7 +86,7 @@ public class ServletChannel implements Runnable
         _callback = callback;
     }
 
-    public boolean failAllContent(Throwable x)
+    public boolean failAvailableContent(Throwable x)
     {
         // TODO: what to do with x?
         //       GW: I don't think we need to pass x in any more, as the content pooling is not dependent on
@@ -469,7 +469,7 @@ public class ServletChannel implements Runnable
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
+                            Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
@@ -555,7 +555,7 @@ public class ServletChannel implements Runnable
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
+                                Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
                         }
 
 

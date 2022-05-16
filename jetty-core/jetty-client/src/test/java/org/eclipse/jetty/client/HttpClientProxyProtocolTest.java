@@ -90,7 +90,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
@@ -128,7 +128,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
@@ -177,7 +177,7 @@ public class HttpClientProxyProtocolTest
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
@@ -223,7 +223,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });

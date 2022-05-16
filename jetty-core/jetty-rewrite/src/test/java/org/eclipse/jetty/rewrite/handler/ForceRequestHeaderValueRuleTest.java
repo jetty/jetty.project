@@ -14,6 +14,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -37,7 +38,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 for (HttpField httpField : request.getHeaders())
                 {
                     response.write(false, Callback.NOOP, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()));

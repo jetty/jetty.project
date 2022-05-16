@@ -125,7 +125,7 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public long getContentLength()
+    public long getLength()
     {
         return 0;
     }

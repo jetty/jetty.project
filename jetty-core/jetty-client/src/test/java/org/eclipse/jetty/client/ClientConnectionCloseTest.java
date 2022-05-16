@@ -54,7 +54,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             {
                 Content.Source.consumeAll(request);
 
-                response.setContentLength(data.length);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, callback, ByteBuffer.wrap(data));
 
                 try
@@ -204,7 +204,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                response.setContentLength(0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 try (Blocking.Callback block = Blocking.callback())
                 {
                     response.write(false, block);

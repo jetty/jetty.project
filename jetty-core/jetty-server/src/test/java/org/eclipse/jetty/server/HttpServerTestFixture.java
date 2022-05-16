@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
@@ -139,7 +140,7 @@ public class HttpServerTestFixture
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            long len = expected < 0 ? request.getContentLength() : expected;
+            long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
             byte[] content = new byte[(int)len];
@@ -170,7 +171,7 @@ public class HttpServerTestFixture
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
-            response.setContentLength(reply.length());
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, reply.length());
             response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
@@ -221,7 +222,7 @@ public class HttpServerTestFixture
             String chunk = (input + data).substring(0, block);
             if (encoding == null)
             {
-                response.setContentType("text/plain");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
                 for (int i = writes; i-- > 0;)
                 {
@@ -234,7 +235,7 @@ public class HttpServerTestFixture
             }
             else
             {
-                response.setContentType("text/plain;charset=" + encoding);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding);
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
                 for (int i = writes; i-- > 0;)
                 {

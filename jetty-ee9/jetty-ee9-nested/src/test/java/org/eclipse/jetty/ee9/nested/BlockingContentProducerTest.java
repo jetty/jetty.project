@@ -108,7 +108,7 @@ public class BlockingContentProducerTest
         final Throwable expectedError = new EofException("Early EOF");
 
         ContentListener contentListener = new ContentListener();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new Content.Chunk.Error(expectedError), scheduledExecutorService, contentListener);
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(expectedError), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
         contentListener.setContentProducer(contentProducer);
 
@@ -165,7 +165,7 @@ public class BlockingContentProducerTest
         final String originalContentString = asString(buffers);
 
         ContentListener contentListener = new ContentListener();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new Content.Chunk.Error(new Throwable("testBlockingContentProducerErrorContentIsPassedToInterceptor error")), scheduledExecutorService, contentListener);
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(new Throwable("testBlockingContentProducerErrorContentIsPassedToInterceptor error")), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
         contentListener.setContentProducer(contentProducer);
         AccountingInterceptor interceptor = new AccountingInterceptor();
@@ -196,7 +196,7 @@ public class BlockingContentProducerTest
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false, contentSucceededCount::incrementAndGet))));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> new Content.Chunk.Error(new Throwable("testBlockingContentProducerInterceptorGeneratesError interceptor error")));
+            contentProducer.setInterceptor(content -> Content.Chunk.from(new Throwable("testBlockingContentProducerInterceptorGeneratesError interceptor error")));
 
             Content.Chunk content1 = contentProducer.nextContent();
             assertThat(content1.isTerminal(), is(true));

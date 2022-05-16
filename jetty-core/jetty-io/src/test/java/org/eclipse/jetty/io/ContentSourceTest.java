@@ -323,7 +323,7 @@ public class ContentSourceTest
         assertNotNull(todo);
 
         Throwable cause = new Throwable("test cause");
-        source.add(new Content.Chunk.Error(cause));
+        source.add(Content.Chunk.from(cause));
         todo.run();
 
         todo = source.takeDemand();
@@ -428,7 +428,7 @@ public class ContentSourceTest
         assertNotNull(todo);
 
         Throwable cause = new Throwable("test cause");
-        source.add(new Content.Chunk.Error(cause));
+        source.add(Content.Chunk.from(cause));
         todo.run();
 
         assertTrue(complete.await(10, TimeUnit.SECONDS));

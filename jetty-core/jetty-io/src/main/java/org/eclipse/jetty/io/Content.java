@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
+import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
@@ -38,10 +39,23 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * TODO: expand javadocs.
+ * <p>Namespace class that contains the definitions of a {@link Source content source},
+ * a {@link Sink content sink} and a {@link Chunk content chunk}.</p>
  */
-public interface Content
+public class Content
 {
+    private Content()
+    {
+    }
+
+    /**
+     * <p>Copies the given content source to the given content sink, notifying
+     * the given callback when the copy is complete.</p>
+     *
+     * @param source the source to copy from
+     * @param sink the sink to copy to
+     * @param callback the callback to notify when the copy is complete
+     */
     public static void copy(Source source, Sink sink, Callback callback)
     {
         new ContentCopier(source, sink, callback).iterate();
@@ -83,11 +97,24 @@ public interface Content
      */
     public interface Source
     {
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param promise the promise to notify when the whole content has been read into a ByteBuffer.
+         */
         public static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
         {
             new ContentSourceByteBuffer(source, promise).run();
         }
 
+        /**
+         * <p>Reads, blocking if necessary, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @return the ByteBuffer containing the content
+         * @throws IOException if reading the content fails
+         */
         public static ByteBuffer asByteBuffer(Source source) throws IOException
         {
             try
@@ -102,17 +129,33 @@ public interface Content
             }
         }
 
-        public static void asString(Source content, Charset charset, Promise<String> promise)
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link String}, converting the bytes
+         * using the given {@link Charset}.</p>
+         *
+         * @param source the source to read
+         * @param charset the charset to use to convert the bytes into characters
+         * @param promise the promise to notify when the whole content has been converted into a String
+         */
+        public static void asString(Source source, Charset charset, Promise<String> promise)
         {
-            new ContentSourceString(content, charset, promise).convert();
+            new ContentSourceString(source, charset, promise).convert();
         }
 
-        public static String asString(Source content) throws IOException
+        /**
+         * <p>Reads, blocking if necessary, the whole content source into a {@link String}, converting
+         * the bytes using the given {@link Charset}.</p>
+         *
+         * @param source the source to read
+         * @return the String obtained from the content
+         * @throws IOException if reading the content fails
+         */
+        public static String asString(Source source) throws IOException
         {
             try
             {
                 FuturePromise<String> promise = new FuturePromise<>();
-                asString(content, StandardCharsets.UTF_8, promise);
+                asString(source, StandardCharsets.UTF_8, promise);
                 return promise.get();
             }
             catch (Throwable x)
@@ -121,21 +164,48 @@ public interface Content
             }
         }
 
-        public static InputStream asInputStream(Source content)
+        /**
+         * <p>Wraps the given content source with an {@link InputStream}.</p>
+         *
+         * @param source the source to read from
+         * @return an InputStream that reads from the content source
+         */
+        public static InputStream asInputStream(Source source)
         {
-            return new ContentSourceInputStream(content);
+            return new ContentSourceInputStream(source);
         }
 
-        public static Flow.Publisher<Chunk> asPublisher(Source content)
+        /**
+         * <p>Wraps the given content source with a {@link Flow.Publisher}.</p>
+         *
+         * @param source the source to read from
+         * @return a Publisher that publishes chunks read from the content source
+         */
+        public static Flow.Publisher<Chunk> asPublisher(Source source)
         {
-            return new ContentSourcePublisher(content);
+            return new ContentSourcePublisher(source);
         }
 
+        /**
+         * <p>Reads, non-blocking, the given content source, until either an error or EOF,
+         * and discards the content.</p>
+         *
+         * @param source the source to read from
+         * @param callback the callback to notify when the whole content has been read
+         * or an error occurred while reading the content
+         */
         public static void consumeAll(Source source, Callback callback)
         {
             new ContentSourceConsumer(source, callback).run();
         }
 
+        /**
+         * <p>Reads, blocking if necessary, the given content source, until either an error
+         * or EOF, and discards the content.</p>
+         *
+         * @param source the source to read from
+         * @throws IOException if reading the content fails
+         */
         public static void consumeAll(Source source) throws IOException
         {
             try
@@ -177,27 +247,16 @@ public interface Content
          * be {@link Chunk#release() released}.</p>
          * <p>Concurrent reads from different threads are not recommended, as they are
          * inherently in a race condition.</p>
-         * <p>Reads performed outside the invocation context of a demand callback are
-         * allowed. However, reads performed with a pending demand are inherently in a
-         * race condition (the read thread and the invocation of the demand callback).</p>
+         * <p>Reads performed outside the invocation context of a
+         * {@link #demand(Runnable) demand callback} are allowed.
+         * However, reads performed with a pending demand are inherently in a
+         * race condition (the thread that reads with the thread that invokes the
+         * demand callback).</p>
          *
-         * @return a chunk of content, possibly an error instance or {@code null}
+         * @return a chunk of content, possibly an error instance, or {@code null}
          * @see #demand(Runnable)
          */
         public Chunk read();
-
-        // TODO:
-        //  demand() can be called from demand callback but impls must guarantee no stack overflow.
-        //  read()!=null + demand() is legal usage
-        //  read()==null + demand() + demand callback + read()==null (AKA spurious wakeup) is possible
-        //  demand() + demand callback + read() is legal
-        //  demand() + demand() is illegal (no demand callback between demands AKA demand pending)
-        //  read()==isLast + demand() should invoke demand callback
-        //  read() with demand pending => not recommended (because we cannot tell due to races)
-        //  concurrent read() calls => not recommended (undefined, racy by definition)
-        //  read()==isLast, another read() will return isLast.
-        //  read()==Error, another read() will return the same error.
-        //  demandCallback.run() throws => fail() is called.
 
         /**
          * <p>Demands to invoke the given demand callback parameter when a chunk of content is available.</p>
@@ -209,7 +268,7 @@ public interface Content
          * may return {@code null}.</p>
          * <p>Calling this method establishes a <em>pending demand</em>, which is fulfilled when the demand
          * callback is invoked.</p>
-         * <p>Calling this method when there already is a pending demand results in an
+         * <p>Calling this method when there is already a pending demand results in an
          * {@link IllegalStateException} to be thrown.</p>
          * <p>If the invocation of the demand callback throws an exception, then {@link #fail(Throwable)}
          * is called.</p>
@@ -268,15 +327,44 @@ public interface Content
         }
     }
 
+    /**
+     * <p>A content sink that writes the content to its implementation (a socket, a file, etc.).</p>
+     */
     public interface Sink
     {
+        /**
+         * <p>Wraps the given content sink with an {@link OutputStream}.</p>
+         *
+         * @param sink the sink to write to
+         * @return an OutputStream that writes to the content sink
+         */
         public static OutputStream asOutputStream(Sink sink)
         {
             return new ContentSinkOutputStream(sink);
         }
 
+        public static Flow.Subscriber<Chunk> asSubscriber(Sink sink)
+        {
+            return new ContentSinkSubscriber(sink);
+        }
+
+        /**
+         * <p>Writes the given {@link ByteBuffer}s, notifying the {@link Callback}
+         * when the write is complete.</p>
+         *
+         * @param last whether the ByteBuffers are the last to write
+         * @param callback the callback to notify when the write operation is complete
+         * @param buffers the ByteBuffers to write
+         */
         public void write(boolean last, Callback callback, ByteBuffer... buffers);
 
+        /**
+         * <p>Writes the given {@link Chunk}, notifying the {@link Callback}
+         * when the write is complete.</p>
+         *
+         * @param chunk the chunk to write
+         * @param callback the callback to notify when the write operation is complete
+         */
         public default void write(Chunk chunk, Callback callback)
         {
             if (chunk instanceof Chunk.Error error)
@@ -285,6 +373,14 @@ public interface Content
                 write(chunk.isLast(), callback, chunk.getByteBuffer());
         }
 
+        /**
+         * <p>Writes the given {@link String}, converting it to UTF-8 bytes,
+         * notifying the {@link Callback} when the write is complete.</p>
+         *
+         * @param last whether the String is the last to write
+         * @param callback the callback to notify when the write operation is complete
+         * @param utf8Content the String to write
+         */
         public default void write(boolean last, Callback callback, String utf8Content)
         {
             write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
@@ -308,16 +404,71 @@ public interface Content
          */
         public static final Content.Chunk EOF = ByteBufferChunk.EOF;
 
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @return a new Chunk
+         */
         public static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
             return from(byteBuffer, last, null);
         }
 
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
+         * @return a new Chunk
+         */
         public static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
             return new ByteBufferChunk(byteBuffer, last, releaser);
         }
 
+        /**
+         * <p>Creates an {@link Error error chunk} with the given failure.</p>
+         *
+         * @param failure the cause of the failure
+         * @return a new Error.Chunk
+         */
+        public static Error from(Throwable failure)
+        {
+            return new Error(failure);
+        }
+
+        /**
+         * <p>Returns the chunk that follows a chunk that has been consumed.</p>
+         * <table>
+         * <thead>
+         *   <tr>
+         *     <th>Input Chunk</th>
+         *     <th>Output Chunk</th>
+         *   </tr>
+         * </thead>
+         * <tbody>
+         *   <tr>
+         *     <td>{@code null}</td>
+         *     <td>{@code null}</td>
+         *   </tr>
+         *   <tr>
+         *     <td>{@link Error}</td>
+         *     <td>{@link Error}</td>
+         *   </tr>
+         *   <tr>
+         *     <td>{@link #isLast()}</td>
+         *     <td>{@link #EOF}</td>
+         *   </tr>
+         *   <tr>
+         *     <td>any other Chunk</td>
+         *     <td>{@code null}</td>
+         *   </tr>
+         * </tbody>
+         * </table>
+         */
         public static Chunk next(Chunk chunk)
         {
             if (chunk == null || chunk instanceof Error)
@@ -327,22 +478,45 @@ public interface Content
             return null;
         }
 
+        /**
+         * @return the ByteBuffer of this Chunk
+         */
         public ByteBuffer getByteBuffer();
 
+        /**
+         * @return whether this is the last Chunk
+         */
         public boolean isLast();
 
+        /**
+         * <p>Releases the resources associated to this Chunk.</p>
+         */
         public void release();
 
+        /**
+         * @return the number of bytes remaining in this Chunk
+         */
         public default int remaining()
         {
             return getByteBuffer().remaining();
         }
 
+        /**
+         * @return whether this Chunk has remaining bytes
+         */
         public default boolean hasRemaining()
         {
             return getByteBuffer().hasRemaining();
         }
 
+        /**
+         * <p>Copies the bytes from this Chunk to the given byte array.</p>
+         *
+         * @param bytes the byte array to copy the bytes into
+         * @param offset the offset within the byte array
+         * @param length the maximum number of bytes to copy
+         * @return the number of bytes actually copied
+         */
         public default int get(byte[] bytes, int offset, int length)
         {
             ByteBuffer b = getByteBuffer();
@@ -353,6 +527,12 @@ public interface Content
             return length;
         }
 
+        /**
+         * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
+         *
+         * @param length the maximum number of bytes to skip
+         * @return the number of bytes actually skipped
+         */
         public default int skip(int length)
         {
             ByteBuffer byteBuffer = getByteBuffer();
@@ -361,18 +541,30 @@ public interface Content
             return length;
         }
 
-        // TODO: better name, because a last chunk not read yields terminal==false, but after it is read yields terminal==true
-        //  So maybe something like isLastAndConsumed()?
+        /**
+         * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
+         * <p>A terminal chunk is either an {@link Error error chunk},
+         * or a Chunk that {@link #isLast() is last} and has no remaining
+         * bytes.</p>
+         *
+         * @return whether this Chunk is a terminal chunk
+         */
         public default boolean isTerminal()
         {
             return this instanceof Error || isLast() && !hasRemaining();
         }
 
-        public static class Error implements Chunk
+        /**
+         * <p>A chunk that wraps a failure.</p>
+         * <p>Error Chunks are always last and have no bytes to read.</p>
+         *
+         * @see #from(Throwable)
+         */
+        public static final class Error implements Chunk
         {
             private final Throwable cause;
 
-            public Error(Throwable cause)
+            private Error(Throwable cause)
             {
                 this.cause = cause;
             }

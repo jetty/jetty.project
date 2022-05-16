@@ -232,7 +232,7 @@ public class ContentSourceTransformerTest
     {
         AsyncContent source = new AsyncContent();
         source.write(Content.Chunk.from(UTF_8.encode("ONE"), false), Callback.NOOP);
-        source.write(new Content.Chunk.Error(new IOException()), Callback.NOOP);
+        source.write(Content.Chunk.from(new IOException()), Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         Content.Chunk chunk = transformer.read();
@@ -275,7 +275,7 @@ public class ContentSourceTransformerTest
                     if ("THROW".equalsIgnoreCase(string))
                         throw new RuntimeException();
                     if ("ERROR".equalsIgnoreCase(string))
-                        return new Content.Chunk.Error(new IOException());
+                        return Content.Chunk.from(new IOException());
                     string = string.toLowerCase(Locale.ENGLISH);
                     last = rawChunk.isLast() && i == strings.length - 1;
                     chunks.offer(Content.Chunk.from(UTF_8.encode(string), last));

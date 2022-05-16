@@ -121,7 +121,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public Content.Chunk readContent()
+    public Content.Chunk read()
     {
         while (true)
         {
@@ -139,7 +139,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
         stream.demand();
     }

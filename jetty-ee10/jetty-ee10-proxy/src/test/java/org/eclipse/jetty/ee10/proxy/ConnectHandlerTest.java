@@ -28,19 +28,15 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -275,7 +271,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 String proxyAuthorization = request.getHeaders().get("Proxy-Authorization");
                 if (proxyAuthorization == null)
                 {
-                    response.setHeader("Proxy-Authenticate", "Basic realm=\"test\"");
+                    response.getHeaders().put("Proxy-Authenticate", "Basic realm=\"test\"");
                     return false;
                 }
                 String b64 = proxyAuthorization.substring("Basic ".length());

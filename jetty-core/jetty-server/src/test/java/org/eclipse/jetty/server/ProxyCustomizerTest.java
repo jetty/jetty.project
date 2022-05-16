@@ -85,19 +85,19 @@ public class ProxyCustomizerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
+                response.getHeaders().add("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNameSet());
                 Collections.sort(attributeNames);
-                response.addHeader("attributeNames", String.join(",", attributeNames));
+                response.getHeaders().add("attributeNames", String.join(",", attributeNames));
 
-                response.addHeader("localAddress", request.getConnectionMetaData().getLocalSocketAddress().toString());
-                response.addHeader("remoteAddress", request.getConnectionMetaData().getRemoteSocketAddress().toString());
+                response.getHeaders().add("localAddress", request.getConnectionMetaData().getLocalSocketAddress().toString());
+                response.getHeaders().add("remoteAddress", request.getConnectionMetaData().getRemoteSocketAddress().toString());
                 Object localAddress = request.getAttribute(ProxyCustomizer.LOCAL_ADDRESS_ATTRIBUTE_NAME);
                 if (localAddress != null)
-                    response.addHeader("proxyLocalAddress", localAddress + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
+                    response.getHeaders().add("proxyLocalAddress", localAddress + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
                 Object remoteAddress = request.getAttribute(ProxyCustomizer.REMOTE_ADDRESS_ATTRIBUTE_NAME);
                 if (remoteAddress != null)
-                    response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
+                    response.getHeaders().add("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
                 callback.succeeded();
             }

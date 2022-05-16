@@ -149,7 +149,7 @@ public class ConnectionPoolTest
                         long contentLength = request.getHeaders().getLongField("X-Download");
                         if (contentLength > 0)
                         {
-                            response.setContentLength(contentLength);
+                            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocking.Callback callback = _blocking.callback())
                             {
                                 response.write(true, callback, BufferUtil.allocate((int)contentLength));
@@ -159,9 +159,9 @@ public class ConnectionPoolTest
                     }
                     case POST ->
                     {
-                        long contentLength = request.getContentLength();
+                        long contentLength = request.getLength();
                         if (contentLength > 0)
-                            response.setContentLength(contentLength);
+                            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                         while (true)
                         {
                             Content.Chunk chunk = request.read();

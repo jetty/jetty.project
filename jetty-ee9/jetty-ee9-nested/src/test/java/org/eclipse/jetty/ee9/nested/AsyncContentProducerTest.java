@@ -123,7 +123,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Chunk.Error(expectedError), null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(expectedError), null, barrier));
 
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -178,7 +178,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Chunk.Error(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), null, barrier));
         AccountingInterceptor interceptor = new AccountingInterceptor();
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -207,7 +207,7 @@ public class AsyncContentProducerTest
         ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.EOF));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> new Content.Chunk.Error(new Throwable("testAsyncContentProducerInterceptorGeneratesError interceptor error")));
+            contentProducer.setInterceptor(content -> Content.Chunk.from(new Throwable("testAsyncContentProducerInterceptorGeneratesError interceptor error")));
 
             assertThat(contentProducer.isReady(), is(true));
             assertThat(contentProducer.isError(), is(true));
@@ -227,7 +227,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorGeneratesEof()
     {
         AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), new Content.Chunk.Error(new Throwable("should not reach this"))));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.from(new Throwable("should not reach this"))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> Content.Chunk.EOF);

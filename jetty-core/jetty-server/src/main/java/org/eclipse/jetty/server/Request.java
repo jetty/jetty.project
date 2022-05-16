@@ -62,15 +62,15 @@ import org.eclipse.jetty.util.thread.Invocable;
  * {
  *     while (true)
  *     {
- *         Content content = request.readContent();
- *         if (content == null)
+ *         Content.Chunk chunk = request.read();
+ *         if (chunk == null)
  *         {
- *             // The content is not currently available, demand to be called back.
- *             request.demandContent(() -> process(request, response, callback));
+ *             // The chunk is not currently available, demand to be called back.
+ *             request.demand(() -> process(request, response, callback));
  *             return;
  *         }
  *
- *         if (content instanceof Content.Error error)
+ *         if (chunk instanceof Content.Chunk.Error error)
  *         {
  *             Throwable failure = error.getCause();
  *
@@ -81,7 +81,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             return;
  *         }
  *
- *         if (content instanceof Content.Trailers trailers)
+ *         if (chunk instanceof Trailers trailers)
  *         {
  *             HttpFields fields = trailers.getTrailers();
  *
@@ -95,13 +95,13 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             return;
  *         }
  *
- *         // Normal content, process it.
- *         processContent(content);
+ *         // Normal chunk, process it.
+ *         processChunk(chunk);
  *         // Release the content after processing.
- *         content.release();
+ *         chunk.release();
  *
  *         // Reached end-of-file?
- *         if (content.isLast())
+ *         if (chunk.isLast())
  *         {
  *             // Generate a response.
  *
@@ -166,39 +166,13 @@ public interface Request extends Attributes, Content.Source
     // TODO: see above.
     boolean isSecure();
 
-    // TODO: remove because it's been moved to HttpFields?
-    // TODO: also, it now duplicates Content.Source.getLength().
-    long getContentLength();
-
     /**
-     * <p>Reads a chunk of the request content.</p>
-     * <p>The returned {@link Content.Chunk} may be:</p>
-     * <ul>
-     * <li>{@code null}, meaning that there will be content to read but it is not yet available</li>
-     * <li>a {@link Content.Chunk.Error} instance, in case of read errors</li>
-     * <li>a {@link Trailers} instance, in case of request content trailers</li>
-     * <li>a {@link Content.Chunk} instance, in case of normal request content</li>
-     * </ul>
-     * <p>When the returned {@code Content} is {@code null}, a call to
-     * {@link #demand(Runnable)} should be made, to be notified when more
-     * request content is available.</p>
-     *
-     * @see #demand(Runnable)
+     * {@inheritDoc}
+     * <p>In addition, the returned {@link Content.Chunk} may be a
+     * {@link Trailers} instance, in case of request content trailers.</p>
      */
     @Override
     Content.Chunk read();
-
-    /**
-     * <p>Demands to notify the given {@code Runnable} when request content is available to be read.</p>
-     * <p>It is not mandatory to call this method before a call to {@link #read()}.</p>
-     * <p>The given {@code Runnable} is notified only once for each invocation of this method,
-     * and different invocations of this method may provide the same {@code Runnable}s or
-     * different {@code Runnable}s.</p>
-     *
-     * @see #read()
-     */
-    @Override
-    void demand(Runnable demandCallback);
 
     // TODO should this be on the connectionMetaData?
     default boolean isPushSupported()
@@ -223,13 +197,6 @@ public interface Request extends Attributes, Content.Source
     boolean addErrorListener(Predicate<Throwable> onError);
 
     void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
-
-    // TODO: why this?
-    //  Remove when Request.getContext() is merged.
-    default Request getWrapped()
-    {
-        return null;
-    }
 
     static String getLocalAddr(Request request)
     {
@@ -557,12 +524,6 @@ public interface Request extends Attributes, Content.Source
         public boolean isSecure()
         {
             return getWrapped().isSecure();
-        }
-
-        @Override
-        public long getContentLength()
-        {
-            return getWrapped().getContentLength();
         }
 
         @Override

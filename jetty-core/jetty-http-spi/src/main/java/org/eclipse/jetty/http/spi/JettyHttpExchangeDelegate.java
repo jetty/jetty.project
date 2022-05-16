@@ -137,12 +137,12 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
             for (String value : values)
             {
-                _response.setHeader(name, value);
+                _response.getHeaders().put(name, value);
             }
         }
         if (responseLength > 0)
         {
-            _response.setHeader("content-length", "" + responseLength);
+            _response.getHeaders().put("content-length", "" + responseLength);
         }
         _response.setStatus(rCode);
     }

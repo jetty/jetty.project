@@ -410,7 +410,7 @@ public class GracefulStopTest
             int c = 0;
             try
             {
-                long contentLength = request.getContentLength();
+                long contentLength = request.getLength();
                 Blocking.Shared blocking = new Blocking.Shared();
                 if (contentLength > 0)
                 {

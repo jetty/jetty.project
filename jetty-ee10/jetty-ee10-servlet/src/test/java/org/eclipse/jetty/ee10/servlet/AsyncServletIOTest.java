@@ -236,7 +236,7 @@ public class AsyncServletIOTest
     }
 
     @Test
-    public void testAsyncConsumeAll() throws Exception
+    public void testAsyncConsumeAvailable() throws Exception
     {
         StringBuilder request = new StringBuilder(512);
         request.append("GET /ctx/path3/info HTTP/1.1\r\n")

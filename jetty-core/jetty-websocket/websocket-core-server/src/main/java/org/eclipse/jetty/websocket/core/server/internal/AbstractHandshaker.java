@@ -101,9 +101,9 @@ public abstract class AbstractHandshaker implements Handshaker
         extensionStack.negotiate(negotiation.getOfferedExtensions(), negotiation.getNegotiatedExtensions());
         negotiation.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
         if (extensionStack.hasNegotiatedExtensions())
-            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
+            response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
         else
-            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
+            response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, (String)null);
 
         Negotiated negotiated = new Negotiated(request.getHttpURI().toURI(), protocol, request.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 

@@ -100,9 +100,9 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public Content.Chunk readContent()
+            public Content.Chunk read()
             {
-                Content.Chunk chunk =  super.readContent();
+                Content.Chunk chunk =  super.read();
                 if (chunk != null)
                     statisticsRequest._bytesRead.add(chunk.getByteBuffer().remaining());
                 return chunk;
@@ -361,7 +361,7 @@ public class StatisticsHandler extends Handler.Wrapper
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
-                        _errorContent = new Content.Chunk.Error(new TimeoutException("read rate is too low: " + rr));
+                        _errorContent = Content.Chunk.from(new TimeoutException("read rate is too low: " + rr));
                         demandCallback.run();
                         return;
                     }
@@ -408,7 +408,7 @@ public class StatisticsHandler extends Handler.Wrapper
                         if (wr < _minimumWriteRate)
                         {
                             TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
-                            request._errorContent = new Content.Chunk.Error(cause);
+                            request._errorContent = Content.Chunk.from(cause);
                             callback.failed(cause);
                             return;
                         }

@@ -1100,7 +1100,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 {
                     if (stream._chunk != null)
                         stream._chunk.release();
-                    stream._chunk = new Content.Chunk.Error(bad);
+                    stream._chunk = Content.Chunk.from(bad);
                 }
 
                 Runnable todo = _httpChannel.onFailure(bad);
@@ -1372,7 +1372,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public Content.Chunk readContent()
+        public Content.Chunk read()
         {
             if (_chunk == null)
             {
@@ -1391,7 +1391,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void demandContent()
+        public void demand()
         {
             if (_chunk != null)
             {

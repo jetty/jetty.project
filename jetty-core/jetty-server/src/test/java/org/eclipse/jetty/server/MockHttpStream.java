@@ -132,7 +132,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public Content.Chunk readContent()
+    public Content.Chunk read()
     {
         Content.Chunk chunk = _content.get();
         if (chunk == null || chunk == DEMAND)
@@ -144,7 +144,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
         if (!_content.compareAndSet(null, DEMAND))
         {

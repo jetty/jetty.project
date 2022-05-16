@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.server;
 
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -92,8 +93,8 @@ public class ServerQuicConnectorTest
             public void process(Request request, Response response, Callback callback)
             {
                 int contentLength = 16 * 1024 * 1024;
-                response.setContentLength(contentLength);
-                response.setContentType("text/plain");
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 response.write(true, callback, "0".repeat(contentLength));
             }
         });

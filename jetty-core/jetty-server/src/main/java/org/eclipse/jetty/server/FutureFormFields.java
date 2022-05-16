@@ -44,7 +44,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
             return null;
 
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
+        if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
         // TODO mimeTypes from context

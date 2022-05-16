@@ -657,7 +657,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 return null;
             return (rq, rs, cb) ->
             {
-                rs.setContentType("text/plain; charset=utf-8");
+                rs.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
                 try (StringWriter stringWriter = new StringWriter();
                      PrintWriter out = new PrintWriter(stringWriter))
                 {
@@ -684,7 +684,7 @@ public class HttpConfigurationAuthorityOverrideTest
             return (rq, rs, cb) ->
             {
                 rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
+                rs.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
                 cb.succeeded();
             };
         }
@@ -703,7 +703,7 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain; charset=utf-8");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             response.write(true, callback, "Generic Error Page.");
         }
     }

@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -271,8 +272,8 @@ public class StreamResetTest extends AbstractTest
                 byte[] data = "AFTER RESET".getBytes(charset);
 
                 response.setStatus(200);
-                response.setContentType("text/plain;charset=" + charset.name());
-                response.setContentLength(data.length * 10L);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length * 10L);
                 Response.write(response, false);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
@@ -356,8 +357,8 @@ public class StreamResetTest extends AbstractTest
                 ByteBuffer data = charset.encode("AFTER RESET");
 
                 response.setStatus(200);
-                response.setContentType("text/plain;charset=" + charset.name());
-                response.setContentLength(data.remaining());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.remaining());
                 Response.write(response, false);
 
                 commitLatch.countDown();

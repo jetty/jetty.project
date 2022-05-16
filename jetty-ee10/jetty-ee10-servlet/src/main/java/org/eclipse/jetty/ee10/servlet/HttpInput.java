@@ -155,17 +155,17 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try (AutoLock lock = _contentProducer.lock())
         {
-            return _contentProducer.getRawContentArrived();
+            return _contentProducer.getRawBytesArrived();
         }
     }
 
-    public boolean consumeAll()
+    public boolean consumeAvailable()
     {
         try (AutoLock lock = _contentProducer.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("consumeAll {}", this);
-            boolean atEof = _contentProducer.consumeAll();
+            boolean atEof = _contentProducer.consumeAvailable();
             if (atEof)
                 _consumedEof = true;
 
@@ -267,22 +267,22 @@ public class HttpInput extends ServletInputStream implements Runnable
             // Calculate minimum request rate for DoS protection
             _contentProducer.checkMinDataRate();
 
-            Content.Chunk content = _contentProducer.nextContent();
-            if (content == null)
+            Content.Chunk chunk = _contentProducer.nextChunk();
+            if (chunk == null)
                 throw new IllegalStateException("read on unready input");
-            if (!content.isTerminal())
+            if (!chunk.isTerminal())
             {
-                int read = get(content, b, off, len);
+                int read = get(chunk, b, off, len);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
-                if (!content.hasRemaining())
-                    _contentProducer.reclaim(content);
+                if (!chunk.hasRemaining())
+                    _contentProducer.reclaim(chunk);
                 return read;
             }
 
-            if (content instanceof Content.Chunk.Error errorContent)
+            if (chunk instanceof Content.Chunk.Error errorChunk)
             {
-                Throwable error = errorContent.getCause();
+                Throwable error = errorChunk.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read error={} {}", error, this);
                 if (error instanceof IOException)
@@ -290,7 +290,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IOException(error);
             }
 
-            if (content == Content.Chunk.EOF)
+            if (chunk == Content.Chunk.EOF)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("read at EOF, setting consumed EOF to true {}", this);
@@ -321,7 +321,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
             // which is forbidden by this method's contract.
-            boolean hasContent = _contentProducer.hasContent();
+            boolean hasContent = _contentProducer.hasChunk();
             if (LOG.isDebugEnabled())
                 LOG.debug("hasContent={} {}", hasContent, this);
             return hasContent;
@@ -349,7 +349,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
-        Content.Chunk content;
+        Content.Chunk chunk;
         try (AutoLock lock = _contentProducer.lock())
         {
             // Call isReady() to make sure that if not ready we register for fill interest.
@@ -359,9 +359,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                     LOG.debug("running but not ready {}", this);
                 return;
             }
-            content = _contentProducer.nextContent();
+            chunk = _contentProducer.nextChunk();
             if (LOG.isDebugEnabled())
-                LOG.debug("running on content {} {}", content, this);
+                LOG.debug("running on content {} {}", chunk, this);
         }
 
         // This check is needed when a request is started async but no read listener is registered.
@@ -373,19 +373,19 @@ public class HttpInput extends ServletInputStream implements Runnable
             return;
         }
 
-        if (content.isTerminal())
+        if (chunk.isTerminal())
         {
 
-            if (content instanceof Content.Chunk.Error errorContent)
+            if (chunk instanceof Content.Chunk.Error errorChunk)
             {
-                Throwable error = errorContent.getCause();
+                Throwable error = errorChunk.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
                 _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
                 _readListener.onError(error);
             }
-            else if (content == Content.Chunk.EOF)
+            else if (chunk == Content.Chunk.EOF)
             {
                 try
                 {

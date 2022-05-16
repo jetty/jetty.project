@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -453,7 +454,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                long contentLength = request.getContentLength();
+                long contentLength = request.getLength();
                 long read = 0;
                 while (read < contentLength)
                 {
@@ -1128,7 +1129,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             long[] times = new long[10];
             for (int i = 0; i < times.length; i++)
@@ -1346,7 +1347,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.getHeaders().put("test", "value");
             response.setStatus(200);
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             try (Blocking.Callback blocker = Blocking.callback())
             {
                 response.write(false, blocker, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"));

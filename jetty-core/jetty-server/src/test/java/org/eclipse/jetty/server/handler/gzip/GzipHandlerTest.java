@@ -116,7 +116,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setHeader("ETag", __contentETag);
+            response.getHeaders().put("ETag", __contentETag);
             String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, 304);
@@ -142,7 +142,7 @@ public class GzipHandlerTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = request.getPathInContext();
-            response.setContentType(getContentTypeFromRequest(pathInfo, request));
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
             response.write(true, callback, "This is content for " + pathInfo + "\n");
         }
 
@@ -175,8 +175,8 @@ public class GzipHandlerTest
 
             Fields parameters = Request.extractQueryParameters(request);
             if (parameters.get("vary") != null)
-                response.addHeader("Vary", parameters.get("vary").getValue());
-            response.setHeader("ETag", __contentETag);
+                response.getHeaders().add("Vary", parameters.get("vary").getValue());
+            response.getHeaders().put("ETag", __contentETag);
             String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
@@ -203,7 +203,7 @@ public class GzipHandlerTest
             String writes = parameters.get("writes").getValue();
             AtomicInteger count = new AtomicInteger(writes == null ? 1 : Integer.parseInt(writes));
 
-            response.setContentLength((long)count.get() * __bytes.length);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, (long)count.get() * __bytes.length);
 
             Runnable writer = new Runnable()
             {
@@ -228,8 +228,8 @@ public class GzipHandlerTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer buffer = BufferUtil.toBuffer(__bytes).asReadOnlyBuffer();
-            response.setContentLength(buffer.remaining());
-            response.setContentType("text/plain");
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, buffer.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, callback, buffer);
         }
     }
@@ -252,7 +252,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             Fields parameters = Request.extractQueryParameters(request);
             FutureFormFields futureFormFields = new FutureFormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
@@ -879,8 +879,8 @@ public class GzipHandlerTest
             return (req, res, cb) ->
             {
                 if (req.getHeaders().get("X-Content-Encoding") != null)
-                    assertEquals(-1, req.getContentLength());
-                else if (req.getContentLength() >= 0)
+                    assertEquals(-1, req.getLength());
+                else if (req.getLength() >= 0)
                     MatcherAssert.assertThat(req.getHeaders().get("X-Content-Encoding"), nullValue());
                 processor.process(req, res, cb);
             };

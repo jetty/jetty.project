@@ -635,8 +635,8 @@ public class CustomRequestLogTest
             }
             else if (request.getPathInContext().contains("responseHeaders"))
             {
-                response.addHeader("Header1", "value1");
-                response.addHeader("Header2", "value2");
+                response.getHeaders().add("Header1", "value1");
+                response.getHeaders().add("Header2", "value2");
             }
             else if (request.getPathInContext().contains("/abort"))
             {
@@ -655,7 +655,7 @@ public class CustomRequestLogTest
                 }
             }
 
-            if (request.getContentLength() > 0)
+            if (request.getLength() > 0)
                 Content.Source.consumeAll(request);
 
             callback.succeeded();

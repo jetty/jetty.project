@@ -39,14 +39,14 @@ public class EchoHandler extends Handler.Processor
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
-            response.setContentType(contentType);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
 
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             response.getOrCreateTrailers();
 
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
-            response.setContentLength(contentLength);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
             Content.copy(request, response, callback);

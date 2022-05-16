@@ -155,7 +155,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 AtomicInteger count = new AtomicInteger(10000);
                 Callback writer = new Callback()
                 {
@@ -295,7 +295,7 @@ public class HttpChannelTest
         {
             int i = 0;
             @Override
-            public Content.Chunk readContent()
+            public Content.Chunk read()
             {
                 if (i < parts.length)
                     return Content.Chunk.from(BufferUtil.toBuffer(parts[i++]), false);
@@ -504,7 +504,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.setContentLength(10);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false, Callback.from(() ->
                 {
                     throw new Error("testing");
@@ -571,7 +571,7 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentLength(10);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
         };
@@ -606,7 +606,7 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentLength(10);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
                     Callback.from(() ->
                         response.write(true, callback)), BufferUtil.toBuffer("12345"));
@@ -639,7 +639,7 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentLength(5);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(true, callback, BufferUtil.toBuffer("1234567890"));
             }
         };
@@ -674,7 +674,7 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentLength(5);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
             }
         };
@@ -728,7 +728,7 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
-        assertThat(stream.readContent(), sameInstance(Content.Chunk.EOF));
+        assertThat(stream.read(), sameInstance(Content.Chunk.EOF));
     }
 
     @Test
@@ -740,8 +740,8 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.setContentLength(5);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -770,7 +770,7 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
-        assertThat(stream.readContent(), nullValue());
+        assertThat(stream.read(), nullValue());
     }
 
     @Test
@@ -782,9 +782,9 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.setContentLength(5);
+                response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -812,7 +812,7 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), equalTo(HttpHeaderValue.CLOSE.asString()));
-        assertThat(stream.readContent(), nullValue());
+        assertThat(stream.read(), nullValue());
     }
 
     @Test
@@ -875,9 +875,9 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public Content.Chunk readContent()
+            public Content.Chunk read()
             {
-                return super.readContent();
+                return super.read();
             }
 
             @Override
@@ -906,18 +906,18 @@ public class HttpChannelTest
             new HttpStream.Wrapper(s)
             {
                 @Override
-                public Content.Chunk readContent()
+                public Content.Chunk read()
                 {
-                    Content.Chunk chunk = super.readContent();
+                    Content.Chunk chunk = super.read();
                     history.add("readContent: " + chunk);
                     return chunk;
                 }
 
                 @Override
-                public void demandContent()
+                public void demand()
                 {
                     history.add("demandContent");
-                    super.demandContent();
+                    super.demand();
                 }
 
                 @Override
@@ -1024,7 +1024,7 @@ public class HttpChannelTest
         {
             int i = 0;
             @Override
-            public Content.Chunk readContent()
+            public Content.Chunk read()
             {
                 if (i < parts.length)
                     return Content.Chunk.from(BufferUtil.toBuffer(parts[i++]), false);
@@ -1107,7 +1107,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public Content.Chunk readContent()
+            public Content.Chunk read()
             {
                 int c = count.decrementAndGet();
                 if (c >= 0)
@@ -1116,7 +1116,7 @@ public class HttpChannelTest
             }
 
             @Override
-            public void demandContent()
+            public void demand()
             {
                 Runnable task = channel.onContentAvailable();
                 if (task != null)
@@ -1350,7 +1350,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.setHeader("Test", "Value");
+                response.getHeaders().put("Test", "Value");
                 responseRef.set(response);
                 callbackRef.set(callback);
                 processing.countDown();

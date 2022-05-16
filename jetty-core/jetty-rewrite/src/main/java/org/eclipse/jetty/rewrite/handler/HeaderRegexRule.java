@@ -79,9 +79,9 @@ public class HeaderRegexRule extends RegexRule
             public void process(Request ignored, Response response, Callback callback) throws Exception
             {
                 if (isAdd())
-                    response.addHeader(getHeaderName(), matcher.replaceAll(getHeaderValue()));
+                    response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 else
-                    response.setHeader(getHeaderName(), matcher.replaceAll(getHeaderValue()));
+                    response.getHeaders().put(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 super.process(ignored, response, callback);
             }
         };

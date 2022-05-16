@@ -186,7 +186,7 @@ public class GzipResponse extends Response.Wrapper
             _crc.reset();
 
             // Adjust headers
-            response.setContentLength(-1);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, -1);
             String etag = fields.get(HttpHeader.ETAG);
             if (etag != null)
                 fields.put(HttpHeader.ETAG, etagGzip(etag));

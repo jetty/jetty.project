@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
@@ -30,11 +31,24 @@ public interface HttpStream extends Callback
      */
     String getId();
 
+    /**
+     * @return the nanoTime when this HttpStream was created
+     */
     long getNanoTimeStamp();
 
-    Content.Chunk readContent();
+    /**
+     * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
+     * <p>This method is called from the implementation of {@link Request#read()}.</p>
+     *
+     * @return a chunk of content, possibly an {@link Chunk.Error error} or {@code null}.
+     */
+    Content.Chunk read();
 
-    void demandContent(); // Calls back on Channel#onDataAvailable
+    /**
+     * <p>Demands more content chunks to the underlying implementation.</p>
+     * <p>This method is called from the implementation of {@link Request#demand(Runnable)}.</p>
+     */
+    void demand();
 
     void prepareResponse(HttpFields.Mutable headers);
 
@@ -53,12 +67,12 @@ public interface HttpStream extends Callback
 
     Connection upgrade();
 
-    default Throwable consumeAll()
+    default Throwable consumeAvailable()
     {
         while (true)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content.Chunk content = readContent();
+            Content.Chunk content = read();
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
@@ -103,15 +117,15 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public Content.Chunk readContent()
+        public Content.Chunk read()
         {
-            return _wrapped.readContent();
+            return _wrapped.read();
         }
 
         @Override
-        public void demandContent()
+        public void demand()
         {
-            _wrapped.demandContent();
+            _wrapped.demand();
         }
 
         @Override
@@ -163,9 +177,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public final Throwable consumeAll()
+        public final Throwable consumeAvailable()
         {
-            return _wrapped.consumeAll();
+            return _wrapped.consumeAvailable();
         }
 
         @Override

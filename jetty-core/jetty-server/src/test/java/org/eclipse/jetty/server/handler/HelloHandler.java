@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -48,7 +49,7 @@ public class HelloHandler extends Handler.Processor
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
-        response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         response.write(true, callback, _message);
     }
 }

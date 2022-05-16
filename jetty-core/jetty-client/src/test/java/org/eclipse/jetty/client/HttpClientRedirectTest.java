@@ -35,6 +35,7 @@ import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -700,7 +701,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 response.setStatus(200);
                 // Echo content back
                 InputStream inputStream = Request.asInputStream(request);
-                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                OutputStream outputStream = Content.Sink.asOutputStream(response);
                 IO.copy(inputStream, outputStream);
             }
         }

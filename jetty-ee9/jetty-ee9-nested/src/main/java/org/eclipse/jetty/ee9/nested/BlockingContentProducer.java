@@ -132,7 +132,7 @@ class BlockingContentProducer implements ContentProducer
             }
             catch (InterruptedException e)
             {
-                return new Content.Chunk.Error(e);
+                return Content.Chunk.from(e);
             }
         }
     }

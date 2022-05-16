@@ -270,7 +270,7 @@ public class ResourceHandler extends Handler.Wrapper
             if (precompressedContents != null && precompressedContents.size() > 0)
             {
                 // Tell caches that response may vary by accept-encoding
-                response.addHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
+                response.getHeaders().add(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
 
                 List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
@@ -511,7 +511,7 @@ public class ResourceHandler extends Handler.Wrapper
                 buf.append('?');
                 buf.append(q);
             }
-            response.setContentLength(0);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
             Response.sendRedirect(request, response, callback, buf.toString());
             return;
         }
@@ -542,8 +542,8 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
-        response.setContentType("text/html;charset=utf-8");
-        response.setContentLength(data.length);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, callback, ByteBuffer.wrap(data));
     }
 
@@ -1463,7 +1463,7 @@ public class ResourceHandler extends Handler.Wrapper
                 if (_redirectWelcome)
                 {
                     // Redirect to the index
-                    response.setContentLength(0);
+                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
 
                     // TODO need helper code to edit URIs
                     String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));

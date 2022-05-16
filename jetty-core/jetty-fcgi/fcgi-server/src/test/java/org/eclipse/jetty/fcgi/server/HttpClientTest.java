@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -114,7 +115,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Setting the Content-Length triggers the HTTP
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
-                response.setContentLength(data.length);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
@@ -139,7 +140,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.setContentType("text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String paramValue1 = fields.getValue(paramName1);
                 org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
@@ -170,7 +171,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.setContentType("text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 List<String> paramValues1 = fields.getValues(paramName1);
                 for (String paramValue : paramValues1)
@@ -211,7 +212,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=utf-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                     response.write(true, callback, value);
                 }
             }
@@ -241,7 +242,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=utf-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                     response.write(true, callback, value);
                 }
             }
@@ -272,7 +273,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=utf-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                     response.write(true, callback, value);
                 }
             }
@@ -304,7 +305,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("application/octet-stream");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/octet-stream");
                     Content.copy(request, response, callback);
                 }
             }
@@ -400,7 +401,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
-                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                OutputStream outputStream = Content.Sink.asOutputStream(response);
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(outputStream);
                 gzipOutput.write(data);
                 gzipOutput.finish();
@@ -553,7 +554,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Promise some content, then flush the headers, then fail to send the content.
-                response.setContentLength(16);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 16);
                 org.eclipse.jetty.server.Response.write(response, false);
                 throw new NullPointerException("Explicitly thrown by test");
             }

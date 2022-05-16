@@ -14,9 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,12 +27,12 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocking;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -59,50 +57,21 @@ public interface Response extends Content.Sink
 
     HttpFields.Mutable getOrCreateTrailers();
 
+    /**
+     * {@inheritDoc}
+     * <p>The Chunk to write may be a {@link Trailers}.</p>
+     */
     @Override
-    public void write(boolean last, Callback callback, ByteBuffer... buffers);
+    default void write(Content.Chunk chunk, Callback callback)
+    {
+        Content.Sink.super.write(chunk, callback);
+    }
 
     boolean isCommitted();
 
     boolean isCompletedSuccessfully();
 
     void reset();
-
-    // TODO: inline and remove
-    default void addHeader(String name, String value)
-    {
-        getHeaders().add(name, value);
-    }
-
-    // TODO: inline and remove
-    default void addHeader(HttpHeader header, String value)
-    {
-        getHeaders().add(header, value);
-    }
-
-    // TODO: inline and remove
-    default void setHeader(String name, String value)
-    {
-        getHeaders().put(name, value);
-    }
-
-    // TODO: inline and remove
-    default void setHeader(HttpHeader header, String value)
-    {
-        getHeaders().put(header, value);
-    }
-
-    // TODO: inline and remove
-    default void setContentType(String mimeType)
-    {
-        getHeaders().put(HttpHeader.CONTENT_TYPE, mimeType);
-    }
-
-    // TODO: inline and remove
-    default void setContentLength(long length)
-    {
-        getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
-    }
 
     /*
      * Blocking write utility
@@ -133,7 +102,7 @@ public interface Response extends Content.Sink
         sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
     }
 
-    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAll)
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
@@ -145,7 +114,7 @@ public interface Response extends Content.Sink
             throw new IllegalStateException("Committed");
 
         // TODO: can we remove this?
-        if (consumeAll)
+        if (consumeAvailable)
         {
             while (true)
             {
@@ -265,7 +234,7 @@ public interface Response extends Content.Sink
             return;
         }
 
-        Response.ensureConsumeAllOrNotPersistent(request, response);
+        Response.ensureConsumeAvailableOrNotPersistent(request, response);
 
         if (status <= 0)
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
@@ -314,7 +283,7 @@ public interface Response extends Content.Sink
         return -1;
     }
 
-    static void ensureConsumeAllOrNotPersistent(Request request, Response response)
+    static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
     {
         switch (request.getConnectionMetaData().getHttpVersion())
         {
@@ -440,6 +409,12 @@ public interface Response extends Content.Sink
         }
 
         @Override
+        public void write(Content.Chunk chunk, Callback callback)
+        {
+            getWrapped().write(chunk, callback);
+        }
+
+        @Override
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
@@ -456,63 +431,5 @@ public interface Response extends Content.Sink
         {
             getWrapped().reset();
         }
-    }
-
-    // TODO test and document
-    static OutputStream asOutputStream(Response response)
-    {
-        return Content.Sink.asOutputStream(response);
-    }
-
-    // TODO test and document
-    static WritableByteChannel asWritableByteChannel(Response response)
-    {
-        ConnectionMetaData connectionMetaData = response.getRequest().getConnectionMetaData();
-
-        // TODO
-        // Return the socket channel when using HTTP11 without SSL to allow for zero-copy FileChannel.transferTo()
-//        if (connectionMetaData.getHttpVersion() == HttpVersion.HTTP_1_1 && !connectionMetaData.isSecure())
-//        {
-//            // This returns the socket channel.
-//            Object transport = connectionMetaData.getConnection().getEndPoint().getTransport();
-//            if (transport instanceof WritableByteChannel wbc)
-//                return wbc;
-//        }
-
-        return new WritableByteChannel()
-        {
-            private boolean closed;
-
-            @Override
-            public int write(ByteBuffer src) throws IOException
-            {
-                try (Blocking.Callback callback = Blocking.callback())
-                {
-                    int written = src.remaining();
-                    response.write(false, callback, src);
-                    callback.block();
-                    return written;
-                }
-            }
-
-            @Override
-            public boolean isOpen()
-            {
-                return !closed;
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                if (closed)
-                    return;
-                try (Blocking.Callback callback = Blocking.callback())
-                {
-                    response.write(true, callback, BufferUtil.EMPTY_BUFFER);
-                    callback.block();
-                    closed = true;
-                }
-            }
-        };
     }
 }

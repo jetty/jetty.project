@@ -32,7 +32,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader("request-scheme", request.getHttpURI().getScheme());
+                response.getHeaders().put("request-scheme", request.getHttpURI().getScheme());
                 callback.succeeded();
             }
         });

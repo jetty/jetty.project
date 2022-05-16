@@ -205,7 +205,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                response.setContentType("text/plain;charset=UTF-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String paramValue1 = fields.getValue(paramName1);
                 org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
@@ -237,7 +237,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                response.setContentType("text/plain;charset=UTF-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
 
                 List<String> paramValues1 = fields.getValues(paramName1);
@@ -280,7 +280,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=UTF-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     response.write(true, callback, value);
                 }
             }
@@ -312,7 +312,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=UTF-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     response.write(true, callback, value);
                 }
             }
@@ -346,7 +346,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
-                    response.setContentType("text/plain;charset=UTF-8");
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     response.write(true, callback, ByteBuffer.wrap(content));
                 }
             }
@@ -521,7 +521,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                response.setContentLength(0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 response.setStatus(HttpStatus.OK_200);
                 org.eclipse.jetty.server.Response.write(response, true);
                 Content.Source.consumeAll(request);
@@ -593,7 +593,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 // Echo back
                 InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
-                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                OutputStream outputStream = Content.Sink.asOutputStream(response);
                 IO.copy(inputStream, outputStream);
             }
         });
@@ -601,7 +601,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         AsyncRequestContent body = new AsyncRequestContent();
         body.write(false, Callback.NOOP, BufferUtil.allocate(512));
         body.write(false, Callback.NOOP, BufferUtil.allocate(512));
-        body.write(new Content.Chunk.Error(new IOException("explicitly_thrown_by_test")), Callback.NOOP);
+        body.write(Content.Chunk.from(new IOException("explicitly_thrown_by_test")), Callback.NOOP);
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -1138,7 +1138,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 // Send the headers at this point, then write the content.
                 byte[] content = "TEST".getBytes(UTF_8);
-                response.setContentLength(content.length);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 org.eclipse.jetty.server.Response.write(response, false);
                 response.write(true, callback, ByteBuffer.wrap(content));
             }
@@ -1522,7 +1522,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentType("text/plain");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 response.write(true, callback, org.eclipse.jetty.server.Request.getServerName(request));
             }
         });

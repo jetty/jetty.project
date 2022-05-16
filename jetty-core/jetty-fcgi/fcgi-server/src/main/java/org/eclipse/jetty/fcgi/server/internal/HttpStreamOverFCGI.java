@@ -154,7 +154,7 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public Content.Chunk readContent()
+    public Content.Chunk read()
     {
         if (_chunk == null)
             _connection.parseAndFill();
@@ -164,7 +164,7 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
         if (_chunk != null)
             return;
@@ -196,7 +196,6 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         if (_chunk == null)
             _chunk = Content.Chunk.EOF;
-        // TODO: paranoid check, maybe remove it.
         else if (!_chunk.isLast() && !(_chunk instanceof Content.Chunk.Error))
             throw new IllegalStateException();
     }

@@ -78,9 +78,9 @@ public class HeaderPatternRule extends PatternRule
             public void process(Request ignored, Response response, Callback callback) throws Exception
             {
                 if (isAdd())
-                    response.addHeader(getHeaderName(), getHeaderValue());
+                    response.getHeaders().add(getHeaderName(), getHeaderValue());
                 else
-                    response.setHeader(getHeaderName(), getHeaderValue());
+                    response.getHeaders().put(getHeaderName(), getHeaderValue());
                 super.process(ignored, response, callback);
             }
         };

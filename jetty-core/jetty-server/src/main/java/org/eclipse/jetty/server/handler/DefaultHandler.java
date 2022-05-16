@@ -98,8 +98,8 @@ public class DefaultHandler extends Handler.Processor
             else
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.setContentType("image/x-icon");
-                response.setContentLength(_favicon.remaining());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "image/x-icon");
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, _favicon.remaining());
                 response.getHeaders().add(_faviconModified);
                 response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
@@ -115,7 +115,7 @@ public class DefaultHandler extends Handler.Processor
         }
 
         response.setStatus(HttpStatus.NOT_FOUND_404);
-        response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_UTF_8.toString());
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))
@@ -190,7 +190,7 @@ public class DefaultHandler extends Handler.Processor
             writer.append("</body>\n</html>\n");
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
-            response.setContentLength(content.remaining());
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.remaining());
             response.write(true, callback, content);
         }
     }

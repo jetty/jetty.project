@@ -128,7 +128,7 @@ public class ByteBufferContentSource implements Content.Source
         {
             if (terminated != null)
                 return;
-            terminated = new Content.Chunk.Error(failure);
+            terminated = Content.Chunk.from(failure);
         }
     }
 }

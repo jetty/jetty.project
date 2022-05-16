@@ -2327,7 +2327,7 @@ public class ResponseTest
         }
 
         @Override
-        public long getContentLength()
+        public long getLength()
         {
             return 0;
         }

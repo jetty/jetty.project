@@ -2204,7 +2204,7 @@ public class RequestTest
         }
 
         @Override
-        public long getContentLength()
+        public long getLength()
         {
             return 0;
         }

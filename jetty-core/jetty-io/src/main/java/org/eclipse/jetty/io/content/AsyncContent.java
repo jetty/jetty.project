@@ -212,7 +212,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 return;
             if (errorChunk != null)
                 return;
-            errorChunk = new Content.Chunk.Error(failure);
+            errorChunk = Content.Chunk.from(failure);
             drained = List.copyOf(chunks);
             chunks.clear();
         }

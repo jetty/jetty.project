@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.tests;
 
 import java.util.Date;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -63,11 +64,11 @@ public class HTTP2CServer extends Server
                 response.setStatus(Integer.parseInt(code));
 
             response.getHeaders().put("Custom", "Value");
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             String content = "Hello from Jetty using " + request.getConnectionMetaData().getProtocol() + "\n";
             content += "uri=" + request.getPathInContext() + "\n";
             content += "date=" + new Date() + "\n";
-            response.setContentLength(content.length());
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length());
             response.write(true, callback, content);
         }
     }

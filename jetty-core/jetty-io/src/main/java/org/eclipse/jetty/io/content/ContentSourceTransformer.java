@@ -108,7 +108,7 @@ public abstract class ContentSourceTransformer implements Content.Source
             if (rawChunk != null)
                 rawChunk.release();
             fail(x);
-            return new Content.Chunk.Error(x);
+            return Content.Chunk.from(x);
         }
     }
 

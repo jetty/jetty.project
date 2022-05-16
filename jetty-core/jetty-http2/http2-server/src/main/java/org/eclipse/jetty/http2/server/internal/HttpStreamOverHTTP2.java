@@ -119,7 +119,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public Content.Chunk readContent()
+    public Content.Chunk read()
     {
         while (true)
         {
@@ -137,7 +137,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
         if (!_demand)
         {

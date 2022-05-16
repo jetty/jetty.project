@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -88,7 +89,7 @@ public class SSLReadEOFAfterResponseTest
                 }
 
                 // Second: write the response.
-                response.setContentLength(bytes.length);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
                     response.write(true, blocker, BufferUtil.toBuffer(bytes));

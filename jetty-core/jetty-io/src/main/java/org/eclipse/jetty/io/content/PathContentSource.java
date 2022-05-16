@@ -194,7 +194,7 @@ public class PathContentSource implements Content.Source
         {
             if (errorChunk == null)
             {
-                errorChunk = new Content.Chunk.Error(failure);
+                errorChunk = Content.Chunk.from(failure);
                 IO.close(channel);
             }
             return errorChunk;

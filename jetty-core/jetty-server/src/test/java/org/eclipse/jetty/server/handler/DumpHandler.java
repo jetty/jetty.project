@@ -142,7 +142,7 @@ public class DumpHandler extends Handler.Processor
             return;
         }
 
-        response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML.asString());
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);
@@ -189,7 +189,7 @@ public class DumpHandler extends Handler.Processor
 
         // commit now
         if (!Boolean.parseBoolean(params.getValue("no-content-length")))
-            response.setContentLength(buf.size() + 1000);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, buf.size() + 1000);
 
         response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
 
@@ -198,8 +198,9 @@ public class DumpHandler extends Handler.Processor
             response.write(false, blocker, BufferUtil.toBuffer(buf.toByteArray()));
             blocker.block();
         }
-        response.addHeader("After-Flush", "These headers should not be seen in the response!!!");
-        response.addHeader("After-Flush", response.isCommitted() ? "Committed" : "Not Committed?");
+        response.getHeaders().add("After-Flush", "These headers should not be seen in the response!!!");
+        String value = response.isCommitted() ? "Committed" : "Not Committed?";
+        response.getHeaders().add("After-Flush", value);
 
         // write remaining content after commit
         String padding = "ABCDEFGHIJ".repeat(99) + "ABCDEFGH\r\n";

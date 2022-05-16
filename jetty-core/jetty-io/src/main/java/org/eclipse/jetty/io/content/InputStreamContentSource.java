@@ -136,7 +136,7 @@ public class InputStreamContentSource implements Content.Source
         {
             error = errorChunk;
             if (error == null)
-                error = errorChunk = new Content.Chunk.Error(failure);
+                error = errorChunk = Content.Chunk.from(failure);
         }
         IO.close(inputStream);
         return error;

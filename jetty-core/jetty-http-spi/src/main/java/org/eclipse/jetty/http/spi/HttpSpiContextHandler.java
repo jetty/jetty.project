@@ -90,7 +90,7 @@ public class HttpSpiContextHandler extends ContextHandler
             for (Map.Entry<String, List<String>> header : httpExchange.getResponseHeaders().entrySet())
             {
                 for (String value : header.getValue())
-                    response.addHeader(header.getKey(), value);
+                    response.getHeaders().add(header.getKey(), value);
             }
             Response.writeError(request, response, callback, rc);
             return true;
@@ -103,7 +103,7 @@ public class HttpSpiContextHandler extends ContextHandler
             {
                 for (String value : header.getValue())
                 {
-                    response.addHeader(header.getKey(), value);
+                    response.getHeaders().add(header.getKey(), value);
                 }
             }
             Response.writeError(request, response, callback, rc);
