@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -32,8 +33,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 public class StatisticsHandler extends Handler.Wrapper
 {
-    private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
-
+    private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final CounterStatistic _handleStats = new CounterStatistic();
     private final CounterStatistic _processStats = new CounterStatistic();
@@ -41,7 +41,8 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
     private final SampleStatistic _processTimeStats = new SampleStatistic();
 
-    private final LongAdder _responsesThrown = new LongAdder();
+    private final LongAdder _processThrows = new LongAdder();
+    private final LongAdder _handleThrows = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -61,11 +62,12 @@ public class StatisticsHandler extends Handler.Wrapper
         }
         catch (Throwable t)
         {
-            _responsesThrown.increment();
+            _handleThrows.increment();
             throw t;
         }
         finally
         {
+            _handleStats.decrement();
             _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
         }
     }
@@ -115,7 +117,8 @@ public class StatisticsHandler extends Handler.Wrapper
             _processStats.increment();
             _requestStats.increment();
 
-            _connectionStats.computeIfAbsent(getConnectionMetaData().getId(), id ->
+            String id = getConnectionMetaData().getId();
+            if (_connectionStats.add(id))
             {
                 // TODO test this with localconnector endpoint that has multiple requests per connection.
                 getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
@@ -123,12 +126,10 @@ public class StatisticsHandler extends Handler.Wrapper
                     @Override
                     public void onClosed(Connection connection)
                     {
-                        // complete connections stats
                         _connectionStats.remove(id);
                     }
                 });
-                return "SomeConnectionStatsObject";
-            });
+            }
 
             addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
@@ -144,9 +145,6 @@ public class StatisticsHandler extends Handler.Wrapper
                             case 3 -> _responses3xx.increment();
                             case 4 -> _responses4xx.increment();
                             case 5 -> _responses5xx.increment();
-                            default ->
-                            {
-                            }
                         }
                     }
 
@@ -170,17 +168,17 @@ public class StatisticsHandler extends Handler.Wrapper
                 @Override
                 public void succeeded()
                 {
-                    super.succeeded();
                     _requestStats.decrement();
                     _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    super.succeeded();
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    super.failed(x);
                     _requestStats.decrement();
                     _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    super.failed(x);
                 }
             });
 
@@ -190,7 +188,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
             catch (Throwable t)
             {
-                _responsesThrown.increment();
+                _processThrows.increment();
                 throw t;
             }
             finally
@@ -249,10 +247,16 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during handling or processing")
-    public int getResponsesThrown()
+    @ManagedAttribute("number of requests that threw an exception during handling")
+    public int getHandleThrows()
     {
-        return _responsesThrown.intValue();
+        return _handleThrows.intValue();
+    }
+
+    @ManagedAttribute("number of requests that threw an exception during processing")
+    public int getProcessThrows()
+    {
+        return _handleThrows.intValue();
     }
 
     @ManagedAttribute("")
