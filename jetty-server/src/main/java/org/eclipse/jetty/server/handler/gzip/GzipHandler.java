@@ -678,7 +678,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Handle request inflation
         HttpFields httpFields = baseRequest.getHttpFields();
         boolean inflated = _inflateBufferSize > 0 && httpFields.contains(HttpHeader.CONTENT_ENCODING, "gzip") && isPathInflatable(path);
-        if (inflated)
+        if (inflated && !baseRequest.isHandled())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} inflate {}", this, request);
@@ -686,6 +686,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     new GzipHttpInputInterceptor(_inflaterPool, baseRequest.getHttpChannel().getByteBufferPool(),
                             _inflateBufferSize, baseRequest.getHttpChannel().isUseInputDirectByteBuffers());
             baseRequest.getHttpInput().addInterceptor(gzipHttpInputInterceptor);
+        }
+
+        // From here on out, the response output gzip determination is made
+
+        // Don't attempt to modify the response output if it's already committed.
+        if (response.isCommitted())
+        {
+            _handler.handle(target, baseRequest, request, response);
+            return;
         }
 
         // Are we already being gzipped?
