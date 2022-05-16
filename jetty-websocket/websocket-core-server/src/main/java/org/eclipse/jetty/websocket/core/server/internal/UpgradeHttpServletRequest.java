@@ -430,7 +430,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     {
         if (request == null)
             attributes.put(name, value);
-        request.setAttribute(name, value);
+        else
+            request.setAttribute(name, value);
     }
 
     @Override
@@ -438,7 +439,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     {
         if (request == null)
             attributes.remove(name);
-        request.removeAttribute(name);
+        else
+            request.removeAttribute(name);
     }
 
     @Override
