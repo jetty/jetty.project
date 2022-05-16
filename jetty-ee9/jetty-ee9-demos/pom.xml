@@ -33,13 +33,13 @@
     <module>demo-ee9-async-rest</module>
     <module>demo-ee9-jaas-webapp</module>
     <module>demo-ee9-jndi-webapp</module>
-    <module>demo-ee9-jetty-webapp</module>
-    <module>demo-ee9-proxy-webapp</module>
+        <!--    <module>demo-ee9-jetty-webapp</module> -->
+        <!-- module>demo-ee9-proxy-webapp</module> -->
     <module>demo-ee9-simple-webapp</module>
     <module>demo-ee9-jsp-webapp</module>
     <module>demo-ee9-mock-resources</module>
     <module>demo-ee9-spec</module>
     <module>demo-ee9-template</module>
-    <module>demo-ee9-embedded</module>
+    <!-- <module>demo-ee9-embedded</module> -->
   </modules>
 </project>
