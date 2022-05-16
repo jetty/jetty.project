@@ -82,7 +82,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -452,7 +451,6 @@ public class RequestTest
         assertThat(response, containsString(" 200 OK"));
     }
 
-    @Disabled
     @Test
     public void testMultiPart() throws Exception
     {
@@ -494,7 +492,9 @@ public class RequestTest
 
         LocalEndPoint endPoint = _connector.connect();
         endPoint.addInput(request);
-        assertThat(endPoint.getResponse(), startsWith("HTTP/1.1 200"));
+        String response = endPoint.getResponse();
+        assertThat(response, startsWith("HTTP/1.1 200"));
+        assertThat(response, containsString("Violation: TRANSFER_ENCODING"));
 
         // We know the previous request has completed if another request can be processed on the same connection.
         String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
@@ -503,9 +503,8 @@ public class RequestTest
             "\r\n";
 
         endPoint.addInput(cleanupRequest);
-        String response = endPoint.getResponse();
+        response = endPoint.getResponse();
         assertTrue(response.startsWith("HTTP/1.1 200"));
-        assertThat(response, containsString("Violation: TRANSFER_ENCODING"));
         assertThat("File Count in dir: " + testTmpDir, getFileCount(testTmpDir), is(0L));
     }
 
