@@ -54,7 +54,7 @@
     <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.2</jackson.annotations.version>
-    <jackson.core.version>2.13.2</jackson.core.version>
+    <jackson.core.version>2.13.3</jackson.core.version>
     <jackson.databind.version>2.13.2.2</jackson.databind.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.0</jakarta.annotation.api.version>
