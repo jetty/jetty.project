@@ -14,4 +14,4 @@ etc/jetty-secure-redirect.xml
 
 [ini-template]
 ## The redirect code to use in the response.
-# jetty.redirect.code=302
+# jetty.secureredirect.code=302

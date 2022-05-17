@@ -2,20 +2,10 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Get id="Handler" name="handler"/>
-  <Call name="setHandler">
+  <Call name="insertHandler">
     <Arg>
-      <New class="org.eclipse.jetty.server.handler.HandlerList">
-        <Call name="addHandler">
-          <Arg>
-            <New id="SecuredRedirectHandler" class="org.eclipse.jetty.server.handler.SecuredRedirectHandler">
-              <Arg type="int"><Property name="jetty.redirect.code" default="302"/></Arg>
-            </New>
-          </Arg>
-        </Call>
-        <Call name="addHandler">
-          <Arg><Ref refid="Handler"/></Arg>
-        </Call>
+      <New id="SecuredRedirectHandler" class="org.eclipse.jetty.server.handler.SecuredRedirectHandler">
+        <Arg type="int"><Property name="jetty.secureredirect.code" default="302"/></Arg>
       </New>
     </Arg>
   </Call>
