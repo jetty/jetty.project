@@ -911,10 +911,7 @@ public interface HttpURI
             _query = uri.getQuery();
             _uri = null;
             _decodedPath = uri.getDecodedPath();
-            if (uri.hasAmbiguousSeparator())
-                _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
-            if (uri.hasAmbiguousSegment())
-                _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
+            _violations.addAll(uri.getViolations());
             return this;
         }
 
