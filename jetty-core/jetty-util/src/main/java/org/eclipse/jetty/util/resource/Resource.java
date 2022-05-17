@@ -890,18 +890,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
-     * Generate a properly encoded URL from a {@link File} instance.
-     *
-     * @param file Target file.
-     * @return URL of the target file.
-     * @throws MalformedURLException if unable to convert File to URL
-     */
-    public static URL toURL(File file) throws MalformedURLException
-    {
-        return file.toURI().toURL();
-    }
-
-    /**
      * Parse a list of String delimited resources and
      * return the List of Resources instances it represents.
      * <p>
