@@ -52,21 +52,31 @@ public class PathCollectionResource extends Resource
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
     private final PathCollection pathCollection;
+    private final List<URI> uris;
+
+    public PathCollectionResource(Path path)
+    {
+        this(PathCollection.from(path), List.of(path.toUri()));
+    }
 
     /**
-     * Construct a new PathResource from Path objects.
+     * Construct a new PathCollectionResource from Path objects.
      *
      * @param paths the paths to use
      */
-    public PathCollectionResource(Path... paths)
+    public PathCollectionResource(List<Path> paths)
     {
-        List<Path> absPaths = new ArrayList<>();
-        for (Path path : paths)
+        this(PathCollection.from(paths), paths.stream().map(Path::toUri).toList());
+    }
+
+    private PathCollectionResource(PathCollection pathCollection, List<URI> uris)
+    {
+        List<Path> absPaths = pathCollection.stream().map(path ->
         {
             try
             {
-                Path absPath = path.toRealPath(NO_FOLLOW_LINKS);
-                absPaths.add(absPath);
+                assertValidPath(path);
+                return path.toRealPath(NO_FOLLOW_LINKS);
             }
             catch (IOError | IOException e)
             {
@@ -75,10 +85,33 @@ public class PathCollectionResource extends Resource
                 // to a path that doesn't exist (yet)
                 if (LOG.isDebugEnabled())
                     LOG.debug("Unable to get real/canonical path for {}", path, e);
+                return path;
             }
-            assertValidPath(path);
-        }
+        }).toList();
+
+        if (absPaths.size() != uris.size())
+            throw new IllegalArgumentException("path collection size must be equal to uri list size");
+
         this.pathCollection = PathCollection.from(absPaths);
+        this.uris = uris;
+    }
+
+    private PathCollectionResource(PathCollectionResource parent, String childSegment)
+    {
+        // Calculate the URI and the path separately, so that any aliasing done by
+        // FileSystem.getPath(path,childPath) is visible as a difference to the URI
+        // obtained via URIUtil.addDecodedPath(uri,childPath)
+        this.pathCollection = PathCollection.from(parent.pathCollection.stream().map(path -> path.getFileSystem().getPath(path.toString(), childSegment)));
+        String pathSegment = childSegment;
+        if (isDirectory() && !pathSegment.endsWith("/"))
+            pathSegment += "/";
+
+        this.uris = new ArrayList<>();
+        for (URI parentUri : parent.uris)
+        {
+            URI uri = URIUtil.addPath(parentUri, pathSegment);
+            this.uris.add(uri);
+        }
     }
 
     @Override
@@ -127,9 +160,7 @@ public class PathCollectionResource extends Resource
         if ("/".equals(segment))
             return this;
 
-        String toResolve = segment.startsWith("/") ? segment.substring(1) : segment;
-        List<Path> resolvedPaths = pathCollection.resolveAll(toResolve, Files::exists);
-        return resolvedPaths.size() == 1 ? new PathResource(resolvedPaths.get(0)) : new PathCollectionResource(resolvedPaths.toArray(new Path[0]));
+        return new PathCollectionResource(this, segment);
     }
 
     private void assertValidPath(Path path)
@@ -288,12 +319,6 @@ public class PathCollectionResource extends Resource
     public boolean isAlias()
     {
         return false;
-    }
-
-    @Override
-    public URI getAlias()
-    {
-        return null;
     }
 
     @Override

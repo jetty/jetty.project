@@ -312,7 +312,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
-            context.setBaseResource(new PathCollectionResource(resources.stream().map(Resource::getPath).toArray(Path[]::new)));
+            context.setBaseResource(new PathCollectionResource(resources.stream().map(Resource::getPath).toList()));
     }
 
     protected void scanJars(WebAppContext context) throws Exception

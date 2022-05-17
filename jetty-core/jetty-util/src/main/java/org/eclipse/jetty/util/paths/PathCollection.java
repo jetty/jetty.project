@@ -256,9 +256,6 @@ public final class PathCollection implements AutoCloseable
 
     private Path toSmartPath(Path path)
     {
-        if (Files.isDirectory(path))
-            return path;
-
         if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
         {
             try
@@ -271,7 +268,6 @@ public final class PathCollection implements AutoCloseable
                 throw new IllegalStateException("ZipFs failure: " + path, e);
             }
         }
-
-        throw new IllegalArgumentException("Unsupported Path: " + path);
+        return path;
     }
 }
