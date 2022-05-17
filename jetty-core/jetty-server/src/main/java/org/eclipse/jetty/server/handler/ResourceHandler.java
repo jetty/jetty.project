@@ -93,7 +93,7 @@ public class ResourceHandler extends Handler.Wrapper
                 //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
                 //          EVEN IF the file does not exist.
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _resourceBase.addPath(pathInContext).addPath(welcome);
+                Resource welcomePath = _resourceBase.getResource(pathInContext).getResource(welcome);
                 if (welcomePath != null && welcomePath.exists())
                     return welcomeInContext;
             }

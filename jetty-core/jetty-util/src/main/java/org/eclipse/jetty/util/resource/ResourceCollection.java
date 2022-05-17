@@ -235,7 +235,7 @@ public class ResourceCollection extends Resource
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
-    public Resource addPath(String segment) throws IOException
+    public Resource getResource(String segment) throws IOException
     {
         assertResourcesSet();
 
@@ -255,7 +255,7 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
-            addedResource = res.addPath(segment);
+            addedResource = res.getResource(segment);
             if (!addedResource.exists())
                 continue;
             if (!addedResource.isDirectory())

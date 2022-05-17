@@ -105,7 +105,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public Resource addPath(String segment) throws IOException, MalformedURLException
+    public Resource getResource(String segment) throws IOException, MalformedURLException
     {
         return this;
     }

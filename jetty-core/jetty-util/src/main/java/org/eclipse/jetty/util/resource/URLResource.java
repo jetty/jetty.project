@@ -267,7 +267,7 @@ public class URLResource extends Resource
      * given name
      */
     @Override
-    public Resource addPath(String segment)
+    public Resource getResource(String segment)
         throws IOException
     {
         // Check that the path is within the root,

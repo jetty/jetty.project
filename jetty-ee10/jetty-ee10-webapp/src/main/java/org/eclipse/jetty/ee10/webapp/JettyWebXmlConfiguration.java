@@ -57,11 +57,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty = webInf.addPath("jetty8-web.xml");
+            Resource jetty = webInf.getResource("jetty8-web.xml");
             if (!jetty.exists())
-                jetty = webInf.addPath(JETTY_WEB_XML);
+                jetty = webInf.getResource(JETTY_WEB_XML);
             if (!jetty.exists())
-                jetty = webInf.addPath("web-jetty.xml");
+                jetty = webInf.getResource("web-jetty.xml");
 
             if (jetty.exists())
             {

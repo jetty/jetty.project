@@ -149,7 +149,7 @@ public class PathCollectionResource extends Resource
     }
 
     @Override
-    public Resource addPath(String segment) throws IOException
+    public Resource getResource(String segment) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the

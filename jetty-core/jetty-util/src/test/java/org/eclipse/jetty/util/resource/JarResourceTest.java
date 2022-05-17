@@ -175,7 +175,7 @@ public class JarResourceTest
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
         Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource rez = resource.addPath("rez/");
+        Resource rez = resource.getResource("rez/");
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
@@ -203,7 +203,7 @@ public class JarResourceTest
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
         Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource rez = resource.addPath("rez/oddities/");
+        Resource rez = resource.getResource("rez/oddities/");
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
@@ -227,7 +227,7 @@ public class JarResourceTest
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
         Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource anotherDir = resource.addPath("rez/another dir/");
+        Resource anotherDir = resource.getResource("rez/another dir/");
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 

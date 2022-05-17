@@ -873,7 +873,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Resource resource = baseResource.getResource(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;

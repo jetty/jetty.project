@@ -236,7 +236,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource qstart;
         if (attr == null || StringUtil.isBlank(attr.toString()))
         {
-            qstart = webInf.addPath("quickstart-web.xml");
+            qstart = webInf.getResource("quickstart-web.xml");
         }
         else
         {

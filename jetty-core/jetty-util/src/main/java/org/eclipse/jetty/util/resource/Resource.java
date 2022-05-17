@@ -61,7 +61,6 @@ public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
-    volatile Object _associate;
 
     /**
      * Change the default setting for url connection caches.
@@ -434,32 +433,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
      * a relative path attempts to access above the root resource.
      */
-    // TODO this is getResource() -> remove
-    public abstract Resource addPath(String segment)
-        throws IOException, MalformedURLException;
-
-    /**
-     * Get a resource from within this resource.
-     */
-    @Override
-    public Resource getResource(String segment) throws IOException
-    {
-        return addPath(segment);
-    }
-
-    // FIXME: this appears to not be used
-    @SuppressWarnings("javadoc")
-    public Object getAssociate()
-    {
-        return _associate;
-    }
-
-    // FIXME: this appear to not be used
-    @SuppressWarnings("javadoc")
-    public void setAssociate(Object o)
-    {
-        _associate = o;
-    }
+    public abstract Resource getResource(String segment) throws IOException, MalformedURLException;
 
     /**
      * @return true if this Resource is an alias to another real Resource
@@ -534,7 +508,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = addPath(l);
+            Resource item = getResource(l);
             items.add(item);
         }
 
@@ -905,7 +879,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 {
                     for (String i : list)
                     {
-                        Resource r = addPath(i);
+                        Resource r = getResource(i);
                         if (r.isDirectory())
                             deep.addAll(r.getAllResources());
                         else
@@ -998,7 +972,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         {
                             try
                             {
-                                Resource resource = dirResource.addPath(entry);
+                                Resource resource = dirResource.getResource(entry);
                                 if (!resource.isDirectory())
                                 {
                                     returnedResources.add(resource);

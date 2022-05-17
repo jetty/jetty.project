@@ -65,12 +65,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof WebAppClassLoader)
         {
             // Look for classes directory
-            Resource classes = webInf.addPath("classes/");
+            Resource classes = webInf.getResource("classes/");
             if (classes.exists())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
-            Resource lib = webInf.addPath("lib/");
+            Resource lib = webInf.getResource("lib/");
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
@@ -408,13 +408,13 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Do we need to extract WEB-INF/lib?
         if (context.isCopyWebInf() && !context.isCopyWebDir())
         {
-            Resource webInf = webApp.addPath("WEB-INF/");
+            Resource webInf = webApp.getResource("WEB-INF/");
 
             File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
             if (extractedWebInfDir.exists())
                 IO.delete(extractedWebInfDir);
             extractedWebInfDir.mkdir();
-            Resource webInfLib = webInf.addPath("lib/");
+            Resource webInfLib = webInf.getResource("lib/");
             File webInfDir = new File(extractedWebInfDir, "WEB-INF");
             webInfDir.mkdir();
 
@@ -430,7 +430,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfLib.copyTo(webInfLibDir);
             }
 
-            Resource webInfClasses = webInf.addPath("classes/");
+            Resource webInfClasses = webInf.getResource("classes/");
             if (webInfClasses.exists())
             {
                 File webInfClassesDir = new File(webInfDir, "classes");
