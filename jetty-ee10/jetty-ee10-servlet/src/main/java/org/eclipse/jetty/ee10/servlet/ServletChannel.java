@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
@@ -84,27 +83,6 @@ public class ServletChannel implements Runnable
         if (_callback != null)
             throw new IllegalStateException();
         _callback = callback;
-    }
-
-    public boolean failAvailableContent(Throwable x)
-    {
-        // TODO: what to do with x?
-        //       GW: I don't think we need to pass x in any more, as the content pooling is not dependent on
-        //       success or failure.   This should just be releaseAllContent()
-        while (true)
-        {
-            Content.Chunk content = _request.read();
-            if (content == null)
-                return false;
-
-            if (content.isTerminal())
-            {
-                content.release();
-                return content.isLast();
-            }
-
-            content.release();
-        }
     }
 
     public void init(ServletContextRequest request)
