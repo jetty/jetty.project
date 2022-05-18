@@ -666,7 +666,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (baseRequest.isHandled())
         {
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -677,7 +677,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (!_dispatchers.contains(baseRequest.getDispatcherType()))
         {
             LOG.debug("{} excluded by dispatcherType {}", this, baseRequest.getDispatcherType());
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -699,7 +699,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Don't attempt to modify the response output if it's already committed.
         if (response.isCommitted())
         {
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -779,7 +779,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (alreadyGzipped)
         {
             LOG.debug("{} already intercepting {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -787,7 +787,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (!_methods.test(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -796,7 +796,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (!isPathGzipable(path))
         {
             LOG.debug("{} excluded by path {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -809,7 +809,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             {
                 LOG.debug("{} excluded by path suffix mime type {}", this, request);
                 // handle normally without setting vary header
-                _handler.handle(target, baseRequest, request, response);
+                super.handle(target, baseRequest, request, response);
                 return;
             }
         }
@@ -819,9 +819,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         {
             // install interceptor and handle
             out.setInterceptor(new GzipHttpOutputInterceptor(this, getVaryField(), baseRequest.getHttpChannel(), origInterceptor, isSyncFlush()));
-
-            if (_handler != null)
-                _handler.handle(target, baseRequest, request, response);
+            super.handle(target, baseRequest, request, response);
         }
         finally
         {
