@@ -274,7 +274,7 @@ public class StreamResetTest extends AbstractTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length * 10L);
-                Response.write(response, false);
+                Content.Sink.write(response, false);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
 
@@ -297,7 +297,7 @@ public class StreamResetTest extends AbstractTest
                     for (int i = 0; i < 100; i++)
                     {
                         Thread.sleep(100);
-                        Response.write(response, false, ByteBuffer.wrap(data));
+                        Content.Sink.write(response, false, ByteBuffer.wrap(data));
                     }
                 }
                 catch (InterruptedException x)
@@ -359,7 +359,7 @@ public class StreamResetTest extends AbstractTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.remaining());
-                Response.write(response, false);
+                Content.Sink.write(response, false);
 
                 commitLatch.countDown();
 
@@ -636,7 +636,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Make sure we are in async wait before writing.
                         Thread.sleep(1000);
-                        Response.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
+                        Content.Sink.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
                     }
                     catch (IOException x)
                     {
@@ -690,7 +690,7 @@ public class StreamResetTest extends AbstractTest
             {
                 try
                 {
-                    Response.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
+                    Content.Sink.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
                 }
                 catch (IOException x)
                 {
@@ -845,7 +845,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     // Large write, it blocks due to TCP congestion.
                     byte[] data = new byte[128 * 1024 * 1024];
-                    Response.write(response, false, ByteBuffer.wrap(data));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(data));
                 }
                 catch (IOException x)
                 {
@@ -853,7 +853,7 @@ public class StreamResetTest extends AbstractTest
                     try
                     {
                         // Try to write again, must fail immediately.
-                        Response.write(response, true, ByteBuffer.wrap(new byte[]{1}));
+                        Content.Sink.write(response, true, ByteBuffer.wrap(new byte[]{1}));
                     }
                     catch (IOException e)
                     {
@@ -943,7 +943,7 @@ public class StreamResetTest extends AbstractTest
                     if (h2 != null)
                         length = h2.getHttpConfiguration().getOutputAggregationSize();
                     // Medium write, so we don't aggregate it, must not block.
-                    Response.write(response, true, ByteBuffer.wrap(new byte[length * 2]));
+                    Content.Sink.write(response, true, ByteBuffer.wrap(new byte[length * 2]));
                 }
                 catch (IOException x)
                 {

@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -343,9 +344,48 @@ public class Content
             return new ContentSinkOutputStream(sink);
         }
 
+        /**
+         * <p>Wraps the given content sink with a {@link Flow.Subscriber}.</p>
+         *
+         * @param sink the sink to write to
+         * @return a Subscriber that writes to the content sink
+         */
         public static Flow.Subscriber<Chunk> asSubscriber(Sink sink)
         {
             return new ContentSinkSubscriber(sink);
+        }
+
+        /**
+         * <p>Blocking version of {@link #write(boolean, Callback, ByteBuffer...)}.</p>
+         *
+         * @param sink the sink to write to
+         * @param last whether the ByteBuffers are the last to write
+         * @param buffers the ByteBuffers to write
+         * @throws IOException if the write operation fails
+         */
+        public static void write(Sink sink, boolean last, ByteBuffer... buffers) throws IOException
+        {
+            try (Blocking.Callback callback = Blocking.callback())
+            {
+                sink.write(last, callback, buffers);
+                callback.block();
+            }
+        }
+
+        /**
+         * <p>Writes the given {@link Chunk}, notifying the {@link Callback}
+         * when the write is complete.</p>
+         *
+         * @param chunk the chunk to write
+         * @param callback the callback to notify when the write operation is complete
+         * @see #write(boolean, Callback, ByteBuffer...)
+         */
+        public default void write(Chunk chunk, Callback callback)
+        {
+            if (chunk instanceof Content.Chunk.Error error)
+                callback.failed(error.getCause());
+            else
+                write(chunk.isLast(), callback, chunk.getByteBuffer());
         }
 
         /**
@@ -355,23 +395,9 @@ public class Content
          * @param last whether the ByteBuffers are the last to write
          * @param callback the callback to notify when the write operation is complete
          * @param buffers the ByteBuffers to write
+         * @see #write(Chunk, Callback)
          */
         public void write(boolean last, Callback callback, ByteBuffer... buffers);
-
-        /**
-         * <p>Writes the given {@link Chunk}, notifying the {@link Callback}
-         * when the write is complete.</p>
-         *
-         * @param chunk the chunk to write
-         * @param callback the callback to notify when the write operation is complete
-         */
-        public default void write(Chunk chunk, Callback callback)
-        {
-            if (chunk instanceof Chunk.Error error)
-                callback.failed(error.getCause());
-            else
-                write(chunk.isLast(), callback, chunk.getByteBuffer());
-        }
 
         /**
          * <p>Writes the given {@link String}, converting it to UTF-8 bytes,
@@ -381,9 +407,9 @@ public class Content
          * @param callback the callback to notify when the write operation is complete
          * @param utf8Content the String to write
          */
-        public default void write(boolean last, Callback callback, String utf8Content)
+        public static void write(Sink sink, boolean last, Callback callback, String utf8Content)
         {
-            write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
+            sink.write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
         }
     }
 

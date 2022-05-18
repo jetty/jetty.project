@@ -147,7 +147,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
                 try (Blocking.Callback block = Blocking.callback())
                 {
-                    response.write(false, block, "Hello");
+                    Content.Sink.write(response, false, block, "Hello");
                     block.block();
                 }
 

@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -124,7 +125,7 @@ public class ChatWebSocketServer
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.write(true, callback, "WebSocket Chat Server");
+                Content.Sink.write(response, true, callback, "WebSocket Chat Server");
             }
         });
 

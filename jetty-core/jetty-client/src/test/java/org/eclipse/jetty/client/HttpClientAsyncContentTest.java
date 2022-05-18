@@ -47,11 +47,11 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             {
                 try (Blocking.Callback blocker = _blocking.callback())
                 {
-                    response.write(false, blocker, "A");
+                    Content.Sink.write(response, false, blocker, "A");
                 }
                 try (Blocking.Callback blocker = _blocking.callback())
                 {
-                    response.write(false, blocker, "A");
+                    Content.Sink.write(response, false, blocker, "A");
                 }
             }
         });

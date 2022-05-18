@@ -17,6 +17,7 @@ import java.util.Date;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -69,7 +70,7 @@ public class HTTP2CServer extends Server
             content += "uri=" + request.getPathInContext() + "\n";
             content += "date=" + new Date() + "\n";
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length());
-            response.write(true, callback, content);
+            Content.Sink.write(response, true, callback, content);
         }
     }
 }

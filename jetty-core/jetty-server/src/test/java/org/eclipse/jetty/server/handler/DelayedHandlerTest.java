@@ -26,6 +26,7 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -402,7 +403,7 @@ public class DelayedHandlerTest
             {
                 processing.countDown();
                 Fields fields = FutureFormFields.forRequest(request).get(1, TimeUnit.NANOSECONDS);
-                response.write(true, callback, String.valueOf(fields));
+                Content.Sink.write(response, true, callback, String.valueOf(fields));
             }
         });
         _server.start();

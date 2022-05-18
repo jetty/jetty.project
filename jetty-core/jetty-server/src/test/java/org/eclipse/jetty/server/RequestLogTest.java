@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -57,7 +58,7 @@ public class RequestLogTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            response.write(true, callback, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()));
+            Content.Sink.write(response, true, callback, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()));
         }
     }
 

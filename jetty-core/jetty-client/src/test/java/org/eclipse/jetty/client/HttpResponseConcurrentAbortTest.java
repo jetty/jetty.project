@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -95,7 +96,7 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
-                org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
+                Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{1}));
             }
         });
 

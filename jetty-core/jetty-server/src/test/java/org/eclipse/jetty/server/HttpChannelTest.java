@@ -163,9 +163,9 @@ public class HttpChannelTest
                     public void succeeded()
                     {
                         if (count.decrementAndGet() == 0)
-                            response.write(true, callback, "X");
+                            Content.Sink.write(response, true, callback, "X");
                         else
-                            response.write(false, this, "X");
+                            Content.Sink.write(response, false, this, "X");
                     }
 
                     @Override
@@ -467,10 +467,10 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, Callback.from(callback, () ->
-                {
-                    throw new Error("testing");
-                }), "Before throw");
+                Content.Sink.write(response, true, Callback.from(callback, () ->
+                    {
+                        throw new Error("testing");
+                    }), "Before throw");
             }
         };
         _server.setHandler(handler);

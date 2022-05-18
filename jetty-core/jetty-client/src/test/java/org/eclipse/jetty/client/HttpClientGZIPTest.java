@@ -96,7 +96,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] gzipBytes = gzipData.toByteArray();
                 for (byte gzipByte : gzipBytes)
                 {
-                    org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(new byte[]{gzipByte}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{gzipByte}));
                     sleep(100);
                 }
             }
@@ -181,11 +181,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] chunk1 = Arrays.copyOfRange(gzipBytes, 0, gzipBytes.length - fragment);
                 byte[] chunk2 = Arrays.copyOfRange(gzipBytes, gzipBytes.length - fragment, gzipBytes.length);
 
-                org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(chunk1));
+                Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
 
                 sleep(500);
 
-                org.eclipse.jetty.server.Response.write(response, true, ByteBuffer.wrap(chunk2));
+                Content.Sink.write(response, true, ByteBuffer.wrap(chunk2));
             }
         });
 
@@ -208,7 +208,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
-                response.write(true, callback, "0123456789");
+                Content.Sink.write(response, true, callback, "0123456789");
             }
         });
 

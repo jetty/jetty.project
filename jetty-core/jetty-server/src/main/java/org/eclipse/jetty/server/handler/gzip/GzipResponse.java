@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -70,29 +71,25 @@ public class GzipResponse extends Response.Wrapper
     }
 
     @Override
+    public void write(Content.Chunk chunk, Callback callback)
+    {
+        // TODO: this response is given to other Handlers, should we handle Trailers too?
+        if (chunk instanceof Content.Chunk.Error error)
+            callback.failed(error.getCause());
+        else
+            write(chunk.isLast(), callback, chunk.getByteBuffer());
+    }
+
+    @Override
     public void write(boolean last, Callback callback, ByteBuffer... content)
     {
         switch (_state.get())
         {
-            case MIGHT_COMPRESS:
-                commit(last, callback, content);
-                break;
-
-            case NOT_COMPRESSING:
-                super.write(last, callback, content);
-                return;
-
-            case COMMITTING:
-                callback.failed(new WritePendingException());
-                break;
-
-            case COMPRESSING:
-                gzip(last, callback, content);
-                break;
-
-            default:
-                callback.failed(new IllegalStateException("state=" + _state.get()));
-                break;
+            case MIGHT_COMPRESS -> commit(last, callback, content);
+            case NOT_COMPRESSING -> super.write(last, callback, content);
+            case COMMITTING -> callback.failed(new WritePendingException());
+            case COMPRESSING -> gzip(last, callback, content);
+            default -> callback.failed(new IllegalStateException("state=" + _state.get()));
         }
     }
 
@@ -231,11 +228,6 @@ public class GzipResponse extends Response.Wrapper
                     throw new IllegalStateException(_state.get().toString());
             }
         }
-    }
-
-    public boolean mightCompress()
-    {
-        return _state.get() == GZState.MIGHT_COMPRESS;
     }
 
     private class GzipBufferCB extends IteratingNestedCallback

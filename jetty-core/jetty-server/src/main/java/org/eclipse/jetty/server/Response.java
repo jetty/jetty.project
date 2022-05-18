@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -62,28 +60,13 @@ public interface Response extends Content.Sink
      * <p>The Chunk to write may be a {@link Trailers}.</p>
      */
     @Override
-    default void write(Content.Chunk chunk, Callback callback)
-    {
-        Content.Sink.super.write(chunk, callback);
-    }
+    void write(Content.Chunk chunk, Callback callback);
 
     boolean isCommitted();
 
     boolean isCompletedSuccessfully();
 
     void reset();
-
-    /*
-     * Blocking write utility
-     */
-    static void write(Response response, boolean last, ByteBuffer... content) throws IOException
-    {
-        try (Blocking.Callback callback = Blocking.callback())
-        {
-            response.write(last, callback, content);
-            callback.block();
-        }
-    }
 
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
@@ -402,16 +385,28 @@ public interface Response extends Content.Sink
             return getWrapped().getOrCreateTrailers();
         }
 
-        @Override
-        public void write(boolean last, Callback callback, ByteBuffer... buffers)
-        {
-            getWrapped().write(last, callback, buffers);
-        }
-
+        /**
+         * @apiNote this method must always be overridden when
+         * {@link #write(boolean, Callback, ByteBuffer...)} is overridden,
+         * otherwise one method operates in the outer instance, while
+         * the other method operates in the inner instance.
+         */
         @Override
         public void write(Content.Chunk chunk, Callback callback)
         {
             getWrapped().write(chunk, callback);
+        }
+
+        /**
+         * @apiNote when this method is overridden, also
+         * {@link #write(Content.Chunk, Callback)} must be overridden,
+         * otherwise one method operates in the outer instance, while
+         * the other method operates in the inner instance.
+         */
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
+        {
+            getWrapped().write(last, callback, buffers);
         }
 
         @Override

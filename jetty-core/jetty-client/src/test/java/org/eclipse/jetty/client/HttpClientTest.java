@@ -208,10 +208,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String paramValue1 = fields.getValue(paramName1);
-                org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
+                Content.Sink.write(response, false, UTF_8.encode(paramValue1));
                 String paramValue2 = fields.getValue(paramName2);
                 assertEquals("", paramValue2);
-                org.eclipse.jetty.server.Response.write(response, true, UTF_8.encode("empty"));
+                Content.Sink.write(response, true, UTF_8.encode("empty"));
             }
         });
 
@@ -243,10 +243,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 List<String> paramValues1 = fields.getValues(paramName1);
                 for (String paramValue : paramValues1)
                 {
-                    org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue));
+                    Content.Sink.write(response, false, UTF_8.encode(paramValue));
                 }
                 String paramValue2 = fields.getValue(paramName2);
-                org.eclipse.jetty.server.Response.write(response, true, UTF_8.encode(paramValue2));
+                Content.Sink.write(response, true, UTF_8.encode(paramValue2));
             }
         });
 
@@ -281,7 +281,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
-                    response.write(true, callback, value);
+                    Content.Sink.write(response, true, callback, value);
                 }
             }
         });
@@ -313,7 +313,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
-                    response.write(true, callback, value);
+                    Content.Sink.write(response, true, callback, value);
                 }
             }
         });
@@ -523,7 +523,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 response.setStatus(HttpStatus.OK_200);
-                org.eclipse.jetty.server.Response.write(response, true);
+                Content.Sink.write(response, true);
                 Content.Source.consumeAll(request);
             }
         });
@@ -1139,7 +1139,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Send the headers at this point, then write the content.
                 byte[] content = "TEST".getBytes(UTF_8);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
-                org.eclipse.jetty.server.Response.write(response, false);
+                Content.Sink.write(response, false);
                 response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
@@ -1165,8 +1165,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Send the headers at this point, then write the content
-                org.eclipse.jetty.server.Response.write(response, false);
-                response.write(true, callback, "TEST");
+                Content.Sink.write(response, false);
+                Content.Sink.write(response, true, callback, "TEST");
             }
         });
 
@@ -1523,7 +1523,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.write(true, callback, org.eclipse.jetty.server.Request.getServerName(request));
+                Content.Sink.write(response, true, callback, org.eclipse.jetty.server.Request.getServerName(request));
             }
         });
 

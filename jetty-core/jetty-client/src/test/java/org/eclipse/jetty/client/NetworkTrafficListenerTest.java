@@ -264,8 +264,8 @@ public class NetworkTrafficListenerTest
             @Override
             protected void service(Request request, Response response) throws Throwable
             {
-                Response.write(response, false, UTF_8.encode(responseChunk1));
-                Response.write(response, false, UTF_8.encode(responseChunk2));
+                Content.Sink.write(response, false, UTF_8.encode(responseChunk1));
+                Content.Sink.write(response, false, UTF_8.encode(responseChunk2));
             }
         });
 

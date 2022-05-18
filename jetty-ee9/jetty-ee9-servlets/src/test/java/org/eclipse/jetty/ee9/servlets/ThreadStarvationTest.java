@@ -41,6 +41,7 @@ import jakarta.servlet.ServletException;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -288,7 +289,7 @@ public class ThreadStarvationTest
                     }
                     response.setStatus(200);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 13);
-                    response.write(true, callback, "Hello World!\n");
+                    Content.Sink.write(response, true, callback, "Hello World!\n");
                 }
             });
 

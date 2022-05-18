@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -50,6 +51,6 @@ public class HelloHandler extends Handler.Processor
     {
         response.setStatus(200);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-        response.write(true, callback, _message);
+        Content.Sink.write(response, true, callback, _message);
     }
 }

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -667,7 +668,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
                     out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
                     out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                    rs.write(true, cb, stringWriter.getBuffer().toString());
+                    Content.Sink.write(rs, true, cb, stringWriter.getBuffer().toString());
                 }
             };
         }
@@ -704,7 +705,7 @@ public class HttpConfigurationAuthorityOverrideTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-            response.write(true, callback, "Generic Error Page.");
+            Content.Sink.write(response, true, callback, "Generic Error Page.");
         }
     }
 

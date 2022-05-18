@@ -1107,11 +1107,15 @@ public class HttpChannelState implements HttpChannel, Components
                 ResponseHttpFields trailers = _request.getHttpChannel()._responseTrailers;
                 if (trailers != null)
                     trailers.add(trailersChunk.getTrailers());
-                Response.super.write(Content.Chunk.EOF, callback);
+                write(Content.Chunk.EOF, callback);
+            }
+            else if (chunk instanceof Content.Chunk.Error errorChunk)
+            {
+                callback.failed(errorChunk.getCause());
             }
             else
             {
-                Response.super.write(chunk, callback);
+                write(chunk.isLast(), callback, chunk.getByteBuffer());
             }
         }
 
@@ -1450,6 +1454,16 @@ public class HttpChannelState implements HttpChannel, Components
             _request = request;
             _stream = stream;
             _failure = failure;
+        }
+
+        @Override
+        public void write(Content.Chunk chunk, Callback callback)
+        {
+            // TODO: this response is given to ErrorProcessors, should we handle Trailers too?
+            if (chunk instanceof Content.Chunk.Error error)
+                callback.failed(error.getCause());
+            else
+                write(chunk.isLast(), callback, chunk.getByteBuffer());
         }
 
         @Override

@@ -107,7 +107,7 @@ public class HttpServerTestFixture
         public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.write(true, callback, "Hello world\r\n");
+            Content.Sink.write(response, true, callback, "Hello world\r\n");
         }
     }
 
@@ -189,8 +189,8 @@ public class HttpServerTestFixture
         {
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
-                s -> response.write(true, callback, "read %d%n" + s.length()),
-                t -> response.write(true, callback, String.format("caught %s%n", t))
+                s -> Content.Sink.write(response, true, callback, "read %d%n" + s.length()),
+                t -> Content.Sink.write(response, true, callback, String.format("caught %s%n", t))
             ));
         }
     }

@@ -51,9 +51,6 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.IDLE;
         }
 
-        if (current instanceof Content.Chunk.Error error)
-            throw error.getCause();
-
         sink.write(current, this);
         return Action.SCHEDULED;
     }

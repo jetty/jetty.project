@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,8 +100,8 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
             {
                 try
                 {
-                    Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
-                    Response.write(response, false, ByteBuffer.wrap(new byte[]{2}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{1}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{2}));
                 }
                 catch (IOException ignored)
                 {
@@ -132,8 +133,8 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
             {
                 try
                 {
-                    Response.write(response, false, ByteBuffer.wrap(new byte[]{1}));
-                    Response.write(response, false, ByteBuffer.wrap(new byte[]{2}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{1}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{2}));
                 }
                 catch (IOException ignored)
                 {

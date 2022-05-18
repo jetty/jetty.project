@@ -2411,6 +2411,15 @@ public class ResponseTest
         }
 
         @Override
+        public void write(Content.Chunk chunk, Callback callback)
+        {
+            if (chunk instanceof Content.Chunk.Error error)
+                callback.failed(error.getCause());
+            else
+                write(chunk.isLast(), callback, chunk.getByteBuffer());
+        }
+
+        @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
             for (ByteBuffer c : content)
@@ -2435,7 +2444,6 @@ public class ResponseTest
         @Override
         public void reset()
         {
-
         }
     }
 }

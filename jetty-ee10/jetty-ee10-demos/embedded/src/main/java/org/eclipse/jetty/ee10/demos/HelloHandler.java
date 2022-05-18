@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.demos;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -47,6 +48,6 @@ public class HelloHandler extends Handler.Processor
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        response.write(true, callback, "<h1>" + greeting + "</h1>\n" + body);
+        Content.Sink.write(response, true, callback, "<h1>" + greeting + "</h1>\n" + body);
     }
 }

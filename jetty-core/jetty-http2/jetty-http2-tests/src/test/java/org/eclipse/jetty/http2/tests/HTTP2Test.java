@@ -161,7 +161,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Response.write(response, true, ByteBuffer.wrap(content));
+                Content.Sink.write(response, true, ByteBuffer.wrap(content));
             }
         });
 
@@ -803,7 +803,7 @@ public class HTTP2Test extends AbstractTest
                 response.getHeaders().put(":custom", "special");
                 try
                 {
-                    Response.write(response, false);
+                    Content.Sink.write(response, false);
                 }
                 catch (IOException x)
                 {

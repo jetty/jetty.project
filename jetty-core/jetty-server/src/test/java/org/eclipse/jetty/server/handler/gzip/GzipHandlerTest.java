@@ -122,7 +122,7 @@ public class GzipHandlerTest
                 Response.writeError(request, response, callback, 304);
             else
             {
-                response.write(true, callback, __micro);
+                Content.Sink.write(response, true, callback, __micro);
             }
         }
     }
@@ -132,7 +132,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.write(false, callback, __micro);
+            Content.Sink.write(response, false, callback, __micro);
         }
     }
 
@@ -143,7 +143,7 @@ public class GzipHandlerTest
         {
             String pathInfo = request.getPathInContext();
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
-            response.write(true, callback, "This is content for " + pathInfo + "\n");
+            Content.Sink.write(response, true, callback, "This is content for " + pathInfo + "\n");
         }
 
         private String getContentTypeFromRequest(String filename, Request request)
@@ -181,7 +181,7 @@ public class GzipHandlerTest
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
             else
-                response.write(true, callback, __content);
+                Content.Sink.write(response, true, callback, __content);
         }
 
         void doDelete(Request request, Response response, Callback callback) throws IOException
@@ -260,7 +260,7 @@ public class GzipHandlerTest
             parameters = futureFormFields.get();
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
-            response.write(true, callback, dump);
+            Content.Sink.write(response, true, callback, dump);
         }
     }
 

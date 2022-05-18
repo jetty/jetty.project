@@ -24,6 +24,7 @@ import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpFields.Mutable;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -137,7 +138,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         return response == __deferredResponse;
     }
 
-    static final Response __deferredResponse = new Response()
+    private static final Response __deferredResponse = new Response()
     {
         @Override
         public Request getRequest()
@@ -169,6 +170,11 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
+        public void write(Content.Chunk chunk, Callback callback)
+        {
+        }
+
+        @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
         }
@@ -189,6 +195,5 @@ public class DeferredAuthentication implements Authentication.Deferred
         public void reset()
         {
         }
- 
     };
 }

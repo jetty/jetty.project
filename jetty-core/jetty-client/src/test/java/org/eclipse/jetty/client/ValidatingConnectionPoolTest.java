@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,7 +78,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
-                    Response.write(response, false);
+                    Content.Sink.write(response, false);
                     request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
                 }
                 else
@@ -124,7 +125,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                Response.write(response, false);
+                Content.Sink.write(response, false);
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
             }
         });

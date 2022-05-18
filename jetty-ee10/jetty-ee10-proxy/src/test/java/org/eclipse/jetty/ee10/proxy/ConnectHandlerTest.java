@@ -31,6 +31,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -835,11 +836,11 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     byte[] bytes = baos.toByteArray();
 
                     if (bytes.length == 0)
-                        response.write(true, callback, builder.toString());
+                        Content.Sink.write(response, true, callback, builder.toString());
                     else
                     {
-                        response.write(false, callback, builder.toString());
-                        response.write(true, callback, "/n" + bytes);
+                        Content.Sink.write(response, false, callback, builder.toString());
+                        Content.Sink.write(response, true, callback, "/n" + bytes);
                     }
                     break;
                 }

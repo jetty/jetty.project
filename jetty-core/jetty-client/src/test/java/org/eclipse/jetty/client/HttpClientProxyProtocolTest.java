@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -91,7 +92,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -129,7 +130,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -178,7 +179,7 @@ public class HttpClientProxyProtocolTest
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -224,7 +225,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();

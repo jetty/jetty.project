@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.demos;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -34,7 +35,7 @@ public class HelloWorld extends Handler.Processor
         response.setStatus(HttpServletResponse.SC_OK);
 
         // Write back response
-        response.write(true, callback, "<h1>Hello World</h1>\n");
+        Content.Sink.write(response, true, callback, "<h1>Hello World</h1>\n");
     }
 
     public static void main(String[] args) throws Exception

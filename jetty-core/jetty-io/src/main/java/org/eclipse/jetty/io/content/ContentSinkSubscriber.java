@@ -43,7 +43,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onError(Throwable throwable)
     {
-        sink.write(Content.Chunk.EOF, Callback.NOOP);
+        sink.write(Content.Chunk.from(throwable), Callback.NOOP);
     }
 
     @Override

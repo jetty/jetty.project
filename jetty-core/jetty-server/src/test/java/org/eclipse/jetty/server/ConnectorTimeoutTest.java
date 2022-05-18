@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -736,7 +737,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 try (Blocking.Callback block = blocker.callback())
                 {
                     Thread.sleep(50);
-                    response.write(false, block, "Hello World\r\n");
+                    Content.Sink.write(response, false, block, "Hello World\r\n");
                 }
                 catch (Exception e)
                 {
@@ -778,7 +779,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 e.printStackTrace();
             }
-            response.write(true, callback, "Hello World\r\n");
+            Content.Sink.write(response, true, callback, "Hello World\r\n");
         }
     }
 }
