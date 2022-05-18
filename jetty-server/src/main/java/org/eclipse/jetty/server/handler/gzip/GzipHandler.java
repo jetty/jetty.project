@@ -664,6 +664,12 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        if (baseRequest.isHandled())
+        {
+            _handler.handle(target, baseRequest, request, response);
+            return;
+        }
+
         final ServletContext context = baseRequest.getServletContext();
         final String path = baseRequest.getPathInContext();
         LOG.debug("{} handle {} in {}", this, baseRequest, context);
@@ -678,7 +684,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Handle request inflation
         HttpFields httpFields = baseRequest.getHttpFields();
         boolean inflated = _inflateBufferSize > 0 && httpFields.contains(HttpHeader.CONTENT_ENCODING, "gzip") && isPathInflatable(path);
-        if (inflated && !baseRequest.isHandled())
+        if (inflated)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} inflate {}", this, request);
