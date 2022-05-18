@@ -290,10 +290,11 @@ public class HttpChannelTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
-        String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
+        String[] parts = new String[]{"ECHO ", "Echo ", "echo"};
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             int i = 0;
+
             @Override
             public Content.Chunk read()
             {
@@ -332,7 +333,7 @@ public class HttpChannelTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
-        String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
+        String[] parts = new String[]{"ECHO ", "Echo ", "echo"};
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -468,9 +469,9 @@ public class HttpChannelTest
             {
                 response.setStatus(200);
                 Content.Sink.write(response, true, Callback.from(callback, () ->
-                    {
-                        throw new Error("testing");
-                    }), "Before throw");
+                {
+                    throw new Error("testing");
+                }), "Before throw");
             }
         };
         _server.setHandler(handler);
@@ -888,7 +889,7 @@ public class HttpChannelTest
             }
         };
 
-        String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
+        String[] parts = new String[]{"ECHO ", "Echo ", "echo"};
         String message = String.join("", parts);
         ByteBuffer body = BufferUtil.toBuffer(message);
         HttpFields fields = HttpFields.build()
@@ -1018,11 +1019,12 @@ public class HttpChannelTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
-        String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
+        String[] parts = new String[]{"ECHO ", "Echo ", "echo"};
         HttpFields trailers = HttpFields.build().add("Some", "value").asImmutable();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             int i = 0;
+
             @Override
             public Content.Chunk read()
             {
@@ -1202,7 +1204,8 @@ public class HttpChannelTest
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
         // Callback serialized until after onError task
-        handling.get().write(false, Callback.from(() -> {}, callback::succeeded));
+        handling.get().write(false, Callback.from(() ->
+        {}, callback::succeeded));
         assertFalse(callback.isDone());
 
         // process error callback

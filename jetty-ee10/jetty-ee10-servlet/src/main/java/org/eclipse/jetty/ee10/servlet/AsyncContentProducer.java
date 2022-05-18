@@ -246,8 +246,6 @@ class AsyncContentProducer implements ContentProducer
         }
     }
 
-
-
     @Override
     public boolean onContentProducible()
     {
