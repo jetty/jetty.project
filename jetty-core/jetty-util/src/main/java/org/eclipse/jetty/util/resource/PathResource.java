@@ -22,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -453,7 +452,7 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        return Files.newInputStream(path, StandardOpenOption.READ);
+        return Files.newInputStream(getPath(), StandardOpenOption.READ);
     }
 
     @Override
@@ -465,12 +464,7 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return newSeekableByteChannel();
-    }
-
-    public SeekableByteChannel newSeekableByteChannel() throws IOException
-    {
-        return Files.newByteChannel(path, StandardOpenOption.READ);
+        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
     @Override
