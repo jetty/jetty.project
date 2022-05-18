@@ -14,9 +14,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeoutException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +34,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,28 +51,14 @@ public class GzipHandlerIsHandledTest
     private HttpClient client;
     public LinkedBlockingQueue<String> events = new LinkedBlockingQueue<>();
 
-    @BeforeEach
-    public void setUp() throws Exception
+    public void startServer(Handler rootHandler) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
-        HandlerCollection handlers = new HandlerCollection();
-
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(new PathResource(workDir.getPath()));
-        resourceHandler.setDirectoriesListed(true);
-        resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));
-
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setMinGzipSize(32);
-        gzipHandler.setHandler(new EventHandler(events, "GzipHandler-wrapped-handler"));
-
-        handlers.setHandlers(new Handler[]{resourceHandler, gzipHandler, new DefaultHandler()});
-
-        server.setHandler(handlers);
+        server.setHandler(rootHandler);
         server.start();
 
         client = new HttpClient();
@@ -90,8 +73,23 @@ public class GzipHandlerIsHandledTest
     }
 
     @Test
-    public void testRequest() throws ExecutionException, InterruptedException, TimeoutException
+    public void testRequest() throws Exception
     {
+        HandlerCollection handlers = new HandlerCollection();
+
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setBaseResource(new PathResource(workDir.getPath()));
+        resourceHandler.setDirectoriesListed(true);
+        resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));
+
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setMinGzipSize(32);
+        gzipHandler.setHandler(new EventHandler(events, "GzipHandler-wrapped-handler"));
+
+        handlers.setHandlers(new Handler[]{resourceHandler, gzipHandler, new DefaultHandler()});
+
+        startServer(handlers);
+
         ContentResponse response = client.GET(server.getURI().resolve("/"));
         assertThat("response.status", response.getStatus(), is(200));
         // we should have received a directory listing from the ResourceHandler
