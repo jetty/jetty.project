@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -32,8 +33,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 public class StatisticsHandler extends Handler.Wrapper
 {
-    private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
-
+    private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final CounterStatistic _handleStats = new CounterStatistic();
     private final CounterStatistic _processStats = new CounterStatistic();
@@ -41,6 +41,8 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
     private final SampleStatistic _processTimeStats = new SampleStatistic();
 
+    private final LongAdder _processThrows = new LongAdder();
+    private final LongAdder _handleThrows = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -51,87 +53,23 @@ public class StatisticsHandler extends Handler.Wrapper
     public Request.Processor handle(Request request) throws Exception
     {
         long beginTimeStamp = System.nanoTime();
-        _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
-        {
-            // TODO test this with localconnector endpoint that has multiple requests per connection.
-            request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
-            {
-                @Override
-                public void onClosed(Connection connection)
-                {
-                    // complete connections stats
-                    _connectionStats.remove(id);
-                }
-            });
-            return "SomeConnectionStatsObject";
-        });
-
-        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
         _handleStats.increment();
-        _requestStats.increment();
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
 
-        // TODO don't need to do this until we see a Processor
-        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+        try
         {
-            @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
-            {
-                if (response != null)
-                {
-                    switch (response.getStatus() / 100)
-                    {
-                        case 1 -> _responses1xx.increment();
-                        case 2 -> _responses2xx.increment();
-                        case 3 -> _responses3xx.increment();
-                        case 4 -> _responses4xx.increment();
-                        case 5 -> _responses5xx.increment();
-                        default ->
-                        {
-                        }
-                    }
-                }
-
-                for (ByteBuffer b : content)
-                {
-                    statisticsRequest._bytesWritten.add(b.remaining());
-                }
-
-                super.send(request, response, last, callback, content);
-            }
-
-            @Override
-            public Content.Chunk read()
-            {
-                Content.Chunk chunk =  super.read();
-                if (chunk != null)
-                    statisticsRequest._bytesRead.add(chunk.getByteBuffer().remaining());
-                return chunk;
-            }
-
-            @Override
-            public void succeeded()
-            {
-                super.succeeded();
-                _processStats.decrement();
-                _requestStats.decrement();
-                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
-                _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                super.failed(x);
-                _processStats.decrement();
-                _requestStats.decrement();
-                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
-                _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
-            }
-        });
-
-        Request.Processor processor = super.handle(statisticsRequest);
-        _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
-        return processor == null ? null : statisticsRequest.wrapProcessor(processor);
+            return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+        }
+        catch (Throwable t)
+        {
+            _handleThrows.increment();
+            throw t;
+        }
+        finally
+        {
+            _handleStats.decrement();
+            _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
+        }
     }
 
     private class StatisticsRequest extends Request.WrapperProcessor
@@ -175,9 +113,89 @@ public class StatisticsHandler extends Handler.Wrapper
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            _processStats.increment();
             _processStartTimeStamp = System.nanoTime();
-            super.process(this, response, callback);
+            _processStats.increment();
+            _requestStats.increment();
+
+            String id = getConnectionMetaData().getId();
+            if (_connectionStats.add(id))
+            {
+                // TODO test this with localconnector endpoint that has multiple requests per connection.
+                getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
+                {
+                    @Override
+                    public void onClosed(Connection connection)
+                    {
+                        _connectionStats.remove(id);
+                    }
+                });
+            }
+
+            addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+            {
+                @Override
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                {
+                    if (response != null)
+                    {
+                        switch (response.getStatus() / 100)
+                        {
+                            case 1 -> _responses1xx.increment();
+                            case 2 -> _responses2xx.increment();
+                            case 3 -> _responses3xx.increment();
+                            case 4 -> _responses4xx.increment();
+                            case 5 -> _responses5xx.increment();
+                        }
+                    }
+
+                    for (ByteBuffer b : content)
+                    {
+                        _bytesWritten.add(b.remaining());
+                    }
+
+                    super.send(request, response, last, callback, content);
+                }
+
+                @Override
+                public Content.Chunk read()
+                {
+                    Content.Chunk chunk =  super.read();
+                    if (chunk != null)
+                        _bytesRead.add(chunk.remaining());
+                    return chunk;
+                }
+
+                @Override
+                public void succeeded()
+                {
+                    _requestStats.decrement();
+                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    _requestStats.decrement();
+                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    super.failed(x);
+                }
+            });
+
+            try
+            {
+                super.process(this, response, callback);
+            }
+            catch (Throwable t)
+            {
+                _processThrows.increment();
+                throw t;
+            }
+            finally
+            {
+                _processStats.decrement();
+                _processTimeStats.record(System.nanoTime() - _processStartTimeStamp);
+            }
         }
     }
 
@@ -229,10 +247,22 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
+    @ManagedAttribute("number of requests that threw an exception during handling")
+    public int getHandleThrows()
+    {
+        return _handleThrows.intValue();
+    }
+
+    @ManagedAttribute("number of requests that threw an exception during processing")
+    public int getProcessThrows()
+    {
+        return _processThrows.intValue();
+    }
+
     @ManagedAttribute("")
     public int getHandlings()
     {
-        return (int)_handleStats.getCurrent();
+        return (int)_handleStats.getTotal();
     }
 
     @ManagedAttribute("")
