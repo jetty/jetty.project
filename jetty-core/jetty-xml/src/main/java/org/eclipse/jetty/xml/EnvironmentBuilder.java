@@ -72,7 +72,7 @@ public class EnvironmentBuilder
         public BuiltEnvironment(String name, List<URL> classpath)
         {
             _name = name;
-            _classLoader = new URLClassLoader(classpath.toArray(new URL[0]));
+            _classLoader = new URLClassLoader(classpath.toArray(new URL[0]), this.getClass().getClassLoader());
         }
 
         @Override

@@ -52,7 +52,7 @@ public class StartArgs
 {
     public static final String VERSION;
     public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args", "envs");
-    public static final Set<String> ARG_PARTS = Set.of("args");
+    public static final Set<String> ARG_PARTS = Set.of("args", "envs");
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
     private static final String JETTY_TAG_NAME_KEY = "jetty.tag.version";
