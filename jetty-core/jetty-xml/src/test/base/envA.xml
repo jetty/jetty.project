@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Base" class="org.eclipse.jetty.xml.XmlConfigurationTest$Base">
+  <Get id="R" name="resource"/>
+  <Ref refid="Environment">
+    <Call name="setAttribute">
+      <Arg>attr</Arg>
+      <Arg>AttrA</Arg>
+    </Call>
+  </Ref>
+  <Get id="Map" name="map">
+    <Put name="envA1"><Property name="env1"/></Put>
+    <Put name="envA2"><Property name="env2"/></Put>
+    <Put name="envA3"><Ref refid="R"/></Put>
+  </Get>
+</Configure>
+
+

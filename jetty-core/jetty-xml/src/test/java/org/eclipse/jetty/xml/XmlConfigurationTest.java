@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,7 +41,10 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
@@ -1763,6 +1767,80 @@ public class XmlConfigurationTest
         Path baseDir = testPath.resolve("bogus");
         String resolved = XmlConfiguration.resolvePath(baseDir.toString(), "etc/keystore");
         assertEquals(baseDir.resolve("etc/keystore").toString(), resolved);
+    }
+
+    public static class Base extends AbstractLifeCycle
+    {
+        static AtomicReference<Base> base = new AtomicReference<>();
+
+        private Map<String, Object> _map = new HashMap<>();
+
+        public Base()
+        {
+            base.set(this);
+        }
+
+        public Map<String, Object> getMap()
+        {
+            return _map;
+        }
+
+        public String getResource() throws IOException
+        {
+            return IO.toString(Thread.currentThread().getContextClassLoader().getResourceAsStream("resource.txt"));
+        }
+    }
+
+    @Test
+    public void testMain() throws Exception
+    {
+        Path dir = MavenTestingUtils.getBasePath();
+        Path base = dir.resolve("src").resolve("test").resolve("base");
+        XmlConfiguration.main(
+            "baseA=commandline",
+            "baseB=x",
+            base.resolve("base.properties").toString(),
+            base.resolve("base.xml").toString(),
+            base.resolve("map.xml").toString(),
+            "--env",
+            "envA",
+            "-cp",
+            base.resolve("envA").toString(),
+            base.resolve("envA.properties").toString(),
+            "env1=AAA",
+            base.resolve("envA.xml").toString(),
+            "--env",
+            "envB",
+            "-cp",
+            base.resolve("envB").toString(),
+            base.resolve("envB.properties").toString(),
+            "env1=BBB",
+            base.resolve("envB.xml").toString()
+        );
+
+        Base b = Base.base.get();
+        assertThat(b, notNullValue());
+        assertTrue(b.isStarted());
+
+        Map<String, Object> m = b.getMap();
+        assertThat(m.get("baseA"), is("commandline"));
+        assertThat(m.get("baseB"), is("overridden"));
+        assertThat(m.get("baseC"), is("42"));
+        assertThat(m.get("baseD"), is("ordered"));
+
+        Environment envA = Environment.get("envA");
+        assertThat(envA, notNullValue());
+        assertThat(envA.getAttribute("attr"), is("AttrA"));
+        assertThat(m.get("envA1"), is("AAA"));
+        assertThat(m.get("envA2"), is("A2"));
+        assertThat(m.get("envA3"), is("for envA"));
+
+        Environment envB = Environment.get("envB");
+        assertThat(envB, notNullValue());
+        assertThat(envB.getAttribute("attr"), is("AttrB"));
+        assertThat(m.get("envB1"), is("BBB"));
+        assertThat(m.get("envB2"), is("B2"));
+        assertThat(m.get("envB3"), is("for envB"));
     }
 
     private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception

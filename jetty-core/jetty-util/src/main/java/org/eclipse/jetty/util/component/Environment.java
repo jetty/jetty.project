@@ -13,10 +13,25 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.eclipse.jetty.util.Attributes;
 
 public interface Environment extends Attributes
 {
+    Map<String, Environment> __environments = new ConcurrentHashMap<>();
+
+    static Environment get(String name)
+    {
+        return __environments.get(name);
+    }
+
+    static Environment set(Environment environment)
+    {
+        return __environments.put(environment.getName(), environment);
+    }
+
     String getName();
 
     ClassLoader getClassLoader();
