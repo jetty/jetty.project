@@ -43,7 +43,7 @@
         artifacts are created -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-bom</artifactId>
+      <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
