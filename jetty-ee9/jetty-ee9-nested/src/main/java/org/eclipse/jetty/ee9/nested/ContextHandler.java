@@ -2498,18 +2498,43 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 throw new RuntimeException(e);
             }
         }
-        
+
         @Override
         protected void doStart() throws Exception
         {
-            _environment.run(this::superDoStart);
+            try
+            {
+                if (_environment != null)
+                    _environment.run(this::superDoStart);
+                else
+                    superDoStart();
+            }
+            catch (RuntimeException e)
+            {
+                if (e.getCause() instanceof Exception x)
+                    throw x;
+                throw e;
+            }
         }
 
         @Override
         protected void doStop() throws Exception
         {
-            // TODO Auto-generated method stub
-            super.doStop();
+            try
+            {
+                if (_environment != null)
+                {
+                    _environment.run(this::superDoStop);
+                }
+                else
+                    superDoStop();
+            }
+            catch (Exception e)
+            {
+                if (e.getCause() instanceof Exception x)
+                    throw x;
+                throw e;
+            }
         }
 
         @Override
