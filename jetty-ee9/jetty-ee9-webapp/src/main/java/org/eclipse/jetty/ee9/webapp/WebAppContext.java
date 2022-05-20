@@ -56,7 +56,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
@@ -948,8 +947,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
-            new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().getAttributeNameSet()),
+            new DumpableCollection("Handler attributes " + name, getAttributes().asAttributeMap().entrySet()),
+            new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().asAttributeMap().entrySet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
