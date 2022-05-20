@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
+import java.util.function.BiPredicate;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
@@ -59,7 +60,29 @@ public class Content
      */
     public static void copy(Source source, Sink sink, Callback callback)
     {
-        new ContentCopier(source, sink, callback).iterate();
+        copy(source, sink, callback, null);
+    }
+
+    /**
+     * <p>Copies the given content source to the given content sink, notifying
+     * the given callback when the copy is complete.</p>
+     * <p>The optional {@code chunkHandler} parameter is a predicate whose code
+     * may inspect the chunk and handle it differently from how the implementation
+     * would handle it.</p>
+     * <p>If the predicate returns {@code true}, it means that the chunk is handled
+     * externally and its callback completed, or eventually completed.</p>
+     * <p>If the predicate returns {@code false}, it means that the chunk is not
+     * handled, its callback will not be completed, and the implementation will
+     * handle the chunk and its callback.</p>
+     *
+     * @param source the source to copy from
+     * @param sink the sink to copy to
+     * @param callback the callback to notify when the copy is complete
+     * @param chunkHandler an optional predicate to handle the current chunk and its callback
+     */
+    public static void copy(Source source, Sink sink, Callback callback, BiPredicate<Chunk, Callback> chunkHandler)
+    {
+        new ContentCopier(source, sink, callback, chunkHandler).iterate();
     }
 
     /**
@@ -348,11 +371,12 @@ public class Content
          * <p>Wraps the given content sink with a {@link Flow.Subscriber}.</p>
          *
          * @param sink the sink to write to
+         * @param callback the callback to notify when the Subscriber is complete
          * @return a Subscriber that writes to the content sink
          */
-        public static Flow.Subscriber<Chunk> asSubscriber(Sink sink)
+        public static Flow.Subscriber<Chunk> asSubscriber(Sink sink, Callback callback)
         {
-            return new ContentSinkSubscriber(sink);
+            return new ContentSinkSubscriber(sink, callback);
         }
 
         /**
@@ -373,33 +397,6 @@ public class Content
         }
 
         /**
-         * <p>Writes the given {@link Chunk}, notifying the {@link Callback}
-         * when the write is complete.</p>
-         *
-         * @param chunk the chunk to write
-         * @param callback the callback to notify when the write operation is complete
-         * @see #write(boolean, Callback, ByteBuffer...)
-         */
-        public default void write(Chunk chunk, Callback callback)
-        {
-            if (chunk instanceof Content.Chunk.Error error)
-                callback.failed(error.getCause());
-            else
-                write(chunk.isLast(), callback, chunk.getByteBuffer());
-        }
-
-        /**
-         * <p>Writes the given {@link ByteBuffer}s, notifying the {@link Callback}
-         * when the write is complete.</p>
-         *
-         * @param last whether the ByteBuffers are the last to write
-         * @param callback the callback to notify when the write operation is complete
-         * @param buffers the ByteBuffers to write
-         * @see #write(Chunk, Callback)
-         */
-        public void write(boolean last, Callback callback, ByteBuffer... buffers);
-
-        /**
          * <p>Writes the given {@link String}, converting it to UTF-8 bytes,
          * notifying the {@link Callback} when the write is complete.</p>
          *
@@ -411,6 +408,16 @@ public class Content
         {
             sink.write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
         }
+
+        /**
+         * <p>Writes the given {@link ByteBuffer}s, notifying the {@link Callback}
+         * when the write is complete.</p>
+         *
+         * @param last whether the ByteBuffers are the last to write
+         * @param callback the callback to notify when the write operation is complete
+         * @param buffers the ByteBuffers to write
+         */
+        public void write(boolean last, Callback callback, ByteBuffer... buffers);
     }
 
     /**

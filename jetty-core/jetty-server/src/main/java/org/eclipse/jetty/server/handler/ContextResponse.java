@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -28,26 +27,6 @@ public class ContextResponse extends Response.Wrapper
     {
         super(request, response);
         _context = context;
-    }
-
-    @Override
-    public void write(Content.Chunk chunk, Callback callback)
-    {
-        Callback contextCallback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                _context.run(callback::succeeded, getRequest());
-            }
-
-            @Override
-            public void failed(Throwable t)
-            {
-                _context.accept(callback::failed, t, getRequest());
-            }
-        };
-        super.write(chunk, contextCallback);
     }
 
     @Override

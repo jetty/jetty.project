@@ -21,34 +21,51 @@ import org.eclipse.jetty.util.Callback;
 public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
 {
     private final Content.Sink sink;
+    private final Callback callback;
     private Flow.Subscription subscription;
 
-    public ContentSinkSubscriber(Content.Sink sink)
+    public ContentSinkSubscriber(Content.Sink sink, Callback callback)
     {
         this.sink = sink;
+        this.callback = callback;
     }
 
     @Override
     public void onSubscribe(Flow.Subscription subscription)
     {
         this.subscription = subscription;
+        subscription.request(1);
     }
 
     @Override
-    public void onNext(Content.Chunk item)
+    public void onNext(Content.Chunk chunk)
     {
-        sink.write(item, Callback.from(Callback.NOOP::succeeded, x -> subscription.cancel()));
+        sink.write(chunk.isLast(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)), chunk.getByteBuffer());
+    }
+
+    private void succeeded(Content.Chunk chunk)
+    {
+        chunk.release();
+        if (!chunk.isLast())
+            subscription.request(1);
+    }
+
+    private void failed(Content.Chunk chunk, Throwable failure)
+    {
+        chunk.release();
+        subscription.cancel();
+        onError(failure);
     }
 
     @Override
-    public void onError(Throwable throwable)
+    public void onError(Throwable failure)
     {
-        sink.write(Content.Chunk.from(throwable), Callback.NOOP);
+        callback.failed(failure);
     }
 
     @Override
     public void onComplete()
     {
-        sink.write(Content.Chunk.EOF, Callback.NOOP);
+        sink.write(true, callback);
     }
 }

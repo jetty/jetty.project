@@ -55,18 +55,22 @@ public interface Response extends Content.Sink
 
     HttpFields.Mutable getOrCreateTrailers();
 
-    /**
-     * {@inheritDoc}
-     * <p>The Chunk to write may be a {@link Trailers}.</p>
-     */
-    @Override
-    void write(Content.Chunk chunk, Callback callback);
-
     boolean isCommitted();
 
     boolean isCompletedSuccessfully();
 
     void reset();
+
+    default boolean writeTrailers(Content.Chunk chunk, Callback callback)
+    {
+        if (chunk instanceof Trailers trailers)
+        {
+            getOrCreateTrailers().add(trailers.getTrailers());
+            write(true, callback);
+            return true;
+        }
+        return false;
+    }
 
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
@@ -385,24 +389,6 @@ public interface Response extends Content.Sink
             return getWrapped().getOrCreateTrailers();
         }
 
-        /**
-         * @apiNote this method must always be overridden when
-         * {@link #write(boolean, Callback, ByteBuffer...)} is overridden,
-         * otherwise one method operates in the outer instance, while
-         * the other method operates in the inner instance.
-         */
-        @Override
-        public void write(Content.Chunk chunk, Callback callback)
-        {
-            getWrapped().write(chunk, callback);
-        }
-
-        /**
-         * @apiNote when this method is overridden, also
-         * {@link #write(Content.Chunk, Callback)} must be overridden,
-         * otherwise one method operates in the outer instance, while
-         * the other method operates in the inner instance.
-         */
         @Override
         public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {

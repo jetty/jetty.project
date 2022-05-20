@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -68,16 +67,6 @@ public class GzipResponse extends Response.Wrapper
         _vary = vary;
         _bufferSize = bufferSize;
         _syncFlush = syncFlush;
-    }
-
-    @Override
-    public void write(Content.Chunk chunk, Callback callback)
-    {
-        // TODO: this response is given to other Handlers, should we handle Trailers too?
-        if (chunk instanceof Content.Chunk.Error error)
-            callback.failed(error.getCause());
-        else
-            write(chunk.isLast(), callback, chunk.getByteBuffer());
     }
 
     @Override

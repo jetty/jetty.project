@@ -427,16 +427,6 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public void write(Content.Chunk chunk, Callback callback)
-            {
-                // TODO: this response is given to other Handlers, should we handle Trailers too?
-                if (chunk instanceof Content.Chunk.Error error)
-                    callback.failed(error.getCause());
-                else
-                    write(chunk.isLast(), callback, chunk.getByteBuffer());
-            }
-
-            @Override
             public void write(boolean last, Callback callback, ByteBuffer... content)
             {
                 if (_minimumWriteRate > 0)

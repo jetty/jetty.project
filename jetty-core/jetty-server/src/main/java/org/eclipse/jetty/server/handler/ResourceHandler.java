@@ -1414,7 +1414,7 @@ public class ResourceHandler extends Handler.Wrapper
             if (read == -1)
             {
                 IO.close(source);
-                target.write(Content.Chunk.EOF, this);
+                target.write(true, this);
                 return Action.SCHEDULED;
             }
             byteBuffer.flip();

@@ -41,6 +41,16 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     private long length = UNDETERMINED_LENGTH;
 
     @Override
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
+    {
+        for (int i = 0; i < buffers.length; ++i)
+        {
+            ByteBuffer buffer = buffers[i];
+            boolean isLast = last && i == buffers.length - 1;
+            write(Content.Chunk.from(buffer, isLast), Callback.NOOP);
+        }
+    }
+
     public void write(Content.Chunk chunk, Callback callback)
     {
         Throwable failure = null;
@@ -71,17 +81,6 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             callback.failed(failure);
         else if (wasEmpty)
             invoker.run(this::invokeDemandCallback);
-    }
-
-    @Override
-    public void write(boolean last, Callback callback, ByteBuffer... buffers)
-    {
-        for (int i = 0; i < buffers.length; ++i)
-        {
-            ByteBuffer buffer = buffers[i];
-            boolean isLast = last && i == buffers.length - 1;
-            write(Content.Chunk.from(buffer, isLast), Callback.NOOP);
-        }
     }
 
     public void flush() throws IOException

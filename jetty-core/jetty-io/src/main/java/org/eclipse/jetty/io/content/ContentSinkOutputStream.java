@@ -56,7 +56,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocking.Callback callback = _blocking.callback())
         {
-            sink.write(Content.Chunk.EMPTY, callback);
+            sink.write(false, callback);
             callback.block();
         }
         catch (Throwable x)
@@ -70,7 +70,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocking.Callback callback = _blocking.callback())
         {
-            sink.write(Content.Chunk.EOF, callback);
+            sink.write(true, callback);
             callback.block();
         }
         catch (Throwable x)

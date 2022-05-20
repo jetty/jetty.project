@@ -87,6 +87,11 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
         return httpStream.onFailure(failure);
     }
 
+    void offer(Runnable task)
+    {
+        session.offer(task, false);
+    }
+
     @Override
     public String getId()
     {

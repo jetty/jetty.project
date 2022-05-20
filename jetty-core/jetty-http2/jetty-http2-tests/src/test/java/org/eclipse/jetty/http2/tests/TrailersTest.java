@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -391,5 +392,58 @@ public class TrailersTest extends AbstractTest
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestTrailersCopiedAsResponseTrailers() throws Exception
+    {
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                Content.copy(request, response, callback, response::writeTrailers);
+            }
+        });
+
+        AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
+        AtomicReference<MetaData> trailersRef = new AtomicReference<>();
+        CountDownLatch clientLatch = new CountDownLatch(2);
+        Session session = newClientSession(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData metaData = frame.getMetaData();
+                if (metaData.isResponse())
+                {
+                    responseRef.set((MetaData.Response)metaData);
+                    clientLatch.countDown();
+                }
+                else if (!metaData.isRequest())
+                {
+                    trailersRef.set(metaData);
+                    clientLatch.countDown();
+                }
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        String trailerName = "TrailerName";
+        String trailerValue = "TrailerValue";
+        HttpFields.Mutable trailers = HttpFields.build().put(trailerName, trailerValue);
+        HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+        stream.headers(trailerFrame, Callback.NOOP);
+
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+
+        MetaData.Response responseMetaData = responseRef.get();
+        assertEquals(HttpStatus.OK_200, responseMetaData.getStatus());
+
+        MetaData trailerMetaData = trailersRef.get();
+        assertEquals(trailerValue, trailerMetaData.getFields().get(trailerName));
     }
 }

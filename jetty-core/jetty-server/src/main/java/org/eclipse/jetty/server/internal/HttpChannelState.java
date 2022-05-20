@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -1100,26 +1099,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public void write(Content.Chunk chunk, Callback callback)
-        {
-            if (chunk instanceof Trailers trailersChunk)
-            {
-                ResponseHttpFields trailers = _request.getHttpChannel()._responseTrailers;
-                if (trailers != null)
-                    trailers.add(trailersChunk.getTrailers());
-                write(Content.Chunk.EOF, callback);
-            }
-            else if (chunk instanceof Content.Chunk.Error errorChunk)
-            {
-                callback.failed(errorChunk.getCause());
-            }
-            else
-            {
-                write(chunk.isLast(), callback, chunk.getByteBuffer());
-            }
-        }
-
-        @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
             long length = 0;
@@ -1454,16 +1433,6 @@ public class HttpChannelState implements HttpChannel, Components
             _request = request;
             _stream = stream;
             _failure = failure;
-        }
-
-        @Override
-        public void write(Content.Chunk chunk, Callback callback)
-        {
-            // TODO: this response is given to ErrorProcessors, should we handle Trailers too?
-            if (chunk instanceof Content.Chunk.Error error)
-                callback.failed(error.getCause());
-            else
-                write(chunk.isLast(), callback, chunk.getByteBuffer());
         }
 
         @Override

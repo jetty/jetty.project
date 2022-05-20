@@ -49,7 +49,7 @@ public class EchoHandler extends Handler.Processor
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
-            Content.copy(request, response, callback);
+            Content.copy(request, response, callback, response::writeTrailers);
         else
             callback.succeeded();
     }

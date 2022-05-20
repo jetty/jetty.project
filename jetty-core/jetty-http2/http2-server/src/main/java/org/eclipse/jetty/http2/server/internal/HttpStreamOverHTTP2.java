@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
+    private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final IStream _stream;
@@ -84,7 +86,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             Runnable handler = _httpChannel.onRequest(request);
 
             if (frame.isEndStream())
-                _chunk = Content.Chunk.EOF;
+            {
+                try (AutoLock ignored = lock.lock())
+                {
+                    _chunk = Content.Chunk.EOF;
+                }
+            }
 
             HttpFields fields = request.getFields();
 
@@ -123,8 +130,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         while (true)
         {
-            Content.Chunk chunk = _chunk;
-            _chunk = Content.Chunk.next(chunk);
+            Content.Chunk chunk;
+            try (AutoLock ignored = lock.lock())
+            {
+                chunk = _chunk;
+                _chunk = Content.Chunk.next(chunk);
+            }
             if (chunk != null)
                 return chunk;
 
@@ -132,16 +143,35 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (data == null)
                 return null;
 
-            _chunk = newChunk(data.frame(), data::complete);
+            try (AutoLock ignored = lock.lock())
+            {
+                _chunk = newChunk(data.frame(), data::complete);
+            }
         }
     }
 
     @Override
     public void demand()
     {
-        if (!_demand)
+        boolean notify = false;
+        boolean demand = false;
+        try (AutoLock ignored = lock.lock())
         {
-            _demand = true;
+            // We may have a non-demanded chunk in case of trailers.
+            if (_chunk != null)
+                notify = true;
+            // Make sure we only demand(1) to make this method is idempotent.
+            else if (!_demand)
+                demand = _demand = true;
+        }
+        if (notify)
+        {
+            Runnable task = _httpChannel.onContentAvailable();
+            if (task != null)
+                _connection.offerTask(task, false);
+        }
+        else if (demand)
+        {
             _stream.demand(1);
         }
     }
@@ -149,8 +179,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onData(DataFrame frame, Callback callback)
     {
-        _demand = false;
-        _chunk = newChunk(frame, callback::succeeded);
+        Content.Chunk chunk = newChunk(frame, callback::succeeded);
+        try (AutoLock ignored = lock.lock())
+        {
+            _demand = false;
+            _chunk = chunk;
+        }
 
         if (LOG.isDebugEnabled())
         {
@@ -164,23 +198,29 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         return _httpChannel.onContentAvailable();
     }
 
-    private Content.Chunk newChunk(DataFrame frame, Runnable complete)
-    {
-        return Content.Chunk.from(frame.getData(), frame.isEndStream(), complete);
-    }
-
     @Override
     public Runnable onTrailer(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getFields().asImmutable();
+        try (AutoLock ignored = lock.lock())
+        {
+            _demand = false;
+            _chunk = new Trailers(trailers);
+        }
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                     System.lineSeparator(), trailers);
         }
-        _chunk = new Trailers(trailers);
+
         return _httpChannel.onContentAvailable();
+    }
+
+    private Content.Chunk newChunk(DataFrame frame, Runnable complete)
+    {
+        return Content.Chunk.from(frame.getData(), frame.isEndStream(), complete);
     }
 
     @Override

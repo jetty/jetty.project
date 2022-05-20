@@ -48,6 +48,7 @@ public interface IStream extends Stream, Attachable, Closeable
      */
     public Listener getListener();
 
+    // TODO: move this to Stream.
     public Data readData();
 
     /**

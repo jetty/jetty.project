@@ -14,12 +14,12 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -71,7 +71,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
-                response.write(true, callback, ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)));
+                Content.Sink.write(response, true, callback, content);
             }
         });
 

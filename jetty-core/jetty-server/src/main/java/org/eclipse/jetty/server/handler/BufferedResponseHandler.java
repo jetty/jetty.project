@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -188,16 +187,6 @@ public class BufferedResponseHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(Content.Chunk chunk, Callback callback)
-        {
-            // TODO: this response is given to other Handlers, should we handle Trailers too?
-            if (chunk instanceof Content.Chunk.Error error)
-                callback.failed(error.getCause());
-            else
-                write(chunk.isLast(), callback, chunk.getByteBuffer());
-        }
-
-        @Override
         public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             if (_firstWrite)
@@ -238,6 +227,8 @@ public class BufferedResponseHandler extends Handler.Wrapper
                             BufferedResponse.super.write(false, this, byteBuffer);
                             return Action.SCHEDULED;
                         }
+                        // TODO: this is wrong: we have accumulated one buffer but there may be many.
+                        //  Should either loop around or call succeeded() and return SCHEDULED.
                         return Action.SUCCEEDED;
                     }
 
@@ -284,6 +275,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
             if (_accumulator != null)
                 _accumulator.close();
             else
+                // TODO: this callback should always be failed!
                 _callback.failed(x);
         }
     }

@@ -48,6 +48,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         {
             this.content = content;
             this.subscriber = subscriber;
+            this.stalled = true;
         }
 
         @Override
