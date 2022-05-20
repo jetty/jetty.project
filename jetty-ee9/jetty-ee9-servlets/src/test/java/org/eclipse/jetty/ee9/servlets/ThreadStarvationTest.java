@@ -221,7 +221,7 @@ public class ThreadStarvationTest
 
         for (Exchanger<Long> x : totals)
         {
-            Long total = x.exchange(-1L, 10000, TimeUnit.SECONDS);
+            Long total = x.exchange(-1L, 10, TimeUnit.SECONDS);
             assertEquals(expected, total.longValue());
         }
 
