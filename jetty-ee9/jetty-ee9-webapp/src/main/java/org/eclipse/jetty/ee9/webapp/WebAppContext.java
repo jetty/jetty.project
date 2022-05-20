@@ -51,7 +51,6 @@ import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -61,6 +60,8 @@ import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ClassLoaderDump;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -943,12 +944,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
+            Dumpable.named("environment", __environment.getName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, getAttributes().asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().asAttributeMap().entrySet()),
+            new DumpableCollection("Environment attributes " + name, __environment.asAttributeMap().entrySet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );

@@ -67,18 +67,19 @@ public interface Attributes
     // TODO something better than this
     default Map<String, Object> asAttributeMap()
     {
-        return new AbstractMap<String, Object>()
+        return new AbstractMap<>()
         {
             @Override
             public Set<Entry<String, Object>> entrySet()
             {
-                return new AbstractSet<Entry<String, Object>>()
+                return new AbstractSet<>()
                 {
                     Iterator<String> names = getAttributeNameSet().iterator();
+
                     @Override
                     public Iterator<Entry<String, Object>> iterator()
                     {
-                        return new Iterator<Entry<String, Object>>()
+                        return new Iterator<>()
                         {
                             @Override
                             public boolean hasNext()

@@ -19,7 +19,6 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
@@ -61,30 +60,6 @@ public class EnvironmentBuilder
 
     public Environment build() throws Exception
     {
-        return new BuiltEnvironment(_name, _classpath);
-    }
-
-    private static class BuiltEnvironment extends Attributes.Mapped implements Environment
-    {
-        private final String _name;
-        private final URLClassLoader _classLoader;
-
-        public BuiltEnvironment(String name, List<URL> classpath)
-        {
-            _name = name;
-            _classLoader = new URLClassLoader(classpath.toArray(new URL[0]), this.getClass().getClassLoader());
-        }
-
-        @Override
-        public String getName()
-        {
-            return _name;
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return _classLoader;
-        }
+        return new Environment.Named(_name, new URLClassLoader(_classpath.toArray(new URL[0]), EnvironmentBuilder.class.getClassLoader()));
     }
 }

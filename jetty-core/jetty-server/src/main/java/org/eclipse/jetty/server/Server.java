@@ -20,10 +20,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -41,13 +38,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -771,40 +765,4 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private class NamedEnvironment extends Attributes.Layer implements Environment, Dumpable
-    {
-        private final String _name;
-        private final ClassLoader _classLoader;
-
-        private NamedEnvironment(String name, ClassLoader classLoader)
-        {
-            super(Server.this);
-            _name = name;
-            _classLoader = classLoader;
-        }
-
-        @Override
-        public String getName()
-        {
-            return _name;
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return _classLoader;
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            dumpObjects(out, indent, new ClassLoaderDump(getClassLoader()));
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%s{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
-        }
-    }
 }

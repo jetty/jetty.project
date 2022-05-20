@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -116,6 +117,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
+    protected static final Environment __environment = Environment.ensure("ee9");
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
@@ -220,11 +222,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
-    private final Environment _environment = Environment.get("ee9");
 
     public ContextHandler()
     {
         this(null, null, null);
+        Objects.requireNonNull(__environment);
     }
 
     public ContextHandler(String contextPath)
@@ -2475,65 +2477,33 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             addBean(ContextHandler.this, true);
         }
 
-        private void superDoStart()
+        @Override
+        protected void doStart() throws Exception
         {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
             try
             {
                 super.doStart();
             }
-            catch (Exception e)
+            finally
             {
-                throw new RuntimeException(e);
-            }
-        }
-        
-        private void superDoStop()
-        {
-            try
-            {
-                super.doStop();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        protected void doStart() throws Exception
-        {
-            try
-            {
-                if (_environment != null)
-                    _environment.run(this::superDoStart);
-                else
-                    superDoStart();
-            }
-            catch (RuntimeException e)
-            {
-                if (e.getCause() instanceof Exception x)
-                    throw x;
-                throw e;
+                Thread.currentThread().setContextClassLoader(old);
             }
         }
 
         @Override
         protected void doStop() throws Exception
         {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
             try
             {
-                if (_environment != null)
-                {
-                    _environment.run(this::superDoStop);
-                }
-                else
-                    superDoStop();
+                super.doStop();
             }
-            catch (Exception e)
+            finally
             {
-                if (e.getCause() instanceof Exception x)
-                    throw x;
-                throw e;
+                Thread.currentThread().setContextClassLoader(old);
             }
         }
 

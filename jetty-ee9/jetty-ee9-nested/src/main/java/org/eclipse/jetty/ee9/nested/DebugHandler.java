@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  */
 public class DebugHandler extends HandlerWrapper implements Connection.Listener
 {
-    private DateCache _date = new DateCache("HH:mm:ss", Locale.US);
+    private final DateCache _date = new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;
     private PrintStream _print;
 
@@ -66,25 +66,15 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
 
             getHandler().handle(target, baseRequest, request, response);
         }
-        catch (IOException ioe)
-        {
-            ex = ioe.toString();
-            throw ioe;
-        }
-        catch (ServletException servletEx)
-        {
-            ex = servletEx.toString() + ":" + servletEx.getCause();
-            throw servletEx;
-        }
-        catch (RuntimeException rte)
-        {
-            ex = rte.toString();
-            throw rte;
-        }
-        catch (Error e)
+        catch (IOException | RuntimeException | Error e)
         {
             ex = e.toString();
             throw e;
+        }
+        catch (ServletException servletEx)
+        {
+            ex = servletEx + ":" + servletEx.getCause();
+            throw servletEx;
         }
         finally
         {
@@ -118,7 +108,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).addBean(this, false);
+                connector.addBean(this, false);
         }
 
         super.doStart();
@@ -132,7 +122,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).removeBean(this);
+                connector.removeBean(this);
         }
     }
 
