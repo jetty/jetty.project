@@ -83,6 +83,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -219,6 +220,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private final Environment _environment = Environment.get("ee9");
 
     public ContextHandler()
     {
@@ -2471,6 +2473,43 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             });
             addBean(ContextHandler.this, true);
+        }
+
+        private void superDoStart()
+        {
+            try
+            {
+                super.doStart();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        private void superDoStop()
+        {
+            try
+            {
+                super.doStop();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        @Override
+        protected void doStart() throws Exception
+        {
+            _environment.run(this::superDoStart);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            // TODO Auto-generated method stub
+            super.doStop();
         }
 
         @Override

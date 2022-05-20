@@ -69,7 +69,6 @@ public class Server extends Handler.Wrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
-    private final Map<String, Environment> _environments = new HashMap<>();
     private final AutoLock _dateLock = new AutoLock();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
@@ -124,7 +123,6 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
-        _environments.put("Server", new ServerEnvironment());
     }
 
     public String getServerInfo()
@@ -140,31 +138,6 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
-    }
-
-    public java.util.Collection<Environment> getEnvironments()
-    {
-        return _environments.values();
-    }
-
-    public void addEnvironment(Environment environment)
-    {
-        Objects.requireNonNull(environment);
-        String key = environment.getName();
-        if (StringUtil.isBlank(key))
-            throw new IllegalArgumentException("No environment name");
-        key = key.toLowerCase();
-        _environments.put(key, environment);
-    }
-
-    public Environment getEnvironment(String name)
-    {
-        String key = StringUtil.isBlank(name) ? "server" : name.toLowerCase();
-
-        Environment environment = _environments.get(key);
-        if (environment != null)
-            return environment;
-        throw new RuntimeException("Unknown environment: " + name);
     }
 
     @Override

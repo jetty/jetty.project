@@ -11,6 +11,12 @@
   <Call id="DeploymentManager" name="getBean">
     <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.deploy.DeploymentManager</Arg></Call></Arg>
   </Call>
+  <Ref refid="Environment">
+    <Call name="setAttribute">
+      <Arg>contextHandlerClass</Arg>
+      <Arg><Property name="contextHandlerClass"/></Arg>
+    </Call>
+  </Ref>
   <Ref refid="DeploymentManager">
     <Call name="addAppProvider">
       <Arg>
