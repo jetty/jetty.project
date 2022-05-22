@@ -33,7 +33,7 @@ public class ClientProtocolSession extends ProtocolSession
 
     public ClientProtocolSession(ClientQuicSession session)
     {
-        super(session);
+        super(session, false);
     }
 
     @Override

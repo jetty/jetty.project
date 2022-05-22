@@ -57,6 +57,11 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         return (ServerQuicConnection)super.getQuicConnection();
     }
 
+    boolean isUseVirtualThreads()
+    {
+        return connector instanceof QuicServerConnector && ((QuicServerConnector)connector).isInvokeApplicationWithVirtualThreads();
+    }
+
     @Override
     protected ProtocolSession createProtocolSession()
     {

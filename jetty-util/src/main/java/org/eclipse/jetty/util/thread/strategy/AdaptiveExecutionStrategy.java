@@ -21,6 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -134,20 +135,27 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _epcMode = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
+    private final boolean _useVirtualThreads;
     private final TryExecutor _tryExecutor;
     private final Runnable _runPendingProducer = () -> tryProduce(true);
     private State _state = State.IDLE;
     private boolean _pending;
 
     /**
-     * @param producer The produce of tasks to be consumed.
+     * @param producer The producer of tasks to be consumed.
      * @param executor The executor to be used for executing producers or consumers, depending on the sub-strategy.
      */
     public AdaptiveExecutionStrategy(Producer producer, Executor executor)
     {
+        this(producer, executor, false);
+    }
+
+    public AdaptiveExecutionStrategy(Producer producer, Executor executor, boolean useVirtualThreads)
+    {
         _producer = producer;
         _executor = executor;
-        _tryExecutor = TryExecutor.asTryExecutor(executor);
+        _useVirtualThreads = useVirtualThreads;
+        _tryExecutor = useVirtualThreads ? TryExecutor.NO_TRY : TryExecutor.asTryExecutor(executor);
         addBean(_producer);
         addBean(_tryExecutor);
         if (LOG.isDebugEnabled())
@@ -462,7 +470,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            _executor.execute(task);
+            if (_useVirtualThreads)
+                VirtualThreads.startVirtualThread(task);
+            else
+                _executor.execute(task);
         }
         catch (RejectedExecutionException e)
         {

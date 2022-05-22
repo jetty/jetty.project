@@ -33,7 +33,7 @@ public class ServerProtocolSession extends ProtocolSession
 
     public ServerProtocolSession(ServerQuicSession session)
     {
-        super(session);
+        super(session, session.isUseVirtualThreads());
     }
 
     @Override

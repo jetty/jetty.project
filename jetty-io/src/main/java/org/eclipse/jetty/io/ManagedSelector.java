@@ -91,11 +91,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
+        this(selectorManager, id, false);
+    }
+
+    public ManagedSelector(SelectorManager selectorManager, int id, boolean useVirtualThreads)
+    {
         _selectorManager = selectorManager;
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new AdaptiveExecutionStrategy(producer, executor);
+        _strategy = new AdaptiveExecutionStrategy(producer, executor, useVirtualThreads);
         addBean(_strategy, true);
     }
 

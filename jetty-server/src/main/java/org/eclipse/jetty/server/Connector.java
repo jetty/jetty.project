@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -97,4 +98,21 @@ public interface Connector extends LifeCycle, Container, Graceful
      * @return The connector name or null.
      */
     public String getName();
+
+    public interface VirtualThreadsConfigurable
+    {
+        public default boolean isInvokeApplicationWithVirtualThreads()
+        {
+            return false;
+        }
+
+        public default void setInvokeApplicationWithVirtualThreads(boolean invokeApplicationWithVirtualThreads)
+        {
+            if (invokeApplicationWithVirtualThreads && !VirtualThreads.areSupported())
+            {
+                VirtualThreads.warn();
+                throw new UnsupportedOperationException();
+            }
+        }
+    }
 }

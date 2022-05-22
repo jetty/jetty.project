@@ -69,7 +69,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * </p>
  */
 @ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
-public class ServerConnector extends AbstractNetworkConnector
+public class ServerConnector extends AbstractNetworkConnector implements Connector.VirtualThreadsConfigurable
 {
     private final SelectorManager _manager;
     private final AtomicReference<Closeable> _acceptor = new AtomicReference<>();
@@ -82,6 +82,7 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile boolean _acceptedTcpNoDelay = true;
     private volatile int _acceptedReceiveBufferSize = -1;
     private volatile int _acceptedSendBufferSize = -1;
+    private volatile boolean _invokeApplicationWithVirtualThreads;
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
@@ -563,6 +564,25 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     @Override
+    public boolean isInvokeApplicationWithVirtualThreads()
+    {
+        return _invokeApplicationWithVirtualThreads;
+    }
+
+    @Override
+    public void setInvokeApplicationWithVirtualThreads(boolean invokeApplicationWithVirtualThreads)
+    {
+        try
+        {
+            VirtualThreadsConfigurable.super.setInvokeApplicationWithVirtualThreads(invokeApplicationWithVirtualThreads);
+            _invokeApplicationWithVirtualThreads = invokeApplicationWithVirtualThreads;
+        }
+        catch (UnsupportedOperationException ignored)
+        {
+        }
+    }
+
+    @Override
     public void setAccepting(boolean accepting)
     {
         super.setAccepting(accepting);
@@ -598,6 +618,12 @@ public class ServerConnector extends AbstractNetworkConnector
         public ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
+        }
+
+        @Override
+        protected ManagedSelector newSelector(int id)
+        {
+            return new ManagedSelector(this, id, isInvokeApplicationWithVirtualThreads());
         }
 
         @Override
