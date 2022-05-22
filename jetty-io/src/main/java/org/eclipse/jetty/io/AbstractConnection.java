@@ -21,6 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public abstract class AbstractConnection implements Connection
     private final Executor _executor;
     private final Callback _readCallback;
     private int _inputBufferSize = 2048;
+    private boolean _useVirtualThreadToInvokeRootHandler;
 
     protected AbstractConnection(EndPoint endp, Executor executor)
     {
@@ -73,6 +75,16 @@ public abstract class AbstractConnection implements Connection
     public void setInputBufferSize(int inputBufferSize)
     {
         _inputBufferSize = inputBufferSize;
+    }
+
+    public boolean isUseVirtualThreadToInvokeRootHandler()
+    {
+        return _useVirtualThreadToInvokeRootHandler;
+    }
+
+    public void setUseVirtualThreadToInvokeRootHandler(boolean useVirtualThreadToInvokeRootHandler)
+    {
+        _useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
     }
 
     protected Executor getExecutor()
@@ -311,24 +323,40 @@ public abstract class AbstractConnection implements Connection
             this);
     }
 
-    private class ReadCallback implements Callback
+    private class ReadCallback implements Callback, Invocable
     {
         @Override
         public void succeeded()
         {
+            if (isUseVirtualThreadToInvokeRootHandler())
+            {
+                if (VirtualThreads.startVirtualThread(AbstractConnection.this::onFillable))
+                    return;
+            }
             onFillable();
         }
 
         @Override
-        public void failed(final Throwable x)
+        public void failed(Throwable x)
         {
+            if (isUseVirtualThreadToInvokeRootHandler())
+            {
+                if (VirtualThreads.startVirtualThread(() -> onFillInterestedFailed(x)))
+                    return;
+            }
             onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return isUseVirtualThreadToInvokeRootHandler() ? InvocationType.NON_BLOCKING : InvocationType.BLOCKING;
         }
 
         @Override
         public String toString()
         {
-            return String.format("AC.ReadCB@%h{%s}", AbstractConnection.this, AbstractConnection.this);
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
         }
     }
 }

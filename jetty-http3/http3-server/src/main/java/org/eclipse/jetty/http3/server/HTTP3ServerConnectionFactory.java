@@ -27,6 +27,7 @@ import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,9 +106,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onRequest(Stream stream, HeadersFrame frame)
         {
             HTTP3StreamServer http3Stream = (HTTP3StreamServer)stream;
-            Runnable task = getConnection().onRequest(http3Stream, frame);
+            ServerHTTP3StreamConnection connection = getConnection();
+            Runnable task = connection.onRequest(http3Stream, frame);
             if (task != null)
             {
+                if (connection.isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
@@ -117,9 +124,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onDataAvailable(Stream.Server stream)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onDataAvailable(http3Stream);
+            ServerHTTP3StreamConnection connection = getConnection();
+            Runnable task = connection.onDataAvailable(http3Stream);
             if (task != null)
             {
+                if (connection.isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
@@ -129,9 +142,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onTrailer(Stream.Server stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onTrailer(http3Stream, frame);
+            ServerHTTP3StreamConnection connection = getConnection();
+            Runnable task = connection.onTrailer(http3Stream, frame);
             if (task != null)
             {
+                if (connection.isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
@@ -155,9 +174,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onFailure(Stream.Server stream, long error, Throwable failure)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);
+            ServerHTTP3StreamConnection connection = getConnection();
+            Runnable task = connection.onFailure((HTTP3Stream)stream, failure);
             if (task != null)
             {
+                if (connection.isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, true);
             }

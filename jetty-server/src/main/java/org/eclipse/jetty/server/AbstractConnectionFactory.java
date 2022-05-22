@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,18 +33,19 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 {
     private final String _protocol;
     private final List<String> _protocols;
-    private int _inputbufferSize = 8192;
+    private int _inputBufferSize = 8192;
+    private boolean _useVirtualThreadToInvokeRootHandler;
 
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol = protocol;
-        _protocols = Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+        _protocols = List.of(protocol);
     }
 
     protected AbstractConnectionFactory(String... protocols)
     {
         _protocol = protocols[0];
-        _protocols = Collections.unmodifiableList(Arrays.asList(protocols));
+        _protocols = List.of(protocols);
     }
 
     @Override
@@ -64,12 +64,25 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @ManagedAttribute("The buffer size used to read from the network")
     public int getInputBufferSize()
     {
-        return _inputbufferSize;
+        return _inputBufferSize;
     }
 
     public void setInputBufferSize(int size)
     {
-        _inputbufferSize = size;
+        _inputBufferSize = size;
+    }
+
+    public boolean isUseVirtualThreadToInvokeRootHandler()
+    {
+        return _useVirtualThreadToInvokeRootHandler;
+    }
+
+    public void setUseVirtualThreadToInvokeRootHandler(boolean useVirtualThreadToInvokeRootHandler)
+    {
+        if (useVirtualThreadToInvokeRootHandler && !VirtualThreads.areSupported())
+            VirtualThreads.warn();
+        else
+            _useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
     }
 
     protected String findNextProtocol(Connector connector)
@@ -101,6 +114,8 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 
         // Add Connection.Listeners from this factory
         getEventListeners().forEach(connection::addEventListener);
+
+        connection.setUseVirtualThreadToInvokeRootHandler(isUseVirtualThreadToInvokeRootHandler());
 
         return connection;
     }

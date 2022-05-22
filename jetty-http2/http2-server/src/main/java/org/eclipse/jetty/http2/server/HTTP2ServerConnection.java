@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HTTP2ServerConnection extends HTTP2Connection
@@ -141,7 +142,14 @@ public class HTTP2ServerConnection extends HTTP2Connection
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onRequest(frame);
         if (task != null)
+        {
+            if (isUseVirtualThreadToInvokeRootHandler())
+            {
+                if (VirtualThreads.startVirtualThread(task))
+                    return;
+            }
             offerTask(task, false);
+        }
     }
 
     public void onData(IStream stream, DataFrame frame, Callback callback)
@@ -153,7 +161,14 @@ public class HTTP2ServerConnection extends HTTP2Connection
         {
             Runnable task = channel.onData(frame, callback);
             if (task != null)
+            {
+                if (isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 offerTask(task, false);
+            }
         }
         else
         {
@@ -170,7 +185,14 @@ public class HTTP2ServerConnection extends HTTP2Connection
         {
             Runnable task = channel.onTrailer(frame);
             if (task != null)
+            {
+                if (isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 offerTask(task, false);
+            }
         }
     }
 
@@ -193,6 +215,11 @@ public class HTTP2ServerConnection extends HTTP2Connection
             Runnable task = channel.onFailure(failure, callback);
             if (task != null)
             {
+                if (isUseVirtualThreadToInvokeRootHandler())
+                {
+                    if (VirtualThreads.startVirtualThread(task))
+                        return;
+                }
                 // We must dispatch to another thread because the task
                 // may call application code that performs blocking I/O.
                 offerTask(task, true);
@@ -234,7 +261,14 @@ public class HTTP2ServerConnection extends HTTP2Connection
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onPushRequest(request);
         if (task != null)
+        {
+            if (isUseVirtualThreadToInvokeRootHandler())
+            {
+                if (VirtualThreads.startVirtualThread(task))
+                    return;
+            }
             offerTask(task, true);
+        }
     }
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)

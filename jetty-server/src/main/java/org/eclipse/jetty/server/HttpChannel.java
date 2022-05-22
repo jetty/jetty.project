@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1146,6 +1148,16 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected void execute(Runnable task)
     {
+        Connection c = getConnection();
+        if (c instanceof AbstractConnection)
+        {
+            AbstractConnection connection = (AbstractConnection)c;
+            if (connection.isUseVirtualThreadToInvokeRootHandler())
+            {
+                if (VirtualThreads.startVirtualThread(task))
+                    return;
+            }
+        }
         _executor.execute(task);
     }
 
