@@ -538,6 +538,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         GzipRequest gzipRequest = Request.as(request, GzipRequest.class);
         boolean alreadyGzipped = gzipRequest != null;
 
+        // TODO: skip wrapping the response if it is already committed.
+
         // TODO: Move down. can we return super.handle(request) without these changes?
         // Update headers for etags and inflation
         HttpFields.Mutable newFields = null;

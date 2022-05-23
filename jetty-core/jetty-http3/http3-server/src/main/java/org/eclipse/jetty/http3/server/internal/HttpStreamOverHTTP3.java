@@ -104,13 +104,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest() failure", x);
-            onBadMessage(x);
-            return null;
+            return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
-            return null;
+            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
