@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -32,7 +33,7 @@ public class CookieCache
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
     protected final List<String> _rawFields = new ArrayList<>();
-    protected final List<HttpCookie> _cookieList = new ArrayList<>();
+    protected List<HttpCookie> _cookieList;
     private final CookieCutter _cookieCutter;
 
     public CookieCache()
@@ -92,13 +93,23 @@ public class CookieCache
             _rawFields.add(value);
         }
 
+        if (!building && raw.hasNext())
+        {
+            building = true;
+            while (raw.hasNext())
+            {
+                raw.next();
+                raw.remove();
+            }
+        }
+
         if (building)
         {
-            _cookieList.clear();
+            _cookieList = new ArrayList<>();
             _cookieCutter.parseFields(_rawFields);
         }
 
-        return _cookieList;
+        return _cookieList == null ? Collections.emptyList() : _cookieList;
     }
 
 }
