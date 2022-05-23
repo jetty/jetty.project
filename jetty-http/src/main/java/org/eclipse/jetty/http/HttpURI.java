@@ -628,6 +628,8 @@ public interface HttpURI
          */
         public Mutable authority(String host, int port)
         {
+            if (host != null && _path != null && !_path.startsWith("/"))
+                throw new IllegalArgumentException("Relative path with authority");
             _user = null;
             _host = host;
             _port = port;
@@ -636,12 +638,14 @@ public interface HttpURI
         }
 
         /**
-         * @param hostport the host and port combined
+         * @param hostPort the host and port combined
          * @return this mutable
          */
-        public Mutable authority(String hostport)
+        public Mutable authority(String hostPort)
         {
-            HostPort hp = new HostPort(hostport);
+            if (hostPort != null && _path != null && !_path.startsWith("/"))
+                throw new IllegalArgumentException("Relative path with authority");
+            HostPort hp = new HostPort(hostPort);
             _user = null;
             _host = hp.getHost();
             _port = hp.getPort();
@@ -775,6 +779,8 @@ public interface HttpURI
 
         public Mutable host(String host)
         {
+            if (host != null && _path != null && !_path.startsWith("/"))
+                throw new IllegalArgumentException("Relative path with authority");
             _host = host;
             _uri = null;
             return this;
@@ -834,10 +840,12 @@ public interface HttpURI
 
         /**
          * @param path the path
-         * @return this Mutuble
+         * @return this Mutable
          */
         public Mutable path(String path)
         {
+            if (hasAuthority() && path != null && !path.startsWith("/"))
+                throw new IllegalArgumentException("Relative path with authority");
             _uri = null;
             _path = path;
             _decodedPath = null;
@@ -846,6 +854,8 @@ public interface HttpURI
 
         public Mutable pathQuery(String pathQuery)
         {
+            if (hasAuthority() && pathQuery != null && !pathQuery.startsWith("/"))
+                throw new IllegalArgumentException("Relative path with authority");
             _uri = null;
             _path = null;
             _decodedPath = null;
