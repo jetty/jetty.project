@@ -472,6 +472,8 @@ public class GzipHandlerTest
 
     public static Stream<Arguments> scenarios()
     {
+//        if (true) return Stream.of(Arguments.of(1, 32 * 1024 + 1, true, false, false));
+
         List<Arguments> args = new ArrayList<>();
         for (int writes : List.of(0, 1, 2, 32))
         {
@@ -528,10 +530,10 @@ public class GzipHandlerTest
         byte[] bytes;
         try
         {
-            InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+            ByteArrayInputStream rawContentStream = new ByteArrayInputStream(response.getContentBytes());
+            InputStream testIn = gzipped ? new GZIPInputStream(rawContentStream) : rawContentStream;
             ByteArrayOutputStream testOut = new ByteArrayOutputStream();
             IO.copy(testIn, testOut);
-
             bytes = testOut.toByteArray();
         }
         catch (EOFException | ZipException e)

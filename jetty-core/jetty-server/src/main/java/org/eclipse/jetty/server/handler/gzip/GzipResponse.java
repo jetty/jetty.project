@@ -309,11 +309,13 @@ public class GzipResponse extends Response.Wrapper
                         content = BufferUtil.EMPTY_BUFFER;
                     else if (_index < _content.length)
                     {
+                        content = _content[_index];
                         while (BufferUtil.isEmpty(content))
                         {
+                            _index++;
                             if (_index >= _content.length)
                                 break;
-                            content = _content[_index++];
+                            content = _content[_index];
                         }
                     }
 
