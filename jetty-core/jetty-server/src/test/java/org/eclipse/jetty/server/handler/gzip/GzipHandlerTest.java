@@ -512,17 +512,12 @@ public class GzipHandlerTest
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
-//        System.err.println(response);
-//        System.err.println(response.getContentBytes().length);
-
         assertThat(response.getStatus(), is(200));
 
         int expectedSize = writes * bufferSize;
 
         int actualWrites = writes + (knownLast ? 0 : 1);
         boolean gzipped = expectedSize >= GzipHandler.DEFAULT_MIN_GZIP_SIZE || !contentLength && actualWrites > 1;
-
-//        System.err.printf("actualWrites=%d gzipped=%b%n", actualWrites, gzipped);
 
         byte[] bytes;
         if (gzipped)
