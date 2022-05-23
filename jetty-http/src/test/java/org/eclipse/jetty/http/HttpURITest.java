@@ -847,5 +847,23 @@ public class HttpURITest
         assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
             .path(";")
             .host("host"));
+
+        HttpURI.Mutable uri = HttpURI.build()
+            .path("*")
+            .authority("host");
+        assertEquals("//host*", uri.asString());
+        uri = HttpURI.build()
+            .authority("host")
+            .path("*");
+        assertEquals("//host*", uri.asString());
+
+        uri = HttpURI.build()
+            .path("")
+            .authority("host");
+        assertEquals("//host", uri.asString());
+        uri = HttpURI.build()
+            .authority("host")
+            .path("");
+        assertEquals("//host", uri.asString());
     }
 }

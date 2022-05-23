@@ -628,7 +628,7 @@ public interface HttpURI
          */
         public Mutable authority(String host, int port)
         {
-            if (host != null && _path != null && !_path.startsWith("/"))
+            if (host != null && !isPathValidForAuthority(_path))
                 throw new IllegalArgumentException("Relative path with authority");
             _user = null;
             _host = host;
@@ -643,7 +643,7 @@ public interface HttpURI
          */
         public Mutable authority(String hostPort)
         {
-            if (hostPort != null && _path != null && !_path.startsWith("/"))
+            if (hostPort != null && !isPathValidForAuthority(_path))
                 throw new IllegalArgumentException("Relative path with authority");
             HostPort hp = new HostPort(hostPort);
             _user = null;
@@ -651,6 +651,15 @@ public interface HttpURI
             _port = hp.getPort();
             _uri = null;
             return this;
+        }
+
+        private boolean isPathValidForAuthority(String path)
+        {
+            if (path == null)
+                return true;
+            if (path.isEmpty() || "*".equals(path))
+                return true;
+            return path.startsWith("/");
         }
 
         public Mutable clear()
@@ -779,7 +788,7 @@ public interface HttpURI
 
         public Mutable host(String host)
         {
-            if (host != null && _path != null && !_path.startsWith("/"))
+            if (host != null && !isPathValidForAuthority(_path))
                 throw new IllegalArgumentException("Relative path with authority");
             _host = host;
             _uri = null;
@@ -844,7 +853,7 @@ public interface HttpURI
          */
         public Mutable path(String path)
         {
-            if (hasAuthority() && path != null && !path.startsWith("/"))
+            if (hasAuthority() && !isPathValidForAuthority(path))
                 throw new IllegalArgumentException("Relative path with authority");
             _uri = null;
             _path = path;
@@ -854,7 +863,7 @@ public interface HttpURI
 
         public Mutable pathQuery(String pathQuery)
         {
-            if (hasAuthority() && pathQuery != null && !pathQuery.startsWith("/"))
+            if (hasAuthority() && !isPathValidForAuthority(pathQuery))
                 throw new IllegalArgumentException("Relative path with authority");
             _uri = null;
             _path = null;
