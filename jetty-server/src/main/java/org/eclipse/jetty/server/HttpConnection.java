@@ -40,6 +40,8 @@ import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.VirtualThreads;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +68,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
+    private final boolean _useVirtualThreadToInvokeRootHandler;
+    private final Callback _readCallback;
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private boolean _useInputDirectByteBuffers;
@@ -93,6 +97,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
+        this(config, connector, endPoint, recordComplianceViolations, false);
+    }
+
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean recordComplianceViolations, boolean useVirtualThreadToInvokeRootHandler)
+    {
         super(endPoint, connector.getExecutor());
         _config = config;
         _connector = connector;
@@ -103,6 +112,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _input = _channel.getRequest().getHttpInput();
         _parser = newHttpParser(config.getHttpCompliance());
         _recordHttpComplianceViolations = recordComplianceViolations;
+        _useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
+        _readCallback = useVirtualThreadToInvokeRootHandler ? new VirtualThreadReadCallback() : null;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -115,6 +126,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public boolean isRecordHttpComplianceViolations()
     {
         return _recordHttpComplianceViolations;
+    }
+
+    public boolean isUseVirtualThreadToInvokeRootHandler()
+    {
+        return _useVirtualThreadToInvokeRootHandler;
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -248,6 +264,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public boolean isRequestBufferEmpty()
     {
         return _retainableByteBuffer == null || _retainableByteBuffer.isEmpty();
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        if (_readCallback != null)
+            getEndPoint().fillInterested(_readCallback);
+        else
+            super.fillInterested();
     }
 
     @Override
@@ -912,6 +937,37 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public String toString()
         {
             return String.format("%s[i=%s,cb=%s]", super.toString(), _info, _callback);
+        }
+    }
+
+    private class VirtualThreadReadCallback implements Callback, Invocable
+    {
+        @Override
+        public void succeeded()
+        {
+            if (VirtualThreads.startVirtualThread(HttpConnection.this::onFillable))
+                return;
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (VirtualThreads.startVirtualThread(() -> onFillInterestedFailed(x)))
+                return;
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), HttpConnection.this);
         }
     }
 }

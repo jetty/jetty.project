@@ -21,7 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,13 +42,12 @@ public abstract class AbstractConnection implements Connection
     private final Executor _executor;
     private final Callback _readCallback;
     private int _inputBufferSize = 2048;
-    private boolean _useVirtualThreadToInvokeRootHandler;
 
-    protected AbstractConnection(EndPoint endp, Executor executor)
+    protected AbstractConnection(EndPoint endPoint, Executor executor)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
-        _endPoint = endp;
+        _endPoint = endPoint;
         _executor = executor;
         _readCallback = new ReadCallback();
     }
@@ -75,16 +73,6 @@ public abstract class AbstractConnection implements Connection
     public void setInputBufferSize(int inputBufferSize)
     {
         _inputBufferSize = inputBufferSize;
-    }
-
-    public boolean isUseVirtualThreadToInvokeRootHandler()
-    {
-        return _useVirtualThreadToInvokeRootHandler;
-    }
-
-    public void setUseVirtualThreadToInvokeRootHandler(boolean useVirtualThreadToInvokeRootHandler)
-    {
-        _useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
     }
 
     protected Executor getExecutor()
@@ -145,11 +133,6 @@ public abstract class AbstractConnection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("fillInterested {}", this);
         getEndPoint().fillInterested(_readCallback);
-    }
-
-    public void tryFillInterested()
-    {
-        tryFillInterested(_readCallback);
     }
 
     public void tryFillInterested(Callback callback)
@@ -323,34 +306,18 @@ public abstract class AbstractConnection implements Connection
             this);
     }
 
-    private class ReadCallback implements Callback, Invocable
+    private class ReadCallback implements Callback
     {
         @Override
         public void succeeded()
         {
-            if (isUseVirtualThreadToInvokeRootHandler())
-            {
-                if (VirtualThreads.startVirtualThread(AbstractConnection.this::onFillable))
-                    return;
-            }
             onFillable();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (isUseVirtualThreadToInvokeRootHandler())
-            {
-                if (VirtualThreads.startVirtualThread(() -> onFillInterestedFailed(x)))
-                    return;
-            }
             onFillInterestedFailed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return isUseVirtualThreadToInvokeRootHandler() ? InvocationType.NON_BLOCKING : InvocationType.BLOCKING;
         }
 
         @Override

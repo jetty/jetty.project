@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +73,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         super(connector, config, endPoint, transport);
         _httpConnection = httpConnection;
+    }
+
+    @Override
+    protected void execute(Runnable task)
+    {
+        if (_httpConnection.isUseVirtualThreadToInvokeRootHandler())
+        {
+            if (VirtualThreads.startVirtualThread(task))
+                return;
+        }
+        super.execute(task);
     }
 
     @Override

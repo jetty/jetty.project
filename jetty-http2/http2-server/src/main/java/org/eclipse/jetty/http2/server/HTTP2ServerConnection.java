@@ -85,19 +85,26 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
+    private final boolean useVirtualThreadToInvokeRootHandler;
     private boolean recycleHttpChannels = true;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener, boolean useVirtualThreadToInvokeRootHandler)
     {
         super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
+        this.useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
     }
 
     @Override
     protected ServerParser getParser()
     {
         return (ServerParser)super.getParser();
+    }
+
+    public boolean isUseVirtualThreadToInvokeRootHandler()
+    {
+        return useVirtualThreadToInvokeRootHandler;
     }
 
     public boolean isRecycleHttpChannels()

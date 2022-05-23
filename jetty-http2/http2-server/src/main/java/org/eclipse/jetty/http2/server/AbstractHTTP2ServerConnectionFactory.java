@@ -283,7 +283,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
 
         HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector.getExecutor(),
-            endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener, isUseVirtualThreadToInvokeRootHandler());
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);

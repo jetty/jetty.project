@@ -86,7 +86,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations(), isUseVirtualThreadToInvokeRootHandler());
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         return configure(connection, connector, endPoint);

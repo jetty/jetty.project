@@ -115,8 +115,6 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         // Add Connection.Listeners from this factory
         getEventListeners().forEach(connection::addEventListener);
 
-        connection.setUseVirtualThreadToInvokeRootHandler(isUseVirtualThreadToInvokeRootHandler());
-
         return connection;
     }
 

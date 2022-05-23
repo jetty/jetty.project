@@ -28,13 +28,20 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     private final Connector connector;
     private final HttpConfiguration httpConfiguration;
     private final ServerHTTP3Session session;
+    private final boolean useVirtualThreadToInvokeRootHandler;
 
-    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
+    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser, boolean useVirtualThreadToInvokeRootHandler)
     {
         super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
         this.connector = connector;
         this.httpConfiguration = httpConfiguration;
         this.session = session;
+        this.useVirtualThreadToInvokeRootHandler = useVirtualThreadToInvokeRootHandler;
+    }
+
+    public boolean isUseVirtualThreadToInvokeRootHandler()
+    {
+        return useVirtualThreadToInvokeRootHandler;
     }
 
     @Override
