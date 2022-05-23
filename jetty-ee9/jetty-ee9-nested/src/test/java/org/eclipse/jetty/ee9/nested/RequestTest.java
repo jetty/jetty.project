@@ -1630,7 +1630,54 @@ public class RequestTest
         assertEquals("value", cookies[0]);
         assertNull(cookies[1]);
     }
+    
+    /**
+     * Test that multiple requests on the same connection with different cookies
+     * do not bleed cookies.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testDifferentCookies() throws Exception
+    {
+        _server.stop();
+        _context.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                List<HttpCookie> coreCookies = org.eclipse.jetty.server.Request.getCookies(baseRequest.getCoreRequest());
+                if (coreCookies != null)
+                {
+                    for (HttpCookie c : coreCookies)
+                        response.getOutputStream().println("Core Cookie: " + c.getName() + "=" + c.getValue());
+                }
+            }
+        });
+        _server.start();
 
+        String sessionId1 = "JSESSIONID=node0o250bm47otmz1qjqqor54fj6h0.node0";
+        String sessionId2 = "JSESSIONID=node0q4z00xb0pnyl1f312ec6e93lw1.node0";
+        String sessionId3 = "JSESSIONID=node0gqgmw5fbijm0f9cid04b4ssw2.node0";
+        String request1 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId1 + "\r\n\r\n";
+        String request2 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId2 + "\r\n\r\n";
+        String request3 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId3 + "\r\n\r\n";
+
+        LocalEndPoint lep = _connector.connect();
+        lep.addInput(request1);
+        HttpTester.Response response = HttpTester.parseResponse(lep.getResponse());
+        checkCookieResult(sessionId1, new String[] {sessionId2, sessionId3}, response.getContent());
+        lep.addInput(request2);
+        response = HttpTester.parseResponse(lep.getResponse());
+        checkCookieResult(sessionId2, new String[] {sessionId1, sessionId3}, response.getContent());
+        lep.addInput(request3);
+        response = HttpTester.parseResponse(lep.getResponse());
+        checkCookieResult(sessionId3, new String[] {sessionId1, sessionId2}, response.getContent());
+    }
+    
     @Test
     public void testHashDOSKeys() throws Exception
     {
@@ -2267,6 +2314,20 @@ public class RequestTest
         public void clearAttributes()
         {
 
+        }
+    }
+    
+    private static void checkCookieResult(String containedCookie, String[] notContainedCookies, String response)
+    {
+        assertNotNull(containedCookie);
+        assertNotNull(response);
+        assertThat(response, containsString("Core Cookie: " + containedCookie));
+        if (notContainedCookies != null)
+        {
+            for (String notContainsCookie : notContainedCookies)
+            {
+                assertThat(response, not(containsString(notContainsCookie)));
+            }
         }
     }
 }
