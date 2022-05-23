@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipException;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
@@ -253,8 +251,6 @@ public class GzipHandlerTest
                         if (ro)
                             buffer = buffer.asReadOnlyBuffer();
                     }
-
-                    System.err.printf("write(%b, %s, %s)%n", last, cb, BufferUtil.toDetailString(buffer));
 
                     if (buffer == null)
                         response.write(last, cb);
@@ -508,37 +504,41 @@ public class GzipHandlerTest
         HttpTester.Response response;
 
         request.setMethod("GET");
-        request.setURI("/ctx/async/info?writes=%d&bufferSize=%d&readOnly=%b&contentLength=%b".formatted(writes, bufferSize, readOnly, contentLength));
+        request.setURI("/ctx/async/info?writes=%d&bufferSize=%d&readOnly=%b&contentLength=%b&knownLast=%b"
+            .formatted(writes, bufferSize, readOnly, contentLength, knownLast));
         request.setVersion("HTTP/1.0");
         request.setHeader("Host", "tester");
         request.setHeader("accept-encoding", "gzip");
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
+//        System.err.println(response);
+//        System.err.println(response.getContentBytes().length);
+
         assertThat(response.getStatus(), is(200));
 
         int expectedSize = writes * bufferSize;
 
-        boolean gzipped = expectedSize >= GzipHandler.DEFAULT_MIN_GZIP_SIZE || writes > 0 && !contentLength;
+        int actualWrites = writes + (knownLast ? 0 : 1);
+        boolean gzipped = expectedSize >= GzipHandler.DEFAULT_MIN_GZIP_SIZE || !contentLength && actualWrites > 1;
 
+//        System.err.printf("actualWrites=%d gzipped=%b%n", actualWrites, gzipped);
+
+        byte[] bytes;
         if (gzipped)
         {
             assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
             assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
-        }
 
-        byte[] bytes;
-        try
-        {
             ByteArrayInputStream rawContentStream = new ByteArrayInputStream(response.getContentBytes());
-            InputStream testIn = gzipped ? new GZIPInputStream(rawContentStream) : rawContentStream;
+            InputStream testIn = new GZIPInputStream(rawContentStream);
             ByteArrayOutputStream testOut = new ByteArrayOutputStream();
             IO.copy(testIn, testOut);
             bytes = testOut.toByteArray();
         }
-        catch (EOFException | ZipException e)
+        else
         {
-            bytes = new byte[0];
+            bytes = response.getContentBytes();
         }
 
         byte[] expectedBuffer = new byte[bufferSize];
