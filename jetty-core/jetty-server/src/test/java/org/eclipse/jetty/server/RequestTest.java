@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -91,7 +92,7 @@ public class RequestTest
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
      * 
-     * @throws Exception
+     * @throws Exception if there is a problem
      */
     @Test
     public void testDifferentCookies() throws Exception
@@ -106,13 +107,15 @@ public class RequestTest
                 response.setContentType("text/plain");
                 ByteArrayOutputStream buff = new ByteArrayOutputStream();
 
+                request.getHeaders().getFields(HttpHeader.COOKIE).forEach(System.err::println);
                 List<HttpCookie> coreCookies = org.eclipse.jetty.server.Request.getCookies(request);
+
                 if (coreCookies != null)
                 {
                     for (HttpCookie c : coreCookies)
                         buff.writeBytes(("Core Cookie: " + c.getName() + "=" + c.getValue() + "\n").getBytes());
                 }
-                Response.write(response, true, ByteBuffer.wrap(buff.toByteArray()));
+                response.write(true, callback, ByteBuffer.wrap(buff.toByteArray()));
             }
         });
         
@@ -124,17 +127,18 @@ public class RequestTest
         String request2 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId2 + "\r\n\r\n";
         String request3 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId3 + "\r\n\r\n";
         
-        LocalEndPoint lep = connector.connect();
-        lep.addInput(request1);
-        HttpTester.Response response = HttpTester.parseResponse(lep.getResponse());
-        checkCookieResult(sessionId1, new String[] {sessionId2, sessionId3}, response.getContent());
-        lep.addInput(request2);
-        response = HttpTester.parseResponse(lep.getResponse());
-        checkCookieResult(sessionId2, new String[] {sessionId1, sessionId3}, response.getContent());
-        lep.addInput(request3);
-        response = HttpTester.parseResponse(lep.getResponse());
-        checkCookieResult(sessionId3, new String[] {sessionId1, sessionId2}, response.getContent());
-
+        try (LocalEndPoint lep = connector.connect())
+        {
+            lep.addInput(request1);
+            HttpTester.Response response = HttpTester.parseResponse(lep.getResponse());
+            checkCookieResult(sessionId1, new String[]{sessionId2, sessionId3}, response.getContent());
+            lep.addInput(request2);
+            response = HttpTester.parseResponse(lep.getResponse());
+            checkCookieResult(sessionId2, new String[]{sessionId1, sessionId3}, response.getContent());
+            lep.addInput(request3);
+            response = HttpTester.parseResponse(lep.getResponse());
+            checkCookieResult(sessionId3, new String[]{sessionId1, sessionId2}, response.getContent());
+        }
     }
 
     private static void checkCookieResult(String containedCookie, String[] notContainedCookies, String response)
