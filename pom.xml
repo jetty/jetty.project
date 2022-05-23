@@ -65,7 +65,7 @@
     <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.api.version>3.1.0</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
     <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
     <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
