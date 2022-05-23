@@ -15,15 +15,20 @@ package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipException;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
@@ -50,6 +55,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -59,6 +67,7 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GzipHandlerTest
@@ -194,26 +203,63 @@ public class GzipHandlerTest
         }
     }
 
-    public static class AsyncHandler extends Handler.Processor
+    public static class WriteHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
-            String writes = parameters.get("writes").getValue();
+
+            byte[] bytes;
+            String size = parameters.getValue("bufferSize");
+            if (size == null)
+                bytes = __bytes;
+            else
+            {
+                int s = Integer.parseInt(size);
+                bytes = new byte[s];
+                while (s > 0)
+                {
+                    int l = Math.min(__bytes.length, s);
+                    System.arraycopy(__bytes, 0, bytes, bytes.length - s, l);
+                    s = s - l;
+                }
+            }
+
+            String writes = parameters.getValue("writes");
             AtomicInteger count = new AtomicInteger(writes == null ? 1 : Integer.parseInt(writes));
 
-            response.setContentLength((long)count.get() * __bytes.length);
+            boolean ro = Boolean.parseBoolean(parameters.getValue("readOnly"));
+            boolean cl = Boolean.parseBoolean(parameters.getValue("contentLength"));
+            boolean knownLast = Boolean.parseBoolean(parameters.getValue("knownLast"));
+
+            if (cl)
+                response.setContentLength((long)count.get() * bytes.length);
 
             Runnable writer = new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    if (count.getAndDecrement() == 0)
-                        response.write(true, callback);
+                    int c = count.getAndDecrement();
+
+                    boolean last = c == 0 || c == 1 && knownLast;
+                    Callback cb = last ? callback : Callback.from(this);
+
+                    ByteBuffer buffer = null;
+                    if (c > 0)
+                    {
+                        buffer = ByteBuffer.wrap(bytes);
+                        if (ro)
+                            buffer = buffer.asReadOnlyBuffer();
+                    }
+
+                    System.err.printf("write(%b, %s, %s)%n", last, cb, BufferUtil.toDetailString(buffer));
+
+                    if (buffer == null)
+                        response.write(last, cb);
                     else
-                        response.write(false, Callback.from(this), ByteBuffer.wrap(__bytes));
+                        response.write(last, cb, buffer);
                 }
             };
 
@@ -332,9 +378,9 @@ public class GzipHandlerTest
     }
 
     @Test
-    public void testAsyncResponse() throws Exception
+    public void testSmallBufferResponse() throws Exception
     {
-        _contextHandler.setHandler(new AsyncHandler());
+        _contextHandler.setHandler(new WriteHandler());
         _server.start();
 
         // generated and parsed test
@@ -390,9 +436,9 @@ public class GzipHandlerTest
     }
 
     @Test
-    public void testAsyncLargeResponse() throws Exception
+    public void testLargeResponse() throws Exception
     {
-        _contextHandler.setHandler(new AsyncHandler());
+        _contextHandler.setHandler(new WriteHandler());
         _server.start();
 
         int writes = 100;
@@ -424,10 +470,100 @@ public class GzipHandlerTest
         }
     }
 
-    @Test
-    public void testAsyncEmptyResponse() throws Exception
+    public static Stream<Arguments> scenarios()
     {
-        _contextHandler.setHandler(new AsyncHandler());
+        List<Arguments> args = new ArrayList<>();
+        for (int writes : List.of(0, 1, 2, 32))
+        {
+            for (int bufferSize : List.of(0, 1, 16 * 1024, 128 * 1024))
+            {
+                for (boolean readOnly : List.of(true, false))
+                {
+                    for (boolean contentLength : List.of(true, false))
+                    {
+                        if (bufferSize > 16 * 1024 && writes > 2)
+                            continue;
+                        for (boolean knownLast : List.of(true, false))
+                        {
+                            args.add(Arguments.of(writes, bufferSize, readOnly, contentLength, knownLast));
+                        }
+                    }
+                }
+            }
+        }
+        return args.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testScenarios(int writes, int bufferSize, boolean readOnly, boolean contentLength, boolean knownLast) throws Exception
+    {
+        _contextHandler.setHandler(new WriteHandler());
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/async/info?writes=%d&bufferSize=%d&readOnly=%b&contentLength=%b".formatted(writes, bufferSize, readOnly, contentLength));
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+
+        int expectedSize = writes * bufferSize;
+
+        boolean gzipped = expectedSize >= GzipHandler.DEFAULT_MIN_GZIP_SIZE || writes > 0 && !contentLength;
+
+        if (gzipped)
+        {
+            assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+            assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+        }
+
+        byte[] bytes;
+        try
+        {
+            InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+            ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+            IO.copy(testIn, testOut);
+
+            bytes = testOut.toByteArray();
+        }
+        catch (EOFException | ZipException e)
+        {
+            bytes = new byte[0];
+        }
+
+        byte[] expectedBuffer = new byte[bufferSize];
+        int remaining = bufferSize;
+        while (remaining > 0)
+        {
+            int len = Math.min(__bytes.length, remaining);
+            System.arraycopy(__bytes, 0, expectedBuffer, bufferSize - remaining, len);
+            remaining -= len;
+        }
+
+        byte[] expectedBytes = new byte[expectedSize];
+        remaining = expectedSize;
+        while (remaining > 0)
+        {
+            int len = Math.min(expectedBuffer.length, remaining);
+            System.arraycopy(expectedBuffer, 0, expectedBytes, expectedSize - remaining, len);
+            remaining -= len;
+        }
+
+        assertArrayEquals(expectedBytes, bytes);
+    }
+
+    @Test
+    public void testEmptyResponse() throws Exception
+    {
+        _contextHandler.setHandler(new WriteHandler());
         _server.start();
 
         int writes = 0;
