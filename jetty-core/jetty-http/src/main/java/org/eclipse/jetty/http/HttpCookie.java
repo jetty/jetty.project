@@ -243,6 +243,11 @@ public class HttpCookie
         return builder.toString();
     }
 
+    public String toString()
+    {
+        return "%x@%s".formatted(hashCode(), asString());
+    }
+
     private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
     {
         if (quote)
