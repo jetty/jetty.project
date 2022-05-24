@@ -119,7 +119,7 @@ public interface HttpURI
     static Immutable from(String method, String uri)
     {
         if (HttpMethod.CONNECT.is(method))
-            return new Immutable(uri);
+            return HttpURI.build().uri(method, uri).asImmutable();
         if (uri.startsWith("/"))
             return HttpURI.build().pathQuery(uri).asImmutable();
         return HttpURI.from(uri);
@@ -947,8 +947,7 @@ public interface HttpURI
             if (HttpMethod.CONNECT.is(method))
             {
                 clear();
-                _uri = uri;
-                _path = uri;
+                parse(State.HOST, uri);
             }
             else if (uri.startsWith("/"))
             {

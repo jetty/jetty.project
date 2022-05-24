@@ -33,8 +33,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -193,12 +191,7 @@ public class ConnectHandler extends HandlerWrapper
         String tunnelProtocol = jettyRequest.getMetaData().getProtocol();
         if (HttpMethod.CONNECT.is(request.getMethod()) && tunnelProtocol == null)
         {
-            String serverAddress = target;
-            if (HttpVersion.HTTP_2.is(request.getProtocol()))
-            {
-                HttpURI httpURI = jettyRequest.getHttpURI();
-                serverAddress = httpURI.getHost() + ":" + httpURI.getPort();
-            }
+            String serverAddress = jettyRequest.getHttpURI().getAuthority();
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT request for {}", serverAddress);
             handleConnect(jettyRequest, request, response, serverAddress);
