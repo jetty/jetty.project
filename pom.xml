@@ -132,7 +132,7 @@
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.2.4</maven.shade.plugin.version>
     <maven.site.plugin.version>3.10.0</maven.site.plugin.version>
-    <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M7-SNAPSHOT</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
     <spotbugs.maven.plugin.version>4.7.0.0</spotbugs.maven.plugin.version>
@@ -167,6 +167,19 @@
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
     <url>https://github.com/eclipse/jetty.project</url>
   </scm>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>apache.snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <modules>
     <module>build</module>
