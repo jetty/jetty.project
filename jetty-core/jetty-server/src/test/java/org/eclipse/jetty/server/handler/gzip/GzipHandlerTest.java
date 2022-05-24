@@ -468,8 +468,6 @@ public class GzipHandlerTest
 
     public static Stream<Arguments> scenarios()
     {
-//        if (true) return Stream.of(Arguments.of(1, 32 * 1024 + 1, true, false, false));
-
         List<Arguments> args = new ArrayList<>();
         for (int writes : List.of(0, 1, 2, 32))
         {

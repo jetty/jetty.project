@@ -84,7 +84,6 @@ public class GzipHandlerBreakEvenSizeTest
             .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
             .send();
 
-        System.err.println(response.getHeaders());
         assertThat("Status Code", response.getStatus(), is(200));
         assertThat("Size Requested", response.getHeaders().getField("X-SizeRequested").getIntValue(), is(size));
 
