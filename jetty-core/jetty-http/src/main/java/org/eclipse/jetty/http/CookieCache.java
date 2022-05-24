@@ -57,32 +57,44 @@ public class CookieCache
     {
         boolean building = false;
         ListIterator<String> raw = _rawFields.listIterator();
+        // For each of the headers
         for (HttpField field : headers)
         {
+            // skip non cookie headers
             if (!HttpHeader.COOKIE.equals(field.getHeader()))
                 continue;
 
+            // skip blank cookie headers
             String value = field.getValue();
             if (StringUtil.isBlank(value))
                 continue;
 
+            // If we are building a new cookie list
             if (building)
             {
+                // just add the raw string to the list to be parsed later
                 _rawFields.add(value);
                 continue;
             }
 
+            // otherwise we are checking against previous cookies.
+
+            // Is there a previous raw cookie to compare with?
             if (!raw.hasNext())
             {
+                // No, so we will flip to building state and add to the raw fields we already have.
                 building = true;
                 _rawFields.add(value);
                 continue;
             }
 
+            // If there is a previous raw cookie and it is the same, then continue checking
             if (value.equals(raw.next()))
                 continue;
 
-            // non match, so build a new cookie list
+            // otherwise there is a difference in the previous raw cookie field
+            // so switch to building mode and remove all subsequent raw fields
+            // then add the current raw field to be built later.
             building = true;
             raw.remove();
             while (raw.hasNext())
@@ -93,8 +105,10 @@ public class CookieCache
             _rawFields.add(value);
         }
 
+        // If we are not building, but there are still more unmatched raw fields, then a field was deleted
         if (!building && raw.hasNext())
         {
+            // switch to building mode and delete the unmatched raw fields
             building = true;
             while (raw.hasNext())
             {
@@ -103,6 +117,7 @@ public class CookieCache
             }
         }
 
+        // If we ended up in building mode, reparse the cookie list from the raw fields.
         if (building)
         {
             _cookieList = new ArrayList<>();
