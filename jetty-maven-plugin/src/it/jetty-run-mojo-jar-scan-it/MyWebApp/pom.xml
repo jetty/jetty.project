@@ -44,13 +44,11 @@
             </goals>
             <configuration>
               <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <nonBlocking>true</nonBlocking>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
               <contextXml>${basedir}/src/config/context.xml</contextXml>
               <useTestScope>true</useTestScope>
               <supportedPackagings>

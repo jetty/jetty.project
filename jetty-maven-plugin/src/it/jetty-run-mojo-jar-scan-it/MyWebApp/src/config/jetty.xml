@@ -1,4 +1,5 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
@@ -23,15 +24,15 @@
             </Item>
           </Array>
         </Arg>
-        <Call name="addLifeCycleListener">
+        <Call name="addEventListener">
           <Arg>
             <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
               <Set name="fileName"><Property name="jetty.port.file" default="port.txt"/></Set>
             </New>
           </Arg>
         </Call>
-        <Set name="host"><Property name="jetty.host" /></Set>
-        <Set name="port"><Property name="jetty.port" default="0" />0</Set>
+        <Set name="host" property="jetty.host"/>
+        <Set name="port" property="jetty.port"/>
         <Set name="idleTimeout">30000</Set>
       </New>
     </Arg>
