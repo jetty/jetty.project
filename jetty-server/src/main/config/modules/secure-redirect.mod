@@ -1,7 +1,7 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable SecuredRedirectHandler to redirect all http requests to https.
+Enable SecuredRedirectHandler to redirect all http requests to https on the secure port configured in the server.ini file.
 
 [tags]
 handler
