@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -268,9 +270,9 @@ public class ContextProvider extends ScanningAppProvider
 
     protected void initializeWebAppContextDefaults(ContextHandler webapp)
     {
-        /* TODO
         if (_defaultsDescriptor != null)
-            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+            webapp.setAttribute("defaultsDescriptor", _defaultsDescriptor);
+        /*
         webapp.setExtractWAR(_extractWars);
         webapp.setParentLoaderPriority(_parentLoaderPriority);
         if (_configurationClasses != null)
@@ -292,7 +294,7 @@ public class ContextProvider extends ScanningAppProvider
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Environment environment = getDeploymentManager().getServer().getEnvironment(app.getEnvironment());
+        Environment environment = Environment.get(app.getEnvironment());
 
         if (LOG.isDebugEnabled())
             LOG.debug("createContextHandler {} in {}", app, environment);
@@ -355,10 +357,23 @@ public class ContextProvider extends ScanningAppProvider
 
             // Build the web application
             @SuppressWarnings("unchecked")
-            Class<? extends ContextHandler> contextHandlerClass = (Class<? extends ContextHandler>)environment.getAttribute("contextHandlerClass");
+            String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
+            if (StringUtil.isBlank(contextHandlerClassName))
+                throw new IllegalStateException("No ContextHandler classname for " + app);
+            Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
             if (contextHandlerClass == null)
-                throw new IllegalStateException("Unknown ContextHandler class for " + app);
-            ContextHandler contextHandler = contextHandlerClass.getDeclaredConstructor().newInstance();
+                throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
+            ContextHandler contextHandler;
+            if (Supplier.class.isAssignableFrom(contextHandlerClass))
+            {
+                @SuppressWarnings("unchecked")
+                Supplier<ContextHandler> provider = (Supplier<ContextHandler>)contextHandlerClass.getDeclaredConstructor().newInstance();
+                contextHandler = provider.get();
+            }
+            else
+            {
+                contextHandler = (ContextHandler)contextHandlerClass.getDeclaredConstructor().newInstance();
+            }
             contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
             initializeContextPath(contextHandler, contextName, !file.isDirectory());
             initializeWebAppContextDefaults(contextHandler);

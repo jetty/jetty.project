@@ -52,7 +52,7 @@ public class StartArgs
 {
     public static final String VERSION;
     public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args", "envs");
-    public static final Set<String> ARG_PARTS = Set.of("args");
+    public static final Set<String> ARG_PARTS = Set.of("args", "envs");
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
     private static final String JETTY_TAG_NAME_KEY = "jetty.tag.version";
@@ -611,12 +611,23 @@ public class StartArgs
             {
                 if (environment == coreEnvironment)
                     continue;
+                cmd.addArg("--env");
+                cmd.addArg(environment.getName());
 
-                Path envPath = Files.createTempFile("env_%s_".formatted(environment.getName()), ".xml");
-                environment.generateXml(coreEnvironment, envPath);
-                if (!isDryRun())
-                    envPath.toFile().deleteOnExit();
-                cmd.addRawArg(envPath.toAbsolutePath().toString());
+                environment.getClasspath().getElements().stream()
+                    .map(File::getAbsolutePath).forEach(s ->
+                    {
+                        cmd.addArg("-cp");
+                        cmd.addArg(s);
+                    });
+
+                // TODO module path
+
+                for (Prop property : environment.getProperties())
+                    cmd.addArg(property.key + "=" + property.value);
+
+                for (Path xmlFile : environment.getXmlFiles())
+                    cmd.addArg(xmlFile.toFile().getAbsolutePath());
             }
         }
 
@@ -1197,7 +1208,6 @@ public class StartArgs
         // Arbitrary Libraries
         if (arg.startsWith("--lib="))
         {
-
             String cp = Props.getValue(arg);
             StringTokenizer t = new StringTokenizer(cp, File.pathSeparator);
             while (t.hasMoreTokens())

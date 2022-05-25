@@ -163,13 +163,22 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         if (request == null)
             return null;
         HttpServletRequest r = (HttpServletRequest)request;
-        String n = (String)request.getAttribute(_attr);
-        if (n == null)
+        try
         {
-            n = String.format("%s@%x", r.getRequestURI(), request.hashCode());
-            request.setAttribute(_attr, n);
+            String n = (String)request.getAttribute(_attr);
+            if (n == null)
+            {
+                n = String.format("%s@%x", r.getRequestURI(), request.hashCode());
+                request.setAttribute(_attr, n);
+            }
+            return n;
         }
-        return n;
+        catch (IllegalStateException e)
+        {
+            // TODO can we avoid creating and catching this exception? see #8024
+            // Handle the case when the request has already been completed
+            return String.format("%s@%x", r.getRequestURI(), request.hashCode());
+        }
     }
 
     protected void log(String format, Object... arg)

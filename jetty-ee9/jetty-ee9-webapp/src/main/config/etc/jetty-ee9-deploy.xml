@@ -11,10 +11,16 @@
   <Call id="DeploymentManager" name="getBean">
     <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.deploy.DeploymentManager</Arg></Call></Arg>
   </Call>
+  <Ref refid="Environment">
+    <Call name="setAttribute">
+      <Arg>contextHandlerClass</Arg>
+      <Arg><Property name="contextHandlerClass"/></Arg>
+    </Call>
+  </Ref>
   <Ref refid="DeploymentManager">
     <Call name="addAppProvider">
       <Arg>
-        <New id="WebAppProvider" class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
+        <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
           <Set name="defaultEnvironment">ee9</Set>
           <Set name="monitoredDirName">
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
@@ -30,7 +36,7 @@
             <Property>
               <Name>jetty.deploy.defaultsDescriptorPath</Name>
               <Default>
-                <Property name="jetty.home" default="." />/etc/webdefault-e99.xml
+                <Property name="jetty.home" default="." />/etc/webdefault-ee9.xml
               </Default>
             </Property>
           </Set>

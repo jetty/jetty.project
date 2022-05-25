@@ -145,7 +145,7 @@ public interface Dumpable
         int extras = extraChildren == null ? 0 : extraChildren.length;
         
         if (object instanceof Stream)
-            object = ((Stream)object).toArray();
+            object = ((Stream<?>)object).toArray();
         if (object instanceof Array)
             object = Arrays.asList((Object[])object);
 
@@ -261,6 +261,24 @@ public interface Dumpable
 
     static Dumpable named(String name, Object object)
     {
+        if (object instanceof Dumpable dumpable)
+        {
+            return new Dumpable()
+            {
+                @Override
+                public String dumpSelf()
+                {
+                    return name + ": " + dumpable.dumpSelf();
+                }
+
+                @Override
+                public void dump(Appendable out, String indent) throws IOException
+                {
+                    out.append(name).append(": ");
+                    dumpable.dump(out, indent);
+                }
+            };
+        }
         return (out, indent) ->
         {
             out.append(name).append(": ");

@@ -54,7 +54,6 @@ public class GzipHandlerBreakEvenSizeTest
         server.addConnector(connector);
 
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setMinGzipSize(0);
 
         ServletContextHandler context = new ServletContextHandler(gzipHandler, "/");
         context.addServlet(VeryCompressibleContentServlet.class, "/content");
@@ -78,6 +77,8 @@ public class GzipHandlerBreakEvenSizeTest
     @ValueSource(ints = {0, 1, 2, 3, 4, 5, 10, 15, 20, 21, 22, 23, 24, 25, 50, 100, 300, 500})
     public void testRequestSized(int size) throws Exception
     {
+        // TODO no idea what this is really testing
+
         URI uri = server.getURI().resolve("/content?size=" + size);
         ContentResponse response = client.newRequest(uri)
             .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
@@ -86,7 +87,7 @@ public class GzipHandlerBreakEvenSizeTest
         assertThat("Status Code", response.getStatus(), is(200));
         assertThat("Size Requested", response.getHeaders().getField("X-SizeRequested").getIntValue(), is(size));
 
-        if (size > GzipHandler.BREAK_EVEN_GZIP_SIZE)
+        if (size < GzipHandler.DEFAULT_MIN_GZIP_SIZE)
             assertThat("Response Size", response.getHeaders().getField(HttpHeader.CONTENT_LENGTH).getIntValue(), lessThanOrEqualTo(size));
     }
 

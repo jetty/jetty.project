@@ -14,9 +14,12 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +63,68 @@ public interface Attributes
      */
     // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
     Set<String> getAttributeNameSet();
+
+    // TODO something better than this
+    default Map<String, Object> asAttributeMap()
+    {
+        return new AbstractMap<>()
+        {
+            @Override
+            public Set<Entry<String, Object>> entrySet()
+            {
+                return new AbstractSet<>()
+                {
+                    Iterator<String> names = getAttributeNameSet().iterator();
+
+                    @Override
+                    public Iterator<Entry<String, Object>> iterator()
+                    {
+                        return new Iterator<>()
+                        {
+                            @Override
+                            public boolean hasNext()
+                            {
+                                return names.hasNext();
+                            }
+
+                            @Override
+                            public Entry<String, Object> next()
+                            {
+                                String name = names.next();
+                                return new Map.Entry<>()
+                                {
+                                    @Override
+                                    public String getKey()
+                                    {
+                                        return name;
+                                    }
+
+                                    @Override
+                                    public Object getValue()
+                                    {
+                                        return getAttribute(name);
+                                    }
+
+                                    @Override
+                                    public Object setValue(Object value)
+                                    {
+                                        throw new UnsupportedOperationException();
+                                    }
+                                };
+                            }
+                        };
+                    }
+
+                    @Override
+                    public int size()
+                    {
+                        return 0;
+                    }
+                };
+            }
+        };
+    }
+
 
     /**
      * Clear all attribute names
@@ -180,6 +245,12 @@ public interface Attributes
         }
 
         @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return _map;
+        }
+
+        @Override
         public Object removeAttribute(String name)
         {
             return _map.remove(name);
@@ -286,6 +357,12 @@ public interface Attributes
                 if (_map.compareAndSet(null, map))
                     return map;
             }
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return ensureMap();
         }
 
         @Override

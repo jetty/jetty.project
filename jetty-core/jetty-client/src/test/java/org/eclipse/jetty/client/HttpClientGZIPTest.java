@@ -288,10 +288,10 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(20, TimeUnit.SECONDS)
             .send(listener);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
+        Response response = listener.get(20, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();

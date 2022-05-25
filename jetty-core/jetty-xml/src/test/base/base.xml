@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Base" class="org.eclipse.jetty.xml.XmlConfigurationTest$Base">
+  <Get id="Map" name="map">
+    <Put name="baseA"><Property name="baseA"/></Put>
+    <Put name="baseB"><Property name="baseB"/></Put>
+    <Put name="baseC"><Property name="baseC"/></Put>
+  </Get>
+</Configure>
+
+

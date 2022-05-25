@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -83,6 +84,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -115,6 +117,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
+    protected static final Environment __environment = Environment.ensure("ee9");
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
@@ -223,6 +226,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public ContextHandler()
     {
         this(null, null, null);
+        Objects.requireNonNull(__environment);
     }
 
     public ContextHandler(String contextPath)
@@ -2471,6 +2475,36 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             });
             addBean(ContextHandler.this, true);
+        }
+
+        @Override
+        protected void doStart() throws Exception
+        {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
+            try
+            {
+                super.doStart();
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(old);
+            }
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
+            try
+            {
+                super.doStop();
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(old);
+            }
         }
 
         @Override

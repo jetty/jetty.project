@@ -20,7 +20,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.ee10.plus
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee10.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.ee10.plus
           </argLine>
         </configuration>
       </plugin>

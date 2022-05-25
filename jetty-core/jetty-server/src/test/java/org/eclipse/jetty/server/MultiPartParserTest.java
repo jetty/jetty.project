@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.internal.MultiPartParser;
 import org.eclipse.jetty.server.internal.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,6 +34,84 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartParserTest
 {
+    @Test
+    public void testSimple()
+    {
+        TestHandler handler = new TestHandler();
+        MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
+
+        ByteBuffer data = BufferUtil.toBuffer("""
+            preamble\r
+            --BOUNDARY\r
+            name: value\r
+            \r
+            Hello\r
+            --BOUNDARY\r
+            powerLevel: 9001\r
+            \r
+            secondary\r
+            content\r
+            --BOUNDARY--epi\r
+            logue\r
+            """);
+
+        /* Test First Content Section */
+        parser.parse(data, false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello", "<<LAST>>"));
+
+        /* Test Second Content Section */
+        parser.parse(data, false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>", "powerLevel: 9001", "<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello", "<<LAST>>", "secondary\r\ncontent", "<<LAST>>"));
+
+        /* Test Progression to END State */
+        parser.parse(data, true);
+        assertThat(parser.getState(), is(State.END));
+        assertThat(data.remaining(), is(0));
+    }
+
+    @Disabled // TODO support LF termination
+    @Test
+    public void testLineFeed()
+    {
+        TestHandler handler = new TestHandler();
+        MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
+
+        ByteBuffer data = BufferUtil.toBuffer("""
+            preamble
+            --BOUNDARY
+            name: value
+            
+            Hello
+            --BOUNDARY
+            powerLevel: 9001
+            
+            secondary
+            content
+            --BOUNDARY--epi
+            logue
+            """);
+
+        /* Test First Content Section */
+        parser.parse(data, false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello", "<<LAST>>"));
+
+        /* Test Second Content Section */
+        parser.parse(data, false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>", "powerLevel: 9001", "<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello", "<<LAST>>", "secondary\ncontent", "<<LAST>>"));
+
+        /* Test Progression to END State */
+        parser.parse(data, true);
+        assertThat(parser.getState(), is(State.END));
+        assertThat(data.remaining(), is(0));
+    }
 
     @Test
     public void testEmptyPreamble()
@@ -170,13 +249,14 @@ public class MultiPartParserTest
         };
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name0: value0\r\n" +
-            "name1 :value1 \r\n" +
-            "name2:value\r\n" +
-            " 2\r\n" +
-            "\r\n" +
-            "Content");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name0: value0\r
+            name1 :value1 \r
+            name2:value\r
+             2\r
+            \r
+            Content""");
 
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.FIRST_OCTETS));
@@ -190,11 +270,12 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\r\n" +
-            "\r\n" +
-            "\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value\r
+            \r
+            \r
+            --BOUNDARY""");
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
         assertThat(data.remaining(), is(0));
@@ -208,10 +289,11 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\r\n" +
-            "\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value\r
+            \r
+            --BOUNDARY""");
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
         assertThat(data.remaining(), is(0));
@@ -225,10 +307,11 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\r\n" +
-            "\r\n" +
-            "-");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value\r
+            \r
+            -""");
         parser.parse(data, false);
         data = BufferUtil.toBuffer("Content!");
         parser.parse(data, false);
@@ -245,10 +328,12 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\n" +
-            "\r\n" +
-            "Hello\r\n");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value
+            \r
+            Hello\r
+            """);
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.OCTETS));
         assertThat(data.remaining(), is(0));
@@ -256,18 +341,21 @@ public class MultiPartParserTest
         assertThat(handler.content, Matchers.contains("Hello"));
 
         data = BufferUtil.toBuffer(
-            "Now is the time for all good ment to come to the aid of the party.\r\n" +
-                "How now brown cow.\r\n" +
-                "The quick brown fox jumped over the lazy dog.\r\n" +
-                "this is not a --BOUNDARY\r\n");
+            """
+                Now is the time for all good men to come to the aid of the party.\r
+                How now brown cow.\r
+                The quick brown fox jumped over the lazy dog.\r
+                this is not a --BOUNDARY\r
+                """);
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.OCTETS));
         assertThat(data.remaining(), is(0));
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
-        assertThat(handler.content, Matchers.contains("Hello", "\r\n", "Now is the time for all good ment to come to the aid of the party.\r\n" +
-            "How now brown cow.\r\n" +
-            "The quick brown fox jumped over the lazy dog.\r\n" +
-            "this is not a --BOUNDARY"));
+        assertThat(handler.content, Matchers.contains("Hello", "\r\n", """
+            Now is the time for all good men to come to the aid of the party.\r
+            How now brown cow.\r
+            The quick brown fox jumped over the lazy dog.\r
+            this is not a --BOUNDARY"""));
     }
 
     @Test
@@ -276,11 +364,12 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\n" +
-            "\r\n" +
-            "Hello\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value
+            \r
+            Hello\r
+            --BOUNDARY""");
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
         assertThat(data.remaining(), is(0));
@@ -294,21 +383,24 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\r\n" +
-            "name: value\n" +
-            "\r\n" +
-            "Now is the time for all good ment to come to the aid of the party.\r\n" +
-            "How now brown cow.\r\n" +
-            "The quick brown fox jumped over the lazy dog.\r\n" +
-            "\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value
+            \r
+            Now is the time for all good men to come to the aid of the party.\r
+            How now brown cow.\r
+            The quick brown fox jumped over the lazy dog.\r
+            \r
+            --BOUNDARY""");
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
         assertThat(data.remaining(), is(0));
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
-        assertThat(handler.content, Matchers.contains("Now is the time for all good ment to come to the aid of the party.\r\n" +
-            "How now brown cow.\r\n" +
-            "The quick brown fox jumped over the lazy dog.\r\n", "<<LAST>>"));
+        assertThat(handler.content, Matchers.contains("""
+            Now is the time for all good men to come to the aid of the party.\r
+            How now brown cow.\r
+            The quick brown fox jumped over the lazy dog.\r
+            """, "<<LAST>>"));
     }
 
     @Test
@@ -318,21 +410,24 @@ public class MultiPartParserTest
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
         //boundary still requires carriage return
-        ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\n" +
-            "name: value\n" +
-            "\n" +
-            "Now is the time for all good men to come to the aid of the party.\n" +
-            "How now brown cow.\n" +
-            "The quick brown fox jumped over the lazy dog.\n" +
-            "\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY
+            name: value
+
+            Now is the time for all good men to come to the aid of the party.
+            How now brown cow.
+            The quick brown fox jumped over the lazy dog.
+            \r
+            --BOUNDARY""");
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
         assertThat(data.remaining(), is(0));
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
-        assertThat(handler.content, Matchers.contains("Now is the time for all good men to come to the aid of the party.\n" +
-            "How now brown cow.\n" +
-            "The quick brown fox jumped over the lazy dog.\n", "<<LAST>>"));
+        assertThat(handler.content, Matchers.contains("""
+            Now is the time for all good men to come to the aid of the party.
+            How now brown cow.
+            The quick brown fox jumped over the lazy dog.
+            """, "<<LAST>>"));
     }
 
     @Test
@@ -374,17 +469,14 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("" +
-            "--BOUNDARY\r\n" +
-            "name: value\n" +
-            "\r\n" +
-            "Hello\r\n" +
-            "--BOUNDARY--" +
-            "epilogue here:" +
-            "\r\n" +
-            "--BOUNDARY--" +
-            "\r\n" +
-            "--BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value
+            \r
+            Hello\r
+            --BOUNDARY--epilogue here:\r
+            --BOUNDARY--\r
+            --BOUNDARY""");
 
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.DELIMITER));
@@ -401,20 +493,17 @@ public class MultiPartParserTest
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
 
-        ByteBuffer data = BufferUtil.toBuffer("" +
-            "--BOUNDARY\r\n" +
-            "name: value\n" +
-            "\r\n" +
-            "Hello" +
-            "\r\n" +
-            "--BOUNDARY\r\n" +
-            "powerLevel: 9001\n" +
-            "\r\n" +
-            "secondary" +
-            "\r\n" +
-            "content" +
-            "\r\n--BOUNDARY--" +
-            "epilogue here");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            --BOUNDARY\r
+            name: value
+            \r
+            Hello\r
+            --BOUNDARY\r
+            powerLevel: 9001
+            \r
+            secondary\r
+            content\r
+            --BOUNDARY--epilogue here""");
 
         /* Test First Content Section */
         parser.parse(data, false);
@@ -455,11 +544,12 @@ public class MultiPartParserTest
         MultiPartParser parser = new MultiPartParser(handler, "AaB03x");
 
         ByteBuffer data = BufferUtil.toBuffer(
-            "--AaB03x\r\n" +
-                "content-disposition: form-data; name=\"field1\"\r\n" +
-                "\r" +
-                "Joe Blow\r\n" +
-                "--AaB03x--\r\n");
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="field1"\r
+                \rJoe Blow\r
+                --AaB03x--\r
+                """);
 
         BadMessageException x = assertThrows(BadMessageException.class,
             () -> parser.parse(data, true),
@@ -468,7 +558,7 @@ public class MultiPartParserTest
     }
 
     @Test // TODO: Parameterize
-    public void testBadHeaderNames() throws Exception
+    public void testBadHeaderNames()
     {
         String[] bad = new String[]
             {
@@ -491,10 +581,10 @@ public class MultiPartParserTest
                 "\u0192\u00f8\u00f8\u00df\u00e5\u00ae: value\r\n"
             };
 
-        for (int i = 0; i < bad.length; i++)
+        for (String s : bad)
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
-                "--AaB03x\r\n" + bad[i] + "\r\n--AaB03x--\r\n");
+                "--AaB03x\r\n" + s + "\r\n--AaB03x--\r\n");
 
             MultiPartParser.Handler handler = new TestHandler();
             MultiPartParser parser = new MultiPartParser(handler, "AaB03x");
@@ -531,63 +621,68 @@ public class MultiPartParserTest
 
         MultiPartParser parser = new MultiPartParser(handler, "---------------------------9051914041544843365972754266");
         ByteBuffer data = BufferUtil.toBuffer(
-            "POST / HTTP/1.1\n" +
-                "Host: localhost:8000\n" +
-                "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0\n" +
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\n" +
-                "Accept-Language: en-US,en;q=0.5\n" +
-                "Accept-Encoding: gzip, deflate\n" +
-                "Cookie: __atuvc=34%7C7; permanent=0; _gitlab_session=226ad8a0be43681acf38c2fab9497240; __profilin=p%3Dt; request_method=GET\n" +
-                "Connection: keep-alive\n" +
-                "Content-Type: multipart/form-data; boundary=---------------------------9051914041544843365972754266\n" +
-                "Content-Length: 554\n" +
-                "\r\n" +
-                "-----------------------------9051914041544843365972754266\n" +
-                "Content-Disposition: form-data; name=\"text\"\n" +
-                "\n" +
-                "text default\r\n" +
-                "-----------------------------9051914041544843365972754266\n" +
-                "Content-Disposition: form-data; name=\"file1\"; filename=\"a.txt\"\n" +
-                "Content-Type: text/plain\n" +
-                "\n" +
-                "Content of a.txt.\n" +
-                "\r\n" +
-                "-----------------------------9051914041544843365972754266\n" +
-                "Content-Disposition: form-data; name=\"file2\"; filename=\"a.html\"\n" +
-                "Content-Type: text/html\n" +
-                "\n" +
-                "<!DOCTYPE html><title>Content of a.html.</title>\n" +
-                "\r\n" +
-                "-----------------------------9051914041544843365972754266\n" +
-                "Field1: value1\n" +
-                "Field2: value2\n" +
-                "Field3: value3\n" +
-                "Field4: value4\n" +
-                "Field5: value5\n" +
-                "Field6: value6\n" +
-                "Field7: value7\n" +
-                "Field8: value8\n" +
-                "Field9: value\n" +
-                " 9\n" +
-                "\r\n" +
-                "-----------------------------9051914041544843365972754266\n" +
-                "Field1: value1\n" +
-                "\r\n" +
-                "But the amount of denudation which the strata have\n" +
-                "in many places suffered, independently of the rate\n" +
-                "of accumulation of the degraded matter, probably\n" +
-                "offers the best evidence of the lapse of time. I remember\n" +
-                "having been much struck with the evidence of\n" +
-                "denudation, when viewing volcanic islands, which\n" +
-                "have been worn by the waves and pared all round\n" +
-                "into perpendicular cliffs of one or two thousand feet\n" +
-                "in height; for the gentle slope of the lava-streams,\n" +
-                "due to their formerly liquid state, showed at a glance\n" +
-                "how far the hard, rocky beds had once extended into\n" +
-                "the open ocean.\n" +
-                "\r\n" +
-                "-----------------------------9051914041544843365972754266--" +
-                "===== ajlkfja;lkdj;lakjd;lkjf ==== epilogue here  ==== kajflajdfl;kjafl;kjl;dkfja ====\n\r\n\r\r\r\n\n\n");
+            """
+                POST / HTTP/1.1
+                Host: localhost:8000
+                User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0
+                Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+                Accept-Language: en-US,en;q=0.5
+                Accept-Encoding: gzip, deflate
+                Cookie: __atuvc=34%7C7; permanent=0; _gitlab_session=226ad8a0be43681acf38c2fab9497240; __profilin=p%3Dt; request_method=GET
+                Connection: keep-alive
+                Content-Type: multipart/form-data; boundary=---------------------------9051914041544843365972754266
+                Content-Length: 554
+                \r
+                -----------------------------9051914041544843365972754266
+                Content-Disposition: form-data; name="text"
+
+                text default\r
+                -----------------------------9051914041544843365972754266
+                Content-Disposition: form-data; name="file1"; filename="a.txt"
+                Content-Type: text/plain
+
+                Content of a.txt.
+                \r
+                -----------------------------9051914041544843365972754266
+                Content-Disposition: form-data; name="file2"; filename="a.html"
+                Content-Type: text/html
+
+                <!DOCTYPE html><title>Content of a.html.</title>
+                \r
+                -----------------------------9051914041544843365972754266
+                Field1: value1
+                Field2: value2
+                Field3: value3
+                Field4: value4
+                Field5: value5
+                Field6: value6
+                Field7: value7
+                Field8: value8
+                Field9: value
+                 9
+                \r
+                -----------------------------9051914041544843365972754266
+                Field1: value1
+                \r
+                But the amount of denudation which the strata have
+                in many places suffered, independently of the rate
+                of accumulation of the degraded matter, probably
+                offers the best evidence of the lapse of time. I remember
+                having been much struck with the evidence of
+                denudation, when viewing volcanic islands, which
+                have been worn by the waves and pared all round
+                into perpendicular cliffs of one or two thousand feet
+                in height; for the gentle slope of the lava-streams,
+                due to their formerly liquid state, showed at a glance
+                how far the hard, rocky beds had once extended into
+                the open ocean.
+                \r
+                -----------------------------9051914041544843365972754266--===== ajlkfja;lkdj;lakjd;lkjf ==== epilogue here  ==== kajflajdfl;kjafl;kjl;dkfja ====
+                \r
+                \r\r\r
+
+
+                """);
 
         int length = data.remaining();
         for (int i = 0; i < length - 1; i++)
@@ -620,22 +715,22 @@ public class MultiPartParserTest
                 "Field7: value7", "Field8: value8", "Field9: value 9", "<<COMPLETE>>",
                 "Field1: value1", "<<COMPLETE>>"));
 
-            assertThat(handler.contentString(), is("text default" + "<<LAST>>" +
-                "Content of a.txt.\n" + "<<LAST>>" +
-                "<!DOCTYPE html><title>Content of a.html.</title>\n" + "<<LAST>>" +
-                "<<LAST>>" +
-                "But the amount of denudation which the strata have\n" +
-                "in many places suffered, independently of the rate\n" +
-                "of accumulation of the degraded matter, probably\n" +
-                "offers the best evidence of the lapse of time. I remember\n" +
-                "having been much struck with the evidence of\n" +
-                "denudation, when viewing volcanic islands, which\n" +
-                "have been worn by the waves and pared all round\n" +
-                "into perpendicular cliffs of one or two thousand feet\n" +
-                "in height; for the gentle slope of the lava-streams,\n" +
-                "due to their formerly liquid state, showed at a glance\n" +
-                "how far the hard, rocky beds had once extended into\n" +
-                "the open ocean.\n" + "<<LAST>>"));
+            assertThat(handler.contentString(), is("""
+                text default<<LAST>>Content of a.txt.
+                <<LAST>><!DOCTYPE html><title>Content of a.html.</title>
+                <<LAST>><<LAST>>But the amount of denudation which the strata have
+                in many places suffered, independently of the rate
+                of accumulation of the degraded matter, probably
+                offers the best evidence of the lapse of time. I remember
+                having been much struck with the evidence of
+                denudation, when viewing volcanic islands, which
+                have been worn by the waves and pared all round
+                into perpendicular cliffs of one or two thousand feet
+                in height; for the gentle slope of the lava-streams,
+                due to their formerly liquid state, showed at a glance
+                how far the hard, rocky beds had once extended into
+                the open ocean.
+                <<LAST>>"""));
 
             handler.clear();
             parser.reset();
@@ -668,18 +763,18 @@ public class MultiPartParserTest
         };
 
         MultiPartParser parser = new MultiPartParser(handler, "WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW");
-        ByteBuffer data = BufferUtil.toBuffer("" +
-            "Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
-            "\r\n" +
-            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
-            "Content-Disposition: form-data; name=\"part1\"\r\n" +
-            "\n" +
-            "wNfﾐxVam﾿t\r\n" +
-            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\n" +
-            "Content-Disposition: form-data; name=\"part2\"\r\n" +
-            "\r\n" +
-            "&ﾳﾺ￙￹ￖￃO\r\n" +
-            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--");
+        ByteBuffer data = BufferUtil.toBuffer("""
+            Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r
+            \r
+            --WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r
+            Content-Disposition: form-data; name="part1"\r
+
+            wNfﾐxVam﾿t\r
+            --WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW
+            Content-Disposition: form-data; name="part2"\r
+            \r
+            &ﾳﾺ￙￹ￖￃO\r
+            --WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--""");
 
         parser.parse(data, true);
         assertThat(parser.getState(), is(State.END));

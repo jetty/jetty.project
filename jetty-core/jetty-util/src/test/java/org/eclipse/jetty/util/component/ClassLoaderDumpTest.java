@@ -11,13 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-import org.eclipse.jetty.util.component.Dumpable;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,29 +28,44 @@ public class ClassLoaderDumpTest
     @Test
     public void testSimple() throws Exception
     {
-        Server server = new Server();
-        ClassLoader loader = new ClassLoader()
+        ContainerLifeCycle bean = new ContainerLifeCycle();
+        ClassLoader loader = new ClassLoader(null)
         {
             public String toString()
             {
                 return "SimpleLoader";
             }
         };
-
-        server.addBean(new ClassLoaderDump(loader));
+        bean.addBean(new ClassLoaderDump(loader));
 
         StringBuilder out = new StringBuilder();
-        server.dump(out);
+        bean.dump(out);
         String dump = out.toString();
         assertThat(dump, containsString("+- SimpleLoader"));
-        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
+        assertThat(dump, not(containsString("parent")));
+    }
+
+    @Test
+    public void testCore() throws Exception
+    {
+        ContainerLifeCycle bean = new ContainerLifeCycle();
+        bean.addBean(new ClassLoaderDump(ClassLoaderDump.class.getClassLoader()));
+
+        StringBuilder out = new StringBuilder();
+        bean.dump(out);
+        String dump = out.toString();
+        assertThat(dump, containsString("+- " + ClassLoaderDump.class.getClassLoader()));
+        assertThat(dump, containsString("packages size="));
+        assertThat(dump, containsString("|  +> package org.eclipse.jetty.util"));
+        if (ClassLoaderDump.class.getClassLoader().getParent() != null)
+            assertThat(dump, containsString("+> parent: " + ClassLoaderDump.class.getClassLoader().getParent()));
     }
 
     @Test
     public void testParent() throws Exception
     {
-        Server server = new Server();
-        ClassLoader loader = new ClassLoader(Server.class.getClassLoader())
+        ContainerLifeCycle bean = new ContainerLifeCycle();
+        ClassLoader loader = new ClassLoader(ContainerLifeCycle.class.getClassLoader())
         {
             public String toString()
             {
@@ -59,21 +73,20 @@ public class ClassLoaderDumpTest
             }
         };
 
-        server.addBean(new ClassLoaderDump(loader));
+        bean.addBean(new ClassLoaderDump(loader));
 
         StringBuilder out = new StringBuilder();
-        server.dump(out);
+        bean.dump(out);
         String dump = out.toString();
         assertThat(dump, containsString("+- ParentedLoader"));
-        assertThat(dump, containsString("|  +> Server loader: " + Server.class.getClassLoader()));
-        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("   +> parent(core): " + ContainerLifeCycle.class.getClassLoader()));
     }
 
     @Test
     public void testNested() throws Exception
     {
-        Server server = new Server();
-        ClassLoader middleLoader = new ClassLoader(Server.class.getClassLoader())
+        ContainerLifeCycle bean = new ContainerLifeCycle();
+        ClassLoader middleLoader = new ClassLoader(ContainerLifeCycle.class.getClassLoader())
         {
             public String toString()
             {
@@ -88,22 +101,23 @@ public class ClassLoaderDumpTest
             }
         };
 
-        server.addBean(new ClassLoaderDump(loader));
+        bean.addBean(new ClassLoaderDump(loader));
+        bean.addBean("Other");
 
         StringBuilder out = new StringBuilder();
-        server.dump(out);
+        bean.dump(out);
         String dump = out.toString();
         assertThat(dump, containsString("+- TopLoader"));
-        assertThat(dump, containsString("|  +> MiddleLoader"));
-        assertThat(dump, containsString("|     +> Server loader: " + Server.class.getClassLoader()));
-        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("|  +> parent: MiddleLoader"));
+        assertThat(dump, containsString("|     +> parent(core): " + ContainerLifeCycle.class.getClassLoader()));
+        assertThat(dump, containsString("+- Other"));
     }
 
     @Test
     public void testDumpable() throws Exception
     {
-        Server server = new Server();
-        ClassLoader middleLoader = new DumpableClassLoader(Server.class.getClassLoader());
+        ContainerLifeCycle bean = new ContainerLifeCycle();
+        ClassLoader middleLoader = new DumpableClassLoader(ContainerLifeCycle.class.getClassLoader());
         ClassLoader loader = new ClassLoader(middleLoader)
         {
             public String toString()
@@ -112,15 +126,14 @@ public class ClassLoaderDumpTest
             }
         };
 
-        server.addBean(new ClassLoaderDump(loader));
+        bean.addBean(new ClassLoaderDump(loader));
 
         StringBuilder out = new StringBuilder();
-        server.dump(out);
+        bean.dump(out);
         String dump = out.toString();
         assertThat(dump, containsString("+- TopLoader"));
-        assertThat(dump, containsString("|  +> DumpableClassLoader"));
-        assertThat(dump, not(containsString("|    +> " + Server.class.getClassLoader())));
-        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("   +> parent: DumpableClassLoader"));
+        assertThat(dump, not(containsString("     +> parent(core): " + ContainerLifeCycle.class.getClassLoader())));
     }
 
     public static class DumpableClassLoader extends ClassLoader implements Dumpable
@@ -151,10 +164,10 @@ public class ClassLoaderDumpTest
     @Test
     public void testUrlClassLoaders() throws Exception
     {
-        Server server = new Server();
+        ContainerLifeCycle bean = new ContainerLifeCycle();
         ClassLoader middleLoader = new URLClassLoader(new URL[]
             {new URL("file:/one"), new URL("file:/two"), new URL("file:/three")},
-            Server.class.getClassLoader())
+            ContainerLifeCycle.class.getClassLoader())
         {
             public String toString()
             {
@@ -171,21 +184,22 @@ public class ClassLoaderDumpTest
             }
         };
 
-        server.addBean(new ClassLoaderDump(loader));
+        bean.addBean(new ClassLoaderDump(loader));
+        bean.addBean(ContainerLifeCycle.class.getClassLoader());
 
         StringBuilder out = new StringBuilder();
-        server.dump(out);
+        bean.dump(out);
         String dump = out.toString();
         // System.err.println(dump);
         assertThat(dump, containsString("+- TopLoader"));
         assertThat(dump, containsString("|  |  +> file:/ONE"));
         assertThat(dump, containsString("|  |  +> file:/TWO"));
         assertThat(dump, containsString("|  |  +> file:/THREE"));
-        assertThat(dump, containsString("|  +> MiddleLoader"));
+        assertThat(dump, containsString("|  +> parent: MiddleLoader"));
         assertThat(dump, containsString("|     |  +> file:/one"));
         assertThat(dump, containsString("|     |  +> file:/two"));
         assertThat(dump, containsString("|     |  +> file:/three"));
-        assertThat(dump, containsString("|     +> " + Server.class.getClassLoader()));
-        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("|     +> parent(core): " + ContainerLifeCycle.class.getClassLoader()));
+        assertThat(dump, containsString("+- " + ContainerLifeCycle.class.getClassLoader()));
     }
 }

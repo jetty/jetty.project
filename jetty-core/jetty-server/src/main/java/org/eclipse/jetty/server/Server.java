@@ -20,10 +20,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -41,13 +38,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -69,7 +63,6 @@ public class Server extends Handler.Wrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
-    private final Map<String, Environment> _environments = new HashMap<>();
     private final AutoLock _dateLock = new AutoLock();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
@@ -124,7 +117,6 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
-        _environments.put("Server", new ServerEnvironment());
     }
 
     public String getServerInfo()
@@ -140,31 +132,6 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
-    }
-
-    public java.util.Collection<Environment> getEnvironments()
-    {
-        return _environments.values();
-    }
-
-    public void addEnvironment(Environment environment)
-    {
-        Objects.requireNonNull(environment);
-        String key = environment.getName();
-        if (StringUtil.isBlank(key))
-            throw new IllegalArgumentException("No environment name");
-        key = key.toLowerCase();
-        _environments.put(key, environment);
-    }
-
-    public Environment getEnvironment(String name)
-    {
-        String key = StringUtil.isBlank(name) ? "server" : name.toLowerCase();
-
-        Environment environment = _environments.get(key);
-        if (environment != null)
-            return environment;
-        throw new RuntimeException("Unknown environment: " + name);
     }
 
     @Override
@@ -798,40 +765,4 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private class NamedEnvironment extends Attributes.Layer implements Environment, Dumpable
-    {
-        private final String _name;
-        private final ClassLoader _classLoader;
-
-        private NamedEnvironment(String name, ClassLoader classLoader)
-        {
-            super(Server.this);
-            _name = name;
-            _classLoader = classLoader;
-        }
-
-        @Override
-        public String getName()
-        {
-            return _name;
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return _classLoader;
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            dumpObjects(out, indent, new ClassLoaderDump(getClassLoader()));
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%s{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
-        }
-    }
 }
