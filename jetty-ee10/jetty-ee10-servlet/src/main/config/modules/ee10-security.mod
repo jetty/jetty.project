@@ -3,6 +3,9 @@
 [description]
 Adds servlet standard security handling to the classpath.
 
+[environment]
+ee10
+
 [depend]
 server
 
