@@ -24,7 +24,7 @@ import java.util.EnumSet;
  *
  * Read from an input stream, accepting CR/LF, LF or just CR.
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 public class ReadLineInputStream extends BufferedInputStream
 {
     boolean _seenCRLF;
