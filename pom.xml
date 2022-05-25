@@ -188,6 +188,7 @@
     <module>jetty-integrations</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
+    <module>jetty-ee8</module>
     <module>jetty-home</module>
 <!--    <module>jetty-p2</module>-->
     <module>tests</module>
