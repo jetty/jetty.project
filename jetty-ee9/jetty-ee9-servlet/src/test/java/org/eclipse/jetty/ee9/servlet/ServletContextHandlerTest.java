@@ -59,7 +59,6 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.nested.AbstractHandlerContainer;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -67,12 +66,10 @@ import org.eclipse.jetty.ee9.nested.ResourceHandler;
 import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.nested.UserIdentity;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.RoleInfo;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -82,7 +79,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -889,7 +885,6 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testListenersFromContextListener() throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -909,7 +904,7 @@ public class ServletContextHandlerTest
             assertTrue(l.isStarted());
             assertNotNull(l.getListener());
             //all listeners except the first should be programmatic
-            if (!"org.eclipse.jetty.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
+            if (!"org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
             {
                 assertFalse(root.isDurableListener(l.getListener()));
                 assertTrue(root.isProgrammaticListener(l.getListener()));
@@ -922,12 +917,12 @@ public class ServletContextHandlerTest
             listenerClassNames.add(l.getClass().getName());
         }
 
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySCAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRequestListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySIListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySCAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MyRequestListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MyRAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySIListener"));
 
         //test ServletRequestAttributeListener
         String response = _connector.getResponse("GET /test?req=all HTTP/1.0\r\n\r\n");
@@ -995,27 +990,6 @@ public class ServletContextHandlerTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySCAListener.replaces);
         assertEquals(1, MySCAListener.removes);
-    }
-
-    @Test
-    @Disabled // TODO
-    public void testFindContainer() throws Exception
-    {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        _server.setHandler(contexts);
-
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
-
-        SessionHandler session = root.getSessionHandler();
-        ServletHandler servlet = root.getServletHandler();
-        SecurityHandler security = new ConstraintSecurityHandler();
-        root.setSecurityHandler(security);
-
-        _server.start();
-
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, session));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, security));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, servlet));
     }
 
     @Test
@@ -1718,7 +1692,6 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testReplaceServletHandlerWithServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1808,7 +1781,6 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1880,37 +1852,6 @@ public class ServletContextHandlerTest
         assertTrue(contextInit.get());
         _server.stop();
         assertTrue(contextDestroy.get());
-    }
-
-    @Test
-    @Disabled // TODO
-    public void testFallThrough() throws Exception
-    {
-        Handler.Collection list = new Handler.Collection();
-        _server.setHandler(list);
-
-        ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
-
-        ServletHandler servlet = root.getServletHandler();
-        servlet.setEnsureDefaultServlet(false);
-        servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
-
-        list.addHandler(new Handler.Abstract()
-        {
-            @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request coreRequest) throws Exception
-            {
-                return (request, response, callback) -> org.eclipse.jetty.server.Response.writeError(request, response, callback, 404);
-            }
-        });
-
-        _server.start();
-
-        String response = _connector.getResponse("GET /hello HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("200 OK"));
-
-        response = _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("404 Fell Through"));
     }
 
     /**

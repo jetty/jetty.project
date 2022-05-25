@@ -161,7 +161,8 @@ public class ServletHandler extends ScopedHandler
         {
             ContextHandler.APIContext context = ContextHandler.getCurrentContext();
             _servletContext = context;
-            _contextHandler = (ServletContextHandler)context.getContextHandler();
+            if (context != null)
+                _contextHandler = (ServletContextHandler)context.getContextHandler();
 
             if (_contextHandler != null)
             {
