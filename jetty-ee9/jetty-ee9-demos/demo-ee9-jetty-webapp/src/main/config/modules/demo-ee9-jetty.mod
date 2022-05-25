@@ -26,4 +26,4 @@ demo-ee9-realm
 webapps-ee9/demo-jetty.d/
 basehome:modules/demo.d/demo-ee9-jetty.xml|webapps-ee9/demo-ee9-jetty.xml
 basehome:modules/demo.d/demo-ee9-jetty-override-web.xml|webapps-ee9/demo-ee9-jetty.d/demo-ee9-jetty-override-web.xml
-maven://org.eclipse.jetty.demos/demo-ee9-jetty-webapp/${jetty.version}/war|webapps-ee9/demo-ee9-jetty.war
+maven://org.eclipse.jetty.ee9.demos/demo-ee9-jetty-webapp/${jetty.version}/war|webapps-ee9/demo-ee9-jetty.war

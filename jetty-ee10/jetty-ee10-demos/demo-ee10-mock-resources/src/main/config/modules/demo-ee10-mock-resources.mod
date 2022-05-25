@@ -14,4 +14,4 @@ jdbc
 ee10-annotations
 
 [files]
-maven://org.eclipse.jetty.demos/demo-ee10-mock-resources/${jetty.version}/jar|lib/ext/demo-ee10-mock-resources-${jetty.version}.jar
+maven://org.eclipse.jetty.ee10.demos/demo-ee10-mock-resources/${jetty.version}/jar|lib/ext/demo-ee10-mock-resources-${jetty.version}.jar

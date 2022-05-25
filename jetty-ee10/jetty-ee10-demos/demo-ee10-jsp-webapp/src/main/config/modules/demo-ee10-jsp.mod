@@ -14,4 +14,4 @@ jstl
 ee10-deploy
 
 [files]
-maven://org.eclipse.jetty.demos/demo-ee10-jsp-webapp/${jetty.version}/war|webapps-ee10/demo-ee10-jsp.war
+maven://org.eclipse.jetty.ee10.demos/demo-ee10-jsp-webapp/${jetty.version}/war|webapps-ee10/demo-ee10-jsp.war

@@ -14,4 +14,4 @@ jdbc
 ee9-annotations
 
 [files]
-maven://org.eclipse.jetty.demos/demo-ee9-mock-resources/${jetty.version}/jar|lib/ext/demo-ee9-mock-resources-${jetty.version}.jar
+maven://org.eclipse.jetty.ee9.demos/demo-ee9-mock-resources/${jetty.version}/jar|lib/ext/demo-ee9-mock-resources-${jetty.version}.jar

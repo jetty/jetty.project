@@ -22,7 +22,7 @@ ext
 basehome:modules/demo.d/demo-ee10-jaas.xml|webapps-ee10/demo-ee10-jaas.xml
 basehome:modules/demo.d/demo-ee10-login.conf|etc/demo-ee10-login.conf
 basehome:modules/demo.d/demo-ee10-login.properties|etc/demo-ee10-login.properties
-maven://org.eclipse.jetty.demos/demo-ee10-jaas-webapp/${jetty.version}/war|webapps-ee10/demo-ee10-jaas.war
+maven://org.eclipse.jetty.ee10.demos/demo-ee10-jaas-webapp/${jetty.version}/war|webapps-ee10/demo-ee10-jaas.war
 
 [ini]
 # Enable security via jaas, and configure it
