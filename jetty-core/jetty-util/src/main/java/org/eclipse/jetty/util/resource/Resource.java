@@ -54,6 +54,32 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * This class provides a resource abstraction, where a resource may be
  * a file, a URL or an entry in a jar file.
  * </p>
+ *
+ *
+ * Joakim's notes:
+ * Context baseResource
+ *
+ *   PathCollection.get(0) == WebAppContext.setWar ( WAR File / War Dir ) or ServletContextHandler.baseResource
+ *   PathCollection.get(1...n) == ServletContext.getResource() support (META-INF/resource), or extra paths (adv feature)
+ *
+ *      ResourceService.getResource(String path)
+ *         Alias Checking
+ *      HTML html = ResourceService.directoryListing(String path)
+ *
+ *          getResource("/jetty-dir.css")
+ *          WAR | /jetty-dir.css  (accessible publicly) - served by ResourceService
+ *          WAR | WEB-INF/jetty-dir.css  - context.getResource() - stream it out
+ *          WAR | WEB-INF/classes/jetty-dir.css  - classloader.getResource() - stream it out
+ *
+ *          WAR | jetty-server-12.jar!/jetty-dir.css - requires classloader
+ *          WAR | ResourceService.getClassLoader().getResource("/jetty-dir.css")
+ *
+ * WebAppClassloader
+ *
+ *    PathCollection classloaderPaths = PathCollection.from(servletPathCollection, web-inf/lib/*.jar)
+ *    ClassLoader.getResource()
+ *
+ *
  */
 // TODO Resource API should be cleaned up and simplified
 // TODO Resource review all impls and figure out which ones to keep
