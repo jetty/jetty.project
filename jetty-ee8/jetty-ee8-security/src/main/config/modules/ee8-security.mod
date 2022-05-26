@@ -4,7 +4,7 @@
 Adds servlet standard security handling to the classpath.
 
 [environment]
-ee9
+ee8
 
 [depend]
 server
