@@ -259,6 +259,7 @@ public class IntermediateResponseTest extends AbstractTest<TransportScenario>
                         if (exchange != null && response.getStatus() == HttpStatus.EARLY_HINT_103)
                         {
                             // All good, continue.
+                            System.err.println("onSuccess\n" + response.getHeaders());
                             hints.add(response.getHeaders().get("Hint"));
                             exchange.resetResponse();
                             exchange.proceed(null);
