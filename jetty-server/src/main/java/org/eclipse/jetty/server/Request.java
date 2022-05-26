@@ -1749,6 +1749,7 @@ public class Request implements HttpServletRequest
                 if (field instanceof HostPortHttpField)
                 {
                     HostPortHttpField authority = (HostPortHttpField)field;
+
                     builder.host(authority.getHost()).port(authority.getPort());
                 }
                 else
