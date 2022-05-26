@@ -16,6 +16,19 @@
   </properties>
 
   <build>
+
+    <sourceDirectory>${project.build.directory}/generated-sources/ee8</sourceDirectory>
+    <testSourceDirectory>${project.build.directory}/generated-test-sources/ee8</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/main/resources</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/test/resources</directory>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -29,8 +42,20 @@
               <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
             <configuration>
-              <!-- ../.. -->
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested</sourceProjectLocation>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/main/java</sourceProjectLocation>
+              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-ee8-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>modify-sources-ee9-to-ee8</goal>
+            </goals>
+            <configuration>
+              <testSources>true</testSources>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/test/java</sourceProjectLocation>
+              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
