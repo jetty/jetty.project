@@ -37,6 +37,7 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.server.MultiParts.NonCompliance;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.MultiException;
@@ -103,23 +104,6 @@ public class MultiPartFormInputStream
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
-
-    public enum NonCompliance
-    {
-        TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
-
-        final String _rfcRef;
-
-        NonCompliance(String rfcRef)
-        {
-            _rfcRef = rfcRef;
-        }
-
-        public String getURL()
-        {
-            return _rfcRef;
-        }
-    }
 
     /**
      * @return an EnumSet of non compliances with the RFC that were accepted by this parser

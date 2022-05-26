@@ -75,6 +75,7 @@ public class HttpConfiguration implements Dumpable
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
+    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed;
     private HostPort _serverAuthority;
@@ -623,6 +624,21 @@ public class HttpConfiguration implements Dumpable
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {
         _responseCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    /**
+     * Sets the compliance level for multipart/form-data handling.
+     *
+     * @param multiPartCompliance The multipart/form-data compliance level.
+     */
+    public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
+    {
+        _multiPartCompliance = multiPartCompliance == null ? MultiPartFormDataCompliance.RFC7578 : multiPartCompliance;
+    }
+
+    public MultiPartFormDataCompliance getMultipartFormDataCompliance()
+    {
+        return _multiPartCompliance;
     }
 
     /**

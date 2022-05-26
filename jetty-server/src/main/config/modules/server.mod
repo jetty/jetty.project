@@ -82,6 +82,9 @@ etc/jetty.xml
 # jetty.httpConfig.responseCookieCompliance=RFC6265
 # end::documentation-server-compliance[]
 
+## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)
+# jetty.httpConfig.multiPartFormDataCompliance=RFC7578
+
 # tag::documentation-server-config[]
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
