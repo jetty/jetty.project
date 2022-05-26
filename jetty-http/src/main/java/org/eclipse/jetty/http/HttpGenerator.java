@@ -385,7 +385,7 @@ public class HttpGenerator
 
                     // Handle 1xx and no content responses
                     int status = info.getStatus();
-                    if (status >= 100 && status < 200)
+                    if (HttpStatus.isInformational(status))
                     {
                         _noContentResponse = true;
                         switch (status)

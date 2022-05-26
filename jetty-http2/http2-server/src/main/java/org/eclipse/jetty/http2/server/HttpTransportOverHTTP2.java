@@ -98,7 +98,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         int status = response.getStatus();
-        boolean interimResponse = status >= HttpStatus.CONTINUE_100 && status < HttpStatus.OK_200 && status != HttpStatus.SWITCHING_PROTOCOLS_101;
+        boolean interimResponse = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
         if (interimResponse)
         {
             // Must not commit interim responses.

@@ -1046,7 +1046,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             // wrap callback to process 100 responses
             final int status = response.getStatus();
-            final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
+            final Callback committed = HttpStatus.isInformational(status)
                 ? new Send100Callback(callback)
                 : new SendCallback(callback, content, true, complete);
 
