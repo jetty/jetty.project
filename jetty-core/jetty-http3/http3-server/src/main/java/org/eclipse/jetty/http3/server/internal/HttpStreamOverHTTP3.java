@@ -221,12 +221,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... buffers)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        if (buffers.length > 1)
-            throw new IllegalStateException();
-
-        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
+        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else

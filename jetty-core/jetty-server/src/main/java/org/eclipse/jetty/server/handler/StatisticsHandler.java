@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -134,7 +135,7 @@ public class StatisticsHandler extends Handler.Wrapper
             addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
                 {
                     if (response != null)
                     {
@@ -148,12 +149,9 @@ public class StatisticsHandler extends Handler.Wrapper
                         }
                     }
 
-                    for (ByteBuffer b : content)
-                    {
-                        _bytesWritten.add(b.remaining());
-                    }
+                    _bytesWritten.add(BufferUtil.length(content));
 
-                    super.send(request, response, last, callback, content);
+                    super.send(request, response, last, content, callback);
                 }
 
                 @Override

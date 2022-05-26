@@ -123,10 +123,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
-                super.send(request, response, last, NOOP, content);
+                super.send(request, response, last, content, NOOP);
             }
         };
 
@@ -338,10 +338,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
-                super.send(request, response, last, NOOP, content);
+                super.send(request, response, last, content, NOOP);
             }
         };
 
@@ -882,10 +882,10 @@ public class HttpChannelTest
             }
 
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
-                super.send(request, response, last, NOOP, content);
+                super.send(request, response, last, content, NOOP);
             }
         };
 
@@ -922,14 +922,14 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
                 {
                     history.add(String.format("send %d l=%b %d %s",
                         response == null ? 0 : response.getStatus(),
                         last,
-                        content.length,
-                        content.length == 0 ? null : BufferUtil.toDetailString(content[0])));
-                    super.send(request, response, last, callback, content);
+                        BufferUtil.length(content),
+                        BufferUtil.toDetailString(content)));
+                    super.send(request, response, last, content, callback);
                 }
 
                 @Override
@@ -1255,10 +1255,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
             {
                 committing.countDown();
-                super.send(request, response, last, callback, content);
+                super.send(request, response, last, content, callback);
             }
         };
 
@@ -1373,10 +1373,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
             {
                 sendCallback.set(callback);
-                super.send(request, response, last, NOOP, content);
+                super.send(request, response, last, content, NOOP);
             }
         };
 

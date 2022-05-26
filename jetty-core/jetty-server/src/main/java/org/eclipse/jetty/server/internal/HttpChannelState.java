@@ -1160,7 +1160,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-                stream.send(_request._metaData, responseMetaData, last, this, content);
+                stream.send(_request._metaData, responseMetaData, last, content, this);
             }
             else if (failure == DO_NOT_SEND)
             {
@@ -1345,7 +1345,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (failure == null && needLastWrite)
-                stream.send(_request._metaData, responseMetaData, true, httpChannelState._handlerInvoker);
+                stream.send(_request._metaData, responseMetaData, true, null, httpChannelState._handlerInvoker);
             else if (completeStream)
                 httpChannelState._handlerInvoker.completeStream(stream, failure);
         }
@@ -1463,7 +1463,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (failure == null)
-                _stream.send(_request._metaData, responseMetaData, last, last ? Callback.from(this::lastWriteCompleted, callback) : callback, content);
+                _stream.send(_request._metaData, responseMetaData, last, content, last ? Callback.from(this::lastWriteCompleted, callback) : callback);
             else if (failure == DO_NOT_SEND)
                 httpChannel._serializedInvoker.run(callback::succeeded);
             else
@@ -1495,7 +1495,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
-                _stream.send(_request._metaData, responseMetaData, true,
+                _stream.send(_request._metaData, responseMetaData, true, null,
                     Callback.from(() -> httpChannel._handlerInvoker.failed(_failure),
                         x ->
                         {

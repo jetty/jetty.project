@@ -52,7 +52,7 @@ public interface HttpStream extends Callback
 
     void prepareResponse(HttpFields.Mutable headers);
 
-    void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
+    void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
 
     boolean isPushSupported();
 
@@ -107,97 +107,97 @@ public interface HttpStream extends Callback
         @Override
         public final String getId()
         {
-            return _wrapped.getId();
+            return getWrapped().getId();
         }
 
         @Override
         public final long getNanoTimeStamp()
         {
-            return _wrapped.getNanoTimeStamp();
+            return getWrapped().getNanoTimeStamp();
         }
 
         @Override
         public Content.Chunk read()
         {
-            return _wrapped.read();
+            return getWrapped().read();
         }
 
         @Override
         public void demand()
         {
-            _wrapped.demand();
+            getWrapped().demand();
         }
 
         @Override
         public void prepareResponse(HttpFields.Mutable headers)
         {
-            _wrapped.prepareResponse(headers);
+            getWrapped().prepareResponse(headers);
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
-            _wrapped.send(request, response, last, callback, content);
+            getWrapped().send(request, response, last, content, callback);
         }
 
         @Override
         public final boolean isPushSupported()
         {
-            return _wrapped.isPushSupported();
+            return getWrapped().isPushSupported();
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-            _wrapped.push(request);
+            getWrapped().push(request);
         }
 
         @Override
         public final boolean isCommitted()
         {
-            return _wrapped.isCommitted();
+            return getWrapped().isCommitted();
         }
 
         @Override
         public final boolean isComplete()
         {
-            return _wrapped.isComplete();
+            return getWrapped().isComplete();
         }
 
         @Override
         public void setUpgradeConnection(Connection connection)
         {
-            _wrapped.setUpgradeConnection(connection);
+            getWrapped().setUpgradeConnection(connection);
         }
 
         @Override
         public Connection upgrade()
         {
-            return _wrapped.upgrade();
+            return getWrapped().upgrade();
         }
 
         @Override
         public final Throwable consumeAvailable()
         {
-            return _wrapped.consumeAvailable();
+            return getWrapped().consumeAvailable();
         }
 
         @Override
         public void succeeded()
         {
-            _wrapped.succeeded();
+            getWrapped().succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _wrapped.failed(x);
+            getWrapped().failed(x);
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return _wrapped.getInvocationType();
+            return getWrapped().getInvocationType();
         }
     }
 }

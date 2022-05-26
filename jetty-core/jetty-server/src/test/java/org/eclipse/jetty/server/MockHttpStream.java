@@ -160,7 +160,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
     {
         if (response != null)
         {
@@ -179,8 +179,8 @@ public class MockHttpStream implements HttpStream
                 mock.notPersistent();
         }
 
-        for (ByteBuffer buffer : content)
-            _accumulator.copyBuffer(buffer);
+        if (content != null)
+            _accumulator.copyBuffer(content);
 
         if (last)
         {
@@ -194,7 +194,7 @@ public class MockHttpStream implements HttpStream
 
             if (!_out.compareAndSet(null, _accumulator.takeByteBuffer()))
             {
-                if (response != null || content.length > 0)
+                if (response != null || content != null)
                 {
                     callback.failed(new IOException("EOF"));
                     return;

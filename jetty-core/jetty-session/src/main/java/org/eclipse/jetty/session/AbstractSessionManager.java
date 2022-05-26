@@ -1221,14 +1221,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
 
         @Override
-        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, ByteBuffer content, Callback callback)
         {
             if (metadataResponse != null)
             {
                 // Write out session
                 _context.run(this::doCommit, _request);
             }
-            super.send(metadataRequest, metadataResponse, last, callback, content);
+            super.send(metadataRequest, metadataResponse, last, content, callback);
         }
 
         @Override

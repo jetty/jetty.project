@@ -1412,7 +1412,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (_expect100Continue)
             {
                 _expect100Continue = false;
-                send(_request, HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
+                send(_request, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
             }
 
             tryFillInterested(_demandContentCallback);
@@ -1426,7 +1426,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
             if (response == null)
             {
@@ -1451,10 +1451,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _generator.setPersistent(false);
             }
 
-            // TODO support gather write
-            if (content.length > 1)
-                throw new UnsupportedOperationException("Gather write!");
-            if (_sendCallback.reset(_request, response, content.length == 0 ? null : content[0], last, callback))
+            if (_sendCallback.reset(_request, response, content, last, callback))
                 _sendCallback.iterate();
         }
 
