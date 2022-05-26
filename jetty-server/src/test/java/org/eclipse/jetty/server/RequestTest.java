@@ -531,6 +531,54 @@ public class RequestTest
     }
 
     @Test
+    public void testLegacyMultiPart() throws Exception
+    {
+        Path testTmpDir = workDir.getEmptyPathDir();
+
+        // We should have two tmp files after parsing the multipart form.
+        RequestTester tester = (request, response) ->
+        {
+            try (Stream<Path> s = Files.list(testTmpDir))
+            {
+                return s.count() == 2;
+            }
+        };
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile(), tester));
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.LEGACY);
+        _server.start();
+
+        String multipart = "      --AaB03x\r" +
+            "content-disposition: form-data; name=\"field1\"\r" +
+            "\r" +
+            "Joe Blow\r" +
+            "--AaB03x\r" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r" +
+            "\r" +
+            "000000000000000000000000000000000000000000000000000\r" +
+            "--AaB03x--\r";
+
+        String request = "GET /foo/x.html HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
+
+        String responses = _connector.getResponse(request);
+        assertThat(responses, Matchers.startsWith("HTTP/1.1 200"));
+        assertThat(responses, Matchers.containsString("Violation: CR_LINE_TERMINATION"));
+        assertThat(responses, Matchers.containsString("Violation: NO_CRLF_AFTER_PREAMBLE"));
+    }
+
+    @Test
     public void testBadMultiPart() throws Exception
     {
         //a bad multipart where one of the fields has no name

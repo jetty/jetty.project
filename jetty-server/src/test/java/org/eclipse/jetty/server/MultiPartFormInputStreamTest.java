@@ -34,7 +34,7 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.server.MultiPartFormInputStream.MultiPart;
-import org.eclipse.jetty.server.MultiPartFormInputStream.NonCompliance;
+import org.eclipse.jetty.server.MultiParts.NonCompliance;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
