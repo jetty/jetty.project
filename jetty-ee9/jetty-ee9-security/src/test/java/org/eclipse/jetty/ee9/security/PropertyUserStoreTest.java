@@ -55,7 +55,7 @@ public class PropertyUserStoreTest
     private final class UserCount implements PropertyUserStore.UserListener
     {
         private final AtomicInteger userCount = new AtomicInteger();
-        private final List<String> users = new ArrayList<String>();
+        private final List<String> users = new ArrayList<>();
 
         private UserCount()
         {
@@ -80,7 +80,7 @@ public class PropertyUserStoreTest
 
         public void awaitCount(int expectedCount) throws InterruptedException
         {
-            long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(10);
+            long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(20);
 
             while (userCount.get() != expectedCount && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) < timeout))
             {

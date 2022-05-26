@@ -16,9 +16,6 @@
   </properties>
 
   <build>
-
-    <sourceDirectory>${project.build.directory}/generated-sources/ee8</sourceDirectory>
-    <testSourceDirectory>${project.build.directory}/generated-test-sources/ee8</testSourceDirectory>
     <resources>
       <resource>
         <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/main/resources</directory>
