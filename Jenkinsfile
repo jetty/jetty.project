@@ -69,6 +69,19 @@ pipeline {
             }
           }
         }
+        stage("Module : /jetty-ee8/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean -T4", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-ee8", "maven3")
+                }
+              }
+            }
+          }
+        }
         stage("Module : /jetty-ee10/") {
           steps {
             container('jetty-build') {
