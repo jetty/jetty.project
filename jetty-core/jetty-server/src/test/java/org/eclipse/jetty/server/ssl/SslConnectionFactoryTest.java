@@ -97,7 +97,7 @@ public class SslConnectionFactoryTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, callback, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)));
+                response.write(true, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
             }
         });
 

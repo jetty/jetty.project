@@ -110,11 +110,11 @@ public class PushedResourcesTest extends AbstractTest
                 String target = request.getPathInContext();
                 if (target.equals(path1))
                 {
-                    response.write(true, callback, ByteBuffer.wrap(pushBytes1));
+                    response.write(true, ByteBuffer.wrap(pushBytes1), callback);
                 }
                 else if (target.equals(path2))
                 {
-                    response.write(true, callback, ByteBuffer.wrap(pushBytes2));
+                    response.write(true, ByteBuffer.wrap(pushBytes2), callback);
                 }
                 else
                 {
@@ -122,7 +122,7 @@ public class PushedResourcesTest extends AbstractTest
                     request.push(push1);
                     MetaData.Request push2 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
                     request.push(push2);
-                    response.write(true, callback, ByteBuffer.wrap(bytes));
+                    response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
             }
         });
@@ -179,7 +179,7 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else if (target.equals(newPath))
                 {
-                    response.write(true, callback, ByteBuffer.wrap(pushBytes));
+                    response.write(true, ByteBuffer.wrap(pushBytes), callback);
                 }
                 else
                 {

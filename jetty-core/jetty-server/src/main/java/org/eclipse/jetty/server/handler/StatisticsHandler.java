@@ -427,7 +427,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public void write(boolean last, Callback callback, ByteBuffer... content)
+            public void write(boolean last, ByteBuffer content, Callback callback)
             {
                 if (_minimumWriteRate > 0)
                 {
@@ -444,7 +444,7 @@ public class StatisticsHandler extends Handler.Wrapper
                         }
                     }
                 }
-                super.write(last, callback, content);
+                super.write(last, content, callback);
             }
         }
 

@@ -47,11 +47,11 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             {
                 try (Blocking.Callback blocker = _blocking.callback())
                 {
-                    Content.Sink.write(response, false, blocker, "A");
+                    Content.Sink.write(response, false, "A", blocker);
                 }
                 try (Blocking.Callback blocker = _blocking.callback())
                 {
-                    Content.Sink.write(response, false, blocker, "A");
+                    Content.Sink.write(response, false, "A", blocker);
                 }
             }
         });
@@ -207,7 +207,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(new byte[1024]));
+                response.write(true, ByteBuffer.wrap(new byte[1024]), callback);
             }
         });
 

@@ -40,7 +40,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onNext(Content.Chunk chunk)
     {
-        sink.write(chunk.isLast(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)), chunk.getByteBuffer());
+        sink.write(chunk.isLast(), chunk.getByteBuffer(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)));
     }
 
     private void succeeded(Content.Chunk chunk)
@@ -66,6 +66,6 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onComplete()
     {
-        sink.write(true, callback);
+        sink.write(true, null, callback);
     }
 }

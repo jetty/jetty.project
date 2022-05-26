@@ -1137,7 +1137,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 long start = System.currentTimeMillis();
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
-                    response.write(false, blocker, BufferUtil.toBuffer(buf));
+                    response.write(false, BufferUtil.toBuffer(buf), blocker);
                     blocker.block();
                 }
                 long end = System.currentTimeMillis();
@@ -1150,7 +1150,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 out.append(t).append(",");
             }
 
-            response.write(true, callback, BufferUtil.toBuffer(out.toString()));
+            response.write(true, BufferUtil.toBuffer(out.toString()), callback);
         }
     }
 
@@ -1350,7 +1350,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             try (Blocking.Callback blocker = Blocking.callback())
             {
-                response.write(false, blocker, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"));
+                response.write(false, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"), blocker);
                 blocker.block();
             }
 
@@ -1574,7 +1574,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
-            response.write(false, callback, BufferUtil.toBuffer("yuck"));
+            response.write(false, BufferUtil.toBuffer("yuck"), callback);
         }
     }
 

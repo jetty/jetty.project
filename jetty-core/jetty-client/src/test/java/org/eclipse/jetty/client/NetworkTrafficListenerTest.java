@@ -195,7 +195,7 @@ public class NetworkTrafficListenerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, UTF_8.encode(responseContent));
+                response.write(true, UTF_8.encode(responseContent), callback);
             }
         });
 

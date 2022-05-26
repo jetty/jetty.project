@@ -46,7 +46,7 @@ public class Jetty12Example
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                Content.Sink.write(response, true, callback, "the handler says Hello World");
+                Content.Sink.write(response, true, "the handler says Hello World", callback);
             }
         });
         contexts.addHandler(embedded);

@@ -118,7 +118,7 @@ public class SslUploadTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
-            response.write(true, callback, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            response.write(true, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()), callback);
         }
     }
 }

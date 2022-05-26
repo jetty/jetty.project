@@ -131,7 +131,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] content = Arrays.copyOf(gzipBytes, 2 * gzipBytes.length);
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -208,7 +208,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
-                Content.Sink.write(response, true, callback, "0123456789");
+                Content.Sink.write(response, true, "0123456789", callback);
             }
         });
 

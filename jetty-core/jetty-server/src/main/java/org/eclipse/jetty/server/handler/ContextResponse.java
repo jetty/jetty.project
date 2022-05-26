@@ -31,13 +31,13 @@ public class ContextResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean last, Callback callback, ByteBuffer... content)
+    public void write(boolean last, ByteBuffer content, Callback callback)
     {
         Callback contextCallback = Callback.from(
             Invocable.getInvocationType(callback),
             () -> _context.run(callback::succeeded, getRequest()),
             x -> _context.accept(callback::failed, x, getRequest())
         );
-        super.write(last, contextCallback, content);
+        super.write(last, content, contextCallback);
     }
 }

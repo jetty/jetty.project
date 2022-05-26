@@ -152,7 +152,7 @@ public class ConnectionPoolTest
                             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocking.Callback callback = _blocking.callback())
                             {
-                                response.write(true, callback, BufferUtil.allocate((int)contentLength));
+                                response.write(true, BufferUtil.allocate((int)contentLength), callback);
                                 callback.block();
                             }
                         }
@@ -181,7 +181,7 @@ public class ConnectionPoolTest
                             {
                                 try (Blocking.Callback callback = _blocking.callback())
                                 {
-                                    response.write(true, callback, chunk.getByteBuffer());
+                                    response.write(true, chunk.getByteBuffer(), callback);
                                     callback.block();
                                 }
                             }

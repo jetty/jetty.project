@@ -169,8 +169,9 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer content, Callback callback)
         {
+            callback.succeeded();
         }
 
         @Override

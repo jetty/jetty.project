@@ -251,7 +251,7 @@ public class ErrorProcessor implements Request.Processor
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback.Nested(callback)
+        response.write(true, buffer, new Callback.Nested(callback)
         {
             @Override
             public void succeeded()
@@ -266,7 +266,7 @@ public class ErrorProcessor implements Request.Processor
                 request.getComponents().getByteBufferPool().release(buffer);
                 super.failed(x);
             }
-        }, buffer);
+        });
 
         return true;
     }

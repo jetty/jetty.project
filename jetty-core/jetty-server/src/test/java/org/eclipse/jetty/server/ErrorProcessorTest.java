@@ -447,7 +447,7 @@ public class ErrorProcessorTest
             response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
-            response.write(true, callback);
+            response.write(true, null, callback);
         });
         String rawResponse = connector.getResponse("""
                 GET /no/host HTTP/1.1
@@ -647,7 +647,7 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, BufferUtil.toBuffer("Context Error"));
+                response.write(true, BufferUtil.toBuffer("Context Error"), callback);
             }
         });
         context.setHandler(new Handler.Processor()
@@ -664,7 +664,7 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, BufferUtil.toBuffer("Server Error"));
+                response.write(true, BufferUtil.toBuffer("Server Error"), callback);
             }
         });
 

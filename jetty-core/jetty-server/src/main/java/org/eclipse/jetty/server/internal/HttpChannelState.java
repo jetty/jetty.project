@@ -1107,11 +1107,9 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            long length = 0;
-            for (ByteBuffer b : content)
-                length += b.remaining();
+            long length = BufferUtil.length(content);
 
             long totalWritten;
             HttpChannelState httpChannel;
@@ -1448,11 +1446,9 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            long length = 0;
-            for (ByteBuffer b : content)
-                length += b.remaining();
+            long length = BufferUtil.length(content);
 
             HttpChannelState httpChannel;
             Throwable failure;

@@ -70,7 +70,7 @@ public class HTTP2CServer extends Server
             content += "uri=" + request.getPathInContext() + "\n";
             content += "date=" + new Date() + "\n";
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length());
-            Content.Sink.write(response, true, callback, content);
+            Content.Sink.write(response, true, content, callback);
         }
     }
 }

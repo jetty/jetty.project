@@ -64,7 +64,7 @@ public interface Response extends Content.Sink
         if (chunk instanceof Trailers trailers)
         {
             getOrCreateTrailers().add(trailers.getTrailers());
-            write(true, callback);
+            write(true, null, callback);
             return true;
         }
         return false;
@@ -114,7 +114,7 @@ public interface Response extends Content.Sink
 
         response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
         response.setStatus(code);
-        response.write(true, callback);
+        response.write(true, null, callback);
     }
 
     static void addCookie(Response response, HttpCookie cookie)
@@ -252,7 +252,7 @@ public interface Response extends Content.Sink
 
         // fall back to very empty error page
         response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
-        response.write(true, callback);
+        response.write(true, null, callback);
     }
 
     static Response getOriginalResponse(Response response)
@@ -392,9 +392,9 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... buffers)
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            getWrapped().write(last, callback, buffers);
+            getWrapped().write(last, byteBuffer, callback);
         }
 
         @Override

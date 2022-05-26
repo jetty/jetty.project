@@ -44,7 +44,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -71,7 +71,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
-                Content.Sink.write(response, true, callback, content);
+                Content.Sink.write(response, true, content, callback);
             }
         });
 
@@ -100,7 +100,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
-                response.write(true, callback, ByteBuffer.wrap(content.getBytes(encoding)));
+                response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);
             }
         });
 
@@ -129,7 +129,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
-                response.write(true, callback, ByteBuffer.wrap(content.getBytes(encoding)));
+                response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);
             }
         });
 

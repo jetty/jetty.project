@@ -337,7 +337,7 @@ public class SSLSelectChannelConnectorLoadTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
-            response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
+            response.write(true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);
         }
     }
 }

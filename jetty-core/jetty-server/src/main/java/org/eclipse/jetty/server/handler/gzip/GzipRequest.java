@@ -92,7 +92,7 @@ public class GzipRequest extends Request.WrapperProcessor
     {
         // We need to do this to intercept the committing of the response
         // and possibly change headers in case write is never called.
-        response.write(true, Callback.NOOP);
+        response.write(true, null, Callback.NOOP);
 
         if (_decoder != null)
         {

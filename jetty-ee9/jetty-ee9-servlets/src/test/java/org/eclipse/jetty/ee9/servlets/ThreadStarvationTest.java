@@ -235,7 +235,7 @@ public class ThreadStarvationTest
                         barrier.await(10, TimeUnit.SECONDS);
                     response.setStatus(200);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 13);
-                    Content.Sink.write(response, true, callback, "Hello World!\n");
+                    Content.Sink.write(response, true, "Hello World!\n", callback);
                 }
             });
 

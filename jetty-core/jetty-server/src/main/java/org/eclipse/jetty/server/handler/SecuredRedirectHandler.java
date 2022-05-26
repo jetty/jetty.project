@@ -77,7 +77,7 @@ public class SecuredRedirectHandler extends Handler.Wrapper
                 // TODO need a utility for this
                 rs.getHeaders().put(HttpHeader.LOCATION, url);
                 rs.setStatus(_redirectCode);
-                rs.write(true, cb);
+                rs.write(true, null, cb);
             }
             else
             {

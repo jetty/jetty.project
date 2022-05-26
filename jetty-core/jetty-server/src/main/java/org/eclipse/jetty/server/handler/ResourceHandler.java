@@ -544,7 +544,7 @@ public class ResourceHandler extends Handler.Wrapper
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
         response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
-        response.write(true, callback, ByteBuffer.wrap(data));
+        response.write(true, ByteBuffer.wrap(data), callback);
     }
 
     private String getListHTML(Path path, String base, boolean parent, String query) throws IOException
@@ -918,7 +918,7 @@ public class ResourceHandler extends Handler.Wrapper
     {
         ByteBuffer buffer = content.getBuffer();
         if (buffer != null)
-            response.write(true, callback, buffer);
+            response.write(true, buffer, callback);
         else
             new ContentWriterIteratingCallback(content, response, callback).iterate();
     }
@@ -1414,11 +1414,11 @@ public class ResourceHandler extends Handler.Wrapper
             if (read == -1)
             {
                 IO.close(source);
-                target.write(true, this);
+                target.write(true, null, this);
                 return Action.SCHEDULED;
             }
             byteBuffer.flip();
-            target.write(false, this, byteBuffer);
+            target.write(false, byteBuffer, this);
             return Action.SCHEDULED;
         }
 

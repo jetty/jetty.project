@@ -52,13 +52,13 @@ public class ServerQuicConnectorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, callback, """
+                Content.Sink.write(response, true, """
                         <html>
                           <body>
                             Request served
                           </body>
                         </html>
-                        """);
+                        """, callback);
             }
         });
 
@@ -96,7 +96,7 @@ public class ServerQuicConnectorTest
                 int contentLength = 16 * 1024 * 1024;
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                Content.Sink.write(response, true, callback, "0".repeat(contentLength));
+                Content.Sink.write(response, true, "0".repeat(contentLength), callback);
             }
         });
 

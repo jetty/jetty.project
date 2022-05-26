@@ -77,7 +77,7 @@ public class End2EndClientTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, callback, responseContent);
+                Content.Sink.write(response, true, responseContent, callback);
             }
         });
 

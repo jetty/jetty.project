@@ -77,7 +77,7 @@ public class SlowClientsTest
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
-                    response.write(true, new Callback()
+                    response.write(true, BufferUtil.toBuffer(new byte[contentLength]), new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -91,8 +91,8 @@ public class SlowClientsTest
                             {
                                 callback.failed(x);
                             }
-                        },
-                        BufferUtil.toBuffer(new byte[contentLength]));
+                        }
+                    );
                 }
             });
             server.start();

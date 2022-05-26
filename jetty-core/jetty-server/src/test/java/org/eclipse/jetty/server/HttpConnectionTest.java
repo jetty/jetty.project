@@ -870,7 +870,7 @@ public class HttpConnectionTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(false, callback);
+                response.write(false, null, callback);
             }
         });
         _server.start();
@@ -1147,12 +1147,12 @@ public class HttpConnectionTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
                 response.write(false,
-                    Callback.from(callback::succeeded, t ->
+                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                    })
+                );
             }
         });
         _server.start();
@@ -1197,12 +1197,12 @@ public class HttpConnectionTest
                 response.getHeaders().put("LongStr", longstr);
 
                 response.write(false,
-                    Callback.from(callback::succeeded, t ->
+                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                    })
+                );
             }
         });
         _server.start();

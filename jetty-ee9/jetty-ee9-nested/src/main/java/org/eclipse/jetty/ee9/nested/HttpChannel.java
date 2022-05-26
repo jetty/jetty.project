@@ -1031,10 +1031,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _coreResponse.getHeaders().add(response.getFields());
             // TODO trailer stuff?
         }
-        if (BufferUtil.isEmpty(content))
-            _coreResponse.write(complete, callback);
-        else
-            _coreResponse.write(complete, callback, content);
+        _coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException

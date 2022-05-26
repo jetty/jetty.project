@@ -78,7 +78,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
-                    Content.Sink.write(response, false);
+                    Content.Sink.write(response, false, null);
                     request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
                 }
                 else
@@ -125,7 +125,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                Content.Sink.write(response, false);
+                Content.Sink.write(response, false, null);
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
             }
         });

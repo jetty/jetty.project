@@ -92,7 +92,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
         startClient();
@@ -130,7 +130,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
         startClient();
@@ -179,7 +179,7 @@ public class HttpClientProxyProtocolTest
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
         startClient();
@@ -225,7 +225,7 @@ public class HttpClientProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                Content.Sink.write(response, true, callback, String.valueOf(Request.getRemotePort(request)));
+                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
         startClient();

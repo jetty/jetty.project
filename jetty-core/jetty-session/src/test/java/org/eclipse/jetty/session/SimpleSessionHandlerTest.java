@@ -138,7 +138,7 @@ public class SimpleSessionHandlerTest
                         out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                 }
 
-                Content.Sink.write(response, true, callback, out.toString());
+                Content.Sink.write(response, true, out.toString(), callback);
             }
         });
 

@@ -35,7 +35,7 @@ public class HelloWorld extends Handler.Processor
         response.setStatus(HttpServletResponse.SC_OK);
 
         // Write back response
-        Content.Sink.write(response, true, callback, "<h1>Hello World</h1>\n");
+        Content.Sink.write(response, true, "<h1>Hello World</h1>\n", callback);
     }
 
     public static void main(String[] args) throws Exception

@@ -125,7 +125,7 @@ public class ChatWebSocketServer
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                Content.Sink.write(response, true, callback, "WebSocket Chat Server");
+                Content.Sink.write(response, true, "WebSocket Chat Server", callback);
             }
         });
 

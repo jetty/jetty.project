@@ -41,14 +41,14 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     private long length = UNDETERMINED_LENGTH;
 
     @Override
-    public void write(boolean last, Callback callback, ByteBuffer... buffers)
+    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        for (int i = 0; i < buffers.length; ++i)
-        {
-            ByteBuffer buffer = buffers[i];
-            boolean isLast = last && i == buffers.length - 1;
-            write(Content.Chunk.from(buffer, isLast), Callback.NOOP);
-        }
+        if (byteBuffer != null)
+            write(Content.Chunk.from(byteBuffer, last), callback);
+        else if (last)
+            write(Content.Chunk.EOF, callback);
+        else
+            write(Content.Chunk.EMPTY, callback);
     }
 
     public void write(Content.Chunk chunk, Callback callback)

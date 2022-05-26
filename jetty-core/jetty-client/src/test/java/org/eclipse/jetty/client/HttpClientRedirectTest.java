@@ -451,12 +451,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
                     response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                    response.write(true, callback, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)));
+                    response.write(true, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)), callback);
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, callback, ByteBuffer.wrap(bytes));
+                    response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
             }
         });

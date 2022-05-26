@@ -61,7 +61,7 @@ public class ContentCopier extends IteratingNestedCallback
         if (current instanceof Error error)
             throw error.getCause();
 
-        sink.write(current.isLast(), this, current.getByteBuffer());
+        sink.write(current.isLast(), current.getByteBuffer(), this);
         return Action.SCHEDULED;
     }
 

@@ -668,7 +668,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
                     out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
                     out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                    Content.Sink.write(rs, true, cb, stringWriter.getBuffer().toString());
+                    Content.Sink.write(rs, true, stringWriter.getBuffer().toString(), cb);
                 }
             };
         }
@@ -705,7 +705,7 @@ public class HttpConfigurationAuthorityOverrideTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-            Content.Sink.write(response, true, callback, "Generic Error Page.");
+            Content.Sink.write(response, true, "Generic Error Page.", callback);
         }
     }
 
@@ -721,7 +721,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, callback);
+            response.write(true, null, callback);
         }
     }
 

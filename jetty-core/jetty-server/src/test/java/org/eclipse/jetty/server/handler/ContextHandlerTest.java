@@ -232,7 +232,7 @@ public class ContextHandlerTest
                     assertTrue(chunk.hasRemaining());
                     assertTrue(chunk.isLast());
                     response.setStatus(200);
-                    response.write(true, Callback.from(
+                    response.write(true, chunk.getByteBuffer(), Callback.from(
                         () ->
                         {
                             chunk.release();
@@ -243,7 +243,7 @@ public class ContextHandlerTest
                         t ->
                         {
                             throw new IllegalStateException();
-                        }), chunk.getByteBuffer());
+                        }));
                 });
             }
         };
@@ -522,7 +522,7 @@ public class ContextHandlerTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, callback);
+                response.write(true, null, callback);
             }
         };
         _contextHandler.setHandler(handler);

@@ -93,7 +93,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, callback, BufferUtil.toBuffer(buffer.toByteArray()));
+            response.write(true, BufferUtil.toBuffer(buffer.toByteArray()), callback);
         }
     }
 

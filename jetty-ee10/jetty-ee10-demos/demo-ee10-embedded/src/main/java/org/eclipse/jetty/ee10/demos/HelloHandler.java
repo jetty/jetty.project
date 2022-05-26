@@ -48,6 +48,6 @@ public class HelloHandler extends Handler.Processor
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        Content.Sink.write(response, true, callback, "<h1>" + greeting + "</h1>\n" + body);
+        Content.Sink.write(response, true, "<h1>" + greeting + "</h1>\n" + body, callback);
     }
 }

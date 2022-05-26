@@ -79,7 +79,7 @@ public class HostnameVerificationTest
             {
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
-                    Content.Sink.write(response, true, blocker, "foobar");
+                    Content.Sink.write(response, true, "foobar", blocker);
                 }
             }
         });

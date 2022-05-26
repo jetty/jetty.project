@@ -163,9 +163,9 @@ public class HttpChannelTest
                     public void succeeded()
                     {
                         if (count.decrementAndGet() == 0)
-                            Content.Sink.write(response, true, callback, "X");
+                            Content.Sink.write(response, true, "X", callback);
                         else
-                            Content.Sink.write(response, false, this, "X");
+                            Content.Sink.write(response, false, "X", this);
                     }
 
                     @Override
@@ -468,10 +468,10 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                Content.Sink.write(response, true, Callback.from(callback, () ->
+                Content.Sink.write(response, true, "Before throw", Callback.from(callback, () ->
                 {
                     throw new Error("testing");
-                }), "Before throw");
+                }));
             }
         };
         _server.setHandler(handler);
@@ -506,7 +506,7 @@ public class HttpChannelTest
             {
                 response.setStatus(200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
-                response.write(false, Callback.from(() ->
+                response.write(false, null, Callback.from(() ->
                 {
                     throw new Error("testing");
                 }));
@@ -541,7 +541,7 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, BufferUtil.toBuffer("12345"));
+                response.write(true, BufferUtil.toBuffer("12345"), callback);
             }
         };
         _server.setHandler(handler);
@@ -573,7 +573,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
-                response.write(true, callback, BufferUtil.toBuffer("12345"));
+                response.write(true, BufferUtil.toBuffer("12345"), callback);
             }
         };
         _server.setHandler(handler);
@@ -609,8 +609,8 @@ public class HttpChannelTest
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
-                    Callback.from(() ->
-                        response.write(true, callback)), BufferUtil.toBuffer("12345"));
+                    BufferUtil.toBuffer("12345"), Callback.from(() ->
+                        response.write(true, null, callback)));
             }
         };
         _server.setHandler(handler);
@@ -641,7 +641,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(true, callback, BufferUtil.toBuffer("1234567890"));
+                response.write(true, BufferUtil.toBuffer("1234567890"), callback);
             }
         };
         _server.setHandler(handler);
@@ -676,7 +676,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
+                response.write(false, BufferUtil.toBuffer("1234"), Callback.from(() -> response.write(true, BufferUtil.toBuffer("567890"), callback)));
             }
         };
         _server.setHandler(handler);
@@ -743,7 +743,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
+                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
             }
         };
         _server.setHandler(handler);
@@ -786,7 +786,7 @@ public class HttpChannelTest
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
+                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
             }
         };
         _server.setHandler(handler);
@@ -1091,7 +1091,7 @@ public class HttpChannelTest
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
-                    response.write(true, callback, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()));
+                    response.write(true, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()), callback);
                 }
                 else
                 {
@@ -1204,7 +1204,7 @@ public class HttpChannelTest
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
         // Callback serialized until after onError task
-        handling.get().write(false, Callback.from(() ->
+        handling.get().write(false, null, Callback.from(() ->
         {}, callback::succeeded));
         assertFalse(callback.isDone());
 
@@ -1402,7 +1402,7 @@ public class HttpChannelTest
                     if (written != null)
                         throw new IllegalStateException();
                     written = new FutureCallback();
-                    response.write(true, written);
+                    response.write(true, null, written);
                 }
 
                 case SUCCEED -> callback.succeeded();

@@ -115,7 +115,7 @@ public class RequestTest
                     for (HttpCookie c : coreCookies)
                         buff.writeBytes(("Core Cookie: " + c.getName() + "=" + c.getValue() + "\n").getBytes());
                 }
-                response.write(true, callback, ByteBuffer.wrap(buff.toByteArray()));
+                response.write(true, ByteBuffer.wrap(buff.toByteArray()), callback);
             }
         });
         

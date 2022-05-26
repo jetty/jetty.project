@@ -63,7 +63,7 @@ public class ContentLengthTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 

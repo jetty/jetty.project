@@ -69,7 +69,7 @@ public class OutputStreamContentSource implements Content.Source
             try
             {
                 FutureCallback callback = new FutureCallback();
-                async.write(false, callback, ByteBuffer.wrap(b, off, len));
+                async.write(false, ByteBuffer.wrap(b, off, len), callback);
                 callback.get();
             }
             catch (Throwable x)

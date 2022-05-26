@@ -85,7 +85,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 
@@ -116,7 +116,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 
@@ -213,7 +213,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
-                    Content.Sink.write(response, true, callback, value);
+                    Content.Sink.write(response, true, value, callback);
                 }
             }
         });
@@ -243,7 +243,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
-                    Content.Sink.write(response, true, callback, value);
+                    Content.Sink.write(response, true, value, callback);
                 }
             }
         });
@@ -274,7 +274,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
-                    Content.Sink.write(response, true, callback, value);
+                    Content.Sink.write(response, true, value, callback);
                 }
             }
         });
@@ -487,7 +487,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(new byte[length]));
+                response.write(true, ByteBuffer.wrap(new byte[length]), callback);
             }
         });
 
@@ -555,7 +555,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 // Promise some content, then flush the headers, then fail to send the content.
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 16);
-                Content.Sink.write(response, false);
+                Content.Sink.write(response, false, null);
                 throw new NullPointerException("Explicitly thrown by test");
             }
         });
@@ -592,7 +592,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Connection", "close");
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 

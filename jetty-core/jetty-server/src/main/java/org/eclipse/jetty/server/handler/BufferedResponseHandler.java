@@ -14,8 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Iterator;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -28,9 +26,10 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
-import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,7 +186,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... buffers)
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             if (_firstWrite)
             {
@@ -203,54 +202,32 @@ public class BufferedResponseHandler extends Handler.Wrapper
 
             if (_accumulator != null)
             {
-                Iterator<ByteBuffer> iterator = Arrays.stream(buffers).iterator();
-                IteratingCallback iteratingCallback = new IteratingCallback()
+                ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+                IteratingNestedCallback writer = new IteratingNestedCallback(callback)
                 {
-                    ByteBuffer currentBuffer;
+                    private boolean complete;
 
                     @Override
                     protected Action process()
                     {
-                        if (currentBuffer == null)
+                        if (complete)
+                            return Action.SUCCEEDED;
+                        boolean write = _accumulator.copyBuffer(current);
+                        complete = last && !current.hasRemaining();
+                        if (write || complete)
                         {
-                            if (!iterator.hasNext())
-                                return Action.SUCCEEDED;
-                            currentBuffer = iterator.next();
-                        }
-
-                        boolean overflow = _accumulator.copyBuffer(currentBuffer);
-                        if (!currentBuffer.hasRemaining())
-                            currentBuffer = null;
-                        if (overflow)
-                        {
-                            ByteBuffer byteBuffer = _accumulator.takeByteBuffer();
-                            BufferedResponse.super.write(false, this, byteBuffer);
+                            BufferedResponse.super.write(complete, _accumulator.takeByteBuffer(), this);
                             return Action.SCHEDULED;
                         }
-                        // TODO: this is wrong: we have accumulated one buffer but there may be many.
-                        //  Should either loop around or call succeeded() and return SCHEDULED.
                         return Action.SUCCEEDED;
                     }
-
-                    @Override
-                    protected void onCompleteSuccess()
-                    {
-                        callback.succeeded();
-                    }
-
-                    @Override
-                    protected void onCompleteFailure(Throwable cause)
-                    {
-                        callback.failed(cause);
-                    }
                 };
-                iteratingCallback.iterate();
+                writer.iterate();
             }
             else
             {
-                super.write(last, callback, buffers);
+                super.write(last, byteBuffer, callback);
             }
-            // TODO handle last better
         }
 
         private int getBufferSize()
@@ -264,7 +241,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
             if (_accumulator != null)
-                super.write(true, Callback.from(_callback, _accumulator::close), _accumulator.takeByteBuffer());
+                super.write(true, _accumulator.takeByteBuffer(), Callback.from(_callback, _accumulator::close));
             else
                 _callback.succeeded();
         }
@@ -286,7 +263,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         private final int _maxSize;
         private int _accumulatedCount;
 
-        public CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
+        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
         {
             if (maxSize <= 0)
                 throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
@@ -294,9 +271,9 @@ public class BufferedResponseHandler extends Handler.Wrapper
             _accumulator = new ByteBufferAccumulator(bufferPool, direct);
         }
 
-        public boolean copyBuffer(ByteBuffer buffer)
+        private boolean copyBuffer(ByteBuffer buffer)
         {
-            int remainingCapacity = _maxSize - _accumulatedCount;
+            int remainingCapacity = space();
             if (buffer.remaining() >= remainingCapacity)
             {
                 _accumulatedCount += remainingCapacity;
@@ -313,7 +290,12 @@ public class BufferedResponseHandler extends Handler.Wrapper
             }
         }
 
-        public ByteBuffer takeByteBuffer()
+        private int space()
+        {
+            return _maxSize - _accumulatedCount;
+        }
+
+        private ByteBuffer takeByteBuffer()
         {
             _accumulatedCount = 0;
             return _accumulator.takeByteBuffer();

@@ -101,7 +101,7 @@ public class HttpServerTestFixture
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            Content.Sink.write(response, true, callback, "Hello world\r\n");
+            Content.Sink.write(response, true, "Hello world\r\n", callback);
         }
     }
 
@@ -172,7 +172,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, reply.length());
-            response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            response.write(true, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1), callback);
         }
     }
 
@@ -183,8 +183,8 @@ public class HttpServerTestFixture
         {
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
-                s -> Content.Sink.write(response, true, callback, "read %d%n" + s.length()),
-                t -> Content.Sink.write(response, true, callback, String.format("caught %s%n", t))
+                s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
+                t -> Content.Sink.write(response, true, String.format("caught %s%n", t), callback)
             ));
         }
     }
@@ -228,7 +228,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocking.Callback blocker = Blocking.callback())
                     {
-                        response.write(i == 0, blocker, bytes.slice());
+                        response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();
                     }
                 }
@@ -241,7 +241,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocking.Callback blocker = Blocking.callback())
                     {
-                        response.write(i == 0, blocker, bytes.slice());
+                        response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();
                     }
                 }

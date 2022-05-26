@@ -361,7 +361,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 

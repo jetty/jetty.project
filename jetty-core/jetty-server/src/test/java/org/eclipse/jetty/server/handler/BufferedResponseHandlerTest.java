@@ -220,15 +220,14 @@ public class BufferedResponseHandlerTest
             if (_mimeType != null)
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
-            try (OutputStream outputStream = Content.Sink.asOutputStream(response))
+            // Do not close the stream before adding the header: Written: true.
+            OutputStream outputStream = Content.Sink.asOutputStream(response);
+            for (int i = 0; i < _writes; i++)
             {
-                for (int i = 0; i < _writes; i++)
-                {
-                    response.getHeaders().add("Write", Integer.toString(i));
-                    outputStream.write(_content);
-                    if (_flush)
-                        outputStream.flush();
-                }
+                response.getHeaders().add("Write", Integer.toString(i));
+                outputStream.write(_content);
+                if (_flush)
+                    outputStream.flush();
             }
 
             response.getHeaders().add("Written", "true");

@@ -274,7 +274,7 @@ public class StreamResetTest extends AbstractTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length * 10L);
-                Content.Sink.write(response, false);
+                Content.Sink.write(response, false, null);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
 
@@ -359,7 +359,7 @@ public class StreamResetTest extends AbstractTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.remaining());
-                Content.Sink.write(response, false);
+                Content.Sink.write(response, false, null);
 
                 commitLatch.countDown();
 
@@ -384,11 +384,11 @@ public class StreamResetTest extends AbstractTest
                         // doGet() so this is really asynchronous.
                         Thread.sleep(1000);
 
-                        response.write(true, Callback.from(callback::succeeded, x ->
+                        response.write(true, data, Callback.from(callback::succeeded, x ->
                         {
                             callback.succeeded();
                             dataLatch.countDown();
-                        }), data);
+                        }));
                     }
                     catch (Throwable x)
                     {
@@ -742,11 +742,11 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, Callback.from(callback::succeeded, x ->
+                response.write(true, ByteBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
                 {
                     writeLatch.countDown();
                     callback.succeeded();
-                }), ByteBuffer.wrap(new byte[10 * windowSize]));
+                }));
             }
         });
 
@@ -929,7 +929,7 @@ public class StreamResetTest extends AbstractTest
             {
                 exchanger.exchange(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
                 // Large write, it blocks due to TCP congestion.
-                response.write(true, callback, ByteBuffer.wrap(new byte[128 * 1024 * 1024]));
+                response.write(true, ByteBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
             }
 
             private void service2(Response response, Callback callback) throws Exception

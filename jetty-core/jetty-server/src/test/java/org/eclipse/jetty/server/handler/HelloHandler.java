@@ -51,6 +51,6 @@ public class HelloHandler extends Handler.Processor
     {
         response.setStatus(200);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-        Content.Sink.write(response, true, callback, _message);
+        Content.Sink.write(response, true, _message, callback);
     }
 }

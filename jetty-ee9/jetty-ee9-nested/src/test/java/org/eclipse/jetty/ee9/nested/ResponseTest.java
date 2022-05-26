@@ -2411,10 +2411,10 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            for (ByteBuffer c : content)
-                BufferUtil.append(_content, c);
+            if (content != null)
+                BufferUtil.append(_content, content);
             _committed = true;
             _last |= last;
             callback.succeeded();

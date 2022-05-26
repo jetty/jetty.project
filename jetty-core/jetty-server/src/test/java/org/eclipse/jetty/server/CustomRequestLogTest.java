@@ -629,7 +629,7 @@ public class CustomRequestLogTest
             {
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
-                    Content.Sink.write(response, false, blocker, String.valueOf(request.getHeaders().get("echo")));
+                    Content.Sink.write(response, false, String.valueOf(request.getHeaders().get("echo")), blocker);
                     blocker.block();
                 }
             }
@@ -640,7 +640,7 @@ public class CustomRequestLogTest
             }
             else if (request.getPathInContext().contains("/abort"))
             {
-                Content.Sink.write(response, false, Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed), "data");
+                Content.Sink.write(response, false, "data", Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed));
                 return;
             }
             else if (request.getPathInContext().contains("delay"))

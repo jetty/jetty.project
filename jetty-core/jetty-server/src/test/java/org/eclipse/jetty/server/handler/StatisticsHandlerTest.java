@@ -188,11 +188,11 @@ public class StatisticsHandlerTest
                             finalCallback.failed(x);
                         }
                     };
-                    response.write(false, cb, ByteBuffer.allocate(1));
+                    response.write(false, ByteBuffer.allocate(1), cb);
                 }
                 else
                 {
-                    response.write(true, finalCallback, ByteBuffer.allocate(1));
+                    response.write(true, ByteBuffer.allocate(1), finalCallback);
                 }
             }
         });
@@ -324,11 +324,11 @@ public class StatisticsHandlerTest
                             finalCallback.failed(x);
                         }
                     };
-                    response.write(false, cb, ByteBuffer.allocate(1));
+                    response.write(false, ByteBuffer.allocate(1), cb);
                 }
                 else
                 {
-                    response.write(true, finalCallback, ByteBuffer.allocate(1));
+                    response.write(true, ByteBuffer.allocate(1), finalCallback);
                 }
             }
         });

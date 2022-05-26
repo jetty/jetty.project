@@ -1536,7 +1536,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             // Send 101 if needed
             if (!isUpgradedH2C)
-                send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, Callback.NOOP);
+                send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, null, Callback.NOOP);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);

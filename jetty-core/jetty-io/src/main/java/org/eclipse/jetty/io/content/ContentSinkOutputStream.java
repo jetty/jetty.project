@@ -42,7 +42,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocking.Callback callback = _blocking.callback())
         {
-            sink.write(false, callback, ByteBuffer.wrap(b, off, len));
+            sink.write(false, ByteBuffer.wrap(b, off, len), callback);
             callback.block();
         }
         catch (Throwable x)
@@ -56,7 +56,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocking.Callback callback = _blocking.callback())
         {
-            sink.write(false, callback);
+            sink.write(false, null, callback);
             callback.block();
         }
         catch (Throwable x)
@@ -70,7 +70,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocking.Callback callback = _blocking.callback())
         {
-            sink.write(true, callback);
+            sink.write(true, null, callback);
             callback.block();
         }
         catch (Throwable x)

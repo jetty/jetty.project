@@ -403,7 +403,7 @@ public class DelayedHandlerTest
             {
                 processing.countDown();
                 Fields fields = FutureFormFields.forRequest(request).get(1, TimeUnit.NANOSECONDS);
-                Content.Sink.write(response, true, callback, String.valueOf(fields));
+                Content.Sink.write(response, true, String.valueOf(fields), callback);
             }
         });
         _server.start();

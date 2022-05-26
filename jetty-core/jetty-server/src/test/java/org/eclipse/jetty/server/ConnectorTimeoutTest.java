@@ -737,14 +737,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 try (Blocking.Callback block = blocker.callback())
                 {
                     Thread.sleep(50);
-                    Content.Sink.write(response, false, block, "Hello World\r\n");
+                    Content.Sink.write(response, false, "Hello World\r\n", block);
                 }
                 catch (Exception e)
                 {
                     e.printStackTrace();
                 }
             }
-            response.write(true, callback);
+            response.write(true, null, callback);
         }
     }
 
@@ -761,7 +761,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 buffer[i * 1024 + 1022] = '\r';
                 buffer[i * 1024 + 1023] = '\n';
             }
-            response.write(true, callback, ByteBuffer.wrap(buffer));
+            response.write(true, ByteBuffer.wrap(buffer), callback);
         }
     }
 
@@ -779,7 +779,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 e.printStackTrace();
             }
-            Content.Sink.write(response, true, callback, "Hello World\r\n");
+            Content.Sink.write(response, true, "Hello World\r\n", callback);
         }
     }
 }

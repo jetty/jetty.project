@@ -255,7 +255,7 @@ public class HTTP2Test extends AbstractTest
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -803,7 +803,7 @@ public class HTTP2Test extends AbstractTest
                 response.getHeaders().put(":custom", "special");
                 try
                 {
-                    Content.Sink.write(response, false);
+                    Content.Sink.write(response, false, null);
                 }
                 catch (IOException x)
                 {

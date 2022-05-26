@@ -32,6 +32,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -179,7 +180,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void write(ByteBuffer content, boolean last, Callback callback)
         {
-            _response.write(last, callback, content);
+            _response.write(last, content, callback);
         }
 
         @Override
@@ -1682,7 +1683,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * An iterating callback that will take content from an
      * InputStream and write it to this HttpOutput.
      * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used.
-     * This callback is passed to the {@link Response#write(boolean, Callback, ByteBuffer...)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */
@@ -1758,7 +1759,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * ReadableByteChannel and write it to this HttpOutput.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
      * {@code HttpChannel#isUseOutputDirectByteBuffers()} is true.
-     * This callback is passed to the {@link Response#write(boolean, Callback, ByteBuffer...)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */

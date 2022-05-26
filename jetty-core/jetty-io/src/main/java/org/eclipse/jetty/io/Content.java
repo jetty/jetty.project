@@ -380,18 +380,18 @@ public class Content
         }
 
         /**
-         * <p>Blocking version of {@link #write(boolean, Callback, ByteBuffer...)}.</p>
+         * <p>Blocking version of {@link #write(boolean, ByteBuffer, Callback)}.</p>
          *
          * @param sink the sink to write to
          * @param last whether the ByteBuffers are the last to write
-         * @param buffers the ByteBuffers to write
+         * @param byteBuffer the ByteBuffers to write
          * @throws IOException if the write operation fails
          */
-        public static void write(Sink sink, boolean last, ByteBuffer... buffers) throws IOException
+        public static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
         {
             try (Blocking.Callback callback = Blocking.callback())
             {
-                sink.write(last, callback, buffers);
+                sink.write(last, byteBuffer, callback);
                 callback.block();
             }
         }
@@ -401,23 +401,23 @@ public class Content
          * notifying the {@link Callback} when the write is complete.</p>
          *
          * @param last whether the String is the last to write
-         * @param callback the callback to notify when the write operation is complete
          * @param utf8Content the String to write
+         * @param callback the callback to notify when the write operation is complete
          */
-        public static void write(Sink sink, boolean last, Callback callback, String utf8Content)
+        public static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
-            sink.write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
+            sink.write(last, StandardCharsets.UTF_8.encode(utf8Content), callback);
         }
 
         /**
-         * <p>Writes the given {@link ByteBuffer}s, notifying the {@link Callback}
+         * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
          * when the write is complete.</p>
          *
-         * @param last whether the ByteBuffers are the last to write
+         * @param last whether the ByteBuffer is the last to write
+         * @param byteBuffer the ByteBuffer to write
          * @param callback the callback to notify when the write operation is complete
-         * @param buffers the ByteBuffers to write
          */
-        public void write(boolean last, Callback callback, ByteBuffer... buffers);
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback);
     }
 
     /**

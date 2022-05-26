@@ -129,7 +129,7 @@ public class GzipHandlerTest
                 Response.writeError(request, response, callback, 304);
             else
             {
-                Content.Sink.write(response, true, callback, __micro);
+                Content.Sink.write(response, true, __micro, callback);
             }
         }
     }
@@ -139,7 +139,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Content.Sink.write(response, false, callback, __micro);
+            Content.Sink.write(response, false, __micro, callback);
         }
     }
 
@@ -150,7 +150,7 @@ public class GzipHandlerTest
         {
             String pathInfo = request.getPathInContext();
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
-            Content.Sink.write(response, true, callback, "This is content for " + pathInfo + "\n");
+            Content.Sink.write(response, true, "This is content for " + pathInfo + "\n", callback);
         }
 
         private String getContentTypeFromRequest(String filename, Request request)
@@ -188,7 +188,7 @@ public class GzipHandlerTest
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
             else
-                Content.Sink.write(response, true, callback, __content);
+                Content.Sink.write(response, true, __content, callback);
         }
 
         void doDelete(Request request, Response response, Callback callback) throws IOException
@@ -252,10 +252,7 @@ public class GzipHandlerTest
                             buffer = buffer.asReadOnlyBuffer();
                     }
 
-                    if (buffer == null)
-                        response.write(last, cb);
-                    else
-                        response.write(last, cb, buffer);
+                    response.write(last, buffer, cb);
                 }
             };
 
@@ -272,7 +269,7 @@ public class GzipHandlerTest
             ByteBuffer buffer = BufferUtil.toBuffer(__bytes).asReadOnlyBuffer();
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, buffer.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-            response.write(true, callback, buffer);
+            response.write(true, buffer, callback);
         }
     }
 
@@ -302,7 +299,7 @@ public class GzipHandlerTest
             parameters = futureFormFields.get();
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
-            Content.Sink.write(response, true, callback, dump);
+            Content.Sink.write(response, true, dump, callback);
         }
     }
 

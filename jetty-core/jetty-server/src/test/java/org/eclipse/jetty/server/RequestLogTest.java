@@ -58,7 +58,7 @@ public class RequestLogTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            Content.Sink.write(response, true, callback, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()));
+            Content.Sink.write(response, true, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()), callback);
         }
     }
 

@@ -836,11 +836,11 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     byte[] bytes = baos.toByteArray();
 
                     if (bytes.length == 0)
-                        Content.Sink.write(response, true, callback, builder.toString());
+                        Content.Sink.write(response, true, builder.toString(), callback);
                     else
                     {
-                        Content.Sink.write(response, false, callback, builder.toString());
-                        Content.Sink.write(response, true, callback, "/n" + bytes);
+                        Content.Sink.write(response, false, builder.toString(), callback);
+                        Content.Sink.write(response, true, "/n" + bytes, callback);
                     }
                     break;
                 }

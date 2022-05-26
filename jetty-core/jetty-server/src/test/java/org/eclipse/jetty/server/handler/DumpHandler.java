@@ -70,7 +70,7 @@ public class DumpHandler extends Handler.Processor
         {
             try (Blocking.Callback blocker = _blocker.callback())
             {
-                response.write(false, blocker);
+                response.write(false, null, blocker);
                 blocker.block();
             }
         }
@@ -195,7 +195,7 @@ public class DumpHandler extends Handler.Processor
 
         try (Blocking.Callback blocker = _blocker.callback())
         {
-            response.write(false, blocker, BufferUtil.toBuffer(buf.toByteArray()));
+            response.write(false, BufferUtil.toBuffer(buf.toByteArray()), blocker);
             blocker.block();
         }
         response.getHeaders().add("After-Flush", "These headers should not be seen in the response!!!");
@@ -207,7 +207,7 @@ public class DumpHandler extends Handler.Processor
 
         try (Blocking.Callback blocker = _blocker.callback())
         {
-            response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
+            response.write(true, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)), blocker);
             blocker.block();
         }
 

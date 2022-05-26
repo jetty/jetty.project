@@ -400,7 +400,7 @@ public class GracefulStopTest
             {
                 try (Blocking.Callback block = Blocking.callback())
                 {
-                    response.write(false, block);
+                    response.write(false, null, block);
                     block.block();
                 }
             }
@@ -435,7 +435,7 @@ public class GracefulStopTest
 
                 try (Blocking.Callback block = blocking.callback())
                 {
-                    Content.Sink.write(response, true, block, "read [%d/%d]".formatted(c, contentLength));
+                    Content.Sink.write(response, true, "read [%d/%d]".formatted(c, contentLength), block);
                     block.block();
                 }
             }

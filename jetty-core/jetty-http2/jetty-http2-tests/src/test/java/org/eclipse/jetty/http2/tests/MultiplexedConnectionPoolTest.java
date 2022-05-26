@@ -142,7 +142,7 @@ public class MultiplexedConnectionPoolTest
 
                 assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
 
-                Content.Sink.write(response, true, callback, "req " + req + " executed");
+                Content.Sink.write(response, true, "req " + req + " executed", callback);
             }
         });
 
@@ -232,7 +232,7 @@ public class MultiplexedConnectionPoolTest
             public void process(Request request, Response response, Callback callback)
             {
                 int req = Integer.parseInt(request.getPathInContext().substring(1));
-                Content.Sink.write(response, true, callback, "req " + req + " executed");
+                Content.Sink.write(response, true, "req " + req + " executed", callback);
             }
         }, 64, 1L);
 

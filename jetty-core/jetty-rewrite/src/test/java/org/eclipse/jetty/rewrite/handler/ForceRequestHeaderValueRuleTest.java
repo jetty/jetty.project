@@ -42,9 +42,9 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 for (HttpField httpField : request.getHeaders())
                 {
-                    Content.Sink.write(response, false, Callback.NOOP, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()));
+                    Content.Sink.write(response, false, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()), Callback.NOOP);
                 }
-                response.write(true, callback, BufferUtil.EMPTY_BUFFER);
+                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
         });
     }
