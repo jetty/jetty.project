@@ -197,6 +197,8 @@ public class HttpRequest implements Request
             String rawPath = uri.getRawPath();
             if (rawPath == null)
                 rawPath = "";
+            if (!rawPath.startsWith("/"))
+                rawPath = "/" + rawPath;
             this.path = rawPath;
             String query = uri.getRawQuery();
             if (query != null)
@@ -925,14 +927,14 @@ public class HttpRequest implements Request
         return result;
     }
 
-    private URI newURI(String uri)
+    private URI newURI(String path)
     {
         try
         {
             // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
-            if ("*".equals(uri))
+            if ("*".equals(path))
                 return null;
-            URI result = new URI(uri);
+            URI result = new URI(path);
             return result.isOpaque() ? null : result;
         }
         catch (URISyntaxException x)
