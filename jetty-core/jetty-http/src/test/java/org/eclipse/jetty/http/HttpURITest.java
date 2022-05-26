@@ -179,6 +179,32 @@ public class HttpURITest
     }
 
     @Test
+    public void testCONNECT()
+    {
+        HttpURI uri;
+
+        uri = HttpURI.from("CONNECT", "host:80");
+        assertThat(uri.getHost(), is("host"));
+        assertThat(uri.getPort(), is(80));
+        assertThat(uri.getPath(), nullValue());
+
+        uri = HttpURI.from("CONNECT", "host");
+        assertThat(uri.getHost(), is("host"));
+        assertThat(uri.getPort(), is(-1));
+        assertThat(uri.getPath(), nullValue());
+
+        uri = HttpURI.from("CONNECT", "192.168.0.1:8080");
+        assertThat(uri.getHost(), is("192.168.0.1"));
+        assertThat(uri.getPort(), is(8080));
+        assertThat(uri.getPath(), nullValue());
+
+        uri = HttpURI.from("CONNECT", "[::1]:8080");
+        assertThat(uri.getHost(), is("[::1]"));
+        assertThat(uri.getPort(), is(8080));
+        assertThat(uri.getPath(), nullValue());
+    }
+
+    @Test
     public void testAt()
     {
         HttpURI uri = HttpURI.from("/@foo/bar");
@@ -837,5 +863,47 @@ public class HttpURITest
         assertThat(HttpURI.from("http", "server", 8888, "/path").toString(), is("http://server:8888/path"));
         assertThat(HttpURI.from("https", "server", 443, "/path").toString(), is("https://server/path"));
         assertThat(HttpURI.from("https", "server", 8443, "/path").toString(), is("https://server:8443/path"));
+    }
+
+    @Test
+    public void testRelativePathWithAuthority()
+    {
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .authority("host")
+            .path("path"));
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .authority("host", 8080)
+            .path(";p=v/url"));
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .host("host")
+            .path(";"));
+
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .path("path")
+            .authority("host"));
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .path(";p=v/url")
+            .authority("host", 8080));
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
+            .path(";")
+            .host("host"));
+
+        HttpURI.Mutable uri = HttpURI.build()
+            .path("*")
+            .authority("host");
+        assertEquals("//host*", uri.asString());
+        uri = HttpURI.build()
+            .authority("host")
+            .path("*");
+        assertEquals("//host*", uri.asString());
+
+        uri = HttpURI.build()
+            .path("")
+            .authority("host");
+        assertEquals("//host", uri.asString());
+        uri = HttpURI.build()
+            .authority("host")
+            .path("");
+        assertEquals("//host", uri.asString());
     }
 }

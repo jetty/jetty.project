@@ -23,8 +23,10 @@ import java.net.SocketException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -71,6 +73,52 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         assertEquals(uri.toString(), request.getURI().toString());
 
         assertEquals(HttpStatus.OK_200, request.send().getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testPathWithPathParameter(Scenario scenario) throws Exception
+    {
+        AtomicReference<CountDownLatch> serverLatchRef = new AtomicReference<>();
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
+            {
+                if (request.getHttpURI().hasAmbiguousEmptySegment())
+                    response.setStatus(400);
+                serverLatchRef.get().countDown();
+            }
+        });
+        // FIXME: Allow empty segments to test them.
+        /* connector.getContainedBeans(HttpConfiguration.class)
+            .forEach(httpConfig -> httpConfig.setUriCompliance(UriCompliance.from("DEFAULT,AMBIGUOUS_EMPTY_SEGMENT")));*/
+
+        serverLatchRef.set(new CountDownLatch(1));
+        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/url;p=v")
+            .send();
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+        assertTrue(serverLatchRef.get().await(5, TimeUnit.SECONDS));
+
+        // Ambiguous empty segment.
+        serverLatchRef.set(new CountDownLatch(1));
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path(";p=v/url")
+            .send();
+        assertEquals(HttpStatus.BAD_REQUEST_400, response2.getStatus());
+        assertTrue(serverLatchRef.get().await(5, TimeUnit.SECONDS));
+
+        // Ambiguous empty segment.
+        serverLatchRef.set(new CountDownLatch(1));
+        ContentResponse response3 = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path(";@host.org/url")
+            .send();
+        assertEquals(HttpStatus.BAD_REQUEST_400, response3.getStatus());
+        assertTrue(serverLatchRef.get().await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
