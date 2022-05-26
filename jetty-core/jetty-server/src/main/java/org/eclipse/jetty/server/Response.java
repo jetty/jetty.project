@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public interface Response extends Content.Sink
 {
-    Logger LOG = LoggerFactory.getLogger(Response.class);
-
     // This is needed so that response methods can access the wrapped Request#getContext method
     Request getRequest();
 
@@ -209,11 +207,15 @@ public interface Response extends Content.Sink
     {
         // TODO what about 102 Processing?
 
+        // Retrieve the Logger instance here, rather than having a
+        // public field that will force a transitive dependency on SLF4J.
+        Logger logger = LoggerFactory.getLogger(Response.class);
+
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
-        if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
-            LOG.warn("{} {}", message, cause.getMessage());
+        if (!logger.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
+            logger.warn("{} {}", message, cause.getMessage());
         else
-            LOG.warn("{} {}", message, response, cause);
+            logger.warn("{} {}", message, response, cause);
 
         if (response.isCommitted())
         {

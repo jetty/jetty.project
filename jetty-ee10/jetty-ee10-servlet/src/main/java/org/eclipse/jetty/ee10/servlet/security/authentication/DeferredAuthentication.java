@@ -69,14 +69,14 @@ public class DeferredAuthentication implements Authentication.Deferred
     }
 
     @Override
-    public Authentication authenticate(Request request, Response response)
+    public Authentication authenticate(Request request, Response response, Callback callback)
     {
         try
         {
             LoginService loginService = _authenticator.getLoginService();
             IdentityService identityService = loginService.getIdentityService();
 
-            Authentication authentication = _authenticator.validateRequest(request, response, null, true);
+            Authentication authentication = _authenticator.validateRequest(request, response, callback, true);
             if (authentication instanceof Authentication.User && identityService != null)
                 _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;

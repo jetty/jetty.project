@@ -267,7 +267,7 @@ public abstract class AbstractDoSFilterTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("this test fails due to: 400 duplicate valid session cookies")
     public void testMultipleSessionTracking() throws Exception
     {
         // get some session ids, first
@@ -305,7 +305,7 @@ public abstract class AbstractDoSFilterTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("bad test, should be rewritten or deleted")
     public void testUnresponsiveClient() throws Exception
     {
         int numRequests = 1000;

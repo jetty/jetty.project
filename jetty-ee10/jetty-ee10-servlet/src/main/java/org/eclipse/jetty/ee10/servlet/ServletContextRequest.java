@@ -685,7 +685,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             //do the authentication
             if (_authentication instanceof Authentication.Deferred)
             {
-                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse()));
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse(), getCallback()));
             }
 
             //if the authentication did not succeed

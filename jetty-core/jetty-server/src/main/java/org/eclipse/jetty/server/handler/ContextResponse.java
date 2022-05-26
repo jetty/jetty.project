@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContextResponse extends Response.Wrapper
 {
@@ -32,20 +33,11 @@ public class ContextResponse extends Response.Wrapper
     @Override
     public void write(boolean last, Callback callback, ByteBuffer... content)
     {
-        Callback contextCallback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                _context.run(callback::succeeded, getRequest());
-            }
-
-            @Override
-            public void failed(Throwable t)
-            {
-                _context.accept(callback::failed, t, getRequest());
-            }
-        };
+        Callback contextCallback = Callback.from(
+            Invocable.getInvocationType(callback),
+            () -> _context.run(callback::succeeded, getRequest()),
+            x -> _context.accept(callback::failed, x, getRequest())
+        );
         super.write(last, contextCallback, content);
     }
 }

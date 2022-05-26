@@ -377,12 +377,13 @@ public interface Callback extends Invocable
 
         public Nested(Callback callback)
         {
+            super(Invocable.getInvocationType(callback));
             this.callback = callback;
         }
 
         public Nested(Nested nested)
         {
-            this.callback = nested.callback;
+            this(nested.callback);
         }
 
         public Callback getCallback()

@@ -817,7 +817,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public String toString()
     {
-        long timeStamp = _request.getTimeStamp();
+        long timeStamp = _request == null ? 0 : _request.getTimeStamp();
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
@@ -826,7 +826,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             isRequestCompleted(),
             isResponseCompleted(),
             _state.getState(),
-            _request.getHttpURI(),
+            _request == null ? null : _request.getHttpURI(),
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 

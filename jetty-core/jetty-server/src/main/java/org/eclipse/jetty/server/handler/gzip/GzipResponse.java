@@ -247,7 +247,7 @@ public class GzipResponse extends Response.Wrapper
         @Override
         protected Action process() throws Exception
         {
-            // If we have no deflator
+            // If we have no deflater
             if (_deflaterEntry == null)
             {
                 // then the trailer has been generated and written below.
@@ -287,7 +287,9 @@ public class GzipResponse extends Response.Wrapper
                 {
                     ByteBuffer content = null;
                     if (_content == null)
+                    {
                         content = BufferUtil.EMPTY_BUFFER;
+                    }
                     else if (_index < _content.length)
                     {
                         content = _content[_index];
@@ -305,12 +307,16 @@ public class GzipResponse extends Response.Wrapper
                     if (BufferUtil.isEmpty(content))
                     {
                         if (_last)
+                        {
                             deflater.finish();
+                        }
                         else if (BufferUtil.isEmpty(_buffer))
+                        {
                             return Action.SUCCEEDED;
+                        }
                         else
                         {
-                            GzipResponse.this.getWrapped().write(false, this, _buffer);
+                            GzipResponse.super.write(false, this, _buffer);
                             return Action.SCHEDULED;
                         }
                     }
@@ -365,7 +371,7 @@ public class GzipResponse extends Response.Wrapper
             }
 
             // write the compressed buffer.
-            GzipResponse.this.getWrapped().write(_deflaterEntry == null, this, _buffer);
+            GzipResponse.super.write(_deflaterEntry == null, this, _buffer);
             return Action.SCHEDULED;
         }
 

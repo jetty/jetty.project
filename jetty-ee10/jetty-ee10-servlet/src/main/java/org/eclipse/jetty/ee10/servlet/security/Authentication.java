@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet.security;
 import org.eclipse.jetty.ee10.servlet.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * The Authentication state of a request.
@@ -109,7 +110,7 @@ public interface Authentication
          * @param response the response
          * @return The new Authentication state.
          */
-        Authentication authenticate(Request request, Response response);
+        Authentication authenticate(Request request, Response response, Callback callback);
     }
 
     /**

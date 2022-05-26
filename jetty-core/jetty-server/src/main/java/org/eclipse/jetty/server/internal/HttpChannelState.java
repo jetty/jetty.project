@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -762,6 +763,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     public static class ChannelRequest implements Attributes, Request
     {
+        private static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
+
         private final long _timeStamp = System.currentTimeMillis();
         private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
@@ -951,6 +954,9 @@ public class HttpChannelState implements HttpChannel, Components
             if (chunk != null && chunk.hasRemaining())
                 _contentBytesRead.add(chunk.getByteBuffer().remaining());
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("read {}", chunk);
+
             return chunk;
         }
 
@@ -1036,6 +1042,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     public static class ChannelResponse implements Response, Callback
     {
+        private static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
+
         private final ChannelRequest _request;
         private int _status;
         private long _contentBytesWritten;
@@ -1152,6 +1160,8 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (failure == null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
                 stream.send(_request._metaData, responseMetaData, last, this, content);
             }
             else if (failure == DO_NOT_SEND)
@@ -1180,7 +1190,7 @@ public class HttpChannelState implements HttpChannel, Components
                     httpChannel._writeState = WriteState.LAST_WRITE_COMPLETED;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("write succeeded {}", callback);
+                LOG.debug("write succeeded {} {}", callback, this);
             if (callback != null)
                 httpChannel._serializedInvoker.run(callback::succeeded);
         }
@@ -1271,6 +1281,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static class ChannelCallback implements Callback
     {
+        private static final Logger LOG = LoggerFactory.getLogger(ChannelCallback.class);
+
         private final ChannelRequest _request;
         private Throwable _completedBy;
 

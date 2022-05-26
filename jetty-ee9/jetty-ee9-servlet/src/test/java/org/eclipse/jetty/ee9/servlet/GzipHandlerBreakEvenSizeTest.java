@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.server.Server;
@@ -77,8 +78,6 @@ public class GzipHandlerBreakEvenSizeTest
     @ValueSource(ints = {0, 1, 2, 3, 4, 5, 10, 15, 20, 21, 22, 23, 24, 25, 50, 100, 300, 500})
     public void testRequestSized(int size) throws Exception
     {
-        // TODO no idea what this is really testing
-
         URI uri = server.getURI().resolve("/content?size=" + size);
         ContentResponse response = client.newRequest(uri)
             .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
@@ -87,8 +86,12 @@ public class GzipHandlerBreakEvenSizeTest
         assertThat("Status Code", response.getStatus(), is(200));
         assertThat("Size Requested", response.getHeaders().getField("X-SizeRequested").getIntValue(), is(size));
 
-        if (size < GzipHandler.DEFAULT_MIN_GZIP_SIZE)
-            assertThat("Response Size", response.getHeaders().getField(HttpHeader.CONTENT_LENGTH).getIntValue(), lessThanOrEqualTo(size));
+        if (size > GzipHandler.BREAK_EVEN_GZIP_SIZE)
+        {
+            HttpField contentLengthHeader = response.getHeaders().getField(HttpHeader.CONTENT_LENGTH);
+            int contentLength = contentLengthHeader == null ? -1 : contentLengthHeader.getIntValue();
+            assertThat("Response Size", contentLength, lessThanOrEqualTo(size));
+        }
     }
 
     public static class VeryCompressibleContentServlet extends HttpServlet

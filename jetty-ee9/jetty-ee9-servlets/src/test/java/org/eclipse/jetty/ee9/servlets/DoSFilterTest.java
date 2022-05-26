@@ -106,8 +106,9 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         startServer(workDir, DoSFilter.class);
     }
 
+    // TODO Remove mock request. Use a real one
     @Test
-    @Disabled // TODO Remove mock request. Use a real one
+    @Disabled("RemoteAddressRequest forces the base class to be constructed with a null HttpChannel, which is invalid. Write a better test.")
     public void testRemotePortLoadIdCreationIpv6() throws ServletException
     {
         final ServletRequest request = new RemoteAddressRequest("::192.9.5.5", 12345);
@@ -130,8 +131,9 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         }
     }
 
+    // TODO Remove mock request. Use a real one
     @Test
-    @Disabled // TODO Remove mock request. Use a real one
+    @Disabled("RemoteAddressRequest forces the base class to be constructed with a null HttpChannel, which is invalid. Write a better test.")
     public void testRemotePortLoadIdCreationIpv4() throws ServletException
     {
         final ServletRequest request = new RemoteAddressRequest("127.0.0.1", 12345);
