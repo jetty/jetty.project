@@ -1503,6 +1503,7 @@ public class ServletHandler extends Handler.Wrapper
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
         {
+            //TODO
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }

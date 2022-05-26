@@ -17,7 +17,6 @@ etc/jetty-ee9-webapp.xml
 [lib]
 lib/jetty-ee9-webapp-${jetty.version}.jar
 
-
 [ini-template]
 ## Add to the server wide default jars and packages protected or hidden from webapps.
 ## System classes are protected and cannot be overridden by a webapp.
@@ -33,7 +32,9 @@ lib/jetty-ee9-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addSystemClasses+=,org.example.
 #jetty.webapp.addServerClasses+=,org.example.
-contextHandlerClass = org.eclipse.jetty.ee9.webapp.WebAppContext
+
+[ini]
+contextHandlerClass=org.eclipse.jetty.ee9.webapp.WebAppContext
 
 [jpms]
 add-modules:java.instrument

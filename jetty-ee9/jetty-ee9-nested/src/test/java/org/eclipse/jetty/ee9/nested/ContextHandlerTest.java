@@ -65,7 +65,7 @@ public class ContextHandlerTest
         _server.setHandler(handlers);
 
         _contextHandler = new ContextHandler();
-        handlers.setHandlers(_contextHandler.getCoreContextHandler(), new DefaultHandler());
+        handlers.setHandlers(_contextHandler.getCoreContextHandler());
     }
 
     @AfterEach
@@ -73,7 +73,7 @@ public class ContextHandlerTest
     {
         _server.stop();
     }
-
+    
     @Test
     public void testSimple() throws Exception
     {
@@ -198,7 +198,6 @@ public class ContextHandlerTest
                 """);
 
             String rawResponse = endPoint.getResponse();
-            System.err.println(rawResponse);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(200));
             assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -206,7 +205,6 @@ public class ContextHandlerTest
             one.load(new StringReader(response.getContent()));
 
             rawResponse = endPoint.getResponse();
-            System.err.println(rawResponse);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(200));
             assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));

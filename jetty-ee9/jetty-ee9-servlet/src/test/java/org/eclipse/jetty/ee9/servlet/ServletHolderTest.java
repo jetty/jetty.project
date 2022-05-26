@@ -24,7 +24,6 @@ import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.MultiException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled // TODO
 public class ServletHolderTest
 {
     public static class FakeServlet extends HttpServlet
@@ -190,7 +188,7 @@ public class ServletHolderTest
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
-            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
+            holder.setClassName("org.eclipse.jetty.ee9.servlet.ServletHolderTest$FakeServlet");
             handler.addServlet(holder);
             handler.start();
             assertTrue(holder.isAvailable());

@@ -4,6 +4,9 @@
 Adds support for servlet specification web applications to the server classpath.
 Without this, only Jetty-specific handlers may be deployed.
 
+[environment]
+ee10
+
 [depend]
 ee10-servlet
 ee10-security
@@ -29,6 +32,9 @@ lib/jetty-ee10-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addSystemClasses+=,org.example.
 #jetty.webapp.addServerClasses+=,org.example.
+
+[ini]
+contextHandlerClass=org.eclipse.jetty.ee10.webapp.WebAppContext
 
 [jpms]
 add-modules:java.instrument
