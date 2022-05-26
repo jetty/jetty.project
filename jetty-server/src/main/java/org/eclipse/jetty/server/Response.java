@@ -490,6 +490,9 @@ public class Response implements HttpServletResponse
             case HttpStatus.PROCESSING_102:
                 sendProcessing();
                 break;
+            case HttpStatus.EARLY_HINT_103:
+                sendEarlyHint();
+                break;
             default:
                 _channel.getState().sendError(code, message);
                 break;
@@ -512,6 +515,23 @@ public class Response implements HttpServletResponse
         {
             _channel.sendResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
         }
+    }
+
+    /**
+     * Sends a 102-Processing response.
+     * If the connection is an HTTP connection, the version is 1.1 and the
+     * request has a Expect header starting with 102, then a 102 response is
+     * sent. This indicates that the request still be processed and real response
+     * can still be sent.   This method is called by sendError if it is passed 102.
+     *
+     * @throws IOException if unable to send the 102 response
+     * @see javax.servlet.http.HttpServletResponse#sendError(int)
+     */
+    public void sendEarlyHint() throws IOException
+    {
+        if (!isCommitted())
+            _channel.sendResponse(new MetaData.Response(_channel.getRequest().getHttpVersion(), HttpStatus.EARLY_HINT_103,
+                _channel.getResponse()._fields.asImmutable()), null, true);
     }
 
     /**
