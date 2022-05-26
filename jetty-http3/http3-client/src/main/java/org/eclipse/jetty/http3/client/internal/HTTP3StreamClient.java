@@ -53,6 +53,8 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
         boolean valid;
         if (response.getStatus() == HttpStatus.CONTINUE_100)
             valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.CONTINUE);
+        else if (response.getStatus() == HttpStatus.EARLY_HINT_103)
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.HEADER, FrameState.CONTINUE), FrameState.CONTINUE);
         else
             valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.CONTINUE), FrameState.HEADER);
         if (valid)

@@ -486,7 +486,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             else if (metaData.isResponse())
             {
                 MetaData.Response response = (MetaData.Response)metaData;
-                if (response.getStatus() != HttpStatus.CONTINUE_100)
+                if (response.getStatus() != HttpStatus.CONTINUE_100 && response.getStatus() != HttpStatus.EARLY_HINT_103)
                 {
                     // Expect DATA frames now.
                     parserDataMode = true;
