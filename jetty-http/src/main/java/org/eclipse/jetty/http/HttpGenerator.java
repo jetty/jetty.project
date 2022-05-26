@@ -388,7 +388,7 @@ public class HttpGenerator
                     if (status >= 100 && status < 200)
                     {
                         _noContentResponse = true;
-                        switch(status)
+                        switch (status)
                         {
                             case HttpStatus.SWITCHING_PROTOCOLS_101:
                                 break;
