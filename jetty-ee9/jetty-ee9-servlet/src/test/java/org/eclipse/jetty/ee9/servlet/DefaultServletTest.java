@@ -112,7 +112,7 @@ public class DefaultServletTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
-        File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
+        File extraJarResources = MavenTestingUtils.getTargetFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toURI().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();

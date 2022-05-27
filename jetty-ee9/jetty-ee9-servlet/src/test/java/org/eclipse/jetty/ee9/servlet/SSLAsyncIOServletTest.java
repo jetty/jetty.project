@@ -213,7 +213,7 @@ public class SSLAsyncIOServletTest
 
         public void start(HttpServlet servlet) throws Exception
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+            Path keystorePath = MavenTestingUtils.getTargetPath("test-classes/keystore.p12");
 
             sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
