@@ -29,6 +29,17 @@
         </includes>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>src/test/webapp</directory>
+      </testResource>
+      <testResource>
+        <directory>src/test/webapp-alt-jsp</directory>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>

@@ -53,13 +53,13 @@ public class WebAppClassLoaderTest
     @BeforeEach
     public void init() throws Exception
     {
-        this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
         Resource webapp = new PathResource(testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
-        _context.setExtraClasspath("src/test/resources/ext/*");
+        _context.setExtraClasspath("target/test-classes/ext/*");
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.addPath("WEB-INF/lib"));
