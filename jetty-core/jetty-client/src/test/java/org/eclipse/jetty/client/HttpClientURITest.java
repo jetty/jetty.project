@@ -34,6 +34,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
@@ -90,9 +92,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                 serverLatchRef.get().countDown();
             }
         });
-        // FIXME: Allow empty segments to test them.
-        /* connector.getContainedBeans(HttpConfiguration.class)
-            .forEach(httpConfig -> httpConfig.setUriCompliance(UriCompliance.from("DEFAULT,AMBIGUOUS_EMPTY_SEGMENT")));*/
+        connector.getContainedBeans(HttpConfiguration.class)
+            .forEach(httpConfig -> httpConfig.setUriCompliance(UriCompliance.from("DEFAULT,AMBIGUOUS_EMPTY_SEGMENT")));
 
         serverLatchRef.set(new CountDownLatch(1));
         ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort())
