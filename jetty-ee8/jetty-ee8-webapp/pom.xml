@@ -23,7 +23,7 @@
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-resources</id>
+            <id>copy-ee8-resources</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-resources</goal>
@@ -46,7 +46,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-test-resources</id>
+            <id>copy-ee8-test-resources</id>
             <phase>generate-test-resources</phase>
             <goals>
               <goal>copy-resources</goal>
