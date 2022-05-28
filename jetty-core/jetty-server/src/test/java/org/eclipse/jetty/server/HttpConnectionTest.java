@@ -1451,6 +1451,9 @@ public class HttpConnectionTest
             \r
             """;
 
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(
             UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
             UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
@@ -1501,6 +1504,19 @@ public class HttpConnectionTest
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testRelativePath() throws Exception
+    {
+        String request = """
+            GET foo/bar HTTP/1.0\r
+            Host: whatever\r
+            \r
+            """;
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
     }
 
     private int checkContains(String s, int offset, String c)
