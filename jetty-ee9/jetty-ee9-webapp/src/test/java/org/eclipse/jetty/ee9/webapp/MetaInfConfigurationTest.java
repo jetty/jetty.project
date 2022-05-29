@@ -76,9 +76,9 @@ public class MetaInfConfigurationTest
     @Test
     public void testScanTypes() throws Exception
     {
-        File web25 = MavenTestingUtils.getTestResourceFile("web25.xml");
-        File web31 = MavenTestingUtils.getTestResourceFile("web31.xml");
-        File web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
+        File web25 = MavenTestingUtils.getTargetFile("test-classes/web25.xml");
+        File web31 = MavenTestingUtils.getTargetFile("test-classes/web31.xml");
+        File web31false = MavenTestingUtils.getTargetFile("test-classes/web31false.xml");
 
         //test a 2.5 webapp will not look for fragments as manually configured
         MetaInfConfiguration meta25 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
