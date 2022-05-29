@@ -59,7 +59,7 @@ public class TempDirTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        File testWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
+        File testWebAppDir = MavenTestingUtils.getTargetPath("test-classes/webapp").toFile();
         webapp = new WebAppContext();
         webapp.setContextPath("/");
         webapp.setWar(testWebAppDir.getAbsolutePath());

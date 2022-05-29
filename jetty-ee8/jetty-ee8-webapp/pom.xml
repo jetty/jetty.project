@@ -58,13 +58,12 @@
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/resources</directory>
                 </resource>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/resources</directory>
-                </resource>
-                <resource>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/webapp</directory>
+                  <targetPath>webapp</targetPath>
                 </resource>
                 <resource>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/webapp-alt-jsp</directory>
+                  <targetPath>webapp-alt-jsp</targetPath>
                 </resource>
               </resources>
             </configuration>

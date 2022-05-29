@@ -29,7 +29,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testVisitSessionConfig() throws Exception
     {
-        File webXml = MavenTestingUtils.getTestResourceFile("web-session-config.xml");
+        File webXml = MavenTestingUtils.getTargetFile("test-classes/web-session-config.xml");
         Server server = new Server();
         WebAppContext wac = new WebAppContext();
         wac.setServer(server);

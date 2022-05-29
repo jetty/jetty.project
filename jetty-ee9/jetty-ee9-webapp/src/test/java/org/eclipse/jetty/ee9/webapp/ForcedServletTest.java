@@ -62,7 +62,7 @@ public class ForcedServletTest
         // Lets setup the Webapp base resource properly
         Path basePath = MavenTestingUtils.getTargetTestingPath(ForcedServletTest.class.getName()).resolve("webapp");
         FS.ensureEmpty(basePath);
-        Path srcWebApp = MavenTestingUtils.getProjectDirPath("src/test/webapp-alt-jsp");
+        Path srcWebApp = MavenTestingUtils.getTargetPath("test-classes/webapp-alt-jsp");
         copyDir(srcWebApp, basePath);
         copyClass(FakePrecompiledJSP.class, basePath.resolve("WEB-INF/classes"));
 

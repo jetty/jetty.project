@@ -35,9 +35,11 @@
       </testResource>
       <testResource>
         <directory>src/test/webapp</directory>
+        <targetPath>webapp</targetPath>
       </testResource>
       <testResource>
         <directory>src/test/webapp-alt-jsp</directory>
+        <targetPath>webapp-alt-jsp</targetPath>
       </testResource>
     </testResources>
 
