@@ -14,7 +14,7 @@ webapp
 ee10-deploy
 ee10-jaas
 jdbc
-jsp
+ee10-jsp
 ee10-annotations
 ext
 

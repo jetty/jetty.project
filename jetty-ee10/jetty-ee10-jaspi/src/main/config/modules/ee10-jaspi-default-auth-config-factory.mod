@@ -3,14 +3,17 @@
 [description]
 Provides a DefaultAuthConfigFactory for jaspi
 
+[environment]
+ee10
+
 [tags]
 security
 
 [depend]
-security
+ee10-security
 
 [provide]
 auth-config-factory
 
 [xml]
-etc/jaspi/jaspi-default.xml
+etc/jaspi/jetty-ee10-jaspi-default.xml

@@ -367,7 +367,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-annotations-deps</id>
+            <id>copy-ee10-annotations-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -376,11 +376,11 @@
               <includeGroupIds>jakarta.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
               <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-annotations-src-deps</id>
+            <id>copy-ee10-annotations-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -390,44 +390,45 @@
               <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
           </execution>
+          <!-- TODO: ee9 annotations -->
           <execution>
-            <id>copy-apache-jsp-deps</id>
+            <id>copy-ee10-apache-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>
-                org.eclipse.jetty,org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
+                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
               </includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
-              <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jsp-src-deps</id>
+            <id>copy-ee10-apache-jsp-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>
-                org.eclipse.jetty,org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
+                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
               </includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <prependGroupId>true</prependGroupId>
-              <outputDirectory>${source-assembly-directory}/lib/apache-jsp</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-glassfish-jstl-deps</id>
+            <id>copy-ee10-glassfish-jstl-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -436,11 +437,11 @@
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/glassfish-jstl</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-glassfish-jstl-src-deps</id>
+            <id>copy-ee10-glassfish-jstl-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -450,11 +451,12 @@
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/glassfish-jstl</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
+          <!-- TODO: add copy deps for ee9 apache-jsp and jstl -->
           <execution>
-            <id>copy-jaspi-deps</id>
+            <id>copy-ee10-jaspi-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -463,11 +465,11 @@
               <includeGroupIds>jakarta.authentication</includeGroupIds>
               <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-jaspi-src-deps</id>
+            <id>copy-ee10-jaspi-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -477,9 +479,10 @@
               <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-jaspi</outputDirectory>
             </configuration>
           </execution>
+          <!-- TODO: ee9 jaspi -->
 
           <execution>
             <id>copy-ee9-deps</id>
@@ -489,6 +492,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
 <!--              <includeArtifactIds></includeArtifactIds>-->
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -503,6 +507,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
 <!--              <includeArtifactIds></includeArtifactIds>-->
+              <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
@@ -518,6 +523,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
               <!--              <includeArtifactIds></includeArtifactIds>-->
+              <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -532,6 +538,7 @@
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
               <!--              <includeArtifactIds></includeArtifactIds>-->
               <includeTypes>jar</includeTypes>
+              <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -823,6 +830,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>

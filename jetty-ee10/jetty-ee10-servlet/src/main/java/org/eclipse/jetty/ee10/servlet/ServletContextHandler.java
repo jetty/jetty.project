@@ -90,6 +90,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -113,7 +114,7 @@ import org.slf4j.LoggerFactory;
 public class ServletContextHandler extends ContextHandler implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-
+    protected static final Environment __environment = Environment.ensure("ee10");
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,

@@ -10,9 +10,9 @@
   <!-- =========================================================== -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.security.HashLoginService">
+      <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config">etc/demo-realm.properties</Set>
+        <Set name="config">etc/jetty-ee10-demo-realm.properties</Set>
         <Set name="hotReload">false</Set>
       </New>
     </Arg>

@@ -1,8 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables use of the apache implementation of JSP.
+Enables the glassfish version of JSTL for all webapps.
+
+[environment]
+ee10
 
 [lib]
-lib/apache-jsp/*.jar
-
+lib/ee10-glassfish-jstl/*.jar

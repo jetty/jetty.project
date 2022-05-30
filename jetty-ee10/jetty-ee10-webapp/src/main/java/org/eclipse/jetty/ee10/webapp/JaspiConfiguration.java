@@ -39,7 +39,7 @@ public class JaspiConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.security.jaspi.JaspiAuthenticator") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticator") != null;
         }
         catch (Throwable e)
         {

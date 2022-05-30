@@ -13,11 +13,11 @@ webapp
 [depends]
 deploy
 jdbc
-jsp
-annotations
+ee10-jsp
+ee10-annotations
 ext
-demo-realm
-demo-mock-resources
+ee10-demo-realm
+demo-ee10-mock-resources
 
 [files]
 basehome:modules/demo.d/demo-ee10-spec.xml|webapps-ee10/demo-ee10-spec.xml

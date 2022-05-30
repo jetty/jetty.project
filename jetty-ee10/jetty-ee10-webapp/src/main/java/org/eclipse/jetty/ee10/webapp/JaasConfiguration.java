@@ -41,7 +41,7 @@ public class JaasConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jaas.JAASLoginService") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee10.jaas.JAASLoginService") != null;
         }
         catch (Throwable e)
         {

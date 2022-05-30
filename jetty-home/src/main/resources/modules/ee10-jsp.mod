@@ -3,8 +3,10 @@
 [description]
 Enables JSP for all web applications deployed on the server.
 
-[depend]
-servlet
-annotations
-apache-jsp
+[environment]
+ee10
 
+[depend]
+ee10-servlet
+ee10-annotations
+ee10-apache-jsp

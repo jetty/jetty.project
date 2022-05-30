@@ -12,7 +12,7 @@
   </New>
 
   <Set name="contextPath">/test-jndi</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/demo-jndi.war
+  <Set name="war"><Property name="jetty.webapps" default="." />/demo-ee10-jndi.war
   </Set>
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>

@@ -3,14 +3,17 @@
 [description]
 Enables JAAS for deployed web applications.
 
+[environment]
+ee10
+
 [depend]
 server
 
 [lib]
-lib/jetty-jaas-${jetty.version}.jar
+lib/jetty-ee10-jaas-${jetty.version}.jar
 
 [xml]
-etc/jetty-jaas.xml
+etc/jetty-ee10-jaas.xml
 
 [ini-template]
 ## The file location (relative to $jetty.base) for the

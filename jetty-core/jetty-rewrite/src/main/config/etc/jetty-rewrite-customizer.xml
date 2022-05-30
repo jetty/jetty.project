@@ -4,6 +4,7 @@
   <!-- =========================================================== -->
   <!-- configure rewrite rule container as a customizer            -->
   <!-- =========================================================== -->
+  <!-- TODO no longer needed?
   <Call name="addCustomizer">
     <Arg>
       <New id="Rewrite" class="org.eclipse.jetty.rewrite.RewriteCustomizer">
@@ -13,5 +14,6 @@
       </New>
     </Arg>
   </Call>  
+  -->
 </Configure>
 
