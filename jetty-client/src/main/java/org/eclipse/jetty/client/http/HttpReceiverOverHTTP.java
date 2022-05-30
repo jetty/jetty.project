@@ -252,6 +252,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
             if (complete)
             {
+                // TODO this can clean a pipelined response after a 1xx
                 if (LOG.isDebugEnabled())
                     LOG.debug("Discarding unexpected content after response: {}", networkBuffer);
                 networkBuffer.clear();
