@@ -265,15 +265,15 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             // return hidden attributes for requestLog
             return switch (name)
-                {
-                    // TODO class.getName + extra
-                    case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead.longValue();
-                    case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten.longValue();
-                    case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
-                    case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
-                    case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
-                    default -> super.getAttribute(name);
-                };
+            {
+                // TODO class.getName + extra
+                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead.longValue();
+                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten.longValue();
+                case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
+                case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
+                case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
+                default -> super.getAttribute(name);
+            };
         }
 
         private long dataRatePerSecond(long dataCount)
