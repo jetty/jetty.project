@@ -24,6 +24,7 @@
     <module>jetty-ee8-nested</module>
     <module>jetty-ee8-security</module>
     <module>jetty-ee8-servlet</module>
+    <module>jetty-ee8-servlets</module>
     <module>jetty-ee8-webapp</module>
   </modules>
 
@@ -68,6 +69,16 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-servlet</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-webapp</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-servlets</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

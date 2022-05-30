@@ -2,12 +2,12 @@
 
 [description]
 Adds Jetty utility servlets and filters available to a webapp.
-Puts org.eclipse.jetty.ee9.servlets on the server classpath (CGI, CrossOriginFilter, DosFilter,
+Puts org.eclipse.jetty.ee8.servlets on the server classpath (CGI, CrossOriginFilter, DosFilter,
 MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for use by all webapplications.
 
 [depend]
 servlet
 
 [lib]
-lib/jetty-ee9-servlets-${jetty.version}.jar
+lib/jetty-ee8-servlets-${jetty.version}.jar
 
