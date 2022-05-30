@@ -1206,30 +1206,15 @@ public class HttpParser
                             }
 
                             // How is the message ended?
+                            boolean handle = _handler.headerComplete();
+                            _headerComplete = true;
                             switch (_endOfContent)
                             {
-                                case EOF_CONTENT:
-                                {
-                                    setState(State.EOF_CONTENT);
-                                    boolean handle = _handler.headerComplete();
-                                    _headerComplete = true;
-                                    return handle;
-                                }
-                                case CHUNKED_CONTENT:
-                                {
-                                    setState(State.CHUNKED_CONTENT);
-                                    boolean handle = _handler.headerComplete();
-                                    _headerComplete = true;
-                                    return handle;
-                                }
-                                default:
-                                {
-                                    setState(State.CONTENT);
-                                    boolean handle = _handler.headerComplete();
-                                    _headerComplete = true;
-                                    return handle;
-                                }
+                                case EOF_CONTENT -> setState(State.EOF_CONTENT);
+                                case CHUNKED_CONTENT -> setState(State.CHUNKED_CONTENT);
+                                default -> setState(State.CONTENT);
                             }
+                            return handle;
                         }
 
                         case ALPHA:
@@ -1501,7 +1486,7 @@ public class HttpParser
             }
 
             // Request/response line
-            if (_state.ordinal() >= State.START.ordinal() && _state.ordinal() < State.HEADER.ordinal())
+            if (_state.ordinal() < State.HEADER.ordinal())
             {
                 if (parseLine(buffer))
                     return true;

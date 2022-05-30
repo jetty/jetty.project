@@ -244,6 +244,8 @@ public class RequestURITest
         ret.add(Arguments.of("/../hello/world"));
         ret.add(Arguments.of("/hello%u00u00/world"));
         ret.add(Arguments.of("hello"));
+        ret.add(Arguments.of(";/hello"));
+        ret.add(Arguments.of(";hello"));
 
         return ret.stream();
     }

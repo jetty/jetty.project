@@ -363,20 +363,6 @@ public class HttpChannelState implements HttpChannel, Components
             if (getHttpConfiguration().getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
 
-            if (!HttpMethod.PRI.is(request.getMethod()) &&
-                !HttpMethod.CONNECT.is(request.getMethod()) &&
-                !_request.getPathInContext().startsWith("/") &&
-                !HttpMethod.OPTIONS.is(request.getMethod()))
-                throw new BadMessageException("Bad URI path");
-
-            HttpURI uri = request.getURI();
-            if (uri.hasViolations())
-            {
-                String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
-                if (badMessage != null)
-                    return onFailure(new BadMessageException(badMessage));
-            }
-
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
@@ -623,6 +609,23 @@ public class HttpChannelState implements HttpChannel, Components
             Throwable failure = null;
             try
             {
+                if (!HttpMethod.PRI.is(request.getMethod()) &&
+                    !HttpMethod.CONNECT.is(request.getMethod()) &&
+                    !_request.getPathInContext().startsWith("/") &&
+                    !HttpMethod.OPTIONS.is(request.getMethod()))
+                {
+                    _processState = ProcessState.PROCESSING;
+                    throw new BadMessageException("Bad URI path");
+                }
+
+                HttpURI uri = request.getHttpURI();
+                if (uri.hasViolations())
+                {
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
+                    if (badMessage != null)
+                        throw new BadMessageException(badMessage);
+                }
+
                 // Customize before accepting.
                 HttpConfiguration configuration = getHttpConfiguration();
 
