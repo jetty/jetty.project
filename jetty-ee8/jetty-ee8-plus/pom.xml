@@ -6,13 +6,13 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee8-nested</artifactId>
-  <name>EE8 :: Jetty :: Nested</name>
-  <description>The jetty core handler adapted to legacy ee8 handler.</description>
+  <artifactId>jetty-ee8-plus</artifactId>
+  <name>EE8 :: Jetty :: Plus</name>
+  <description>Jetty JavaEE style services</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -31,7 +31,7 @@
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/main/resources</directory>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/main/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -46,7 +46,7 @@
               <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/test/resources</directory>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/test/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -64,7 +64,7 @@
               <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
             <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/main/java</sourceProjectLocation>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/main/java</sourceProjectLocation>
               <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
             </configuration>
           </execution>
@@ -76,19 +76,26 @@
             </goals>
             <configuration>
               <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-nested/src/test/java</sourceProjectLocation>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/test/java</sourceProjectLocation>
               <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
         <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.nested=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
-          </argLine>
+          <instructions>
+            <Import-Package>${osgi.slf4j.import.packages},jakarta.transaction.*;version="2.0.0",*</Import-Package>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration
+            </Provide-Capability>
+          </instructions>
         </configuration>
       </plugin>
     </plugins>
@@ -96,25 +103,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
+      <artifactId>jetty-jndi</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <optional>true</optional>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -122,33 +120,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http-tools</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util-ajax</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-session</artifactId>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 

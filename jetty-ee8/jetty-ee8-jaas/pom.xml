@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-jaas</artifactId>
-  <name>EE9 :: Jetty :: JAAS</name>
+  <name>EE8 :: Jetty :: JAAS</name>
   <description>Jetty JAAS support</description>
 
   <properties>
