@@ -187,12 +187,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 }
                 else if (read == 0)
                 {
-                    if (networkBuffer.isEmpty())
-                    {
-                        releaseNetworkBuffer();
-                        fillInterested();
-                        return;
-                    }
+                    assert networkBuffer.isEmpty();
+                    releaseNetworkBuffer();
+                    fillInterested();
+                    return;
                 }
                 else
                 {
@@ -256,7 +254,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Discarding unexpected content after response {}: {}", status, networkBuffer);
-                    LOG.info("Discarding unexpected content after response {}: {}", status, networkBuffer);
                     networkBuffer.clear();
                 }
                 return false;
@@ -379,7 +376,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
 
         int status = exchange.getResponse().getStatus();
-        if (status != HttpStatus.CONTINUE_100)
+        if (!HttpStatus.isInterim(status))
         {
             inMessages.increment();
             complete = true;

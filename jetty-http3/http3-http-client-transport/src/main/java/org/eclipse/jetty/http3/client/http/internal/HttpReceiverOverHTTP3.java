@@ -89,8 +89,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
-                boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
-                if (frame.isLast() || informational)
+                if (frame.isLast() || HttpStatus.isInterim(status))
                     responseSuccess(exchange);
                 else
                     stream.demand();

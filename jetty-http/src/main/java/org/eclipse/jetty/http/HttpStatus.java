@@ -342,6 +342,17 @@ public class HttpStatus
     }
 
     /**
+     * Tests whether the status code is informational but not {@code 101 Switching Protocols}.
+     *
+     * @param code the code to test
+     * @return whether the status code is informational but not {@code 101 Switching Protocols}
+     */
+    public static boolean isInterim(int code)
+    {
+        return isInformational(code) && code != HttpStatus.SWITCHING_PROTOCOLS_101;
+    }
+
+    /**
      * Simple test against an code to determine if it falls into the
      * <code>Success</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a

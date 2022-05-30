@@ -1044,10 +1044,10 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
             _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
 
-            // wrap callback to process 100 responses
+            // wrap callback to process informational responses
             final int status = response.getStatus();
             final Callback committed = HttpStatus.isInformational(status)
-                ? new Send100Callback(callback)
+                ? new Send1XXCallback(callback)
                 : new SendCallback(callback, content, true, complete);
 
             // committing write
@@ -1477,9 +1477,9 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class Send100Callback extends SendCallback
+    private class Send1XXCallback extends SendCallback
     {
-        private Send100Callback(Callback callback)
+        private Send1XXCallback(Callback callback)
         {
             super(callback, null, false, false);
         }

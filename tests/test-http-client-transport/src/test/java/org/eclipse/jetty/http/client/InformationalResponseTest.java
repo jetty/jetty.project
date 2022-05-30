@@ -107,7 +107,6 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
                         {
                             // All good, continue.
                             exchange.resetResponse();
-                            exchange.proceed(null);
                         }
                         else
                         {
@@ -197,7 +196,6 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
                             // All good, continue.
                             hints.add(response.getHeaders().get("Hint"));
                             exchange.resetResponse();
-                            exchange.proceed(null);
                         }
                         else
                         {
