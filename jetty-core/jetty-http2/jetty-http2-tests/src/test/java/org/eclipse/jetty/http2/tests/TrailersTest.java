@@ -402,7 +402,7 @@ public class TrailersTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                Content.copy(request, response, callback, response::writeTrailers);
+                Content.copy(request, response, response::writeTrailers, callback);
             }
         });
 

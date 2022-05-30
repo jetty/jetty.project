@@ -60,7 +60,7 @@ public class Content
      */
     public static void copy(Source source, Sink sink, Callback callback)
     {
-        copy(source, sink, callback, null);
+        copy(source, sink, null, callback);
     }
 
     /**
@@ -77,12 +77,12 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
+     * @param chunkHandler a (possibly {@code null}) predicate to handle the current chunk and its callback
      * @param callback the callback to notify when the copy is complete
-     * @param chunkHandler an optional predicate to handle the current chunk and its callback
      */
-    public static void copy(Source source, Sink sink, Callback callback, BiPredicate<Chunk, Callback> chunkHandler)
+    public static void copy(Source source, Sink sink, BiPredicate<Chunk, Callback> chunkHandler, Callback callback)
     {
-        new ContentCopier(source, sink, callback, chunkHandler).iterate();
+        new ContentCopier(source, sink, chunkHandler, callback).iterate();
     }
 
     /**
