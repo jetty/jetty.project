@@ -187,9 +187,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 }
                 else if (read == 0)
                 {
-                    releaseNetworkBuffer();
-                    fillInterested();
-                    return;
+                    if (networkBuffer.isEmpty())
+                    {
+                        releaseNetworkBuffer();
+                        fillInterested();
+                        return;
+                    }
                 }
                 else
                 {
@@ -245,19 +248,22 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 this.method = null;
                 if (getHttpChannel().isTunnel(method, status))
                     return true;
+
+                if (networkBuffer.isEmpty())
+                    return false;
+
+                if (!HttpStatus.isInformational(status))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Discarding unexpected content after response {}: {}", status, networkBuffer);
+                    LOG.info("Discarding unexpected content after response {}: {}", status, networkBuffer);
+                    networkBuffer.clear();
+                }
+                return false;
             }
 
             if (networkBuffer.isEmpty())
                 return false;
-
-            if (complete)
-            {
-                // TODO this can clean a pipelined response after a 1xx
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Discarding unexpected content after response: {}", networkBuffer);
-                networkBuffer.clear();
-                return false;
-            }
         }
     }
 

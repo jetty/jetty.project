@@ -222,10 +222,10 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
         };
         scenario.client.newRequest(scenario.newURI())
             .method("GET")
-            .timeout(10, TimeUnit.SECONDS)
+            .timeout(5, TimeUnit.SECONDS)
             .send(listener);
 
-        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(response.get().getStatus(), is(200));
         assertThat(listener.getContentAsString(), is("OK"));
         assertThat(hints, contains("one", "two", "three"));
