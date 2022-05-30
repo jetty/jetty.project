@@ -315,7 +315,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected enum FrameState
     {
-        INITIAL, CONTINUE, HEADER, DATA, TRAILER, FAILED
+        INITIAL, INFORMATIONAL, HEADER, DATA, TRAILER, FAILED
     }
 
     private enum CloseState

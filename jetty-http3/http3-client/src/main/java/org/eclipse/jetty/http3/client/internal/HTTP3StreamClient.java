@@ -52,11 +52,11 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         boolean valid;
         if (response.getStatus() == HttpStatus.CONTINUE_100)
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.CONTINUE);
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
         else if (response.getStatus() == HttpStatus.EARLY_HINT_103)
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.HEADER, FrameState.CONTINUE), FrameState.CONTINUE);
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.HEADER, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
         else
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.CONTINUE), FrameState.HEADER);
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
         if (valid)
         {
             notIdle();
