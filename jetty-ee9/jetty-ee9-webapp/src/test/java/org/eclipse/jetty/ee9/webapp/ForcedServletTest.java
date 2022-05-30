@@ -14,8 +14,12 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -65,6 +69,11 @@ public class ForcedServletTest
         Path srcWebApp = MavenTestingUtils.getTargetPath("test-classes/webapp-alt-jsp");
         copyDir(srcWebApp, basePath);
         copyClass(FakePrecompiledJSP.class, basePath.resolve("WEB-INF/classes"));
+        Path webXml = basePath.resolve("WEB-INF/web.xml");
+        String webXmContent = Files.readString(webXml);
+        webXmContent = webXmContent.replace("${fakePrecompiledJspClassName}", FakePrecompiledJSP.class.getName());
+        Files.writeString(webXml, webXmContent, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
 
         // Use the new base
         context.setWarResource(new PathResource(basePath));
