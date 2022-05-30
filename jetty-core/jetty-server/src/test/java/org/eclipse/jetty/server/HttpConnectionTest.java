@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
@@ -869,7 +870,7 @@ public class HttpConnectionTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(false, callback);
+                response.write(false, null, callback);
             }
         });
         _server.start();
@@ -904,7 +905,7 @@ public class HttpConnectionTest
                 "Content-Length: 10\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "abcdefghij\r\n";
+                "abcdefghij";
 
         LocalConnector.LocalEndPoint endp = _connector.executeRequest(requests);
         String response = endp.getResponse() + endp.getResponse();
@@ -1146,12 +1147,12 @@ public class HttpConnectionTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
                 response.write(false,
-                    Callback.from(callback::succeeded, t ->
+                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                    })
+                );
             }
         });
         _server.start();
@@ -1196,12 +1197,12 @@ public class HttpConnectionTest
                 response.getHeaders().put("LongStr", longstr);
 
                 response.write(false,
-                    Callback.from(callback::succeeded, t ->
+                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                    })
+                );
             }
         });
         _server.start();
@@ -1306,13 +1307,13 @@ public class HttpConnectionTest
             {
                 while (true)
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
                     {
                         try
                         {
                             CountDownLatch blocker = new CountDownLatch(1);
-                            request.demandContent(blocker::countDown);
+                            request.demand(blocker::countDown);
                             blocker.await();
                         }
                         catch (InterruptedException e)
@@ -1322,10 +1323,10 @@ public class HttpConnectionTest
                         continue;
                     }
 
-                    if (content.hasRemaining())
-                        content.getByteBuffer().clear();
-                    content.release();
-                    if (content.isLast())
+                    if (chunk.hasRemaining())
+                        chunk.getByteBuffer().clear();
+                    chunk.release();
+                    if (chunk.isLast())
                         break;
                 }
 

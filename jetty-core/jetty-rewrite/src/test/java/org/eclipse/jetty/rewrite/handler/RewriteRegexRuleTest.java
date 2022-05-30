@@ -76,9 +76,9 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             public void process(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
-                response.setHeader("X-Path", httpURI.getPath());
+                response.getHeaders().put("X-Path", httpURI.getPath());
                 if (httpURI.getQuery() != null)
-                    response.setHeader("X-Query", httpURI.getQuery());
+                    response.getHeaders().put("X-Query", httpURI.getQuery());
                 callback.succeeded();
             }
         });

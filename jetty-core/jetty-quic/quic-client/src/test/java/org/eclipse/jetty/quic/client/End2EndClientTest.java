@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -76,7 +77,7 @@ public class End2EndClientTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, responseContent);
+                Content.Sink.write(response, true, responseContent, callback);
             }
         });
 

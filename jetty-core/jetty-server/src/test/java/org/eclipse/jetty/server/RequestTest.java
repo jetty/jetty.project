@@ -104,7 +104,7 @@ public class RequestTest
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.setContentType("text/plain");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 ByteArrayOutputStream buff = new ByteArrayOutputStream();
 
                 request.getHeaders().getFields(HttpHeader.COOKIE).forEach(System.err::println);
@@ -115,7 +115,7 @@ public class RequestTest
                     for (HttpCookie c : coreCookies)
                         buff.writeBytes(("Core Cookie: " + c.getName() + "=" + c.getValue() + "\n").getBytes());
                 }
-                response.write(true, callback, ByteBuffer.wrap(buff.toByteArray()));
+                response.write(true, ByteBuffer.wrap(buff.toByteArray()), callback);
             }
         });
         

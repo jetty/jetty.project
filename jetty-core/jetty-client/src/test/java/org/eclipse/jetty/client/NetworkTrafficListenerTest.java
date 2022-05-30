@@ -30,11 +30,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkTrafficServerConnector;
@@ -195,7 +195,7 @@ public class NetworkTrafficListenerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, callback, UTF_8.encode(responseContent));
+                response.write(true, UTF_8.encode(responseContent), callback);
             }
         });
 
@@ -264,8 +264,8 @@ public class NetworkTrafficListenerTest
             @Override
             protected void service(Request request, Response response) throws Throwable
             {
-                Response.write(response, false, UTF_8.encode(responseChunk1));
-                Response.write(response, false, UTF_8.encode(responseChunk2));
+                Content.Sink.write(response, false, UTF_8.encode(responseChunk1));
+                Content.Sink.write(response, false, UTF_8.encode(responseChunk2));
             }
         });
 
@@ -407,7 +407,7 @@ public class NetworkTrafficListenerTest
                 // Read and discard the request body to make the test more
                 // reliable, otherwise there is a race between request body
                 // upload and response download
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
             }
         });
 

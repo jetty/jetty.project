@@ -30,8 +30,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -195,7 +195,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
-                        response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
+                        response.write(true, ByteBuffer.wrap(new byte[contentLength]), callback);
                     else
                         callback.succeeded();
                 }

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -322,13 +323,14 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            if (_info.getTrailerSupplier() != null)
+            Supplier<HttpFields> trailersSupplier = _info.getTrailerSupplier();
+            if (trailersSupplier != null)
             {
                 // Do we need a chunk buffer?
                 if (chunk == null || chunk.capacity() <= CHUNK_SIZE)
                     return Result.NEED_CHUNK_TRAILER;
 
-                HttpFields trailers = _info.getTrailerSupplier().get();
+                HttpFields trailers = trailersSupplier.get();
 
                 if (trailers != null)
                 {

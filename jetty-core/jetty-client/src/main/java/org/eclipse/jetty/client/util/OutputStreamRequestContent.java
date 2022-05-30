@@ -13,15 +13,11 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.io.content.OutputStreamContentSource;
 
 /**
  * <p>A {@link Request.Content} that provides content asynchronously through an {@link OutputStream}
@@ -58,9 +54,9 @@ import org.eclipse.jetty.util.FutureCallback;
  * } // Implicit call to output.close().
  * </pre>
  */
-public class OutputStreamRequestContent extends AsyncRequestContent
+public class OutputStreamRequestContent extends OutputStreamContentSource implements Request.Content
 {
-    private final AsyncOutputStream output;
+    private final String contentType;
 
     public OutputStreamRequestContent()
     {
@@ -69,52 +65,12 @@ public class OutputStreamRequestContent extends AsyncRequestContent
 
     public OutputStreamRequestContent(String contentType)
     {
-        super(contentType);
-        this.output = new AsyncOutputStream();
+        this.contentType = contentType;
     }
 
-    public OutputStream getOutputStream()
+    @Override
+    public String getContentType()
     {
-        return output;
-    }
-
-    private class AsyncOutputStream extends OutputStream
-    {
-        @Override
-        public void write(int b) throws IOException
-        {
-            write(new byte[]{(byte)b}, 0, 1);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException
-        {
-            try
-            {
-                FutureCallback callback = new FutureCallback();
-                offer(ByteBuffer.wrap(b, off, len), callback);
-                callback.get();
-            }
-            catch (InterruptedException x)
-            {
-                throw new InterruptedIOException();
-            }
-            catch (ExecutionException x)
-            {
-                throw new IOException(x.getCause());
-            }
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-            OutputStreamRequestContent.this.flush();
-        }
-
-        @Override
-        public void close()
-        {
-            OutputStreamRequestContent.this.close();
-        }
+        return contentType;
     }
 }

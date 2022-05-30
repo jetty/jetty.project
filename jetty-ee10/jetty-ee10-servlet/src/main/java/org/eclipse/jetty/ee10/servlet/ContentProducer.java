@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * ContentProducer is the bridge between {@link HttpInput} and {@link org.eclipse.jetty.server.Content.Reader}.
+ * ContentProducer is the bridge between {@link HttpInput} and {@link Content.Source}.
  */
 public interface ContentProducer
 {
@@ -43,13 +43,13 @@ public interface ContentProducer
 
     /**
      * Fail all content currently available in this {@link ContentProducer} instance
-     * as well as in the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * as well as in the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
      * @return true if EOF was reached.
      */
-    boolean consumeAll();
+    boolean consumeAvailable();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.
@@ -59,17 +59,17 @@ public interface ContentProducer
     void checkMinDataRate();
 
     /**
-     * Get the byte count produced by the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * Get the byte count produced by the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
-     * @return the byte count produced by the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * @return the byte count produced by the underlying {@link Content.Source}.
      */
-    long getRawContentArrived();
+    long getRawBytesArrived();
 
     /**
      * Get the byte count that can immediately be read from this
-     * {@link ContentProducer} instance or the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * {@link ContentProducer} instance or the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
@@ -79,45 +79,46 @@ public interface ContentProducer
 
     /**
      * Check if this {@link ContentProducer} instance contains some
-     * content without querying the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * content chunk without querying the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
      * Doesn't query the HttpChannel.
      * @return true if this {@link ContentProducer} instance contains content, false otherwise.
      */
-    boolean hasContent();
+    boolean hasChunk();
 
     /**
-     * Check if the underlying {@link org.eclipse.jetty.server.Content.Reader} reached an error content.
+     * Check if the underlying {@link Content.Source} reached an error content.
      * This call is always non-blocking.
      * Doesn't change state.
      * Doesn't query the HttpChannel.
-     * @return true if the underlying {@link org.eclipse.jetty.server.Content.Reader} reached an error content, false otherwise.
+     * @return true if the underlying {@link Content.Source} reached an error content, false otherwise.
      */
     boolean isError();
 
     /**
-     * Get the next content that can be read from or that describes the special condition
+     * Get the next content chunk that can be read from or that describes the terminal condition
      * that was reached (error, eof).
      * This call may or may not block until some content is available, depending on the implementation.
      * The returned content is decoded by the interceptor set with {@link #setInterceptor(HttpInput.Interceptor)}
      * or left as-is if no intercept is set.
      * After this call, state can be either of UNREADY or IDLE.
-     * @return the next content that can be read from or null if the implementation does not block
+     *
+     * @return the next content chunk that can be read from or null if the implementation does not block
      * and has no available content.
      */
-    Content nextContent();
+    Content.Chunk nextChunk();
 
     /**
-     * Free up the content by calling {@link Content#release()} on it
-     * and updating this instance' internal state.
+     * Free up the content by calling {@link Content.Chunk#release()} on it
+     * and updating this instance's internal state.
      */
-    void reclaim(Content content);
+    void reclaim(Content.Chunk chunk);
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.
-     * If there is some, the next call to {@link #nextContent()} will not block.
+     * If there is some, the next call to {@link #nextChunk()} will not block.
      * If there isn't any and the implementation does not block, this method will trigger a
      * {@link jakarta.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.

@@ -110,7 +110,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             {
                 serverEndPointRef.compareAndSet(null, (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Write a large content to cause TCP congestion.
-                response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
+                response.write(true, ByteBuffer.wrap(new byte[contentLength]), callback);
             }
         });
 

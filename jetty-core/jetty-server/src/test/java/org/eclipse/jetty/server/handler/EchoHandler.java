@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -40,16 +39,17 @@ public class EchoHandler extends Handler.Processor
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
-            response.setContentType(contentType);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
 
-        HttpFields.Mutable trailers = (request.getHeaders().contains(HttpHeader.TRAILER)) ? response.getTrailers() : null;
+        if (request.getHeaders().contains(HttpHeader.TRAILER))
+            response.getOrCreateTrailers();
 
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
-            response.setContentLength(contentLength);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
-            Content.copy(request, response, trailers == null ? null : trailers::add, callback);
+            Content.copy(request, response, response::writeTrailers, callback);
         else
             callback.succeeded();
     }

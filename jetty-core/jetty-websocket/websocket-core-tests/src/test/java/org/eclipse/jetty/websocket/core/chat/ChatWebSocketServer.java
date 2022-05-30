@@ -17,7 +17,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -122,8 +124,8 @@ public class ChatWebSocketServer
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.setContentType("text/plain");
-                response.write(true, callback, "WebSocket Chat Server");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Content.Sink.write(response, true, "WebSocket Chat Server", callback);
             }
         });
 

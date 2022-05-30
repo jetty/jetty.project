@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
@@ -26,19 +28,31 @@ public interface HttpStream extends Callback
     /**
      * @return an ID unique within the lifetime scope of the associated protocol connection.
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
-     * @see HttpStream#getId();
      */
     String getId();
 
+    /**
+     * @return the nanoTime when this HttpStream was created
+     */
     long getNanoTimeStamp();
 
-    Content readContent();
+    /**
+     * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
+     * <p>This method is called from the implementation of {@link Request#read()}.</p>
+     *
+     * @return a chunk of content, possibly an {@link Chunk.Error error} or {@code null}.
+     */
+    Content.Chunk read();
 
-    void demandContent(); // Calls back on Channel#onDataAvailable
+    /**
+     * <p>Demands more content chunks to the underlying implementation.</p>
+     * <p>This method is called from the implementation of {@link Request#demand(Runnable)}.</p>
+     */
+    void demand();
 
     void prepareResponse(HttpFields.Mutable headers);
 
-    void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
+    void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
 
     boolean isPushSupported();
 
@@ -53,12 +67,12 @@ public interface HttpStream extends Callback
 
     Connection upgrade();
 
-    default Throwable consumeAll()
+    default Throwable consumeAvailable()
     {
         while (true)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content content = readContent();
+            Content.Chunk content = read();
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
@@ -68,8 +82,8 @@ public interface HttpStream extends Callback
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Content.Error)
-                return ((Content.Error)content).getCause();
+            if (content instanceof Content.Chunk.Error error)
+                return error.getCause();
 
             if (content.isLast())
                 return null;
@@ -93,97 +107,97 @@ public interface HttpStream extends Callback
         @Override
         public final String getId()
         {
-            return _wrapped.getId();
+            return getWrapped().getId();
         }
 
         @Override
         public final long getNanoTimeStamp()
         {
-            return _wrapped.getNanoTimeStamp();
+            return getWrapped().getNanoTimeStamp();
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
-            return _wrapped.readContent();
+            return getWrapped().read();
         }
 
         @Override
-        public void demandContent()
+        public void demand()
         {
-            _wrapped.demandContent();
+            getWrapped().demand();
         }
 
         @Override
         public void prepareResponse(HttpFields.Mutable headers)
         {
-            _wrapped.prepareResponse(headers);
+            getWrapped().prepareResponse(headers);
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
-            _wrapped.send(request, response, last, callback, content);
+            getWrapped().send(request, response, last, content, callback);
         }
 
         @Override
         public final boolean isPushSupported()
         {
-            return _wrapped.isPushSupported();
+            return getWrapped().isPushSupported();
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-            _wrapped.push(request);
+            getWrapped().push(request);
         }
 
         @Override
         public final boolean isCommitted()
         {
-            return _wrapped.isCommitted();
+            return getWrapped().isCommitted();
         }
 
         @Override
         public final boolean isComplete()
         {
-            return _wrapped.isComplete();
+            return getWrapped().isComplete();
         }
 
         @Override
         public void setUpgradeConnection(Connection connection)
         {
-            _wrapped.setUpgradeConnection(connection);
+            getWrapped().setUpgradeConnection(connection);
         }
 
         @Override
         public Connection upgrade()
         {
-            return _wrapped.upgrade();
+            return getWrapped().upgrade();
         }
 
         @Override
-        public final Throwable consumeAll()
+        public final Throwable consumeAvailable()
         {
-            return _wrapped.consumeAll();
+            return getWrapped().consumeAvailable();
         }
 
         @Override
         public void succeeded()
         {
-            _wrapped.succeeded();
+            getWrapped().succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _wrapped.failed(x);
+            getWrapped().failed(x);
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return _wrapped.getInvocationType();
+            return getWrapped().getInvocationType();
         }
     }
 }

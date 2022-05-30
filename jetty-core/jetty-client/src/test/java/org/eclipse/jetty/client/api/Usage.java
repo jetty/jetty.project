@@ -35,6 +35,7 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -321,12 +322,12 @@ public class Usage
         Thread.sleep(100);
 
         if (sendContent.get())
-            async.offer(ByteBuffer.wrap(new byte[]{0}));
+            async.write(ByteBuffer.wrap(new byte[]{0}), Callback.NOOP);
 
         Thread.sleep(100);
 
         if (sendContent.get())
-            async.offer(ByteBuffer.wrap(new byte[]{0}));
+            async.write(ByteBuffer.wrap(new byte[]{0}), Callback.NOOP);
 
         Thread.sleep(100);
 

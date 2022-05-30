@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -60,7 +61,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
-                GZIPOutputStream gzipOutput = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
+                GZIPOutputStream gzipOutput = new GZIPOutputStream(Content.Sink.asOutputStream(response));
                 gzipOutput.write(data);
                 gzipOutput.finish();
             }
@@ -95,7 +96,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] gzipBytes = gzipData.toByteArray();
                 for (byte gzipByte : gzipBytes)
                 {
-                    org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(new byte[]{gzipByte}));
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{gzipByte}));
                     sleep(100);
                 }
             }
@@ -130,7 +131,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] content = Arrays.copyOf(gzipBytes, 2 * gzipBytes.length);
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -180,11 +181,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] chunk1 = Arrays.copyOfRange(gzipBytes, 0, gzipBytes.length - fragment);
                 byte[] chunk2 = Arrays.copyOfRange(gzipBytes, gzipBytes.length - fragment, gzipBytes.length);
 
-                org.eclipse.jetty.server.Response.write(response, false, ByteBuffer.wrap(chunk1));
+                Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
 
                 sleep(500);
 
-                org.eclipse.jetty.server.Response.write(response, true, ByteBuffer.wrap(chunk2));
+                Content.Sink.write(response, true, ByteBuffer.wrap(chunk2));
             }
         });
 
@@ -207,7 +208,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
-                response.write(true, callback, "0123456789");
+                Content.Sink.write(response, true, "0123456789", callback);
             }
         });
 
@@ -234,9 +235,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                GZIPOutputStream gzip = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
+                GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response));
                 gzip.write(content);
                 gzip.finish();
             }
@@ -276,9 +277,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                GZIPOutputStream gzip = new GZIPOutputStream(org.eclipse.jetty.server.Response.asOutputStream(response));
+                GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response));
                 gzip.write(content);
                 gzip.finish();
             }

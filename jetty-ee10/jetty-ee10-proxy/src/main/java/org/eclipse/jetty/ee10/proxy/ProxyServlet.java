@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -89,7 +90,7 @@ public class ProxyServlet extends AbstractProxyServlet
                     try
                     {
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
-                        new DelegatingRequestContent(request, proxyRequest, response, content, delegate);
+                        Content.copy(content, delegate, Callback.from(delegate::close, x -> onClientRequestFailure(request, proxyRequest, response, x)));
                     }
                     catch (Throwable failure)
                     {
@@ -153,7 +154,7 @@ public class ProxyServlet extends AbstractProxyServlet
     /**
      * <p>Convenience extension of {@link ProxyServlet} that offers transparent proxy functionalities.</p>
      *
-     * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
+     * @see AbstractProxyServlet.TransparentDelegate
      */
     public static class Transparent extends ProxyServlet
     {
@@ -258,71 +259,19 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+        public Content.Chunk read()
         {
-            if (_log.isDebugEnabled())
-                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
-            return super.onRead(buffer, offset, length);
-        }
-
-        @Override
-        protected void onReadFailure(Throwable failure)
-        {
-            onClientRequestFailure(request, proxyRequest, response, failure);
-        }
-    }
-
-    private class DelegatingRequestContent implements Request.Content.Consumer
-    {
-        private final HttpServletRequest clientRequest;
-        private final Request proxyRequest;
-        private final HttpServletResponse proxyResponse;
-        private final AsyncRequestContent delegate;
-        private final Request.Content.Subscription subscription;
-
-        private DelegatingRequestContent(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Request.Content content, AsyncRequestContent delegate)
-        {
-            this.clientRequest = clientRequest;
-            this.proxyRequest = proxyRequest;
-            this.proxyResponse = proxyResponse;
-            this.delegate = delegate;
-            this.subscription = content.subscribe(this, true);
-            this.subscription.demand();
-        }
-
-        @Override
-        public void onContent(ByteBuffer buffer, boolean last, Callback callback)
-        {
-            Callback wrapped = Callback.from(() -> succeeded(callback, last), failure -> failed(callback, failure));
-            if (buffer.hasRemaining())
+            Content.Chunk chunk = super.read();
+            if (chunk instanceof Content.Chunk.Error error)
             {
-                delegate.offer(buffer, wrapped);
+                onClientRequestFailure(request, proxyRequest, response, error.getCause());
             }
             else
             {
-                wrapped.succeeded();
+                if (_log.isDebugEnabled())
+                    _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), chunk.remaining());
             }
-            if (last)
-                delegate.close();
-        }
-
-        private void succeeded(Callback callback, boolean last)
-        {
-            callback.succeeded();
-            if (!last)
-                subscription.demand();
-        }
-
-        private void failed(Callback callback, Throwable failure)
-        {
-            callback.failed(failure);
-            onFailure(failure);
-        }
-
-        @Override
-        public void onFailure(Throwable failure)
-        {
-            onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, failure);
+            return chunk;
         }
     }
 }

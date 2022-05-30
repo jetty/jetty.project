@@ -81,7 +81,7 @@ public class RedirectRegexRule extends RegexRule
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
-                response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
+                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
                 callback.succeeded();
             }
         };

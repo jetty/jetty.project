@@ -33,7 +33,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -556,26 +556,26 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 _request = request;
                 _callback = callback;
-                request.demandContent(this::onContentAvailable);
+                request.demand(this::onContentAvailable);
             }
 
             private void onContentAvailable()
             {
                 while (true)
                 {
-                    Content content = _request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = _request.read();
+                    if (chunk == null)
                     {
-                        _request.demandContent(this::onContentAvailable);
+                        _request.demand(this::onContentAvailable);
                         return;
                     }
-                    if (content instanceof Content.Error error)
+                    if (chunk instanceof Content.Chunk.Error error)
                     {
                         _callback.failed(error.getCause());
                         return;
                     }
-                    content.release();
-                    if (content.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                     {
                         _callback.succeeded();
                         return;

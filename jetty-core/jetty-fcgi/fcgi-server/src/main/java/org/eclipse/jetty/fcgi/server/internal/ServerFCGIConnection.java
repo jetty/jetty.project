@@ -27,12 +27,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
@@ -371,7 +371,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
             if (stream != null)
             {
-                stream.onContent(new FastCGIContent(buffer, false));
+                networkBuffer.retain();
+                stream.onContent(Content.Chunk.from(buffer, false, networkBuffer::release));
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }
@@ -400,30 +401,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (stream != null)
                 stream.getHttpChannel().onFailure(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
             stream = null;
-        }
-
-        private class FastCGIContent extends Content.Abstract
-        {
-            private final ByteBuffer content;
-
-            public FastCGIContent(ByteBuffer content, boolean last)
-            {
-                super(false, last);
-                this.content = content;
-                networkBuffer.retain();
-            }
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return content;
-            }
-
-            @Override
-            public void release()
-            {
-                networkBuffer.release();
-            }
         }
     }
 }

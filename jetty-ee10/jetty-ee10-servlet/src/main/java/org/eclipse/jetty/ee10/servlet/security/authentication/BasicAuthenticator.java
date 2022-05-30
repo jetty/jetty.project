@@ -91,7 +91,7 @@ public class BasicAuthenticator extends LoginAuthenticator
         Charset charset = getCharset();
         if (charset != null)
             value += ", charset=\"" + charset.name() + "\"";
-        res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
         Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
         return Authentication.SEND_CONTINUE;
     }

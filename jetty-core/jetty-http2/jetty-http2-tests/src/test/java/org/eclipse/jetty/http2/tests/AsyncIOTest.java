@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -48,7 +48,7 @@ public class AsyncIOTest extends AbstractTest
             {
                 // Wait for the data to fully arrive.
                 sleep(1000);
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
                 callback.succeeded();
             }
         });
@@ -82,7 +82,7 @@ public class AsyncIOTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
                 callback.succeeded();
             }
         });

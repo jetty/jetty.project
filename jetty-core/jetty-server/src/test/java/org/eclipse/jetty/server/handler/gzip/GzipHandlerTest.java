@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
@@ -123,13 +123,13 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setHeader("ETag", __contentETag);
+            response.getHeaders().put("ETag", __contentETag);
             String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, 304);
             else
             {
-                response.write(true, callback, __micro);
+                Content.Sink.write(response, true, __micro, callback);
             }
         }
     }
@@ -139,7 +139,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.write(false, callback, __micro);
+            Content.Sink.write(response, false, __micro, callback);
         }
     }
 
@@ -149,8 +149,8 @@ public class GzipHandlerTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = request.getPathInContext();
-            response.setContentType(getContentTypeFromRequest(pathInfo, request));
-            response.write(true, callback, "This is content for " + pathInfo + "\n");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
+            Content.Sink.write(response, true, "This is content for " + pathInfo + "\n", callback);
         }
 
         private String getContentTypeFromRequest(String filename, Request request)
@@ -182,13 +182,13 @@ public class GzipHandlerTest
 
             Fields parameters = Request.extractQueryParameters(request);
             if (parameters.get("vary") != null)
-                response.addHeader("Vary", parameters.get("vary").getValue());
-            response.setHeader("ETag", __contentETag);
+                response.getHeaders().add("Vary", parameters.get("vary").getValue());
+            response.getHeaders().put("ETag", __contentETag);
             String ifnm = request.getHeaders().get("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
             else
-                response.write(true, callback, __content);
+                Content.Sink.write(response, true, __content, callback);
         }
 
         void doDelete(Request request, Response response, Callback callback) throws IOException
@@ -232,7 +232,7 @@ public class GzipHandlerTest
             boolean knownLast = Boolean.parseBoolean(parameters.getValue("knownLast"));
 
             if (cl)
-                response.setContentLength((long)count.get() * bytes.length);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, (long)count.get() * bytes.length);
 
             Runnable writer = new Runnable()
             {
@@ -252,10 +252,7 @@ public class GzipHandlerTest
                             buffer = buffer.asReadOnlyBuffer();
                     }
 
-                    if (buffer == null)
-                        response.write(last, cb);
-                    else
-                        response.write(last, cb, buffer);
+                    response.write(last, buffer, cb);
                 }
             };
 
@@ -270,9 +267,9 @@ public class GzipHandlerTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer buffer = BufferUtil.toBuffer(__bytes).asReadOnlyBuffer();
-            response.setContentLength(buffer.remaining());
-            response.setContentType("text/plain");
-            response.write(true, callback, buffer);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, buffer.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+            response.write(true, buffer, callback);
         }
     }
 
@@ -285,8 +282,7 @@ public class GzipHandlerTest
             if (contentType != null)
                 response.getHeaders().add(contentType);
 
-            IO.copy(Content.asInputStream(request), Content.asOutputStream(response));
-            callback.succeeded();
+            Content.copy(request, response, callback);
         }
     }
 
@@ -295,7 +291,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             Fields parameters = Request.extractQueryParameters(request);
             FutureFormFields futureFormFields = new FutureFormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
@@ -303,7 +299,7 @@ public class GzipHandlerTest
             parameters = futureFormFields.get();
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
-            response.write(true, callback, dump);
+            Content.Sink.write(response, true, dump, callback);
         }
     }
 
@@ -1011,8 +1007,8 @@ public class GzipHandlerTest
             return (req, res, cb) ->
             {
                 if (req.getHeaders().get("X-Content-Encoding") != null)
-                    assertEquals(-1, req.getContentLength());
-                else if (req.getContentLength() >= 0)
+                    assertEquals(-1, req.getLength());
+                else if (req.getLength() >= 0)
                     MatcherAssert.assertThat(req.getHeaders().get("X-Content-Encoding"), nullValue());
                 processor.process(req, res, cb);
             };

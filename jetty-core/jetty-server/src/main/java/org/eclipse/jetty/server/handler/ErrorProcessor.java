@@ -40,7 +40,7 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -251,7 +251,7 @@ public class ErrorProcessor implements Request.Processor
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback.Nested(callback)
+        response.write(true, buffer, new Callback.Nested(callback)
         {
             @Override
             public void succeeded()
@@ -266,7 +266,7 @@ public class ErrorProcessor implements Request.Processor
                 request.getComponents().getByteBufferPool().release(buffer);
                 super.failed(x);
             }
-        }, buffer);
+        });
 
         return true;
     }
@@ -530,15 +530,15 @@ public class ErrorProcessor implements Request.Processor
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
-            return Content.EOF;
+            return Content.Chunk.EOF;
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
-            onContentAvailable.run();
+            demandCallback.run();
         }
 
         @Override

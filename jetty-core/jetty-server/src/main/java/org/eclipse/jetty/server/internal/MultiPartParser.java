@@ -20,7 +20,6 @@ import java.util.EnumSet;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpTokens;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -33,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://tools.ietf.org/html/rfc2046#section-5.1">https://tools.ietf.org/html/rfc2046#section-5.1</a>
  * @see <a href="https://tools.ietf.org/html/rfc2045">https://tools.ietf.org/html/rfc2045</a>
  *
- * TODO convert to use a {@link Content.Reader} and to be async
+ * TODO convert to use a {@link org.eclipse.jetty.io.Content.Source} and to be async
  */
 public class MultiPartParser
 {

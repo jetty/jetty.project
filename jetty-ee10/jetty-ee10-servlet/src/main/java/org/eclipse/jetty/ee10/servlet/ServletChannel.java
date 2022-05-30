@@ -33,7 +33,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -84,27 +83,6 @@ public class ServletChannel implements Runnable
         if (_callback != null)
             throw new IllegalStateException();
         _callback = callback;
-    }
-
-    public boolean failAllContent(Throwable x)
-    {
-        // TODO: what to do with x?
-        //       GW: I don't think we need to pass x in any more, as the content pooling is not dependent on
-        //       success or failure.   This should just be releaseAllContent()
-        while (true)
-        {
-            Content content = _request.readContent();
-            if (content == null)
-                return false;
-
-            if (content.isSpecial())
-            {
-                content.release();
-                return content.isLast();
-            }
-
-            content.release();
-        }
     }
 
     public void init(ServletContextRequest request)
@@ -469,7 +447,7 @@ public class ServletChannel implements Runnable
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
+                            Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
@@ -555,7 +533,7 @@ public class ServletChannel implements Runnable
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                Response.ensureConsumeAllOrNotPersistent(_request, _request.getResponse());
+                                Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
                         }
 
 
@@ -721,7 +699,7 @@ public class ServletChannel implements Runnable
         try
         {
             _state.completing();
-            getResponse().write(true, Callback.from(() -> _state.completed(null), _state::completed), getResponse().getHttpOutput().getBuffer());
+            getResponse().write(true, getResponse().getHttpOutput().getBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {

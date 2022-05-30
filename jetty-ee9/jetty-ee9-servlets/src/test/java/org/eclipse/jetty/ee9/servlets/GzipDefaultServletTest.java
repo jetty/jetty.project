@@ -800,7 +800,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
     public void testIncludedPaths() throws Exception
     {
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setExcludedPaths("/bad.txt");
+        gzipHandler.setExcludedPaths("/context/bad.txt");
         gzipHandler.setIncludedPaths("*.txt");
 
         server = new Server();

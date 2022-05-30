@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocking;
@@ -628,18 +629,18 @@ public class CustomRequestLogTest
             {
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
-                    response.write(false, blocker, String.valueOf(request.getHeaders().get("echo")));
+                    Content.Sink.write(response, false, String.valueOf(request.getHeaders().get("echo")), blocker);
                     blocker.block();
                 }
             }
             else if (request.getPathInContext().contains("responseHeaders"))
             {
-                response.addHeader("Header1", "value1");
-                response.addHeader("Header2", "value2");
+                response.getHeaders().add("Header1", "value1");
+                response.getHeaders().add("Header2", "value2");
             }
             else if (request.getPathInContext().contains("/abort"))
             {
-                response.write(false, Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed), "data");
+                Content.Sink.write(response, false, "data", Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed));
                 return;
             }
             else if (request.getPathInContext().contains("delay"))
@@ -654,8 +655,8 @@ public class CustomRequestLogTest
                 }
             }
 
-            if (request.getContentLength() > 0)
-                Content.readAllBytes(request);
+            if (request.getLength() > 0)
+                Content.Source.consumeAll(request);
 
             callback.succeeded();
         }

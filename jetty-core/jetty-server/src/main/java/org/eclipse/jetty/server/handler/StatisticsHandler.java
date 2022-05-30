@@ -21,11 +21,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -309,7 +310,7 @@ public class StatisticsHandler extends Handler.Wrapper
             addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
                 {
                     if (response != null)
                     {
@@ -323,21 +324,18 @@ public class StatisticsHandler extends Handler.Wrapper
                         }
                     }
 
-                    for (ByteBuffer b : content)
-                    {
-                        _bytesWritten.add(b.remaining());
-                    }
+                    _bytesWritten.add(BufferUtil.length(content));
 
-                    super.send(request, response, last, callback, content);
+                    super.send(request, response, last, content, callback);
                 }
 
                 @Override
-                public Content readContent()
+                public Content.Chunk read()
                 {
-                    Content content =  super.readContent();
-                    if (content != null)
-                        _bytesRead.add(content.remaining());
-                    return content;
+                    Content.Chunk chunk =  super.read();
+                    if (chunk != null)
+                        _bytesRead.add(chunk.remaining());
+                    return chunk;
                 }
 
                 @Override
@@ -388,7 +386,7 @@ public class StatisticsHandler extends Handler.Wrapper
         private class MinimumDataRateRequest extends Request.WrapperProcessor
         {
             private StatisticsRequest _statisticsRequest;
-            private Content.Error _errorContent;
+            private Content.Chunk.Error _errorContent;
 
             private MinimumDataRateRequest(Request request)
             {
@@ -402,7 +400,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public void demandContent(Runnable onContentAvailable)
+            public void demand(Runnable demandCallback)
             {
                 if (_minimumReadRate > 0)
                 {
@@ -410,18 +408,18 @@ public class StatisticsHandler extends Handler.Wrapper
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
-                        _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
-                        onContentAvailable.run();
+                        _errorContent = Content.Chunk.from(new TimeoutException("read rate is too low: " + rr));
+                        demandCallback.run();
                         return;
                     }
                 }
-                super.demandContent(onContentAvailable);
+                super.demand(demandCallback);
             }
 
             @Override
-            public Content readContent()
+            public Content.Chunk read()
             {
-                return _errorContent != null ? _errorContent : super.readContent();
+                return _errorContent != null ? _errorContent : super.read();
             }
 
             @Override
@@ -446,7 +444,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public void write(boolean last, Callback callback, ByteBuffer... content)
+            public void write(boolean last, ByteBuffer content, Callback callback)
             {
                 if (_minimumWriteRate > 0)
                 {
@@ -457,13 +455,13 @@ public class StatisticsHandler extends Handler.Wrapper
                         if (wr < _minimumWriteRate)
                         {
                             TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
-                            request._errorContent = new Content.Error(cause);
+                            request._errorContent = Content.Chunk.from(cause);
                             callback.failed(cause);
                             return;
                         }
                     }
                 }
-                super.write(last, callback, content);
+                super.write(last, content, callback);
             }
         }
 

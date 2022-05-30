@@ -82,7 +82,7 @@ public class RedirectPatternRule extends PatternRule
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());
-                response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
+                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
                 callback.succeeded();
             }
         };

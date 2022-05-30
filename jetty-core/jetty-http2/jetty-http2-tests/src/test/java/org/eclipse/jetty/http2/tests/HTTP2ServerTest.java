@@ -179,7 +179,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             public void process(Request request, Response response, Callback callback)
             {
                 latch.countDown();
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 

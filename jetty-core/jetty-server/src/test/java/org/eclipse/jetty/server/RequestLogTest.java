@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -55,8 +57,8 @@ public class RequestLogTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain; charset=UTF-8");
-            response.write(true, callback, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()));
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
+            Content.Sink.write(response, true, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()), callback);
         }
     }
 

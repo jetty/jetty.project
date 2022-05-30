@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -399,7 +400,7 @@ public class GracefulStopTest
             {
                 try (Blocking.Callback block = Blocking.callback())
                 {
-                    response.write(false, block);
+                    response.write(false, null, block);
                     block.block();
                 }
             }
@@ -409,32 +410,32 @@ public class GracefulStopTest
             int c = 0;
             try
             {
-                long contentLength = request.getContentLength();
+                long contentLength = request.getLength();
                 Blocking.Shared blocking = new Blocking.Shared();
                 if (contentLength > 0)
                 {
                     while (true)
                     {
-                        Content content = request.readContent();
-                        if (content == null)
+                        Content.Chunk chunk = request.read();
+                        if (chunk == null)
                         {
                             try (Blocking.Runnable block = blocking.runnable())
                             {
-                                request.demandContent(block);
+                                request.demand(block);
                                 block.block();
                                 continue;
                             }
                         }
-                        c += content.remaining();
-                        content.release();
-                        if (content.isLast())
+                        c += chunk.remaining();
+                        chunk.release();
+                        if (chunk.isLast())
                             break;
                     }
                 }
 
                 try (Blocking.Callback block = blocking.callback())
                 {
-                    response.write(true, block, "read [%d/%d]".formatted(c, contentLength));
+                    Content.Sink.write(response, true, "read [%d/%d]".formatted(c, contentLength), block);
                     block.block();
                 }
             }

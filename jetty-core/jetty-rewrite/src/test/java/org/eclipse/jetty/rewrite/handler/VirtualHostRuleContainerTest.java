@@ -41,7 +41,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader("X-Path", request.getHttpURI().getPath());
+                response.getHeaders().put("X-Path", request.getHttpURI().getPath());
                 callback.succeeded();
             }
         });

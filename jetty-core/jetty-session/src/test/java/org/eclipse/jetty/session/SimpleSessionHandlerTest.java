@@ -15,6 +15,7 @@ package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -137,7 +138,7 @@ public class SimpleSessionHandlerTest
                         out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                 }
 
-                response.write(true, callback, out.toString());
+                Content.Sink.write(response, true, out.toString(), callback);
             }
         });
 

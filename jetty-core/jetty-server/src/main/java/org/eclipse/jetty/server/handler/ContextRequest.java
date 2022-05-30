@@ -92,9 +92,9 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public void demandContent(Runnable onContentAvailable)
+    public void demand(Runnable demandCallback)
     {
-        super.demandContent(() -> _context.run(onContentAvailable, this));
+        super.demand(() -> _context.run(demandCallback, this));
     }
 
     @Override

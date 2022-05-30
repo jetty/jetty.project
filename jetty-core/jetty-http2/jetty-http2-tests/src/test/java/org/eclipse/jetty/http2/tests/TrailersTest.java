@@ -19,12 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -33,7 +35,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -114,32 +116,32 @@ public class TrailersTest extends AbstractTest
             {
                 _request = request;
                 _callback = callback;
-                request.demandContent(this::firstRead);
+                request.demand(this::firstRead);
             }
 
             private void firstRead()
             {
-                Content content = _request.readContent();
+                Content.Chunk chunk = _request.read();
 
                 // No trailers yet.
-                assertThat(content, not(instanceOf(Content.Trailers.class)));
+                assertThat(chunk, not(instanceOf(Trailers.class)));
 
                 trailerLatch.countDown();
 
-                _request.demandContent(this::otherReads);
+                _request.demand(this::otherReads);
             }
 
             private void otherReads()
             {
                 while (true)
                 {
-                    Content content = _request.readContent();
-                    if (content == null)
+                    Content.Chunk chunk = _request.read();
+                    if (chunk == null)
                     {
-                        _request.demandContent(this::otherReads);
+                        _request.demand(this::otherReads);
                         return;
                     }
-                    if (content instanceof Content.Trailers contentTrailers)
+                    if (chunk instanceof Trailers contentTrailers)
                     {
                         HttpFields trailers = contentTrailers.getTrailers();
                         assertNotNull(trailers.get("X-Trailer"));
@@ -259,8 +261,8 @@ public class TrailersTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                HttpFields.Mutable trailers = response.getTrailers();
-                Response.write(response, false, UTF_8.encode("hello_trailers"));
+                HttpFields.Mutable trailers = response.getOrCreateTrailers();
+                Content.Sink.write(response, false, UTF_8.encode("hello_trailers"));
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
                 callback.succeeded();
@@ -349,7 +351,7 @@ public class TrailersTest extends AbstractTest
             {
                 try
                 {
-                    Content.consumeAll(request);
+                    Content.Source.consumeAll(request);
                 }
                 catch (IOException x)
                 {
@@ -390,5 +392,58 @@ public class TrailersTest extends AbstractTest
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestTrailersCopiedAsResponseTrailers() throws Exception
+    {
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                Content.copy(request, response, response::writeTrailers, callback);
+            }
+        });
+
+        AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
+        AtomicReference<MetaData> trailersRef = new AtomicReference<>();
+        CountDownLatch clientLatch = new CountDownLatch(2);
+        Session session = newClientSession(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData metaData = frame.getMetaData();
+                if (metaData.isResponse())
+                {
+                    responseRef.set((MetaData.Response)metaData);
+                    clientLatch.countDown();
+                }
+                else if (!metaData.isRequest())
+                {
+                    trailersRef.set(metaData);
+                    clientLatch.countDown();
+                }
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        String trailerName = "TrailerName";
+        String trailerValue = "TrailerValue";
+        HttpFields.Mutable trailers = HttpFields.build().put(trailerName, trailerValue);
+        HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+        stream.headers(trailerFrame, Callback.NOOP);
+
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+
+        MetaData.Response responseMetaData = responseRef.get();
+        assertEquals(HttpStatus.OK_200, responseMetaData.getStatus());
+
+        MetaData trailerMetaData = trailersRef.get();
+        assertEquals(trailerValue, trailerMetaData.getFields().get(trailerName));
     }
 }

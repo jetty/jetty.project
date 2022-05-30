@@ -68,7 +68,7 @@ public class HttpClientFailureTest
     {
         startServer(new EmptyServerHandler());
 
-        final AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
+        AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
@@ -98,7 +98,7 @@ public class HttpClientFailureTest
     {
         startServer(new EmptyServerHandler());
 
-        final AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
+        AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
@@ -129,8 +129,13 @@ public class HttpClientFailureTest
             });
 
         assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
-        final CountDownLatch contentLatch = new CountDownLatch(1);
-        content.offer(ByteBuffer.allocate(1024), new Callback()
+
+        // The first chunk will be read but its write will fail.
+        content.write(ByteBuffer.allocate(1024), Callback.NOOP);
+
+        // The second chunk is failed because the content is failed.
+        CountDownLatch contentLatch = new CountDownLatch(1);
+        content.write(ByteBuffer.allocate(1024), new Callback()
         {
             @Override
             public void failed(Throwable x)
@@ -139,7 +144,6 @@ public class HttpClientFailureTest
             }
         });
 
-        assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
         assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 

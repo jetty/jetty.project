@@ -21,6 +21,7 @@ import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -259,7 +260,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 }
                 LOG.debug("authenticated {}->{}", formAuth, nuri);
 
-                res.setContentLength(0);
+                res.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 //TODO yuck - should use Response the whole way
                 Response.sendRedirect(req, res, callback, servletContextRequest.getHttpServletResponse().encodeRedirectURL(nuri));
                 return formAuth;

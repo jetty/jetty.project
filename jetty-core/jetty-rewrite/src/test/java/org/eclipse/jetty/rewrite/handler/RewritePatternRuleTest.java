@@ -51,7 +51,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader("X-URI", request.getHttpURI().getPathQuery());
+                response.getHeaders().put("X-URI", request.getHttpURI().getPathQuery());
                 callback.succeeded();
             }
         });

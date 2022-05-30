@@ -19,6 +19,7 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -41,13 +42,13 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain;charset=utf-8");
-                response.write(false, Callback.NOOP, "pathInContext=%s%n".formatted(request.getPathInContext()));
-                response.write(false, Callback.NOOP, "path=%s%n".formatted(request.getHttpURI().getPath()));
-                response.write(false, Callback.NOOP, "query=%s%n".formatted(request.getHttpURI().getQuery()));
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, false, "pathInContext=%s%n".formatted(request.getPathInContext()), Callback.NOOP);
+                Content.Sink.write(response, false, "path=%s%n".formatted(request.getHttpURI().getPath()), Callback.NOOP);
+                Content.Sink.write(response, false, "query=%s%n".formatted(request.getHttpURI().getQuery()), Callback.NOOP);
                 Request original = Request.unWrap(request);
-                response.write(false, Callback.NOOP, "originalPath=%s%n".formatted(original.getHttpURI().getPath()));
-                response.write(false, Callback.NOOP, "originalQuery=%s%n".formatted(original.getHttpURI().getQuery()));
+                Content.Sink.write(response, false, "originalPath=%s%n".formatted(original.getHttpURI().getPath()), Callback.NOOP);
+                Content.Sink.write(response, false, "originalQuery=%s%n".formatted(original.getHttpURI().getQuery()), Callback.NOOP);
                 callback.succeeded();
             }
         });

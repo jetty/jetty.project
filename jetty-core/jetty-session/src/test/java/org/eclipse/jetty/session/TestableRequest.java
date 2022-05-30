@@ -21,9 +21,9 @@ import java.util.function.Predicate;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -125,19 +125,24 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public long getContentLength()
+    public long getLength()
     {
         return 0;
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk read()
     {
         return null;
     }
 
     @Override
-    public void demandContent(Runnable onContentAvailable)
+    public void demand(Runnable demandCallback)
+    {
+    }
+
+    @Override
+    public void fail(Throwable failure)
     {
     }
 

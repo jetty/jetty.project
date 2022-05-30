@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -138,7 +138,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private int get(Content content, byte[] bytes, int offset, int length)
+    private int get(Content.Chunk content, byte[] bytes, int offset, int length)
     {
         length = Math.min(content.remaining(), length);
         content.getByteBuffer().get(bytes, offset, length);
@@ -155,17 +155,17 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try (AutoLock lock = _contentProducer.lock())
         {
-            return _contentProducer.getRawContentArrived();
+            return _contentProducer.getRawBytesArrived();
         }
     }
 
-    public boolean consumeAll()
+    public boolean consumeAvailable()
     {
         try (AutoLock lock = _contentProducer.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("consumeAll {}", this);
-            boolean atEof = _contentProducer.consumeAll();
+            boolean atEof = _contentProducer.consumeAvailable();
             if (atEof)
                 _consumedEof = true;
 
@@ -267,22 +267,22 @@ public class HttpInput extends ServletInputStream implements Runnable
             // Calculate minimum request rate for DoS protection
             _contentProducer.checkMinDataRate();
 
-            Content content = _contentProducer.nextContent();
-            if (content == null)
+            Content.Chunk chunk = _contentProducer.nextChunk();
+            if (chunk == null)
                 throw new IllegalStateException("read on unready input");
-            if (!content.isSpecial())
+            if (!chunk.isTerminal())
             {
-                int read = get(content, b, off, len);
+                int read = get(chunk, b, off, len);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
-                if (content.isEmpty())
-                    _contentProducer.reclaim(content);
+                if (!chunk.hasRemaining())
+                    _contentProducer.reclaim(chunk);
                 return read;
             }
 
-            if (content instanceof Content.Error errorContent)
+            if (chunk instanceof Content.Chunk.Error errorChunk)
             {
-                Throwable error = errorContent.getCause();
+                Throwable error = errorChunk.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read error={} {}", error, this);
                 if (error instanceof IOException)
@@ -290,7 +290,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IOException(error);
             }
 
-            if (content == Content.EOF)
+            if (chunk == Content.Chunk.EOF)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("read at EOF, setting consumed EOF to true {}", this);
@@ -321,7 +321,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
             // which is forbidden by this method's contract.
-            boolean hasContent = _contentProducer.hasContent();
+            boolean hasContent = _contentProducer.hasChunk();
             if (LOG.isDebugEnabled())
                 LOG.debug("hasContent={} {}", hasContent, this);
             return hasContent;
@@ -349,7 +349,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
-        Content content;
+        Content.Chunk chunk;
         try (AutoLock lock = _contentProducer.lock())
         {
             // Call isReady() to make sure that if not ready we register for fill interest.
@@ -359,9 +359,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                     LOG.debug("running but not ready {}", this);
                 return;
             }
-            content = _contentProducer.nextContent();
+            chunk = _contentProducer.nextChunk();
             if (LOG.isDebugEnabled())
-                LOG.debug("running on content {} {}", content, this);
+                LOG.debug("running on content {} {}", chunk, this);
         }
 
         // This check is needed when a request is started async but no read listener is registered.
@@ -373,19 +373,19 @@ public class HttpInput extends ServletInputStream implements Runnable
             return;
         }
 
-        if (content.isSpecial())
+        if (chunk.isTerminal())
         {
 
-            if (content instanceof Content.Error errorContent)
+            if (chunk instanceof Content.Chunk.Error errorChunk)
             {
-                Throwable error = errorContent.getCause();
+                Throwable error = errorChunk.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
                 _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
                 _readListener.onError(error);
             }
-            else if (content == Content.EOF)
+            else if (chunk == Content.Chunk.EOF)
             {
                 try
                 {
@@ -428,9 +428,9 @@ public class HttpInput extends ServletInputStream implements Runnable
     }
 
     /**
-     * <p>{@link Content} interceptor that can be registered using {@link #setInterceptor(Interceptor)} or
+     * <p>{@link Content.Chunk} interceptor that can be registered using {@link #setInterceptor(Interceptor)} or
      * {@link #addInterceptor(Interceptor)}.
-     * When {@link Content} instances are generated, they are passed to the registered interceptor (if any)
+     * When {@link Content.Chunk} instances are generated, they are passed to the registered interceptor (if any)
      * that is then responsible for providing the actual content that is consumed by {@link #read(byte[], int, int)} and its
      * sibling methods.</p>
      * A minimal implementation could be as simple as:
@@ -455,16 +455,16 @@ public class HttpInput extends ServletInputStream implements Runnable
      * </pre>
      * Implementors of this interface must keep the following in mind:
      * <ul>
-     *     <li>Calling {@link Content#getByteBuffer()} when {@link Content#isSpecial()} returns <code>true</code> throws
+     *     <li>Calling {@link Content.Chunk#getByteBuffer()} when {@link Content.Chunk#isTerminal()} returns <code>true</code> throws
      *     {@link IllegalStateException}.</li>
-     *     <li>A {@link Content} can both be non-special and have {@code content == Content.EOF} return <code>true</code>.</li>
-     *     <li>{@link Content} extends {@link Callback} to manage the lifecycle of the contained byte buffer. The code calling
-     *     {@link #readFrom(Content)} is responsible for managing the lifecycle of both the passed and the returned content
+     *     <li>A {@link Content.Chunk} can both be non-special and have {@code content == Content.EOF} return <code>true</code>.</li>
+     *     <li>{@link Content.Chunk} extends {@link Callback} to manage the lifecycle of the contained byte buffer. The code calling
+     *     {@link #readFrom(Content.Chunk)} is responsible for managing the lifecycle of both the passed and the returned content
      *     instances, once {@link ByteBuffer#hasRemaining()} returns <code>false</code> {@code HttpInput} will make sure
      *     {@link Callback#succeeded()} is called, or {@link Callback#failed(Throwable)} if an error occurs.</li>
-     *     <li>After {@link #readFrom(Content)} is called for the first time, subsequent {@link #readFrom(Content)} calls will
+     *     <li>After {@link #readFrom(Content.Chunk)} is called for the first time, subsequent {@link #readFrom(Content.Chunk)} calls will
      *     occur only after the contained byte buffer is empty (see above) or at any time if the returned content was special.</li>
-     *     <li>Once {@link #readFrom(Content)} returned a special content, subsequent calls to {@link #readFrom(Content)} must
+     *     <li>Once {@link #readFrom(Content.Chunk)} returned a special content, subsequent calls to {@link #readFrom(Content.Chunk)} must
      *     always return the same special content.</li>
      *     <li>Implementations implementing both this interface and {@link Destroyable} will have their
      *     {@link Destroyable#destroy()} method called when {@link #recycle()} is called.</li>
@@ -479,13 +479,13 @@ public class HttpInput extends ServletInputStream implements Runnable
          * unless the returned content is the passed content instance.
          * @return The intercepted content or null if interception is completed for that content.
          */
-        Content readFrom(Content content);
+        Content.Chunk readFrom(Content.Chunk content);
     }
 
     /**
      * An {@link Interceptor} that chains two other {@link Interceptor}s together.
-     * The {@link Interceptor#readFrom(Content)} calls the previous {@link Interceptor}'s
-     * {@link Interceptor#readFrom(Content)} and then passes any {@link Content} returned
+     * The {@link Interceptor#readFrom(Content.Chunk)} calls the previous {@link Interceptor}'s
+     * {@link Interceptor#readFrom(Content.Chunk)} and then passes any {@link Content.Chunk} returned
      * to the next {@link Interceptor}.
      */
     private static class ChainedInterceptor implements Interceptor, Destroyable
@@ -510,9 +510,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
 
         @Override
-        public Content readFrom(Content content)
+        public Content.Chunk readFrom(Content.Chunk content)
         {
-            Content c = getPrev().readFrom(content);
+            Content.Chunk c = getPrev().readFrom(content);
             if (c == null)
                 return null;
             return getNext().readFrom(c);

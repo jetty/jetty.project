@@ -44,12 +44,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -817,7 +817,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public String toString()
     {
-        long timeStamp = _request.getTimeStamp();
+        long timeStamp = _request == null ? 0 : _request.getTimeStamp();
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
@@ -826,7 +826,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             isRequestCompleted(),
             isResponseCompleted(),
             _state.getState(),
-            _request.getHttpURI(),
+            _request == null ? null : _request.getHttpURI(),
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
@@ -865,7 +865,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    void onContent(Content content)
+    void onContent(Content.Chunk content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
@@ -1031,10 +1031,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _coreResponse.getHeaders().add(response.getFields());
             // TODO trailer stuff?
         }
-        if (BufferUtil.isEmpty(content))
-            _coreResponse.write(complete, callback);
-        else
-            _coreResponse.write(complete, callback, content);
+        _coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException

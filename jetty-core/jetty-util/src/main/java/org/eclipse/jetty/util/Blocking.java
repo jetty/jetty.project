@@ -93,6 +93,9 @@ public class Blocking
     public interface Runnable extends java.lang.Runnable, AutoCloseable, Invocable
     {
         void block() throws IOException;
+
+        @Override
+        void close();
     }
 
     public static Runnable runnable()
@@ -328,7 +331,7 @@ public class Blocking
             }
 
             @Override
-            public void close() throws Exception
+            public void close()
             {
                 _callback.close();
             }

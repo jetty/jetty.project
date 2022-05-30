@@ -43,8 +43,8 @@ public class RewriteHandlerTest extends AbstractRuleTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
-                response.setHeader("X-Path", request.getHttpURI().getPath());
-                response.setHeader("X-Original-Path", (String)request.getAttribute(_rewriteHandler.getOriginalPathAttribute()));
+                response.getHeaders().put("X-Path", request.getHttpURI().getPath());
+                response.getHeaders().put("X-Original-Path", (String)request.getAttribute(_rewriteHandler.getOriginalPathAttribute()));
                 callback.succeeded();
             }
         });

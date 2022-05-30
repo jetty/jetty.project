@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -34,7 +33,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
 /**
@@ -131,7 +129,7 @@ public interface Request
     String getQuery();
 
     /**
-     * @return the full URI of this request such as "http://host:port/path?param=1"
+     * @return the full URI of this request such as {@code https://host:port/path?param=1}
      */
     URI getURI();
 
@@ -638,39 +636,14 @@ public interface Request
     }
 
     /**
-     * <p>A reactive model to produce request content, similar to {@link java.util.concurrent.Flow.Publisher}.</p>
-     * <p>Implementations receive the content consumer via {@link #subscribe(Consumer, boolean)},
-     * and return a {@link Subscription} as the link between producer and consumer.</p>
-     * <p>Content producers must notify content to the consumer only if there is demand.</p>
-     * <p>Content consumers can generate demand for content by invoking {@link Subscription#demand()}.</p>
-     * <p>Content production must follow this algorithm:</p>
-     * <ul>
-     *   <li>the first time content is demanded
-     *   <ul>
-     *     <li>when the content is not available =&gt; produce an empty content</li>
-     *     <li>when the content is available:
-     *       <ul>
-     *         <li>when {@code emitInitialContent == false} =&gt; produce an empty content</li>
-     *         <li>when {@code emitInitialContent == true} =&gt; produce the content</li>
-     *       </ul>
-     *     </li>
-     *   </ul>
-     *   </li>
-     *   <li>the second and subsequent times content is demanded
-     *     <ul>
-     *       <li>when the content is not available =&gt; do not produce content</li>
-     *       <li>when the content is available =&gt; produce the content</li>
-     *     </ul>
-     *   </li>
-     * </ul>
-     *
-     * @see #subscribe(Consumer, boolean)
+     * <p>A client-side representation of HTTP request content.</p>
      */
-    public interface Content
+    public interface Content extends org.eclipse.jetty.io.Content.Source
     {
         /**
          * @return the content type string such as "application/octet-stream" or
-         * "application/json;charset=UTF8", or null if no content type must be set
+         * "application/json;charset=UTF8", or null if the {@code Content-Type}
+         * header must not be set
          */
         public default String getContentType()
         {
@@ -678,116 +651,15 @@ public interface Request
         }
 
         /**
-         * @return the content length, if known, or -1 if the content length is unknown
-         */
-        public default long getLength()
-        {
-            return -1;
-        }
-
-        /**
-         * <p>Whether this content producer can produce exactly the same content more
-         * than once.</p>
-         * <p>Implementations should return {@code true} only if the content can be
-         * produced more than once, which means that {@link #subscribe(Consumer, boolean)}
-         * may be called again.</p>
-         * <p>The {@link HttpClient} implementation may use this method in particular
-         * cases where it detects that it is safe to retry a request that failed.</p>
+         * <p>Rewinds this content, if possible, so that subsequent reads return
+         * chunks starting from the beginning of this content.</p>
          *
-         * @return whether the content can be produced more than once
+         * @return true if this content has been rewound, false if this content
+         * cannot be rewound
          */
-        public default boolean isReproducible()
+        public default boolean rewind()
         {
             return false;
-        }
-
-        /**
-         * <p>Initializes this content producer with the content consumer, and with
-         * the indication of whether initial content, if present, must be emitted
-         * upon the initial demand of content (to support delaying the send of the
-         * request content in case of {@code Expect: 100-Continue} when
-         * {@code emitInitialContent} is {@code false}).</p>
-         *
-         * @param consumer the content consumer to invoke when there is demand for content
-         * @param emitInitialContent whether to emit initial content, if present
-         * @return the Subscription that links this producer to the consumer
-         */
-        public Subscription subscribe(Consumer consumer, boolean emitInitialContent);
-
-        /**
-         * <p>Fails this request content, possibly failing and discarding accumulated
-         * content that was not demanded.</p>
-         * <p>The failure may be notified to the consumer at a later time, when the
-         * consumer demands for content.</p>
-         * <p>Typical failure: the request being aborted by user code, or idle timeouts.</p>
-         *
-         * @param failure the reason of the failure
-         */
-        public default void fail(Throwable failure)
-        {
-        }
-
-        /**
-         * <p>A reactive model to consume request content, similar to {@link java.util.concurrent.Flow.Subscriber}.</p>
-         * <p>Callback methods {@link #onContent(ByteBuffer, boolean, Callback)} and {@link #onFailure(Throwable)}
-         * are invoked in strict sequential order and never concurrently, although possibly by different threads.</p>
-         */
-        public interface Consumer
-        {
-            /**
-             * <p>Callback method invoked by the producer when there is content available
-             * <em>and</em> there is demand for content.</p>
-             * <p>The {@code callback} is associated with the {@code buffer} to
-             * signal when the content buffer has been consumed.</p>
-             * <p>Failing the {@code callback} does not have any effect on content
-             * production. To stop the content production, the consumer must call
-             * {@link Subscription#fail(Throwable)}.</p>
-             * <p>In case an exception is thrown by this method, it is equivalent to
-             * a call to {@link Subscription#fail(Throwable)}.</p>
-             *
-             * @param buffer the content buffer to consume
-             * @param last whether it's the last content
-             * @param callback a callback to invoke when the content buffer is consumed
-             */
-            public void onContent(ByteBuffer buffer, boolean last, Callback callback);
-
-            /**
-             * <p>Callback method invoked by the producer when it failed to produce content.</p>
-             * <p>Typical failure: a producer getting an exception while reading from an
-             * {@link InputStream} to produce content.</p>
-             *
-             * @param failure the reason of the failure
-             */
-            public default void onFailure(Throwable failure)
-            {
-            }
-        }
-
-        /**
-         * <p>The link between a content producer and a content consumer.</p>
-         * <p>Content consumers can demand more content via {@link #demand()},
-         * or ask the content producer to stop producing content via
-         * {@link #fail(Throwable)}.</p>
-         */
-        public interface Subscription
-        {
-            /**
-             * <p>Demands more content, which eventually results in
-             * {@link Consumer#onContent(ByteBuffer, boolean, Callback)} to be invoked.</p>
-             */
-            public void demand();
-
-            /**
-             * <p>Fails the subscription, notifying the content producer to stop producing
-             * content.</p>
-             * <p>Typical failure: a proxy consumer waiting for more content (or waiting
-             * to demand content) that is failed by an error response from the server.</p>
-             *
-             * @param failure the reason of the failure
-             */
-            public default void fail(Throwable failure)
-            {
-            }
         }
     }
 }

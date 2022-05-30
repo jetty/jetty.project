@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextContent()} will block when
+ * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextChunk()} will block when
  * there is no available content but will never return null.
  */
 class BlockingContentProducer implements ContentProducer
@@ -65,9 +65,9 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean hasContent()
+    public boolean hasChunk()
     {
-        return _asyncContentProducer.hasContent();
+        return _asyncContentProducer.hasChunk();
     }
 
     @Override
@@ -83,29 +83,29 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public long getRawContentArrived()
+    public long getRawBytesArrived()
     {
-        return _asyncContentProducer.getRawContentArrived();
+        return _asyncContentProducer.getRawBytesArrived();
     }
 
     @Override
-    public boolean consumeAll()
+    public boolean consumeAvailable()
     {
-        boolean eof = _asyncContentProducer.consumeAll();
+        boolean eof = _asyncContentProducer.consumeAvailable();
         _semaphore.release();
         return eof;
     }
 
     @Override
-    public Content nextContent()
+    public Content.Chunk nextChunk()
     {
         while (true)
         {
-            Content content = _asyncContentProducer.nextContent();
+            Content.Chunk chunk = _asyncContentProducer.nextChunk();
             if (LOG.isDebugEnabled())
-                LOG.debug("nextContent async producer returned {}", content);
-            if (content != null)
-                return content;
+                LOG.debug("nextContent async producer returned {}", chunk);
+            if (chunk != null)
+                return chunk;
 
             // IFF isReady() returns false then HttpChannel.needContent() has been called,
             // thus we know that eventually a call to onContentProducible will come.
@@ -124,15 +124,15 @@ class BlockingContentProducer implements ContentProducer
             }
             catch (InterruptedException e)
             {
-                return new Content.Error(e);
+                return Content.Chunk.from(e);
             }
         }
     }
 
     @Override
-    public void reclaim(Content content)
+    public void reclaim(Content.Chunk chunk)
     {
-        _asyncContentProducer.reclaim(content);
+        _asyncContentProducer.reclaim(chunk);
     }
 
     @Override

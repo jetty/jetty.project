@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
@@ -238,7 +239,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws IOException
             {
                 InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
-                OutputStream outputStream = Response.asOutputStream(response);
+                OutputStream outputStream = Content.Sink.asOutputStream(response);
                 IO.copy(inputStream, outputStream);
             }
         });
@@ -289,7 +290,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                     try
                     {
                         InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
-                        OutputStream outputStream = Response.asOutputStream(response);
+                        OutputStream outputStream = Content.Sink.asOutputStream(response);
                         IO.copy(inputStream, outputStream);
                     }
                     finally

@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
@@ -70,7 +71,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, content);
+                Content.Sink.write(response, true, content, callback);
             }
         });
 
@@ -88,7 +89,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, ByteBuffer.wrap(new byte[10 * 1024]));
+                response.write(true, ByteBuffer.wrap(new byte[10 * 1024]), callback);
             }
         });
 
@@ -196,7 +197,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, callback, "0");
+                Content.Sink.write(response, true, "0", callback);
             }
         });
 

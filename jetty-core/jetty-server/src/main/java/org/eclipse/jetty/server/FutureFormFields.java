@@ -21,22 +21,20 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
 /**
  * A {@link CompletableFuture} that is completed once a {@link org.eclipse.jetty.http.MimeTypes.Type#FORM_ENCODED}
- * content has been parsed asynchronously from the {@link Content.Reader}.
+ * content has been parsed asynchronously from the {@link Content.Source}.
  */
 public class FutureFormFields extends CompletableFuture<Fields> implements Runnable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FutureFormFields.class);
     private static final CompletableFuture<Fields> NONE = CompletableFuture.completedFuture(null);
 
     public static Charset getFormEncodedCharset(Request request)
@@ -46,7 +44,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
             return null;
 
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
+        if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
         // TODO mimeTypes from context
@@ -74,7 +72,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
         return futureFormFields;
     }
 
-    private final Content.Reader _reader;
+    private final Content.Source _source;
     private final Fields _fields;
     private final CharsetStringBuilder _builder;
     private final int _maxFields;
@@ -84,19 +82,19 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
     private int _percent = 0;
     private byte _percentCode;
 
-    public FutureFormFields(Content.Reader reader)
+    public FutureFormFields(Content.Source source)
     {
-        this(reader, StandardCharsets.UTF_8, -1, -1, null);
+        this(source, StandardCharsets.UTF_8, -1, -1, null);
     }
 
-    public FutureFormFields(Content.Reader reader, Charset charset, int maxFields, int maxSize)
+    public FutureFormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
     {
-        this(reader, charset, maxFields, maxSize, null);
+        this(source, charset, maxFields, maxSize, null);
     }
 
-    public FutureFormFields(Content.Reader reader, Charset charset, int maxFields, int maxSize, Fields fields)
+    public FutureFormFields(Content.Source source, Charset charset, int maxFields, int maxSize, Fields fields)
     {
-        _reader = reader;
+        _source = source;
         _maxFields = maxFields;
         _maxSize = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
@@ -110,14 +108,14 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
         {
             while (true)
             {
-                Content content = _reader.readContent();
+                Content.Chunk content = _source.read();
                 if (content == null)
                 {
-                    _reader.demandContent(this);
+                    _source.demand(this);
                     return;
                 }
 
-                if (content instanceof Content.Error error)
+                if (content instanceof Content.Chunk.Error error)
                 {
                     completeExceptionally(error.getCause());
                     content.release();

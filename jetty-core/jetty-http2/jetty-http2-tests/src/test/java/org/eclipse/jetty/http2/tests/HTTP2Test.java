@@ -43,7 +43,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -161,7 +161,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Response.write(response, true, ByteBuffer.wrap(content));
+                Content.Sink.write(response, true, ByteBuffer.wrap(content));
             }
         });
 
@@ -255,7 +255,7 @@ public class HTTP2Test extends AbstractTest
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -803,7 +803,7 @@ public class HTTP2Test extends AbstractTest
                 response.getHeaders().put(":custom", "special");
                 try
                 {
-                    Response.write(response, false);
+                    Content.Sink.write(response, false, null);
                 }
                 catch (IOException x)
                 {

@@ -25,16 +25,18 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +44,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP3.class);
 
+    private final AutoLock lock = new AutoLock();
     private final long nanoTime = System.nanoTime();
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
-    private Content content;
+    private Content.Chunk chunk;
     private MetaData.Response metaData;
     private boolean committed;
 
@@ -78,7 +81,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
             Runnable handler = httpChannel.onRequest(request);
 
             if (frame.isLast())
-                content = Content.EOF;
+            {
+                try (AutoLock ignored = lock.lock())
+                {
+                    chunk = Content.Chunk.EOF;
+                }
+            }
 
             HttpFields fields = request.getFields();
 
@@ -118,27 +126,49 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk read()
     {
         while (true)
         {
-            Content content = this.content;
-            this.content = Content.next(content);
-            if (content != null)
-                return content;
+            Content.Chunk chunk;
+            try (AutoLock ignored = lock.lock())
+            {
+                chunk = this.chunk;
+                this.chunk = Content.Chunk.next(chunk);
+            }
+            if (chunk != null)
+                return chunk;
 
             Stream.Data data = stream.readData();
             if (data == null)
                 return null;
 
-            this.content = newContent(data);
+            try (AutoLock ignored = lock.lock())
+            {
+                this.chunk = newChunk(data);
+            }
         }
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
-        stream.demand();
+        boolean notify;
+        try (AutoLock ignored = lock.lock())
+        {
+            // We may have a non-demanded chunk in case of trailers.
+            notify = chunk != null;
+        }
+        if (notify)
+        {
+            Runnable task = httpChannel.onContentAvailable();
+            if (task != null)
+                connection.offer(task);
+        }
+        else
+        {
+            stream.demand();
+        }
     }
 
     public Runnable onDataAvailable()
@@ -156,26 +186,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
             return null;
         }
 
-        content = newContent(data);
-        return httpChannel.onContentAvailable();
-    }
-
-    private Content.Abstract newContent(Stream.Data data)
-    {
-        return new Content.Abstract(false, data.isLast())
+        try (AutoLock ignored = lock.lock())
         {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return data.getByteBuffer();
-            }
-
-            @Override
-            public void release()
-            {
-                data.complete();
-            }
-        };
+            chunk = newChunk(data);
+        }
+        return httpChannel.onContentAvailable();
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -187,8 +202,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailers);
         }
-        content = new Content.Trailers(trailers);
+        try (AutoLock ignored = lock.lock())
+        {
+            chunk = new Trailers(trailers);
+        }
         return httpChannel.onContentAvailable();
+    }
+
+    private Content.Chunk newChunk(Stream.Data data)
+    {
+        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data::complete);
     }
 
     @Override
@@ -198,12 +221,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... buffers)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        if (buffers.length > 1)
-            throw new IllegalStateException();
-
-        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
+        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else

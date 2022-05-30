@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -99,7 +101,7 @@ public class HttpServerTestFixture
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.write(true, callback, "Hello world\r\n");
+            Content.Sink.write(response, true, "Hello world\r\n", callback);
         }
     }
 
@@ -138,19 +140,19 @@ public class HttpServerTestFixture
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            long len = expected < 0 ? request.getContentLength() : expected;
+            long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
             byte[] content = new byte[(int)len];
             int offset = 0;
             while (offset < len)
             {
-                Content c = request.readContent();
+                Content.Chunk c = request.read();
                 if (c == null)
                 {
                     try (Blocking.Runnable blocker = Blocking.runnable())
                     {
-                        request.demandContent(blocker);
+                        request.demand(blocker);
                         blocker.block();
                     }
                     continue;
@@ -159,7 +161,7 @@ public class HttpServerTestFixture
                 if (c.hasRemaining())
                 {
                     int r = c.remaining();
-                    c.fill(content, offset, r);
+                    c.get(content, offset, r);
                     offset += r;
                     c.release();
                 }
@@ -169,8 +171,8 @@ public class HttpServerTestFixture
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
-            response.setContentLength(reply.length());
-            response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, reply.length());
+            response.write(true, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1), callback);
         }
     }
 
@@ -180,9 +182,9 @@ public class HttpServerTestFixture
         public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            Content.readAll(request, Promise.from(
-                s -> response.write(true, callback, "read %d%n" + s.length()),
-                t -> response.write(true, callback, String.format("caught %s%n", t))
+            Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
+                s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
+                t -> Content.Sink.write(response, true, String.format("caught %s%n", t), callback)
             ));
         }
     }
@@ -199,7 +201,7 @@ public class HttpServerTestFixture
         {
             response.setStatus(200);
 
-            String input = Content.readAll(request);
+            String input = Content.Source.asString(request);
             Fields fields = Request.extractQueryParameters(request);
 
             String tmp = fields.getValue("writes");
@@ -220,26 +222,26 @@ public class HttpServerTestFixture
             String chunk = (input + data).substring(0, block);
             if (encoding == null)
             {
-                response.setContentType("text/plain");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
                 for (int i = writes; i-- > 0;)
                 {
                     try (Blocking.Callback blocker = Blocking.callback())
                     {
-                        response.write(i == 0, blocker, bytes.slice());
+                        response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();
                     }
                 }
             }
             else
             {
-                response.setContentType("text/plain;charset=" + encoding);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding);
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
                 for (int i = writes; i-- > 0;)
                 {
                     try (Blocking.Callback blocker = Blocking.callback())
                     {
-                        response.write(i == 0, blocker, bytes.slice());
+                        response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();
                     }
                 }

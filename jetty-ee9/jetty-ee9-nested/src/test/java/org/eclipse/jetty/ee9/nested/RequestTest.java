@@ -64,10 +64,10 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -2251,27 +2251,30 @@ public class RequestTest
         }
 
         @Override
-        public long getContentLength()
+        public long getLength()
         {
             return 0;
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
             return null;
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
+        }
 
+        @Override
+        public void fail(Throwable failure)
+        {
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-
         }
 
         @Override
@@ -2283,7 +2286,6 @@ public class RequestTest
         @Override
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
         {
-
         }
 
         @Override
@@ -2313,7 +2315,6 @@ public class RequestTest
         @Override
         public void clearAttributes()
         {
-
         }
     }
     

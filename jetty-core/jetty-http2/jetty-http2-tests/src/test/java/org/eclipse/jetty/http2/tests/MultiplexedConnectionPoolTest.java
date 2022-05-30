@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -141,7 +142,7 @@ public class MultiplexedConnectionPoolTest
 
                 assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
 
-                response.write(true, callback, "req " + req + " executed");
+                Content.Sink.write(response, true, "req " + req + " executed", callback);
             }
         });
 
@@ -231,7 +232,7 @@ public class MultiplexedConnectionPoolTest
             public void process(Request request, Response response, Callback callback)
             {
                 int req = Integer.parseInt(request.getPathInContext().substring(1));
-                response.write(true, callback, "req " + req + " executed");
+                Content.Sink.write(response, true, "req " + req + " executed", callback);
             }
         }, 64, 1L);
 

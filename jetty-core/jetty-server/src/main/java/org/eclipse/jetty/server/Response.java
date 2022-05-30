@@ -13,11 +13,7 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,11 +26,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.Blocking;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -44,10 +40,8 @@ import org.slf4j.LoggerFactory;
  * An asynchronous HTTP response.
  * TODO Javadoc
  */
-public interface Response extends Content.Writer
+public interface Response extends Content.Sink
 {
-    Logger LOG = LoggerFactory.getLogger(Response.class);
-
     // This is needed so that response methods can access the wrapped Request#getContext method
     Request getRequest();
 
@@ -57,18 +51,7 @@ public interface Response extends Content.Writer
 
     HttpFields.Mutable getHeaders();
 
-    // TODO: change this to trailers(Supplier<HttpFields> supplier)
-    //  so that the method name is less confusing?
-    //  (it has a side effect, but looks like a normal getter).
-    HttpFields.Mutable getTrailers();
-
-    @Override
-    void write(boolean last, Callback callback, ByteBuffer... content);
-
-    default void write(boolean last, Callback callback, String utf8Content)
-    {
-        write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
-    }
+    HttpFields.Mutable getOrCreateTrailers();
 
     boolean isCommitted();
 
@@ -76,54 +59,17 @@ public interface Response extends Content.Writer
 
     void reset();
 
-    // TODO: inline and remove
-    default void addHeader(String name, String value)
+    default boolean writeTrailers(Content.Chunk chunk, Callback callback)
     {
-        getHeaders().add(name, value);
-    }
-
-    // TODO: inline and remove
-    default void addHeader(HttpHeader header, String value)
-    {
-        getHeaders().add(header, value);
-    }
-
-    // TODO: inline and remove
-    default void setHeader(String name, String value)
-    {
-        getHeaders().put(name, value);
-    }
-
-    // TODO: inline and remove
-    default void setHeader(HttpHeader header, String value)
-    {
-        getHeaders().put(header, value);
-    }
-
-    // TODO: inline and remove
-    default void setContentType(String mimeType)
-    {
-        getHeaders().put(HttpHeader.CONTENT_TYPE, mimeType);
-    }
-
-    // TODO: inline and remove
-    default void setContentLength(long length)
-    {
-        getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
-    }
-
-    /*
-     * Blocking write utility
-     */
-    static void write(Response response, boolean last, ByteBuffer... content) throws IOException
-    {
-        try (Blocking.Callback callback = Blocking.callback())
+        if (chunk instanceof Trailers trailers)
         {
-            response.write(last, callback, content);
-            callback.block();
+            getOrCreateTrailers().add(trailers.getTrailers());
+            write(true, null, callback);
+            return true;
         }
+        return false;
     }
-    
+
     @SuppressWarnings("unchecked")
     static <T extends Response.Wrapper> T as(Response response, Class<T> type)
     {
@@ -141,7 +87,7 @@ public interface Response extends Content.Writer
         sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
     }
 
-    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAll)
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
@@ -153,22 +99,22 @@ public interface Response extends Content.Writer
             throw new IllegalStateException("Committed");
 
         // TODO: can we remove this?
-        if (consumeAll)
+        if (consumeAvailable)
         {
             while (true)
             {
-                Content content = response.getRequest().readContent();
-                if (content == null)
+                Content.Chunk chunk = response.getRequest().read();
+                if (chunk == null)
                     break; // TODO really? shouldn't we just asynchronously wait?
-                content.release();
-                if (content.isLast())
+                chunk.release();
+                if (chunk.isLast())
                     break;
             }
         }
 
         response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
         response.setStatus(code);
-        response.write(true, callback);
+        response.write(true, null, callback);
     }
 
     static void addCookie(Response response, HttpCookie cookie)
@@ -261,11 +207,15 @@ public interface Response extends Content.Writer
     {
         // TODO what about 102 Processing?
 
+        // Retrieve the Logger instance here, rather than having a
+        // public field that will force a transitive dependency on SLF4J.
+        Logger logger = LoggerFactory.getLogger(Response.class);
+
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
-        if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
-            LOG.warn("{} {}", message, cause.getMessage());
+        if (!logger.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
+            logger.warn("{} {}", message, cause.getMessage());
         else
-            LOG.warn("{} {}", message, response, cause);
+            logger.warn("{} {}", message, response, cause);
 
         if (response.isCommitted())
         {
@@ -273,7 +223,7 @@ public interface Response extends Content.Writer
             return;
         }
 
-        Response.ensureConsumeAllOrNotPersistent(request, response);
+        Response.ensureConsumeAvailableOrNotPersistent(request, response);
 
         if (status <= 0)
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
@@ -302,7 +252,7 @@ public interface Response extends Content.Writer
 
         // fall back to very empty error page
         response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
-        response.write(true, callback);
+        response.write(true, null, callback);
     }
 
     static Response getOriginalResponse(Response response)
@@ -322,12 +272,12 @@ public interface Response extends Content.Writer
         return -1;
     }
 
-    static void ensureConsumeAllOrNotPersistent(Request request, Response response)
+    static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
     {
         switch (request.getConnectionMetaData().getHttpVersion())
         {
             case HTTP_1_0:
-                if (consumeAll(request))
+                if (consumeAvailable(request))
                     return;
 
                 // Remove any keep-alive value in Connection headers
@@ -346,7 +296,7 @@ public interface Response extends Content.Writer
                 break;
 
             case HTTP_1_1:
-                if (consumeAll(request))
+                if (consumeAvailable(request))
                     return;
 
                 // Add close value to Connection headers
@@ -382,15 +332,15 @@ public interface Response extends Content.Writer
         }
     }
 
-    static boolean consumeAll(Request request)
+    static boolean consumeAvailable(Request request)
     {
         while (true)
         {
-            Content content = request.readContent();
-            if (content == null)
+            Content.Chunk chunk = request.read();
+            if (chunk == null)
                 return false;
-            content.release();
-            if (content.isLast())
+            chunk.release();
+            if (chunk.isLast())
                 return true;
         }
     }
@@ -416,7 +366,7 @@ public interface Response extends Content.Writer
         {
             return _wrapped;
         }
-        
+
         @Override
         public int getStatus()
         {
@@ -436,15 +386,15 @@ public interface Response extends Content.Writer
         }
 
         @Override
-        public HttpFields.Mutable getTrailers()
+        public HttpFields.Mutable getOrCreateTrailers()
         {
-            return getWrapped().getTrailers();
+            return getWrapped().getOrCreateTrailers();
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            getWrapped().write(last, callback, content);
+            getWrapped().write(last, byteBuffer, callback);
         }
 
         @Override
@@ -464,62 +414,5 @@ public interface Response extends Content.Writer
         {
             getWrapped().reset();
         }
-    }
-
-    // TODO test and document
-    static OutputStream asOutputStream(Response response)
-    {
-        return Content.asOutputStream(response);
-    }
-
-    // TODO test and document
-    static WritableByteChannel asWritableByteChannel(Response response)
-    {
-        ConnectionMetaData connectionMetaData = response.getRequest().getConnectionMetaData();
-
-        // TODO
-        // Return the socket channel when using HTTP11 without SSL to allow for zero-copy FileChannel.transferTo()
-//        if (connectionMetaData.getHttpVersion() == HttpVersion.HTTP_1_1 && !connectionMetaData.isSecure())
-//        {
-//            // This returns the socket channel.
-//            Object transport = connectionMetaData.getConnection().getEndPoint().getTransport();
-//            if (transport instanceof WritableByteChannel wbc)
-//                return wbc;
-//        }
-
-        return new WritableByteChannel()
-        {
-            private boolean closed;
-            @Override
-            public int write(ByteBuffer src) throws IOException
-            {
-                try (Blocking.Callback callback = Blocking.callback())
-                {
-                    int written = src.remaining();
-                    response.write(false, callback, src);
-                    callback.block();
-                    return written;
-                }
-            }
-
-            @Override
-            public boolean isOpen()
-            {
-                return !closed;
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                if (closed)
-                    return;
-                try (Blocking.Callback callback = Blocking.callback())
-                {
-                    response.write(true, callback, BufferUtil.EMPTY_BUFFER);
-                    callback.block();
-                    closed = true;
-                }
-            }
-        };
     }
 }

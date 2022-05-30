@@ -19,6 +19,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -78,7 +79,7 @@ public class HostnameVerificationTest
             {
                 try (Blocking.Callback blocker = Blocking.callback())
                 {
-                    response.write(true, blocker, "foobar");
+                    Content.Sink.write(response, true, "foobar", blocker);
                 }
             }
         });

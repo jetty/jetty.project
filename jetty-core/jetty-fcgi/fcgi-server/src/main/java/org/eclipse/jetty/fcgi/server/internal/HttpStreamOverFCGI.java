@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,7 +56,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private String _path;
     private String _query;
     private String _version;
-    private Content _content;
+    private Content.Chunk _chunk;
     private boolean _committed;
     private boolean _shutdown;
     private boolean _aborted;
@@ -154,24 +154,24 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public Content readContent()
+    public Content.Chunk read()
     {
-        if (_content == null)
+        if (_chunk == null)
             _connection.parseAndFill();
-        Content content = _content;
-        _content = Content.next(content);
-        return content;
+        Content.Chunk chunk = _chunk;
+        _chunk = Content.Chunk.next(chunk);
+        return chunk;
     }
 
     @Override
-    public void demandContent()
+    public void demand()
     {
-        if (_content != null)
+        if (_chunk != null)
             return;
 
         _connection.parseAndFill();
 
-        if (_content != null)
+        if (_chunk != null)
         {
             notifyContentAvailable();
             return;
@@ -187,14 +187,17 @@ public class HttpStreamOverFCGI implements HttpStream
             onContentAvailable.run();
     }
 
-    public void onContent(Content content)
+    public void onContent(Content.Chunk chunk)
     {
-        _content = content;
+        _chunk = chunk;
     }
 
     public void onComplete()
     {
-        _content = Content.last(_content);
+        if (_chunk == null)
+            _chunk = Content.Chunk.EOF;
+        else if (!_chunk.isLast() && !(_chunk instanceof Content.Chunk.Error))
+            throw new IllegalStateException();
     }
 
     @Override
@@ -204,11 +207,9 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... buffers)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        if (buffers.length > 1)
-            throw new IllegalStateException();
-        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
+        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
 
         if (LOG.isDebugEnabled())
             LOG.debug("send {} {} l={}", this, request, last);

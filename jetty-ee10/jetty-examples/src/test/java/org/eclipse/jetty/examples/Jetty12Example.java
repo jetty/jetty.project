@@ -16,7 +16,9 @@ package org.eclipse.jetty.examples;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 public class Jetty12Example
@@ -43,8 +45,8 @@ public class Jetty12Example
                                 Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.write(true, callback, "the handler says Hello World");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                Content.Sink.write(response, true, "the handler says Hello World", callback);
             }
         });
         contexts.addHandler(embedded);

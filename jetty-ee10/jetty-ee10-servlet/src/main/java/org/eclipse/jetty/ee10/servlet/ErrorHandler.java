@@ -93,7 +93,7 @@ public class ErrorHandler implements Request.Processor
 
         String cacheControl = getCacheControl();
         if (cacheControl != null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
+            response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler

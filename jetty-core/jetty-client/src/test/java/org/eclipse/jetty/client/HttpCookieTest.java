@@ -111,7 +111,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                response.addHeader("Set-Cookie", "");
+                response.getHeaders().add("Set-Cookie", "");
             }
         });
 

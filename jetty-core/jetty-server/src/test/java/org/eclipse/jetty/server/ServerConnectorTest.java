@@ -67,7 +67,7 @@ public class ServerConnectorTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
             assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
@@ -93,7 +93,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, callback, BufferUtil.toBuffer(buffer.toByteArray()));
+            response.write(true, BufferUtil.toBuffer(buffer.toByteArray()), callback);
         }
     }
 

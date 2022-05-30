@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -82,17 +83,11 @@ public class HttpRedirector
      */
     public boolean isRedirect(Response response)
     {
-        switch (response.getStatus())
+        return switch (response.getStatus())
         {
-            case 301:
-            case 302:
-            case 303:
-            case 307:
-            case 308:
-                return true;
-            default:
-                return false;
-        }
+            case 301, 302, 303, 307, 308 -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -307,6 +302,9 @@ public class HttpRedirector
     {
         try
         {
+            Request.Content body = httpRequest.getBody();
+            if (body != null && !body.rewind())
+                throw new IOException("Could not reproduce request content for " + httpRequest);
             Request redirect = client.copyRequest(httpRequest, location);
 
             // Adjust the timeout of the new request, taking into account the

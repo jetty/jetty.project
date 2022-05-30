@@ -95,7 +95,7 @@ public class SlowClientWithPipelinedRequestTest
                     Arrays.fill(bytes, (byte)'9');
                     ByteBuffer buffer = ByteBuffer.wrap(bytes);
                     // Do a non blocking write
-                    response.write(true, callback, buffer);
+                    response.write(true, buffer, callback);
                 }
                 else
                 {

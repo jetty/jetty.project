@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
@@ -23,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,9 +34,10 @@ import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.hamcrest.Matchers;
@@ -451,12 +451,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
                     response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                    response.write(true, callback, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)));
+                    response.write(true, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)), callback);
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, callback, ByteBuffer.wrap(bytes));
+                    response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
             }
         });
@@ -699,9 +699,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 response.setStatus(200);
                 // Echo content back
-                InputStream inputStream = Request.asInputStream(request);
-                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
-                IO.copy(inputStream, outputStream);
+                try (Blocking.Callback callback = Blocking.callback())
+                {
+                    Flow.Publisher<Content.Chunk> publisher = Content.Source.asPublisher(request);
+                    Flow.Subscriber<Content.Chunk> subscriber = Content.Sink.asSubscriber(response, callback);
+                    publisher.subscribe(subscriber);
+                    callback.block();
+                }
             }
         }
     }

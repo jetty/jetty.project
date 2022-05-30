@@ -182,8 +182,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            Request.Content requestContent = request.getBody();
-            if (!requestContent.isReproducible())
+            Request.Content content = request.getBody();
+            if (content != null && !content.rewind())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Request content not reproducible for {}", request);

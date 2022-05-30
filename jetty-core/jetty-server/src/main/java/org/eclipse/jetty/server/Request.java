@@ -33,6 +33,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
@@ -60,15 +62,15 @@ import org.eclipse.jetty.util.thread.Invocable;
  * {
  *     while (true)
  *     {
- *         Content content = request.readContent();
- *         if (content == null)
+ *         Content.Chunk chunk = request.read();
+ *         if (chunk == null)
  *         {
- *             // The content is not currently available, demand to be called back.
- *             request.demandContent(() -> process(request, response, callback));
+ *             // The chunk is not currently available, demand to be called back.
+ *             request.demand(() -> process(request, response, callback));
  *             return;
  *         }
  *
- *         if (content instanceof Content.Error error)
+ *         if (chunk instanceof Content.Chunk.Error error)
  *         {
  *             Throwable failure = error.getCause();
  *
@@ -79,7 +81,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             return;
  *         }
  *
- *         if (content instanceof Content.Trailers trailers)
+ *         if (chunk instanceof Trailers trailers)
  *         {
  *             HttpFields fields = trailers.getTrailers();
  *
@@ -93,13 +95,13 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             return;
  *         }
  *
- *         // Normal content, process it.
- *         processContent(content);
+ *         // Normal chunk, process it.
+ *         processChunk(chunk);
  *         // Release the content after processing.
- *         content.release();
+ *         chunk.release();
  *
  *         // Reached end-of-file?
- *         if (content.isLast())
+ *         if (chunk.isLast())
  *         {
  *             // Generate a response.
  *
@@ -112,7 +114,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * }
  * }</pre>
  */
-public interface Request extends Attributes, Content.Reader
+public interface Request extends Attributes, Content.Source
 {
     List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
 
@@ -164,38 +166,13 @@ public interface Request extends Attributes, Content.Reader
     // TODO: see above.
     boolean isSecure();
 
-    // TODO: remove because it's been moved to HttpFields?
-    long getContentLength();
-
     /**
-     * <p>Reads a chunk of the request content.</p>
-     * <p>The returned {@link Content} may be:</p>
-     * <ul>
-     * <li>{@code null}, meaning that there will be content to read but it is not yet available</li>
-     * <li>a {@link Content.Error} instance, in case of read errors</li>
-     * <li>a {@link Content.Trailers} instance, in case of request content trailers</li>
-     * <li>a {@link Content} instance, in case of normal request content</li>
-     * </ul>
-     * <p>When the returned {@code Content} is {@code null}, a call to
-     * {@link #demandContent(Runnable)} should be made, to be notified when more
-     * request content is available.</p>
-     *
-     * @see #demandContent(Runnable)
+     * {@inheritDoc}
+     * <p>In addition, the returned {@link Content.Chunk} may be a
+     * {@link Trailers} instance, in case of request content trailers.</p>
      */
     @Override
-    Content readContent();
-
-    /**
-     * <p>Demands to notify the given {@code Runnable} when request content is available to be read.</p>
-     * <p>It is not mandatory to call this method before a call to {@link #readContent()}.</p>
-     * <p>The given {@code Runnable} is notified only once for each invocation of this method,
-     * and different invocations of this method may provide the same {@code Runnable}s or
-     * different {@code Runnable}s.</p>
-     *
-     * @see #readContent()
-     */
-    @Override
-    void demandContent(Runnable onContentAvailable);
+    Content.Chunk read();
 
     // TODO should this be on the connectionMetaData?
     default boolean isPushSupported()
@@ -220,13 +197,6 @@ public interface Request extends Attributes, Content.Reader
     boolean addErrorListener(Predicate<Throwable> onError);
 
     void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
-
-    // TODO: why this?
-    //  Remove when Request.getContext() is merged.
-    default Request getWrapped()
-    {
-        return null;
-    }
 
     static String getLocalAddr(Request request)
     {
@@ -355,9 +325,10 @@ public interface Request extends Attributes, Content.Reader
         }).collect(Collectors.toList());
     }
 
+    // TODO: consider inline and remove.
     static InputStream asInputStream(Request request)
     {
-        return Content.asInputStream(request);
+        return Content.Source.asInputStream(request);
     }
 
     static Fields extractQueryParameters(Request request)
@@ -556,21 +527,27 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
-        public long getContentLength()
+        public long getLength()
         {
-            return getWrapped().getContentLength();
+            return getWrapped().getLength();
         }
 
         @Override
-        public Content readContent()
+        public Content.Chunk read()
         {
-            return getWrapped().readContent();
+            return getWrapped().read();
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void demand(Runnable demandCallback)
         {
-            getWrapped().demandContent(onContentAvailable);
+            getWrapped().demand(demandCallback);
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            getWrapped().fail(failure);
         }
 
         @Override

@@ -183,12 +183,12 @@ public class DigestAuthenticator extends LoginAuthenticator
             String domain = req.getContext().getContextPath();
             if (domain == null)
                 domain = "/";
-            res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
-                "\", domain=\"" + domain +
-                "\", nonce=\"" + newNonce(req) +
-                "\", algorithm=MD5" +
-                ", qop=\"auth\"" +
-                ", stale=" + stale);
+            res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+                    "\", domain=\"" + domain +
+                    "\", nonce=\"" + newNonce(req) +
+                    "\", algorithm=MD5" +
+                    ", qop=\"auth\"" +
+                    ", stale=" + stale);
             Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
 
             return Authentication.SEND_CONTINUE;

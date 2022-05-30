@@ -99,8 +99,8 @@ public class SSLCloseTest
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
             response.write(false,
-                Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
-                BufferUtil.toBuffer(bytes));
+                BufferUtil.toBuffer(bytes), Callback.from(() -> response.write(true, BufferUtil.toBuffer(bytes), callback), callback::failed)
+            );
         }
     }
 }

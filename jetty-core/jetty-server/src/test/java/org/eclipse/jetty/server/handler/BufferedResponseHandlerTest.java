@@ -16,7 +16,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -25,8 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,55 +36,40 @@ import static org.hamcrest.Matchers.not;
 
 public class BufferedResponseHandlerTest
 {
-    private static Server _server;
-    private static HttpConfiguration _config;
-    private static LocalConnector _local;
-    private static ContextHandler _contextHandler;
-    private static BufferedResponseHandler _bufferedHandler;
-    private static TestHandler _test;
+    private Server _server;
+    private LocalConnector _local;
+    private TestHandler _test;
 
-    @BeforeAll
-    public static void setUp() throws Exception
+    @BeforeEach
+    public void setUp() throws Exception
     {
         _server = new Server();
-        _config = new HttpConfiguration();
-        _config.setOutputBufferSize(1024);
-        _config.setOutputAggregationSize(256);
-        _local = new LocalConnector(_server, new HttpConnectionFactory(_config));
+        HttpConfiguration config = new HttpConfiguration();
+        config.setOutputBufferSize(1024);
+        config.setOutputAggregationSize(256);
+        _local = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(_local);
 
-        _bufferedHandler = new BufferedResponseHandler();
-        _bufferedHandler.getPathIncludeExclude().include("/include/*");
-        _bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
-        _bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
-        _bufferedHandler.setHandler(_test = new TestHandler());
+        BufferedResponseHandler bufferedHandler = new BufferedResponseHandler();
+        bufferedHandler.getPathIncludeExclude().include("/include/*");
+        bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
+        bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
+        bufferedHandler.setHandler(_test = new TestHandler());
 
-        _contextHandler = new ContextHandler("/ctx");
-        _contextHandler.setHandler(_bufferedHandler);
 
-        _server.setHandler(_contextHandler);
+        ContextHandler contextHandler = new ContextHandler("/ctx");
+        contextHandler.setHandler(bufferedHandler);
+
+        _server.setHandler(contextHandler);
         _server.start();
 
         // BufferedResponseHandler.LOG.setDebugEnabled(true);
     }
 
-    @AfterAll
-    public static void tearDown() throws Exception
+    @AfterEach
+    public void tearDown() throws Exception
     {
         _server.stop();
-    }
-
-    @BeforeEach
-    public void before()
-    {
-        _test._bufferSize = -1;
-        _test._mimeType = null;
-        _test._content = new byte[128];
-        Arrays.fill(_test._content, (byte)'X');
-        _test._content[_test._content.length - 1] = '\n';
-        _test._writes = 10;
-        _test._flush = false;
-        _test._reset = false;
     }
 
     @Test
@@ -212,12 +197,18 @@ public class BufferedResponseHandlerTest
 
     public static class TestHandler extends Handler.Processor
     {
-        int _bufferSize;
+        int _bufferSize = -1;
         String _mimeType;
-        byte[] _content;
-        int _writes;
+        byte[] _content = new byte[128];
+        int _writes = 10;
         boolean _flush;
         boolean _reset;
+
+        public TestHandler()
+        {
+            Arrays.fill(_content, (byte)'X');
+            _content[_content.length - 1] = '\n';
+        }
 
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
@@ -227,20 +218,19 @@ public class BufferedResponseHandlerTest
             if (_bufferSize > 0)
                 request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
             if (_mimeType != null)
-                response.setContentType(_mimeType);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
-            try (OutputStream outputStream = Content.asOutputStream(response))
+            // Do not close the stream before adding the header: Written: true.
+            OutputStream outputStream = Content.Sink.asOutputStream(response);
+            for (int i = 0; i < _writes; i++)
             {
-                for (int i = 0; i < _writes; i++)
-                {
-                    response.addHeader("Write", Integer.toString(i));
-                    outputStream.write(_content);
-                    if (_flush)
-                        outputStream.flush();
-                }
+                response.getHeaders().add("Write", Integer.toString(i));
+                outputStream.write(_content);
+                if (_flush)
+                    outputStream.flush();
             }
 
-            response.addHeader("Written", "true");
+            response.getHeaders().add("Written", "true");
             callback.succeeded();
         }
     }

@@ -22,7 +22,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -95,7 +95,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             {
                 assertEquals("POST", request.getMethod());
                 assertEquals(contentType, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                assertEquals(content, Content.readAll(request));
+                assertEquals(content, Content.Source.asString(request));
             }
         });
 
@@ -122,7 +122,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             {
                 assertEquals("GET", request.getMethod());
                 assertNotNull(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                assertEquals(content, Content.readAll(request));
+                assertEquals(content, Content.Source.asString(request));
             }
         });
 

@@ -385,11 +385,11 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, callback, BufferUtil.toBuffer(buf));
+                response.write(true, BufferUtil.toBuffer(buf), callback);
             }
             else
             {
-                response.write(true, callback, BufferUtil.toBuffer(HELLO_WORLD));
+                response.write(true, BufferUtil.toBuffer(HELLO_WORLD), callback);
             }
         }
     }

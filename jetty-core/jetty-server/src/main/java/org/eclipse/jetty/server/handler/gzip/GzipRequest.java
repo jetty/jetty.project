@@ -18,9 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
-import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.ContentProcessor;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -34,7 +33,7 @@ public class GzipRequest extends Request.WrapperProcessor
 
     private final boolean _inflateInput;
     private Decoder _decoder;
-    private GzipContentProcessor gzipContentProcessor;
+    private GzipTransformer gzipContentProcessor;
     private final int _inflateBufferSize;
     private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
@@ -63,7 +62,7 @@ public class GzipRequest extends Request.WrapperProcessor
         {
             Components components = request.getComponents();
             _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            gzipContentProcessor = new GzipContentProcessor(request);
+            gzipContentProcessor = new GzipTransformer(request);
         }
 
         int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
@@ -73,27 +72,27 @@ public class GzipRequest extends Request.WrapperProcessor
     }
 
     @Override
-    public void demandContent(Runnable onContentAvailable)
+    public Content.Chunk read()
     {
         if (_inflateInput)
-            gzipContentProcessor.demandContent(onContentAvailable);
-        else
-            super.demandContent(onContentAvailable);
+            return gzipContentProcessor.read();
+        return super.read();
     }
 
     @Override
-    public Content readContent()
+    public void demand(Runnable demandCallback)
     {
         if (_inflateInput)
-            return gzipContentProcessor.readContent();
-        return super.readContent();
+            gzipContentProcessor.demand(demandCallback);
+        else
+            super.demand(demandCallback);
     }
 
     private void destroy(GzipResponse response)
     {
         // We need to do this to intercept the committing of the response
         // and possibly change headers in case write is never called.
-        response.write(true, Callback.NOOP);
+        response.write(true, null, Callback.NOOP);
 
         if (_decoder != null)
         {
@@ -102,70 +101,42 @@ public class GzipRequest extends Request.WrapperProcessor
         }
     }
 
-    private class GzipContentProcessor extends ContentProcessor
+    private class GzipTransformer extends Content.Source.Transformer
     {
-        private Content _content;
+        private Content.Chunk _chunk;
 
-        public GzipContentProcessor(Content.Reader reader)
+        public GzipTransformer(Content.Source source)
         {
-            super(reader);
+            super(source);
         }
 
         @Override
-        protected Content process(Content content)
+        protected Content.Chunk transform(Content.Chunk compressed)
         {
             try
             {
-                if (_content == null)
-                    _content = content;
-                if (_content == null)
+                if (_chunk == null)
+                    _chunk = compressed;
+                if (_chunk == null)
                     return null;
-                if (_content.isSpecial())
-                    return _content;
+                if (_chunk instanceof Content.Chunk.Error)
+                    return _chunk;
+                if (_chunk.isLast() && !_chunk.hasRemaining())
+                    return Content.Chunk.EOF;
 
-                ByteBuffer decodedBuffer = _decoder.decode(_content);
+                ByteBuffer decodedBuffer = _decoder.decode(_chunk);
                 if (BufferUtil.hasContent(decodedBuffer))
-                    return new DecodedContent(decodedBuffer, _content.isLast());
-                return null;
+                    return Content.Chunk.from(decodedBuffer, _chunk.isLast() && !_chunk.hasRemaining(), () -> _decoder.release(decodedBuffer));
+                return _chunk.isLast() ? Content.Chunk.EOF : null;
             }
             finally
             {
-                if (_content != null && !_content.hasRemaining())
+                if (_chunk != null && !_chunk.hasRemaining())
                 {
-                    _content.release();
-                    _content = null;
+                    _chunk.release();
+                    _chunk = null;
                 }
             }
-        }
-    }
-
-    private class DecodedContent implements Content
-    {
-        final ByteBuffer _decodedContent;
-        final boolean _isLast;
-
-        protected DecodedContent(ByteBuffer content, boolean isLast)
-        {
-            _decodedContent = content;
-            _isLast = isLast;
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return _decodedContent;
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return _isLast;
-        }
-
-        @Override
-        public void release()
-        {
-            _decoder.release(_decodedContent);
         }
     }
 
@@ -178,7 +149,7 @@ public class GzipRequest extends Request.WrapperProcessor
             super(inflaterPool, bufferPool, bufferSize);
         }
 
-        public ByteBuffer decode(Content content)
+        public ByteBuffer decode(Content.Chunk content)
         {
             decodeChunks(content.getByteBuffer());
             ByteBuffer chunk = _chunk;

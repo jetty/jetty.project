@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -657,7 +658,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 return null;
             return (rq, rs, cb) ->
             {
-                rs.setContentType("text/plain; charset=utf-8");
+                rs.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
                 try (StringWriter stringWriter = new StringWriter();
                      PrintWriter out = new PrintWriter(stringWriter))
                 {
@@ -667,7 +668,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
                     out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
                     out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                    rs.write(true, cb, stringWriter.getBuffer().toString());
+                    Content.Sink.write(rs, true, stringWriter.getBuffer().toString(), cb);
                 }
             };
         }
@@ -684,7 +685,7 @@ public class HttpConfigurationAuthorityOverrideTest
             return (rq, rs, cb) ->
             {
                 rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
+                rs.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
                 cb.succeeded();
             };
         }
@@ -703,8 +704,8 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain; charset=utf-8");
-            response.write(true, callback, "Generic Error Page.");
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+            Content.Sink.write(response, true, "Generic Error Page.", callback);
         }
     }
 
@@ -720,7 +721,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, callback);
+            response.write(true, null, callback);
         }
     }
 

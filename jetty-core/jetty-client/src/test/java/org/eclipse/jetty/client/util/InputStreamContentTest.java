@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -105,7 +105,7 @@ public class InputStreamContentTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
                 serverLatch.countDown();
-                if (Content.readAllBytes(request).hasRemaining())
+                if (Content.Source.asByteBuffer(request).hasRemaining())
                     throw new IOException();
             }
         });
@@ -179,7 +179,7 @@ public class InputStreamContentTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
-                ByteBuffer buffer = Content.readAllBytes(request);
+                ByteBuffer buffer = Content.Source.asByteBuffer(request);
                 assertTrue(buffer.hasRemaining());
                 assertEquals(singleByteContent, buffer.get());
                 serverLatch.countDown();
@@ -238,7 +238,7 @@ public class InputStreamContentTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
                 serverLatch.countDown();
-                Content.consumeAll(request);
+                Content.Source.consumeAll(request);
             }
         });
 

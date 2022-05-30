@@ -74,9 +74,10 @@ public class SecuredRedirectHandler extends Handler.Wrapper
             {
                 String secureScheme = httpConfig.getSecureScheme();
                 String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-                rs.setHeader(HttpHeader.LOCATION, url); // TODO need a utility for this
+                // TODO need a utility for this
+                rs.getHeaders().put(HttpHeader.LOCATION, url);
                 rs.setStatus(_redirectCode);
-                rs.write(true, cb);
+                rs.write(true, null, cb);
             }
             else
             {

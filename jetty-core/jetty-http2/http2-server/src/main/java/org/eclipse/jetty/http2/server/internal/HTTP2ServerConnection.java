@@ -217,6 +217,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
 /*
+    // TODO: re-instate recycle channel functionality, but using Pool.
     private final AutoLock lock = new AutoLock();
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private boolean recycleHttpChannels = true;
@@ -326,54 +327,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-/*
-    protected class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements Closeable
+    // Overridden for visibility.
+    @Override
+    protected void offerTask(Runnable task, boolean dispatch)
     {
-        public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
-        {
-            super(connector, configuration, endPoint, transport);
-        }
-
-        @Override
-        protected boolean checkAndPrepareUpgrade()
-        {
-            return isTunnel() && getHttpTransport().prepareUpgrade();
-        }
-
-        @Override
-        public void onCompleted()
-        {
-            super.onCompleted();
-            if (!getStream().isReset() && !isTunnel())
-                recycle();
-        }
-
-        private boolean isTunnel()
-        {
-            return MetaData.isTunnel(getRequest().getMethod(), getResponse().getStatus());
-        }
-
-        @Override
-        public void recycle()
-        {
-            getStream().setAttachment(null);
-            super.recycle();
-            offerHttpChannel(this);
-        }
-
-        @Override
-        public void close()
-        {
-            IStream stream = getStream();
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 Request #{}/{} rejected", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code), Callback.NOOP);
-            // Consume the existing queued data frames to
-            // avoid stalling the session flow control.
-            consumeInput();
-        }
+        super.offerTask(task, dispatch);
     }
-*/
 
     @Override
     public String getId()

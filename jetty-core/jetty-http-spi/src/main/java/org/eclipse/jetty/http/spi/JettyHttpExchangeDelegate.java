@@ -27,7 +27,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
@@ -57,8 +57,8 @@ public class JettyHttpExchangeDelegate extends HttpExchange
         this._httpContext = httpSpiContext;
         this._request = request;
         this._response = response;
-        this._inputStream = Content.asInputStream(request);
-        this._outputStream = Content.asOutputStream(response);
+        this._inputStream = Content.Source.asInputStream(request);
+        this._outputStream = Content.Sink.asOutputStream(response);
     }
 
     @Override
@@ -137,12 +137,12 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
             for (String value : values)
             {
-                _response.setHeader(name, value);
+                _response.getHeaders().put(name, value);
             }
         }
         if (responseLength > 0)
         {
-            _response.setHeader("content-length", "" + responseLength);
+            _response.getHeaders().put("content-length", "" + responseLength);
         }
         _response.setStatus(rCode);
     }

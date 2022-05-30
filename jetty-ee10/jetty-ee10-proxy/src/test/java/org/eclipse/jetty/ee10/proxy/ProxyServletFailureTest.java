@@ -40,11 +40,9 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-//import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -55,7 +53,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -270,11 +267,11 @@ public class ProxyServletFailureTest
                     AsyncRequestContent requestContent = new AsyncRequestContent()
                     {
                         @Override
-                        public boolean offer(ByteBuffer buffer, Callback callback)
+                        public void write(ByteBuffer buffer, Callback callback)
                         {
                             // Send less content to trigger the test condition.
                             buffer.limit(buffer.limit() - 1);
-                            return super.offer(buffer.slice(), callback);
+                            super.write(buffer.slice(), callback);
                         }
                     };
                     request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, requestContent));
