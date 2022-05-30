@@ -354,7 +354,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         server.setHandler(gzipHandler);
 
         // Prepare Server File
-        Path testResource = MavenTestingUtils.getTestResourcePath("test.svg");
+        Path testResource = MavenTestingUtils.getTargetPath("test-classes/test.svg");
         Path file = contextDir.resolve("test.svg");
         IO.copy(testResource.toFile(), file.toFile());
         String expectedSha1Sum = Sha1Sum.calculate(testResource);
@@ -898,7 +898,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         gzipHandler.setHandler(servletContextHandler);
         server.setHandler(gzipHandler);
         // Prepare Server File
-        Path testResource = MavenTestingUtils.getTestResourcePath("test.svgz");
+        Path testResource = MavenTestingUtils.getTargetPath("test-classes/test.svgz");
         Path file = contextDir.resolve("test.svgz");
         IO.copy(testResource.toFile(), file.toFile());
         int fileSize = (int)Files.size(file);
