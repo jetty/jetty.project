@@ -26,6 +26,7 @@
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>
     <module>jetty-ee8-webapp</module>
+    <module>jetty-ee8-jaas</module>
   </modules>
 
   <build>

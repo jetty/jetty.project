@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- ======================================================== -->
+    <!-- java.security.auth.login.config System property          -->
+    <!-- This is usually a runtime parameter to the jvm, but      -->
+    <!-- it is placed here for convenience.                       -->
+    <!-- ======================================================== -->
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.security.auth.login.config</Arg>
+      <Arg>
+        <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+          <Arg><Property name="jetty.base"/></Arg>
+          <Arg><Property name="jetty.jaas.login.conf" default="etc/login.conf" /></Arg>
+        </Call>
+      </Arg>
+    </Call>
+
+</Configure>
