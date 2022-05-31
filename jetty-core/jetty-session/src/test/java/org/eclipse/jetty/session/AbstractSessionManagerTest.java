@@ -297,7 +297,10 @@ public class AbstractSessionManagerTest
         server.stop();
         
         //now change to evict after idle and check that the session is still scavenged
-        sessionCache.setEvictionPolicy(scavengeSec * 2);
+        scavengeSec = scavengeSec * 2;
+        waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        housekeeper.setIntervalSec(scavengeSec); //make scavenge cycles longer
+        sessionCache.setEvictionPolicy(scavengeSec / 2); //make idle shorter than scavenge
         server.start();
         checkScavenge(false, waitMs, sessionManager);
     }
