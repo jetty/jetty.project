@@ -17,9 +17,9 @@
   </properties>
 
   <build>
-
     <plugins>
       <plugin>
+        <!-- need to be redefined here as this module have some special need of resources -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
