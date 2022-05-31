@@ -28,7 +28,7 @@
     <apache.avro.version>1.11.0</apache.avro.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asm.version>9.3</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
