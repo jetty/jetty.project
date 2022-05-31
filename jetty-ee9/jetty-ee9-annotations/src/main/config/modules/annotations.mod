@@ -7,7 +7,7 @@ Enables Annotation scanning for deployed web applications.
 plus
 
 [lib]
-lib/jetty-annotations-${jetty.version}.jar
+lib/jetty-ee9-annotations-${jetty.version}.jar
 lib/annotations/*.jar
 
 [jpms]
