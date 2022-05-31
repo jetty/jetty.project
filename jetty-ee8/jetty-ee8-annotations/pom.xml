@@ -48,10 +48,6 @@
                 <resource>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
                 </resource>
-<!--                <resource>-->
-<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/jar</directory>-->
-<!--                  <targetPath>jar</targetPath>-->
-<!--                </resource>-->
               </resources>
             </configuration>
           </execution>
