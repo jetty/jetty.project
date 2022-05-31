@@ -8,4 +8,5 @@ ee10
 
 [lib]
 lib/ee10-apache-jsp/*.jar
+lib/jetty-ee10-apache-jsp-${jetty.version}.jar
 
