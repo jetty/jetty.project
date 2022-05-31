@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 /**
  * URL resource class.
  */
-@Deprecated(forRemoval = true)
 public class URLResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);

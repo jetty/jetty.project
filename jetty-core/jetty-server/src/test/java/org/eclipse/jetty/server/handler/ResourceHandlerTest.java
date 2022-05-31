@@ -48,7 +48,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.resource.PathCollectionResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -171,7 +171,7 @@ public class ResourceHandlerTest
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
-        _contextHandler.setBaseResource(new PathCollectionResource(TEST_PATH));
+        _contextHandler.setBaseResource(Resource.newResource(TEST_PATH));
 
         _server.setHandler(_contextHandler);
         _server.start();

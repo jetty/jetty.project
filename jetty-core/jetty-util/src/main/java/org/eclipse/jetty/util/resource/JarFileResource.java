@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Deprecated(forRemoval = true)
 public class JarFileResource extends JarResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(JarFileResource.class);

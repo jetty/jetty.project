@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -179,7 +180,7 @@ public class ResourceService
             if (precompressedContents != null && precompressedContents.size() > 0)
             {
                 // Tell caches that response may vary by accept-encoding
-                response.addHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
+                response.getHeaders().put(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
 
                 List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
@@ -420,7 +421,7 @@ public class ResourceService
                 buf.append('?');
                 buf.append(q);
             }
-            response.setContentLength(0);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
             Response.sendRedirect(request, response, callback, buf.toString());
             return;
         }
@@ -450,7 +451,7 @@ public class ResourceService
             if (_redirectWelcome)
             {
                 // Redirect to the index
-                response.setContentLength(0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
 
                 // TODO need helper code to edit URIs
                 String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
@@ -487,9 +488,9 @@ public class ResourceService
         }
 
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
-        response.setContentType("text/html;charset=utf-8");
-        response.setContentLength(data.length);
-        response.write(true, callback, ByteBuffer.wrap(data));
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+        response.write(true, ByteBuffer.wrap(data), callback);
     }
 
     private boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
@@ -612,7 +613,7 @@ public class ResourceService
     {
         ByteBuffer buffer = content.getBuffer();
         if (buffer != null)
-            response.write(true, callback, buffer);
+            response.write(true, buffer, callback);
         else
             new ContentWriterIteratingCallback(content, response, callback).iterate();
     }
@@ -841,7 +842,7 @@ public class ResourceService
     private static class ContentWriterIteratingCallback extends IteratingCallback
     {
         private final ReadableByteChannel source;
-        private final Content.Writer target;
+        private final Content.Sink sink;
         private final Callback callback;
         private final ByteBuffer byteBuffer;
 
@@ -853,7 +854,7 @@ public class ResourceService
 //            fileChannel.transferTo(0, contentLength, c);
 
             this.source = Files.newByteChannel(content.getResource().getPath());
-            this.target = target;
+            this.sink = target;
             this.callback = callback;
             HttpConfiguration httpConfiguration = target.getRequest().getConnectionMetaData().getHttpConfiguration();
             int outputBufferSize = httpConfiguration.getOutputBufferSize();
@@ -871,11 +872,11 @@ public class ResourceService
             if (read == -1)
             {
                 IO.close(source);
-                target.write(true, this, BufferUtil.EMPTY_BUFFER);
+                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
                 return Action.SCHEDULED;
             }
             byteBuffer.flip();
-            target.write(false, this, byteBuffer);
+            sink.write(false, byteBuffer, this);
             return Action.SCHEDULED;
         }
 

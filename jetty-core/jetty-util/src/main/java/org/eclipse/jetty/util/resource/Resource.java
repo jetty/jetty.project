@@ -233,6 +233,17 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
+     * Construct a Resource from provided resources collection
+     *
+     * @param resources the resources collection
+     * @return the Resource for the provided resources collection
+     */
+    public static Resource newResource(Collection<Resource> resources)
+    {
+        return new ResourceCollection(resources);
+    }
+
+    /**
      * Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.

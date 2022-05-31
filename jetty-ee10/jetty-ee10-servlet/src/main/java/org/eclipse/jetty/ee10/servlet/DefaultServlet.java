@@ -15,9 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.function.Function;
@@ -38,9 +36,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -136,11 +134,22 @@ public class DefaultServlet extends HttpServlet
     static class ServletRequest implements Request
     {
         private final HttpServletRequest servletRequest;
-        private final List<HttpField> headers = new ArrayList<>();
 
         public ServletRequest(HttpServletRequest servletRequest)
         {
             this.servletRequest = servletRequest;
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -221,19 +230,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public long getContentLength()
-        {
-            return servletRequest.getContentLength();
-        }
-
-        @Override
-        public Content readContent()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void demandContent(Runnable onContentAvailable)
+        public Content.Chunk read()
         {
             throw new UnsupportedOperationException();
         }
@@ -384,7 +381,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public HttpFields.Mutable getTrailers()
+        public HttpFields.Mutable getOrCreateTrailers()
         {
             return () ->
             {
@@ -449,16 +446,13 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             try
             {
-                for (ByteBuffer buffer : content)
-                {
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    outputStream.write(bytes);
-                }
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(bytes);
+                outputStream.write(bytes);
                 if (last)
                     outputStream.close();
                 callback.succeeded();

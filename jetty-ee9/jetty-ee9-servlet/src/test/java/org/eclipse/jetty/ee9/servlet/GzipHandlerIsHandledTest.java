@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ public class GzipHandlerIsHandledTest
         Handler.Collection handlers = new Handler.Collection();
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(workDir.getPath());
+        resourceHandler.setBaseResource(Resource.newResource(workDir.getPath()));
         // TODO: fix when the PathResource work has been integrated.
 //        resourceHandler.setDirectoriesListed(true);
         resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));

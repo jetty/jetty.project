@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
-import org.eclipse.jetty.util.resource.PathCollectionResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,7 +310,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
-            context.setBaseResource(new PathCollectionResource(resources.stream().map(Resource::getPath).toList()));
+        {
+            if (resources.size() == 1)
+            {
+                context.setBaseResource(resources.stream().findFirst().get());
+            }
+            else
+            {
+                Collection<Resource> collection = new ArrayList<>(resources.size() + 1);
+                collection.add(context.getResourceBase());
+                collection.addAll(resources);
+                context.setBaseResource(Resource.newResource(collection));
+            }
+        }
     }
 
     protected void scanJars(WebAppContext context) throws Exception

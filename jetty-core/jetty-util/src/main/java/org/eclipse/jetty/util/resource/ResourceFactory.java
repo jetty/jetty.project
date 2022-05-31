@@ -18,7 +18,6 @@ import java.io.IOException;
 /**
  * ResourceFactory.
  */
-@Deprecated(forRemoval = true)
 public interface ResourceFactory
 {
     /**

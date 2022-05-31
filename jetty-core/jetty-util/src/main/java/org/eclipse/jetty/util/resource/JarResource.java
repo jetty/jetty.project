@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Deprecated(forRemoval = true)
 public class JarResource extends URLResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(JarResource.class);

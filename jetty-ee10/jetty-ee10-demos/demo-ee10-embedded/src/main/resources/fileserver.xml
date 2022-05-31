@@ -25,7 +25,7 @@
                   <Array type="String"><Item>index.html</Item></Array>
                 </Set>
                 <Set name="baseResource">
-                  <New class="org.eclipse.jetty.util.resource.PathCollectionResource">
+                  <Call class="org.eclipse.jetty.util.resource.Resource" name="newResource">
                     <Arg>
                       <Call class="java.nio.file.Paths" name="get">
                         <Arg>
@@ -33,7 +33,7 @@
                         </Arg>
                       </Call>
                     </Arg>
-                  </New>
+                  </Call>
                 </Set>
               </New>
             </Item>
