@@ -16,6 +16,12 @@
   </properties>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/jar</directory>
+        <targetPath>jar</targetPath>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -24,6 +30,32 @@
             @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee8.annotations/org.eclipse.jetty.ee8.annotations.resources=org.eclipse.jetty.ee8.plus
           </argLine>
         </configuration>
+      </plugin>
+      <plugin>
+        <!-- need to be redefined here as this module have some special need of resources -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-ee8-test-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
+                </resource>
+<!--                <resource>-->
+<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/jar</directory>-->
+<!--                  <targetPath>jar</targetPath>-->
+<!--                </resource>-->
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
