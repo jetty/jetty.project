@@ -15,6 +15,15 @@
   </properties>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>src/test/jar</directory>
+        <targetPath>jar</targetPath>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
