@@ -326,7 +326,7 @@ public class DoSFilter implements Filter
         tracker = getRateTracker(request);
 
         // Calculate the rate and check if it is over the allowed limit
-        final OverLimit overLimit = tracker.isRateExceeded(System.currentTimeMillis());
+        final OverLimit overLimit = tracker.isRateExceeded(System.nanoTime());
 
         // Pass it through if we are not currently over the rate limit.
         if (overLimit == null)
@@ -1235,7 +1235,7 @@ public class DoSFilter implements Filter
             }
 
             long rate = (now - last);
-            if (rate < 1000L)
+            if (TimeUnit.NANOSECONDS.toSeconds(rate) < 1L)
             {
                 return new Overage(Duration.ofMillis(rate), _maxRequestsPerSecond);
             }
@@ -1326,7 +1326,7 @@ public class DoSFilter implements Filter
 
             int latestIndex = _next == 0 ? (_timestamps.length - 1) : (_next - 1);
             long last = _timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && (System.currentTimeMillis() - last) < 1000L;
+            boolean hasRecentRequest = last != 0 && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - last) < 1L;
 
             DoSFilter filter = (DoSFilter)_context.getAttribute(_filterName);
 
