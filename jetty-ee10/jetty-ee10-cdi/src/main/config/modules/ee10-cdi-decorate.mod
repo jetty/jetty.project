@@ -4,6 +4,9 @@
 Configures Jetty to use the "CdiDecoratingListener" as the default CDI mode.
 This mode that allows a webapp to register it's own CDI decorator.
 
+[environment]
+ee10
+
 [tag]
 cdi
 
@@ -11,7 +14,7 @@ cdi
 cdi-mode
 
 [depend]
-cdi
+ee10-cdi
 
 [ini]
 jetty.cdi.mode=CdiDecoratingListener

@@ -43,7 +43,7 @@ public class JspConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jsp.JettyJspServlet") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee10.jsp.JettyJspServlet") != null;
         }
         catch (Throwable e)
         {

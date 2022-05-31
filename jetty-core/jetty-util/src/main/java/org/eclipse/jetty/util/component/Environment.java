@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,6 +26,11 @@ public interface Environment extends Attributes
 {
     Environment CORE = ensure("core");
 
+    static Collection<Environment> getAll()
+    {
+        return Collections.unmodifiableCollection(Named.__environments.values());
+    }
+    
     static Environment get(String name)
     {
         return Named.__environments.get(name);

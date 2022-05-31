@@ -3,6 +3,9 @@
 [description]
 Enables JASPI basic authentication the /test context path.
 
+[environment]
+ee10
+
 [tags]
 security
 
@@ -10,7 +13,7 @@ security
 jaspi
 
 [xml]
-etc/jaspi/jaspi-demo.xml
+etc/jaspi/jetty-ee10-jaspi-demo.xml
 
 [files]
-basehome:etc/jaspi/jaspi-demo.xml|etc/jaspi/jaspi-demo.xml
+basehome:etc/jaspi/jetty-ee10-jaspi-demo.xml|etc/jaspi/jetty-ee10-jaspi-demo.xml

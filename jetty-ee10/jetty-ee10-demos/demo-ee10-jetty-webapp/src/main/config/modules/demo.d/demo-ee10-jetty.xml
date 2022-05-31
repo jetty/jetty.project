@@ -13,7 +13,7 @@ Configure and deploy the test web application
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/test</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/demo-jetty.war
+  <Set name="war"><Property name="jetty.webapps" default="." />/demo-ee10-jetty.war
   </Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -22,7 +22,7 @@ Configure and deploy the test web application
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault-ee10.xml</Set>
-  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/demo-jetty.d/demo-jetty-override-web.xml
+  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/demo-jetty.d/demo-ee10-jetty-override-web.xml
   </Set>
   
   <!-- Enable WebSocket container -->

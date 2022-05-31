@@ -3,7 +3,9 @@
 [description]
 Enables JSTL for all web applications deployed on the server.
 
-[depend]
-jsp
-glassfish-jstl
+[environment]
+ee10
 
+[depend]
+ee10-jsp
+ee10-glassfish-jstl

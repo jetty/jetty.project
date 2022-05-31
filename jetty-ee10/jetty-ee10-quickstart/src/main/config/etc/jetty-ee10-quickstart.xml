@@ -22,7 +22,7 @@
       <Arg>
         <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
           <Set name="jettyXml">
-            <Property name="jetty.base"/>/etc/quickstart-webapp.xml
+            <Property name="jetty.base"/>/etc/jetty-ee10-quickstart-webapp.xml
           </Set>
         </New>
       </Arg>

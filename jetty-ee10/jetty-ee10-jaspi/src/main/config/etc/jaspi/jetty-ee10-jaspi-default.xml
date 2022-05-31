@@ -8,7 +8,7 @@
   <!-- ===================================================================== -->
   <Call class="jakarta.security.auth.message.config.AuthConfigFactory" name="setFactory">
     <Arg>
-      <New id="jaspiAuthConfigFactory" class="org.eclipse.jetty.security.jaspi.DefaultAuthConfigFactory" />
+      <New id="jaspiAuthConfigFactory" class="org.eclipse.jetty.ee10.security.jaspi.DefaultAuthConfigFactory" />
     </Arg>
   </Call>
   <Call name="addBean">

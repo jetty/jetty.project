@@ -6,7 +6,7 @@
     <Call name="registerConfigProvider">
 
       <!-- The Jetty provided implementation of AuthConfigProvider which will wrap a ServerAuthModule. -->
-      <Arg type="String">org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider</Arg>
+      <Arg type="String">org.eclipse.jetty.ee10.security.jaspi.provider.JaspiAuthConfigProvider</Arg>
 
       <!-- A Map of initialization properties. -->
       <Arg>
@@ -14,11 +14,11 @@
           <Entry>
             <!-- Provide the fully qualified classname of the ServerAuthModule to be used. -->
             <Item>ServerAuthModule</Item>
-            <Item>org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule</Item>
+            <Item>org.eclipse.jetty.ee10.security.jaspi.modules.BasicAuthenticationAuthModule</Item>
           </Entry>
           <Entry>
             <!-- Realm as utilised by Jetty Security  -->
-            <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
+            <Item>org.eclipse.jetty.ee10.security.jaspi.modules.RealmName</Item>
             <Item>Test Realm</Item>
           </Entry>
         </Map>

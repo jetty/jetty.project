@@ -3,13 +3,15 @@
 [description]
 Enables Annotation scanning for deployed web applications.
 
+[environment]
+ee10
+
 [depend]
-plus
+ee10-plus
 
 [lib]
-lib/jetty-annotations-${jetty.version}.jar
-lib/annotations/*.jar
+lib/jetty-ee10-annotations-${jetty.version}.jar
+lib/ee10-annotations/*.jar
 
 [jpms]
 add-modules:org.objectweb.asm
-

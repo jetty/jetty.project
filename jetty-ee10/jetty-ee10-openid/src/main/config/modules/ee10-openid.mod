@@ -3,20 +3,23 @@
 [description]
 Adds OpenId Connect authentication to the server.
 
+[environment]
+ee10
+
 [depend]
-security
+ee10-security
 client
 
 [lib]
-lib/jetty-openid-${jetty.version}.jar
-lib/jetty-util-ajax-${jetty.version}.jar
+lib/jetty-ee10-openid-${jetty.version}.jar
+lib/jetty-ee10-util-ajax-${jetty.version}.jar
 
 [files]
-basehome:modules/openid/openid-baseloginservice.xml|etc/openid-baseloginservice.xml
+basehome:modules/openid/jetty-ee10-openid-baseloginservice.xml|etc/jetty-ee10-openid-baseloginservice.xml
 
 [xml]
-etc/openid-baseloginservice.xml
-etc/jetty-openid.xml
+etc/jetty-ee10-openid-baseloginservice.xml
+etc/jetty-ee10-openid.xml
 
 [ini-template]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
