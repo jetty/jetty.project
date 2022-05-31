@@ -11,6 +11,7 @@
   <description>Jetty web application support</description>
 
   <properties>
+    <ee9.module>jetty-ee9-webapp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.webapp.*</spotbugs.onlyAnalyze>
   </properties>
@@ -66,35 +67,6 @@
                   <targetPath>webapp-alt-jsp</targetPath>
                 </resource>
               </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-ee8-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/main/java</sourceProjectLocation>
-              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-ee8-test-sources</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/java</sourceProjectLocation>
-              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
             </configuration>
           </execution>
         </executions>

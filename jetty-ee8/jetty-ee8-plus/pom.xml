@@ -11,77 +11,13 @@
   <description>Jetty JavaEE style services</description>
 
   <properties>
+    <ee9.module>jetty-ee9-plus</ee9.module>
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-ee8-resources</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/main/resources</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-test-resources</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/test/resources</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-ee8-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/main/java</sourceProjectLocation>
-              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-ee8-test-sources</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-plus/src/test/java</sourceProjectLocation>
-              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

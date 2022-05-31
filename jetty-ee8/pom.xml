@@ -19,6 +19,7 @@
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
+    <ee9.module></ee9.module>
   </properties>
 
   <modules>
@@ -43,6 +44,73 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-ee8-resources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee8-test-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-ee8-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>modify-sources-ee9-to-ee8</goal>
+            </goals>
+            <configuration>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/java</sourceProjectLocation>
+              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-ee8-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>modify-sources-ee9-to-ee8</goal>
+            </goals>
+            <configuration>
+              <testSources>true</testSources>
+              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/java</sourceProjectLocation>
+              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <dependencyManagement>
@@ -91,4 +159,5 @@
         </dependency>
       </dependencies>
   </dependencyManagement>
+
 </project>

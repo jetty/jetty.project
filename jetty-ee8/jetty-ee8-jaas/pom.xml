@@ -11,6 +11,7 @@
   <description>Jetty JAAS support</description>
 
   <properties>
+    <ee9.module>jetty-ee9-jaas</ee9.module>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <apacheds.version>2.0.0.AM26</apacheds.version>
     <apache.directory.api.version>2.1.0</apache.directory.api.version>
@@ -19,71 +20,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-ee8-resources</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-jaas/src/main/resources</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-test-resources</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-jaas/src/test/resources</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-ee8-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-jaas/src/main/java</sourceProjectLocation>
-              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-ee8-test-sources</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-jaas/src/test/java</sourceProjectLocation>
-              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->
       <plugin>
