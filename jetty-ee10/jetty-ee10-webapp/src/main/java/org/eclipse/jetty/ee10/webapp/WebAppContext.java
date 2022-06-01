@@ -41,6 +41,7 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletContextApi;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
@@ -137,7 +138,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _throwUnavailableOnStartupException = false;
 
     private MetaData _metadata = new MetaData();
-    private ServletApiContext _servletApiContext = new ServletApiContext();
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -824,9 +824,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
     
     @Override
-    protected ContextHandler.Context newContext()
+    public ServletContextApi newServletContextApi()
     {
-        return new Context();
+        return new WebAppContext.ServletApiContext();
     }
 
     @Override
@@ -1397,15 +1397,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
 
             return resource.getURI().toURL();
-        }
-    }
-
-    public class Context extends ServletContextHandler.Context
-    {
-        @Override
-        public ServletContextApi getServletContext()
-        {
-            return _servletApiContext;
         }
     }
 
