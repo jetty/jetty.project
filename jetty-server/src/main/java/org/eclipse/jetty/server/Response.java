@@ -524,7 +524,7 @@ public class Response implements HttpServletResponse
      * This method is called by sendError if it is passed 103.
      *
      * @throws IOException if unable to send the 103 response
-     * @see javax.servlet.http.HttpServletResponse#sendError(int)
+     * @see jakarta.servlet.http.HttpServletResponse#sendError(int)
      */
     public void sendEarlyHint() throws IOException
     {

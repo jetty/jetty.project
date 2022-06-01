@@ -372,7 +372,7 @@ public class MultiPartInputStreamParser
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir jakarta.servlet.context.tempdir
      */
     public MultiPartInputStreamParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {

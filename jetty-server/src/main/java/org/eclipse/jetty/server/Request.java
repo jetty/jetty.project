@@ -1007,9 +1007,6 @@ public class Request implements HttpServletRequest
         return "";
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocalName()
-     */
     @Override
     public String getLocalName()
     {
@@ -2362,16 +2359,17 @@ public class Request implements HttpServletRequest
         if (LOG.isDebugEnabled())
             LOG.debug("newMultiParts {} {}", compliance, this);
 
+        File tempdir = (File)_context.getAttribute("jakarta.servlet.context.tempdir");
         switch (compliance)
         {
             case RFC7578:
                 return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+                    (_context != null ? tempdir : null), this);
 
             case LEGACY:
             default:
                 return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null), this);
+                    (_context != null ? tempdir : null), this);
         }
     }
 

@@ -214,8 +214,7 @@ public class CGI extends HttpServlet
      *
      * @param command the command to execute, this command is prefixed by
      * the context parameter "commandPrefix".
-     * @param pathInfo The PATH_INFO to process,
-     * see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
+     * @param pathInfo The PATH_INFO to process. Cannot be null
      * @param req the HTTP request
      * @param res the HTTP response
      * @throws IOException if the execution of the CGI process throws

@@ -114,11 +114,11 @@ INSTALLED 2
 50 org.eclipse.jetty.osgi.boot file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.osgi.boot_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 51 org.eclipse.jetty.alpn.java.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.alpn.java.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 52 org.eclipse.jetty.alpn.client file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.alpn.client_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
-53 javax.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/javax.servlet.jsp.jstl_1.2.0.v201105211821.jar 1.2.0.v201105211821 32
+53 jakarta.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/jakarta.servlet.jsp.jstl_1.2.0.v201105211821.jar 1.2.0.v201105211821 32
 54 org.mortbay.jasper.apache-el file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.mortbay.jasper.apache-el_9.0.29.jar 9.0.29 32
 55 org.mortbay.jasper.apache-jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.mortbay.jasper.apache-jsp_9.0.29.jar 9.0.29 32
 56 org.eclipse.jetty.apache-jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.apache-jsp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
-57 org.glassfish.web.javax.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.glassfish.web.javax.servlet.jsp.jstl_1.2.2.jar 1.2.2 32
+57 org.glassfish.web.jakarta.servlet.jsp.jstl file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.glassfish.web.jakarta.servlet.jsp.jstl_1.2.2.jar 1.2.2 32
 58 org.eclipse.jdt.core.compiler.batch file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jdt.core.compiler.batch_3.19.0.v20190903-0936.jar 3.19.0.v20190903-0936 32
 59 org.eclipse.jetty.osgi.boot.jsp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.osgi.boot.jsp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 4
 60 org.eclipse.jetty.tests.webapp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.tests.webapp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
@@ -127,10 +127,10 @@ INSTALLED 2
 
 If things didn't go so well, and some bundle that should be in state ACTIVE (32) isn't, then you'll see diagnosis like this:
 
-Trying to start the bundle org.glassfish.web.javax.servlet.jsp.jstl that was supposed to be active or resolved.
-org.glassfish.web.javax.servlet.jsp.jstl failed to start
-org.osgi.framework.BundleException: Could not resolve module: org.glassfish.web.javax.servlet.jsp.jstl [57]
-  Unresolved requirement: Import-Package: javax.servlet.jsp.jstl.core
+Trying to start the bundle org.glassfish.web.jakarta.servlet.jsp.jstl that was supposed to be active or resolved.
+org.glassfish.web.jakarta.servlet.jsp.jstl failed to start
+org.osgi.framework.BundleException: Could not resolve module: org.glassfish.web.jakarta.servlet.jsp.jstl [57]
+  Unresolved requirement: Import-Package: jakarta.servlet.jsp.jstl.core
 
 The "Unresolved requirement" means either that some bundle that exports that package has not been deployed, or that it is deployed, but it's manifest is screwed up, and didn't expose that package. Check the test code for the mavenBundle() statements to ascertain if it has been deployed, and then check the manifest inside the jar for the Export-Package statements to verify the correct packages are exported.
 
