@@ -9,5 +9,5 @@ MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for use by all webapplication
 servlet
 
 [lib]
-lib/jetty-servlets-${jetty.version}.jar
+lib/jetty-ee9-servlets-${jetty.version}.jar
 

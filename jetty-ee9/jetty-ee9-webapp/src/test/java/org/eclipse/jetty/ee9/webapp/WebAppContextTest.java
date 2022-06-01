@@ -95,10 +95,10 @@ public class WebAppContextTest
     public void testDefaultContextPath() throws Exception
     {
         Server server = newServer();
-        File webXml = MavenTestingUtils.getTestResourceFile("web-with-default-context-path.xml");
-        File webXmlEmptyPath = MavenTestingUtils.getTestResourceFile("web-with-empty-default-context-path.xml");
-        File webDefaultXml = MavenTestingUtils.getTestResourceFile("web-default-with-default-context-path.xml");
-        File overrideWebXml = MavenTestingUtils.getTestResourceFile("override-web-with-default-context-path.xml");
+        File webXml = MavenTestingUtils.getTargetFile("test-classes/web-with-default-context-path.xml");
+        File webXmlEmptyPath = MavenTestingUtils.getTargetFile("test-classes/web-with-empty-default-context-path.xml");
+        File webDefaultXml = MavenTestingUtils.getTargetFile("test-classes/web-default-with-default-context-path.xml");
+        File overrideWebXml = MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
         assertNotNull(webXml);
         assertNotNull(webDefaultXml);
         assertNotNull(overrideWebXml);
@@ -301,7 +301,7 @@ public class WebAppContextTest
         handlers.addHandler(contexts);
 
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
 
@@ -365,7 +365,7 @@ public class WebAppContextTest
         handlers.addHandler(contexts);
 
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
         contexts.addHandler(context);
@@ -388,7 +388,7 @@ public class WebAppContextTest
         handlers.addHandler(contexts);
 
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
 
@@ -418,7 +418,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         contexts.addHandler(context);
 
@@ -455,7 +455,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
 
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
         warPath = warPath.toAbsolutePath();
         assertTrue(warPath.isAbsolute(), "Path should be absolute: " + warPath);
         // Use String reference to war
@@ -474,7 +474,7 @@ public class WebAppContextTest
     {
         List<Arguments> references = new ArrayList<>();
 
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash and glob
@@ -500,7 +500,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
         context.setBaseResource(new PathResource(warPath));
         context.setExtraClasspath(extraClasspathGlobReference);
 
@@ -514,7 +514,7 @@ public class WebAppContextTest
         ClassLoader contextClassLoader = context.getClassLoader();
         assertThat(contextClassLoader, instanceOf(WebAppClassLoader.class));
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
-        Path extLibsDir = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibsDir = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibsDir = extLibsDir.toAbsolutePath();
         List<Path> expectedPaths;
         try (Stream<Path> s = Files.list(extLibsDir))
@@ -548,7 +548,7 @@ public class WebAppContextTest
     {
         List<Arguments> references = new ArrayList<>();
 
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash
@@ -580,7 +580,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
         context.setBaseResource(new PathResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
@@ -597,7 +597,7 @@ public class WebAppContextTest
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
         URL[] urls = webAppClassLoader.getURLs();
         assertThat("URLs", urls.length, is(1));
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
     }

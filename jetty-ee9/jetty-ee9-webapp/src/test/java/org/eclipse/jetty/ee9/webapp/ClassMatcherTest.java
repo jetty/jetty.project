@@ -35,13 +35,7 @@ public class ClassMatcherTest
 {
     private final ClassMatcher _pattern = new ClassMatcher();
     
-    protected static Supplier<URI> NULL_SUPPLIER = new Supplier<URI>()
-    {
-        public URI get()
-        {
-            return null;
-        } 
-    };
+    protected static Supplier<URI> NULL_SUPPLIER = () -> null;
     
     @BeforeEach
     public void before()

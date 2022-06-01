@@ -53,7 +53,7 @@ public class TestMetaData
     @BeforeEach
     public void setUp() throws Exception
     {
-        File jarDir = new File(MavenTestingUtils.getTestResourcesDir(), "fragments");
+        File jarDir = new File(MavenTestingUtils.getTargetFile("test-classes"), "fragments");
         assertTrue(jarDir.exists());
         fragFile = new File(jarDir, "zeta.jar");
         assertTrue(fragFile.exists());

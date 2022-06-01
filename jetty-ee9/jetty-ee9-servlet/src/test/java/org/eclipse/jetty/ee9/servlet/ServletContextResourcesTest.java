@@ -77,7 +77,7 @@ public class ServletContextResourcesTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
-        Path resBase = MavenTestingUtils.getTestResourcePathDir("contextResources");
+        Path resBase = MavenTestingUtils.getTargetPath("test-classes/contextResources");
 
         context = new ServletContextHandler();
         context.setContextPath("/context");

@@ -103,10 +103,11 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
         server.setHandler(gzipHandler);
 
         // Prepare Server File
-        Path testResource = MavenTestingUtils.getTestResourcePath(fileName);
+        Path testResource = MavenTestingUtils.getTargetPath("test-classes/" + fileName);
         Path file = contextDir.resolve(fileName);
         IO.copy(testResource.toFile(), file.toFile());
-        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTestResourceFile(fileName + ".sha1")).toUpperCase(Locale.ENGLISH);
+        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTargetFile("test-classes/" + fileName + ".sha1"))
+                .toUpperCase(Locale.ENGLISH);
         int fileSize = (int)Files.size(file);
 
         server.start();

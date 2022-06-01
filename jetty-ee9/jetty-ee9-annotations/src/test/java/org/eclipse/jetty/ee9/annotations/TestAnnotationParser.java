@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -183,7 +184,7 @@ public class TestAnnotationParser
     @Test
     public void testHiddenFilesInJar() throws Exception
     {
-        File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
+        File badClassesJar = MavenTestingUtils.getTargetFile("test-classes/bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
@@ -193,7 +194,7 @@ public class TestAnnotationParser
     @Test
     public void testModuleInfoClassInJar() throws Exception
     {
-        File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/slf4j-api-1.8.0-alpha2.jar");
+        File badClassesJar = MavenTestingUtils.getTargetFile("test-classes/jdk9/slf4j-api-1.8.0-alpha2.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
@@ -203,7 +204,7 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJar() throws Exception
     {
-        File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/log4j-api-2.9.0.jar");
+        File badClassesJar = MavenTestingUtils.getTargetFile("test-classes/jdk9/log4j-api-2.9.0.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
@@ -213,7 +214,7 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJarJDK10() throws Exception
     {
-        File jdk10Jar = MavenTestingUtils.getTestResourceFile("jdk10/multirelease-10.jar");
+        File jdk10Jar = MavenTestingUtils.getTargetFile("test-classes/jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -251,8 +252,8 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClassesInJars() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
-        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar"));
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar"));
+        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest_copy.jar"));
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -267,7 +268,7 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClasses() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar"));
         File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
@@ -277,7 +278,7 @@ public class TestAnnotationParser
         List<String> locations = handler.getParsedList("org.acme.ClassOne");
         assertNotNull(locations);
         assertEquals(2, locations.size());
-        assertTrue(!(locations.get(0).equals(locations.get(1))));
+        assertFalse((locations.get(0).equals(locations.get(1))));
     }
 
     private void copyClass(Class<?> clazz, File basedir) throws IOException

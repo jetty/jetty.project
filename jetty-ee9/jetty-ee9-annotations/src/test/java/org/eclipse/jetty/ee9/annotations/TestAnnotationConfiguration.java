@@ -79,12 +79,12 @@ public class TestAnnotationConfiguration
     @BeforeEach
     public void setup() throws Exception
     {
-        web25 = MavenTestingUtils.getTestResourceFile("web25.xml");
-        web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
-        web31true = MavenTestingUtils.getTestResourceFile("web31true.xml");
+        web25 = MavenTestingUtils.getTargetFile("test-classes/web25.xml");
+        web31false = MavenTestingUtils.getTargetFile("test-classes/web31false.xml");
+        web31true = MavenTestingUtils.getTargetFile("test-classes/web31true.xml");
 
         // prepare an sci that will be on the webapp's classpath
-        jarDir = new File(MavenTestingUtils.getTestResourcesDir().getParentFile(), "jar");
+        jarDir = new File(MavenTestingUtils.getTargetPath("test-classes").toFile(), "jar");
         testSciJar = new File(jarDir, "test-sci.jar");
         assertTrue(testSciJar.exists());
 

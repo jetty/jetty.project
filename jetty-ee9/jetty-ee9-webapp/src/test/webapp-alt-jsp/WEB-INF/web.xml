@@ -17,7 +17,7 @@
 
   <servlet>
     <servlet-name>precompiledName</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee9.webapp.ForcedServletTest$FakePrecompiledJSP</servlet-class>
+    <servlet-class>${fakePrecompiledJspClassName}</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>precompiledName</servlet-name>

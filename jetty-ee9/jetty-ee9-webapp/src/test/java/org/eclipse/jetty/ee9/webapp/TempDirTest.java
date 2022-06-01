@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
@@ -59,7 +60,7 @@ public class TempDirTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        File testWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
+        File testWebAppDir = MavenTestingUtils.getTargetPath("test-classes/webapp").toFile();
         webapp = new WebAppContext();
         webapp.setContextPath("/");
         webapp.setWar(testWebAppDir.getAbsolutePath());
@@ -108,7 +109,7 @@ public class TempDirTest
     public void attributeWithValidDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory("jetty_test");
+        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test");
         switch (type)
         {
             case "File":
@@ -138,7 +139,8 @@ public class TempDirTest
     public void attributeWithNonExistentDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory("jetty_test").resolve("foo_test_tmp");
+        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test")
+                .resolve("foo_test_tmp");
         Files.deleteIfExists(tmpDir);
         assertFalse(Files.exists(tmpDir));
         switch (type)
@@ -199,7 +201,7 @@ public class TempDirTest
     public void baseTempDirAttributeWithValidDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory("jetty_test");
+        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test");
         switch (type)
         {
             case "File":
@@ -231,7 +233,8 @@ public class TempDirTest
     public void baseTempDirAttributeWithNonExistentDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory("jetty_test").resolve("foo_test_tmp");
+        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test")
+                .resolve("foo_test_tmp");
         Files.deleteIfExists(tmpDir);
         assertFalse(Files.exists(tmpDir));
         switch (type)

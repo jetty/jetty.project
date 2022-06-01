@@ -7,7 +7,7 @@ Enables JAAS for deployed web applications.
 server
 
 [lib]
-lib/jetty-jaas-${jetty.version}.jar
+lib/jetty-ee9-jaas-${jetty.version}.jar
 
 [xml]
 etc/jetty-jaas.xml

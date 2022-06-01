@@ -179,6 +179,16 @@
         <enabled>true</enabled>
       </snapshots>
     </pluginRepository>
+    <pluginRepository>
+      <id>jetty.snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
   </pluginRepositories>
 
   <modules>
@@ -186,6 +196,7 @@
 <!--    <module>documentation</module>-->
     <module>jetty-core</module>
     <module>jetty-integrations</module>
+    <module>jetty-ee8</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
     <module>jetty-home</module>

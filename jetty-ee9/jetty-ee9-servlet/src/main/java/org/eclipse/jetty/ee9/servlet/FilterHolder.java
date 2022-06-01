@@ -94,7 +94,7 @@ public class FilterHolder extends Holder<Filter>
 
         if (!jakarta.servlet.Filter.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = getHeldClass() + " is not a jakarta.servlet.Filter";
+            String msg = getHeldClass() + " is not a " + Filter.class.getName();
             doStop();
             throw new IllegalStateException(msg);
         }

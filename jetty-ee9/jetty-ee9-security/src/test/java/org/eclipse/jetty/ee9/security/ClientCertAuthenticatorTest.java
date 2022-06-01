@@ -111,7 +111,7 @@ public class ClientCertAuthenticatorTest
 
         HashLoginService loginService = new HashLoginService();
         constraintSecurityHandler.setLoginService(loginService);
-        loginService.setConfig("src/test/resources/realm.properties");
+        loginService.setConfig("target/test-classes/realm.properties");
 
         constraintSecurityHandler.setHandler(new FooHandler());
         context.setHandler(constraintSecurityHandler);
@@ -147,8 +147,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
-        cf.setKeyStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
+        cf.setTrustStoreResource(Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/" + trustStorePath)));
+        cf.setKeyStoreResource(Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);

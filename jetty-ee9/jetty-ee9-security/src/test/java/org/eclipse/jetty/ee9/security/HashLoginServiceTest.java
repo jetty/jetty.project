@@ -31,7 +31,8 @@ public class HashLoginServiceTest
     @Test
     public void testAutoCreatedUserStore() throws Exception
     {
-        HashLoginService loginService = new HashLoginService("foo", MavenTestingUtils.getTestResourceFile("foo.properties").getAbsolutePath());
+        HashLoginService loginService = new HashLoginService("foo",
+                MavenTestingUtils.getTargetFile("test-classes/foo.properties").getAbsolutePath());
         assertThat(loginService.getIdentityService(), is(notNullValue()));
         loginService.start();
         assertTrue(loginService.getUserStore().isStarted());
