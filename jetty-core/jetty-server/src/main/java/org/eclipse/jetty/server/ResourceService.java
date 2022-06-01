@@ -15,11 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -30,18 +30,14 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -136,15 +132,14 @@ public class ResourceService
         return Resource.newResource(Path.of("/jetty-dir.css"));
     }
 
-    public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
+    public void doGet(GenericRequest request, GenericResponse response, Callback callback, HttpContent content) throws Exception
     {
         String pathInContext = request.getPathInContext();
 
         // Is this a Range request?
-        Enumeration<String> reqRanges = request.getHeaders().getValues(HttpHeader.RANGE.asString());
+        Enumeration<String> reqRanges = request.getHeaderValues(HttpHeader.RANGE.asString());
         if (!hasDefinedRange(reqRanges))
             reqRanges = null;
-
 
         boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && reqRanges == null;
@@ -166,7 +161,7 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                Response.sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
+                response.sendRedirect(callback, URIUtil.addPaths(request.getContextPath(), pathInContext));
                 return;
             }
 
@@ -179,7 +174,7 @@ public class ResourceService
             if (precompressedContents != null && precompressedContents.size() > 0)
             {
                 // Tell caches that response may vary by accept-encoding
-                response.getHeaders().put(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
+                response.putHeader(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
                 List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
@@ -189,13 +184,13 @@ public class ResourceService
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
                     content = precompressedContent;
-                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
+                    response.putHeader(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
                 }
             }
 
             // TODO this should be done by HttpContent#getContentEncoding
             if (isGzippedContent(pathInContext))
-                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                response.putHeader(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
             sendData(request, response, callback, content, reqRanges);
@@ -205,19 +200,19 @@ public class ResourceService
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            response.writeError(callback, HttpStatus.NOT_FOUND_404);
         }
         catch (IllegalArgumentException e)
         {
             LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                response.writeError(callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
         }
     }
 
-    private List<String> getPreferredEncodingOrder(Request request)
+    private List<String> getPreferredEncodingOrder(GenericRequest request)
     {
-        Enumeration<String> headers = request.getHeaders().getValues(HttpHeader.ACCEPT_ENCODING.asString());
+        Enumeration<String> headers = request.getHeaderValues(HttpHeader.ACCEPT_ENCODING.asString());
         if (!headers.hasMoreElements())
             return Collections.emptyList();
 
@@ -288,7 +283,7 @@ public class ResourceService
     /**
      * @return true if the request was processed, false otherwise.
      */
-    private boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+    private boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -336,7 +331,7 @@ public class ResourceService
 
                     if (!match)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                        response.writeError(callback, HttpStatus.PRECONDITION_FAILED_412);
                         return true;
                     }
                 }
@@ -346,7 +341,7 @@ public class ResourceService
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                        response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
                         return true;
                     }
 
@@ -356,7 +351,7 @@ public class ResourceService
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                            response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
                             return true;
                         }
                     }
@@ -373,14 +368,14 @@ public class ResourceService
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
 
-                long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
+                long ifmsl = request.getHeaderDate(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
             }
@@ -388,21 +383,21 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
             {
-                Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                response.writeError(callback, HttpStatus.PRECONDITION_FAILED_412);
                 return true;
             }
         }
         catch (IllegalArgumentException iae)
         {
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400);
+                response.writeError(callback, HttpStatus.BAD_REQUEST_400);
             throw iae;
         }
 
         return false;
     }
 
-    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
+    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, GenericRequest request, GenericResponse response, Callback callback) throws Exception
     {
         // Redirect to directory
         if (!endsWithSlash)
@@ -420,8 +415,8 @@ public class ResourceService
                 buf.append('?');
                 buf.append(q);
             }
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-            Response.sendRedirect(request, response, callback, buf.toString());
+            response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
+            response.sendRedirect(callback, buf.toString());
             return;
         }
 
@@ -433,13 +428,13 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    private boolean welcome(Request request, Response response, Callback callback) throws IOException
+    private boolean welcome(GenericRequest request, GenericResponse response, Callback callback) throws IOException
     {
         String pathInContext = request.getPathInContext();
         String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
         if (welcome != null)
         {
-            String contextPath = request.getContext().getContextPath();
+            String contextPath = request.getContextPath();
 
             if (_pathInfoOnly)
                 welcome = URIUtil.addPaths(contextPath, welcome);
@@ -450,31 +445,31 @@ public class ResourceService
             if (_redirectWelcome)
             {
                 // Redirect to the index
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
 
                 // TODO need helper code to edit URIs
-                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
+                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
                 String q = request.getHttpURI().getQuery();
                 if (q != null && !q.isEmpty())
                     uri += "?" + q;
 
-                Response.sendRedirect(request, response, callback, uri);
+                response.sendRedirect(callback, uri);
                 return true;
             }
 
             // Serve welcome file
-            HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+            HttpContent c = _contentFactory.getContent(welcome, response.getOutputBufferSize());
             sendData(request, response, callback, c, null);
             return true;
         }
         return false;
     }
 
-    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(GenericRequest request, GenericResponse response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
     {
         if (!_dirAllowed)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            response.writeError(callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -482,17 +477,17 @@ public class ResourceService
         String dir = httpContent.getResource().getListHTML(base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (dir == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            response.writeError(callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
-        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
-        response.write(true, ByteBuffer.wrap(data), callback);
+        response.putHeader(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        response.putHeaderLong(HttpHeader.CONTENT_LENGTH, data.length);
+        response.writeLast(ByteBuffer.wrap(data), callback);
     }
 
-    private boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
+    private boolean sendData(GenericRequest request, GenericResponse response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
     {
         long contentLength = content.getContentLengthValue();
 
@@ -507,7 +502,7 @@ public class ResourceService
             putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
 
             // write the content
-            writeContent(response, callback, content);
+            response.write(content, callback);
         }
         else
         {
@@ -608,19 +603,8 @@ public class ResourceService
         return true;
     }
 
-    private void writeContent(Response response, Callback callback, HttpContent content) throws IOException
+    private void putHeaders(GenericResponse response, HttpContent content, long contentLength)
     {
-        ByteBuffer buffer = content.getBuffer();
-        if (buffer != null)
-            response.write(true, buffer, callback);
-        else
-            new ContentWriterIteratingCallback(content, response, callback).iterate();
-    }
-
-    private void putHeaders(Response response, HttpContent content, long contentLength)
-    {
-        HttpFields.Mutable headers = response.getHeaders();
-
         // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
         //      it might be better remove headers en masse and then just add the extras:
 //        headers.remove(EnumSet.of(
@@ -639,37 +623,36 @@ public class ResourceService
 
         HttpField lm = content.getLastModified();
         if (lm != null)
-            headers.put(lm);
+            response.putHeader(lm);
 
         if (contentLength == USE_KNOWN_CONTENT_LENGTH)
         {
-            headers.put(content.getContentLength());
+            response.putHeader(content.getContentLength());
         }
         else if (contentLength > NO_CONTENT_LENGTH)
         {
-            headers.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+            response.putHeaderLong(HttpHeader.CONTENT_LENGTH, contentLength);
         }
 
         HttpField ct = content.getContentType();
         if (ct != null)
-            headers.put(ct);
+            response.putHeader(ct);
 
         HttpField ce = content.getContentEncoding();
         if (ce != null)
-            headers.put(ce);
+            response.putHeader(ce);
 
         if (_etags)
         {
             HttpField et = content.getETag();
             if (et != null)
-                headers.put(et);
+                response.putHeader(et);
         }
 
-        HttpFields.Mutable fields = response.getHeaders();
-        if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
-            fields.add(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
-        if (_cacheControl != null && !fields.contains(HttpHeader.CACHE_CONTROL))
-            fields.add(_cacheControl);
+        if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES))
+            response.putHeader(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
+        if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL))
+            response.putHeader(_cacheControl);
     }
 
     private boolean hasDefinedRange(Enumeration<String> reqRanges)
@@ -837,61 +820,6 @@ public class ResourceService
         }
     }
 
-    // TODO a ReadableByteChannel IteratingCallback that writes to a Response looks generic enough to be moved to some util module
-    private static class ContentWriterIteratingCallback extends IteratingCallback
-    {
-        private final ReadableByteChannel source;
-        private final Content.Sink sink;
-        private final Callback callback;
-        private final ByteBuffer byteBuffer;
-
-        public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
-        {
-            // TODO: is it possible to do zero-copy transfer?
-//            WritableByteChannel c = Response.asWritableByteChannel(target);
-//            FileChannel fileChannel = (FileChannel) source;
-//            fileChannel.transferTo(0, contentLength, c);
-
-            this.source = Files.newByteChannel(content.getResource().getPath());
-            this.sink = target;
-            this.callback = callback;
-            HttpConfiguration httpConfiguration = target.getRequest().getConnectionMetaData().getHttpConfiguration();
-            int outputBufferSize = httpConfiguration.getOutputBufferSize();
-            boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
-            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (!source.isOpen())
-                return Action.SUCCEEDED;
-            byteBuffer.clear();
-            int read = source.read(byteBuffer);
-            if (read == -1)
-            {
-                IO.close(source);
-                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
-                return Action.SCHEDULED;
-            }
-            byteBuffer.flip();
-            sink.write(false, byteBuffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            callback.failed(x);
-        }
-    }
-
     public interface WelcomeFactory
     {
 
@@ -902,5 +830,36 @@ public class ResourceService
          * @return The path of the matching welcome file in context or null.
          */
         String getWelcomeFile(String pathInContext) throws IOException;
+    }
+
+    public interface GenericRequest
+    {
+        Collection<HttpField> getHeaders();
+        Enumeration<String> getHeaderValues(String name);
+        long getHeaderDate(String name);
+
+        HttpURI getHttpURI();
+
+        String getPathInContext();
+        String getContextPath();
+    }
+
+    public interface GenericResponse
+    {
+        boolean containsHeader(HttpHeader header);
+        void putHeader(HttpField header);
+        void putHeader(HttpHeader header, String value);
+        void putHeaderLong(HttpHeader name, long value);
+
+        boolean isCommitted();
+
+        int getOutputBufferSize();
+        boolean isUseOutputDirectByteBuffers();
+
+        void sendRedirect(Callback callback, String uri);
+        void writeError(Callback callback, int status);
+
+        void write(HttpContent content, Callback callback);
+        void writeLast(ByteBuffer byteBuffer, Callback callback);
     }
 }
