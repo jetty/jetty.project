@@ -411,9 +411,8 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifySuccess(listeners, response);
 
-        // Special case for 100 Continue that cannot
-        // be handled by the ContinueProtocolHandler.
-        if (exchange.getResponse().getStatus() == HttpStatus.CONTINUE_100)
+        // Interim responses do not terminate the exchange.
+        if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
             return true;
 
         // Mark atomically the response as terminated, with
