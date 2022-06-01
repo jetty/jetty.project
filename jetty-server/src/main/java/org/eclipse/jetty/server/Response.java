@@ -470,6 +470,7 @@ public class Response implements HttpServletResponse
      * <p>In addition to the servlet standard handling, this method supports some additional codes:</p>
      * <dl>
      * <dt>102</dt><dd>Send a partial PROCESSING response and allow additional responses</dd>
+     * <dt>103</dt><dd>Send a partial EARLY_HINT response as per <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a></dd>
      * <dt>-1</dt><dd>Abort the HttpChannel and close the connection/stream</dd>
      * </dl>
      * @param code The error code
@@ -490,6 +491,9 @@ public class Response implements HttpServletResponse
             case HttpStatus.PROCESSING_102:
                 sendProcessing();
                 break;
+            case HttpStatus.EARLY_HINT_103:
+                sendEarlyHint();
+                break;
             default:
                 _channel.getState().sendError(code, message);
                 break;
@@ -498,9 +502,8 @@ public class Response implements HttpServletResponse
 
     /**
      * Sends a 102-Processing response.
-     * If the connection is an HTTP connection, the version is 1.1 and the
-     * request has a Expect header starting with 102, then a 102 response is
-     * sent. This indicates that the request still be processed and real response
+     * If the request had an Expect header starting with 102, then
+     * a 102 response is sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
      *
      * @throws IOException if unable to send the 102 response
@@ -512,6 +515,22 @@ public class Response implements HttpServletResponse
         {
             _channel.sendResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
         }
+    }
+
+    /**
+     * Sends a 103 Early Hint response.
+     *
+     * Send a 103 response as per <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a>
+     * This method is called by sendError if it is passed 103.
+     *
+     * @throws IOException if unable to send the 103 response
+     * @see javax.servlet.http.HttpServletResponse#sendError(int)
+     */
+    public void sendEarlyHint() throws IOException
+    {
+        if (!isCommitted())
+            _channel.sendResponse(new MetaData.Response(_channel.getRequest().getHttpVersion(), HttpStatus.EARLY_HINT_103,
+                _channel.getResponse()._fields.asImmutable()), null, true);
     }
 
     /**
