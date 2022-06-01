@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -42,6 +43,9 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultServlet extends HttpServlet
 {
@@ -52,7 +56,7 @@ public class DefaultServlet extends HttpServlet
     {
         ContextHandler contextHandler = initContextHandler(config.getServletContext());
 
-        _resourceService = new ResourceService();
+        _resourceService = new ServletResourceService();
         MimeTypes mimeTypes = new MimeTypes();
         CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
         _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(contextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
@@ -283,6 +287,83 @@ public class DefaultServlet extends HttpServlet
             {
                 callback.failed(x);
             }
+        }
+    }
+
+    private static class ServletResourceService extends ResourceService
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ServletResourceService.class);
+
+        @Override
+        protected boolean welcome(GenericRequest rq, GenericResponse rs, Callback callback) throws IOException
+        {
+            HttpServletRequest request = ((ServletGenericRequest)rq).request;
+            HttpServletResponse response = ((ServletGenericResponse)rs).response;
+            String pathInContext = rq.getPathInContext();
+            WelcomeFactory welcomeFactory = getWelcomeFactory();
+            String welcome = welcomeFactory == null ? null : welcomeFactory.getWelcomeFile(pathInContext);
+            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+
+            if (welcome != null)
+            {
+                String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
+                    : request.getServletPath();
+
+                if (isPathInfoOnly())
+                    welcome = URIUtil.addPaths(servletPath, welcome);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("welcome={}", welcome);
+
+                ServletContext context = request.getServletContext();
+
+                if (isRedirectWelcome() || context == null)
+                {
+                    // Redirect to the index
+                    response.setContentLength(0);
+
+                    String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
+                    String q = request.getQueryString();
+                    if (q != null && !q.isEmpty())
+                        uri += "?" + q;
+
+                    response.sendRedirect(response.encodeRedirectURL(uri));
+                    return true;
+                }
+
+                RequestDispatcher dispatcher = context.getRequestDispatcher(URIUtil.encodePath(welcome));
+                if (dispatcher != null)
+                {
+                    // Forward to the index
+                    try
+                    {
+                        if (included)
+                        {
+                            dispatcher.include(request, response);
+                        }
+                        else
+                        {
+                            request.setAttribute("org.eclipse.jetty.server.welcome", welcome);
+                            dispatcher.forward(request, response);
+                        }
+                    }
+                    catch (ServletException e)
+                    {
+                        callback.failed(e);
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
+        {
+            boolean included = ((ServletGenericRequest)request).request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            if (included)
+                return true;
+            return super.passConditionalHeaders(request, response, content, callback);
         }
     }
 }

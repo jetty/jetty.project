@@ -283,7 +283,7 @@ public class ResourceService
     /**
      * @return true if the request was processed, false otherwise.
      */
-    private boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
+    protected boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -428,7 +428,7 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    private boolean welcome(GenericRequest request, GenericResponse response, Callback callback) throws IOException
+    protected boolean welcome(GenericRequest request, GenericResponse response, Callback callback) throws IOException
     {
         String pathInContext = request.getPathInContext();
         String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
