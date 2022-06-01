@@ -160,7 +160,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public String getPathInContext()
         {
-            return request.getRequestURI()   ;
+            return request.getRequestURI();
         }
 
         @Override

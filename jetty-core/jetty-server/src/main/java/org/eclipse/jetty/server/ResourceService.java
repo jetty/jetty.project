@@ -836,31 +836,40 @@ public class ResourceService
     public interface GenericRequest
     {
         Collection<HttpField> getHeaders();
+
         Enumeration<String> getHeaderValues(String name);
+
         long getHeaderDate(String name);
 
         HttpURI getHttpURI();
 
         String getPathInContext();
+
         String getContextPath();
     }
 
     public interface GenericResponse
     {
         boolean containsHeader(HttpHeader header);
+
         void putHeader(HttpField header);
+
         void putHeader(HttpHeader header, String value);
+
         void putHeaderLong(HttpHeader name, long value);
 
         boolean isCommitted();
 
         int getOutputBufferSize();
+
         boolean isUseOutputDirectByteBuffers();
 
         void sendRedirect(Callback callback, String uri);
+
         void writeError(Callback callback, int status);
 
         void write(HttpContent content, Callback callback);
+
         void writeLast(ByteBuffer byteBuffer, Callback callback);
     }
 }
