@@ -14,8 +14,8 @@ client
 ee10-annotations
 
 [lib]
-lib/websocket/jetty-ee10-websocket-core-common-${jetty.version}.jar
-lib/websocket/jetty-ee10-websocket-core-client-${jetty.version}.jar
+lib/jetty-websocket-core-common-${jetty.version}.jar
+lib/jetty-websocket-core-client-${jetty.version}.jar
 lib/websocket/jetty-ee10-websocket-jetty-api-${jetty.version}.jar
 lib/websocket/jetty-ee10-websocket-jetty-common-${jetty.version}.jar
 lib/websocket/jetty-ee10-websocket-jetty-client-${jetty.version}.jar
