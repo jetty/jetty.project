@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -118,6 +119,38 @@ public class ShutdownMonitorTest
         stop("stop", port, key, true);
         monitor.await();
         assertTrue(!monitor.isAlive());
+    }
+
+    @Test
+    public void testNoExitSystemProperty() throws Exception
+    {
+        System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertFalse(monitor.isExitVm());
+        monitor.start();
+
+        try (CloseableServer server = new CloseableServer())
+        {
+            server.setStopAtShutdown(true);
+            server.start();
+
+            //shouldn't be registered for shutdown on jvm
+            assertTrue(ShutdownThread.isRegistered(server));
+            assertTrue(ShutdownMonitor.isRegistered(server));
+
+            String key = monitor.getKey();
+            int port = monitor.getPort();
+
+            stop("stop", port, key, true);
+            monitor.await();
+
+            assertTrue(!monitor.isAlive());
+            assertTrue(server.stopped);
+            assertTrue(!server.destroyed);
+            assertTrue(!ShutdownThread.isRegistered(server));
+            assertTrue(!ShutdownMonitor.isRegistered(server));
+        }
     }
 
     @Test
