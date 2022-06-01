@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,8 +24,10 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.hamcrest.Matchers;
@@ -32,6 +35,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,7 +69,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 ServletInputStream input = request.getInputStream();
                 int content = input.read();
@@ -107,7 +111,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(data);
             }
@@ -164,12 +168,60 @@ public class HttpChannelEventTest
     }
 
     @Test
+    public void testResponseBeginModifyHeaders() throws Exception
+    {
+        start(new TestHandler()
+        {
+            @Override
+            protected void handle(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+                // Intentionally add two values for a header
+                response.addHeader("X-Header", "foo");
+                response.addHeader("X-Header", "bar");
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onResponseBegin(Request request)
+            {
+                Response response = request.getResponse();
+                // Eliminate all "X-Header" values from Handler, and force it to be the one value "zed"
+                response.getHttpFields().computeField("X-Header", (n, f) -> new HttpField(n, "zed"));
+            }
+
+            @Override
+            public void onComplete(Request request)
+            {
+                latch.countDown();
+            }
+        });
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "localhost");
+        request.setHeader("Connection", "close");
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        List<HttpField> xheaders = response.getFields("X-Header");
+        assertThat("X-Header count", xheaders.size(), is(1));
+        assertThat("X-Header[0].value", xheaders.get(0).getValue(), is("zed"));
+    }
+
+    @Test
     public void testResponseFailure() throws Exception
     {
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response)
             {
                 // Closes all connections, response will fail.
                 connector.getConnectedEndPoints().forEach(EndPoint::close);
@@ -235,6 +287,7 @@ public class HttpChannelEventTest
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testTransientListener() throws Exception
     {
