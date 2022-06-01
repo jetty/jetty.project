@@ -26,6 +26,12 @@
             <groupId>org.eclipse.jetty.documentation</groupId>
             <artifactId>jetty-asciidoctor-extensions</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.httpcomponents</groupId>
