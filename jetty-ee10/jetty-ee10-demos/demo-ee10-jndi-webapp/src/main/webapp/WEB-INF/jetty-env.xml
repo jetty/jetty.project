@@ -4,7 +4,7 @@
 <Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <!-- Add an EnvEntry only valid for this webapp               -->
-  <New id="gargle"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="gargle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>gargle</Arg>
     <Arg type="java.lang.Double">100</Arg>
@@ -12,7 +12,7 @@
   </New>
 
  <!-- Add an override for a global EnvEntry                           -->
-  <New id="wiggle"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="wiggle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>wiggle</Arg>
     <Arg type="java.lang.Double">55.0</Arg>
@@ -20,14 +20,14 @@
   </New>
 
 <!-- Add a mapping from name in web.xml to the environment -->
-  <New id="map1" class="org.eclipse.jetty.plus.jndi.Link">
+  <New id="map1" class="org.eclipse.jetty.ee10.plus.jndi.Link">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource1</Arg> <!-- name in web.xml -->
     <Arg>jdbc/mydatasource</Arg>  <!-- name in environment -->
   </New>
 
 
- <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+ <New class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
    <Arg><Ref refid='wac'/></Arg>
    <Arg>svr</Arg>
    <Arg type="java.lang.String">
