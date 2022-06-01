@@ -17,11 +17,11 @@
       <artifactId>asciidoctorj</artifactId>
       <exclusions>
         <exclusion>
-          <groupId>javax.annotation</groupId>
-          <artifactId>javax.annotation-api</artifactId>
+          <groupId>jakarta.annotation</groupId>
+          <artifactId>jakarta.annotation-api</artifactId>
         </exclusion>
         <!--
-        the pom of this dependencies has an unknow repository protocol
+        the pom of this dependencies has an unknown repository protocol
         https://issues.apache.org/jira/browse/MENFORCER-393
         it fail enforcer plugin
         -->

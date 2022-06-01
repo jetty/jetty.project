@@ -127,10 +127,10 @@ INSTALLED 2
 
 If things didn't go so well, and some bundle that should be in state ACTIVE (32) isn't, then you'll see diagnosis like this:
 
-Trying to start the bundle org.glassfish.web.javax.servlet.jsp.jstl that was supposed to be active or resolved.
-org.glassfish.web.javax.servlet.jsp.jstl failed to start
-org.osgi.framework.BundleException: Could not resolve module: org.glassfish.web.javax.servlet.jsp.jstl [57]
-  Unresolved requirement: Import-Package: javax.servlet.jsp.jstl.core
+Trying to start the bundle org.glassfish.web.jakarta.servlet.jsp.jstl that was supposed to be active or resolved.
+org.glassfish.web.jakarta.servlet.jsp.jstl failed to start
+org.osgi.framework.BundleException: Could not resolve module: org.glassfish.web.jakarta.servlet.jsp.jstl [57]
+  Unresolved requirement: Import-Package: jakarta.servlet.jsp.jstl.core
 
 The "Unresolved requirement" means either that some bundle that exports that package has not been deployed, or that it is deployed, but it's manifest is screwed up, and didn't expose that package. Check the test code for the mavenBundle() statements to ascertain if it has been deployed, and then check the manifest inside the jar for the Export-Package statements to verify the correct packages are exported.
 
