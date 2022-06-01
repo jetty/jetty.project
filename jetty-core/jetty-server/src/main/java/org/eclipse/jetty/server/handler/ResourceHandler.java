@@ -13,18 +13,35 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -121,7 +138,7 @@ public class ResourceHandler extends Handler.Wrapper
         {
             // TODO is it possible to get rid of the lambda allocation?
             // TODO GW: perhaps HttpContent can extend Request.Processor?
-            return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
+            return (rq, rs, cb) -> _resourceService.doGet(new ResourceHandlerGenericRequest(rq), new ResourceHandlerGenericResponse(rs), cb, content);
         }
     }
 
@@ -327,5 +344,203 @@ public class ResourceHandler extends Handler.Wrapper
     public void setWelcomeFiles(List<String> welcomeFiles)
     {
         _welcomes = welcomeFiles;
+    }
+
+    private static class ResourceHandlerGenericRequest implements ResourceService.GenericRequest
+    {
+        private final Request request;
+
+        ResourceHandlerGenericRequest(Request request)
+        {
+            this.request = request;
+        }
+
+        @Override
+        public java.util.Collection<HttpField> getHeaders()
+        {
+            List<HttpField> fields = new ArrayList<>();
+            HttpFields headers = request.getHeaders();
+            Set<String> names = headers.getFieldNamesCollection();
+            for (String name : names)
+            {
+                Enumeration<String> values = headers.getValues(name);
+                while (values.hasMoreElements())
+                {
+                    String value = values.nextElement();
+                    fields.add(new HttpField(name, value));
+                }
+            }
+            return fields;
+        }
+
+        @Override
+        public Enumeration<String> getHeaderValues(String name)
+        {
+            return request.getHeaders().getValues(name);
+        }
+
+        @Override
+        public long getHeaderDate(String name)
+        {
+            return request.getHeaders().getDateField(name);
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return request.getHttpURI();
+        }
+
+        @Override
+        public String getPathInContext()
+        {
+            return request.getPathInContext();
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return request.getContext().getContextPath();
+        }
+    }
+
+    private static class ResourceHandlerGenericResponse implements ResourceService.GenericResponse
+    {
+        private final Response response;
+
+        ResourceHandlerGenericResponse(Response response)
+        {
+            this.response = response;
+        }
+
+        @Override
+        public boolean containsHeader(HttpHeader header)
+        {
+            return response.getHeaders().contains(header);
+        }
+
+        @Override
+        public void putHeader(HttpField header)
+        {
+            response.getHeaders().put(header);
+        }
+
+        @Override
+        public void putHeader(HttpHeader header, String value)
+        {
+            response.getHeaders().put(header, value);
+        }
+
+        @Override
+        public void putHeaderLong(HttpHeader name, long value)
+        {
+            response.getHeaders().putLongField(name, value);
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return response.isCommitted();
+        }
+
+        @Override
+        public int getOutputBufferSize()
+        {
+            return response.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        }
+
+        @Override
+        public boolean isUseOutputDirectByteBuffers()
+        {
+            return response.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        }
+
+        @Override
+        public void sendRedirect(Callback callback, String uri)
+        {
+            Response.sendRedirect(response.getRequest(), response, callback, uri);
+        }
+
+        @Override
+        public void writeError(Callback callback, int status)
+        {
+            Response.writeError(response.getRequest(), response, callback, status);
+        }
+
+        @Override
+        public void write(HttpContent content, Callback callback)
+        {
+            try
+            {
+                ByteBuffer buffer = content.getBuffer();
+                if (buffer != null)
+                    writeLast(buffer, callback);
+                else
+                    new ContentWriterIteratingCallback(content, response, callback).iterate();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        @Override
+        public void writeLast(ByteBuffer byteBuffer, Callback callback)
+        {
+            response.write(true, byteBuffer, callback);
+        }
+    }
+
+    private static class ContentWriterIteratingCallback extends IteratingCallback
+    {
+        private final ReadableByteChannel source;
+        private final Content.Sink sink;
+        private final Callback callback;
+        private final ByteBuffer byteBuffer;
+
+        public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
+        {
+            // TODO: is it possible to do zero-copy transfer?
+//            WritableByteChannel c = Response.asWritableByteChannel(target);
+//            FileChannel fileChannel = (FileChannel) source;
+//            fileChannel.transferTo(0, contentLength, c);
+
+            this.source = Files.newByteChannel(content.getResource().getPath());
+            this.sink = target;
+            this.callback = callback;
+            int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+            boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            if (!source.isOpen())
+                return Action.SUCCEEDED;
+            byteBuffer.clear();
+            int read = source.read(byteBuffer);
+            if (read == -1)
+            {
+                IO.close(source);
+                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
+                return Action.SCHEDULED;
+            }
+            byteBuffer.flip();
+            sink.write(false, byteBuffer, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 }

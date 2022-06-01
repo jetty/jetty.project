@@ -14,12 +14,14 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
@@ -32,22 +34,14 @@ import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.Components;
-import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.IO;
 
 public class DefaultServlet extends HttpServlet
 {
@@ -84,25 +78,11 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        Request request;
-        Response response;
-        int outputBufferSize;
+        boolean useOutputDirectByteBuffers = true;
         if (resp instanceof ServletContextResponse.ServletApiResponse servletApiResponse)
-        {
-            // Fast path: unwrap and use the internal request/response.
-            response = servletApiResponse.getResponse().getWrapped();
-            request = response.getRequest();
-            outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        }
-        else
-        {
-            // Slow path: wrap the servlet API when the internal request/response cannot be accessed.
-            request = new ServletRequest(req);
-            response = new ServletResponse(request, resp);
-            outputBufferSize = resp.getBufferSize();
-        }
+            useOutputDirectByteBuffers = servletApiResponse.getResponse().getWrapped().getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
 
-        HttpContent content = _resourceService.getContent(req.getServletPath(), outputBufferSize);
+        HttpContent content = _resourceService.getContent(req.getServletPath(), resp.getBufferSize());
         if (content == null)
         {
             // no content
@@ -113,9 +93,7 @@ public class DefaultServlet extends HttpServlet
             // serve content
             try
             {
-                FutureCallback callback = new FutureCallback();
-                _resourceService.doGet(request, response, callback, content);
-                callback.get();
+                _resourceService.doGet(new ServletGenericRequest(req), new ServletGenericResponse(resp, useOutputDirectByteBuffers), Callback.NOOP, content);
             }
             catch (Exception e)
             {
@@ -127,334 +105,126 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        // TODO use service
-        super.doHead(req, resp);
+        doGet(req, resp);
     }
 
-    static class ServletRequest implements Request
+    private static class ServletGenericRequest implements ResourceService.GenericRequest
     {
-        private final HttpServletRequest servletRequest;
+        private final HttpServletRequest request;
 
-        public ServletRequest(HttpServletRequest servletRequest)
+        ServletGenericRequest(HttpServletRequest request)
         {
-            this.servletRequest = servletRequest;
+            this.request = request;
         }
 
         @Override
-        public void demand(Runnable demandCallback)
+        public Collection<HttpField> getHeaders()
         {
-            throw new UnsupportedOperationException();
+            List<HttpField> httpFields = new ArrayList<>();
+            Enumeration<String> headerNames = request.getHeaderNames();
+            while (headerNames.hasMoreElements())
+            {
+                String headerName = headerNames.nextElement();
+                Enumeration<String> headerValues = request.getHeaders(headerName);
+                while (headerValues.hasMoreElements())
+                {
+                    String headerValue = headerValues.nextElement();
+                    httpFields.add(new HttpField(headerName, headerValue));
+                }
+            }
+            return httpFields;
         }
 
         @Override
-        public void fail(Throwable failure)
+        public Enumeration<String> getHeaderValues(String name)
         {
-            throw new UnsupportedOperationException();
+            return request.getHeaders(name);
         }
 
         @Override
-        public String getId()
+        public long getHeaderDate(String name)
         {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Components getComponents()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ConnectionMetaData getConnectionMetaData()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String getMethod()
-        {
-            return servletRequest.getMethod();
+            return request.getDateHeader(name);
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return HttpURI.from(servletRequest.getRequestURI());
-        }
-
-        @Override
-        public Context getContext()
-        {
-            throw new UnsupportedOperationException();
+            return HttpURI.from(request.getRequestURI());
         }
 
         @Override
         public String getPathInContext()
         {
-            return servletRequest.getServletPath();
+            return request.getRequestURI()   ;
         }
 
         @Override
-        public HttpFields getHeaders()
+        public String getContextPath()
         {
-            return () ->
-            {
-                // TODO implement on top of servletRequest.getHeaderNames() / servletRequest.getHeaders()
-                return new Iterator<>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public HttpField next()
-                    {
-                        return null;
-                    }
-                };
-            };
-        }
-
-        @Override
-        public long getTimeStamp()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isSecure()
-        {
-            return servletRequest.isSecure();
-        }
-
-        @Override
-        public Content.Chunk read()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object removeAttribute(String name)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            throw new UnsupportedOperationException();
+            return request.getContextPath();
         }
     }
 
-    static class ServletResponse implements Response
+    private static class ServletGenericResponse implements ResourceService.GenericResponse
     {
-        private final Request request;
-        private final HttpServletResponse servletResponse;
-        private final ServletOutputStream outputStream;
+        private final HttpServletResponse response;
+        private final boolean useOutputDirectByteBuffers;
 
-        public ServletResponse(Request request, HttpServletResponse servletResponse) throws IOException
+        public ServletGenericResponse(HttpServletResponse response, boolean useOutputDirectByteBuffers)
         {
-            this.request = request;
-            this.servletResponse = servletResponse;
-            this.outputStream = servletResponse.getOutputStream();
+            this.response = response;
+            this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
         }
 
         @Override
-        public Request getRequest()
+        public boolean containsHeader(HttpHeader header)
         {
-            return request;
+            return response.containsHeader(header.asString());
         }
 
         @Override
-        public int getStatus()
+        public void putHeader(HttpField header)
         {
-            return servletResponse.getStatus();
+            response.addHeader(header.getName(), header.getValue());
         }
 
         @Override
-        public void setStatus(int code)
+        public void putHeader(HttpHeader header, String value)
         {
-            servletResponse.setStatus(code);
+            response.addHeader(header.asString(), value);
         }
 
         @Override
-        public HttpFields.Mutable getHeaders()
+        public void putHeaderLong(HttpHeader header, long value)
         {
-            return () ->
-            {
-                // TODO implement on top of servletResponse.getHeaderNames() / servletResponse.getHeaders() / servletResponse.setHeader()
-                return new ListIterator<>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public HttpField next()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public boolean hasPrevious()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public HttpField previous()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public int nextIndex()
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public int previousIndex()
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-
-                    }
-
-                    @Override
-                    public void set(HttpField httpField)
-                    {
-
-                    }
-
-                    @Override
-                    public void add(HttpField httpField)
-                    {
-
-                    }
-                };
-            };
+            response.addHeader(header.asString(), Long.toString(value));
         }
 
         @Override
-        public HttpFields.Mutable getOrCreateTrailers()
+        public int getOutputBufferSize()
         {
-            return () ->
-            {
-                // TODO implement on top of servletResponse.getHeaderNames() / servletResponse.getHeaders() / servletResponse.setHeader()
-                return new ListIterator<>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public HttpField next()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public boolean hasPrevious()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public HttpField previous()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public int nextIndex()
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public int previousIndex()
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-
-                    }
-
-                    @Override
-                    public void set(HttpField httpField)
-                    {
-
-                    }
-
-                    @Override
-                    public void add(HttpField httpField)
-                    {
-
-                    }
-                };
-            };
+            return response.getBufferSize();
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public boolean isCommitted()
+        {
+            return response.isCommitted();
+        }
+
+        @Override
+        public boolean isUseOutputDirectByteBuffers()
+        {
+            return useOutputDirectByteBuffers;
+        }
+
+        @Override
+        public void sendRedirect(Callback callback, String uri)
         {
             try
             {
-                byte[] bytes = new byte[byteBuffer.remaining()];
-                byteBuffer.get(bytes);
-                outputStream.write(bytes);
-                if (last)
-                    outputStream.close();
+                response.sendRedirect(uri);
                 callback.succeeded();
             }
             catch (Throwable x)
@@ -464,21 +234,55 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public boolean isCommitted()
+        public void writeError(Callback callback, int status)
         {
-            return servletResponse.isCommitted();
+            response.setStatus(status);
+            callback.succeeded();
         }
 
         @Override
-        public boolean isCompletedSuccessfully()
+        public void write(HttpContent content, Callback callback)
         {
-            throw new UnsupportedOperationException();
+            ByteBuffer buffer = content.getBuffer();
+            if (buffer != null)
+            {
+                writeLast(buffer, callback);
+            }
+            else
+            {
+                try
+                {
+                    try (InputStream inputStream = Files.newInputStream(content.getResource().getPath());
+                         OutputStream outputStream = response.getOutputStream())
+                    {
+                        IO.copy(inputStream, outputStream);
+                    }
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            }
         }
 
         @Override
-        public void reset()
+        public void writeLast(ByteBuffer byteBuffer, Callback callback)
         {
-            throw new UnsupportedOperationException();
+            try
+            {
+                ServletOutputStream outputStream = response.getOutputStream();
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(bytes);
+                outputStream.write(bytes);
+                outputStream.close();
+
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
         }
     }
 }
