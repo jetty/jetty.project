@@ -1037,11 +1037,12 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (committing)
         {
+            // Let HttpChannel.Listeners modify the response before commit
+            _combinedListener.onResponseBegin(_request);
             // We need an info to commit
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-            _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
 
             // wrap callback to process informational responses
