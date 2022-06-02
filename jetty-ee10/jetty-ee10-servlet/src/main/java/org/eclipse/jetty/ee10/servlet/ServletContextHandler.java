@@ -193,7 +193,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     private Class<? extends SecurityHandler> _defaultSecurityHandlerClass = ConstraintSecurityHandler.class;
-    private final ServletContextApi _servletContext = new ServletContextApi();
+    private final ServletContextApi _servletContext;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final Map<String, String> _initParams = new HashMap<>();
     private boolean _contextPathDefault = true;
@@ -272,6 +272,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
+        _servletContext = newServletContextApi();
+        
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
@@ -298,6 +300,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (errorHandler != null)
             setErrorHandler(errorHandler);
         */
+    }
+    
+    public ServletContextApi newServletContextApi()
+    {
+        return new ServletContextApi();
     }
 
     @Override
@@ -3267,7 +3274,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         public boolean isExtendedListenerTypes()
-        {
+        { 
             return _extendedListenerTypes;
         }
 
