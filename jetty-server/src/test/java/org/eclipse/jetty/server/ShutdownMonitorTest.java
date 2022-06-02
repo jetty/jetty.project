@@ -152,15 +152,6 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
-    
-    @Test
-    public void testExitVmDefault() throws Exception
-    {
-        //Test that the default is to exit
-        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setPort(0);
-        assertTrue(monitor.isExitVm());
-    }
 
     /*
      * Disable these config tests because ShutdownMonitor is a 
@@ -171,6 +162,16 @@ public class ShutdownMonitorTest
      * 
      * Undisable to test individually as needed.
      */
+    @Disabled
+    @Test
+    public void testExitVmDefault() throws Exception
+    {
+        //Test that the default is to exit
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertTrue(monitor.isExitVm());
+    }
+
     @Disabled
     @Test
     public void testExitVmTrue() throws Exception
