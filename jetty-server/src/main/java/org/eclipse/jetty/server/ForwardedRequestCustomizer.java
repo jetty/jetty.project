@@ -593,6 +593,8 @@ public class ForwardedRequestCustomizer implements Customizer
 
     private void updateHandles()
     {
+        _handles.clear();
+
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {
