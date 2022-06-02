@@ -152,7 +152,48 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
+    
+    @Test
+    public void testExitVmDefault() throws Exception
+    {
+        //Test that the default is to exit
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertTrue(monitor.isExitVm());
+    }
 
+    /*
+     * Disable these config tests because ShutdownMonitor is a 
+     * static singleton that cannot be unset, and thus would
+     * need each of these methods executed it its own jvm -
+     * current surefire settings only fork for a single test 
+     * class.
+     * 
+     * Undisable to test individually as needed.
+     */
+    @Disabled
+    @Test
+    public void testExitVmTrue() throws Exception
+    {
+        //Test setting exit true
+        System.setProperty("STOP.EXIT", "true");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertTrue(monitor.isExitVm());
+    }
+    
+    @Disabled
+    @Test
+    public void testExitVmFalse() throws Exception
+    {
+        //Test setting exit false
+        System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertFalse(monitor.isExitVm());
+    }
+    
+    @Disabled
     @Test
     public void testForceStopCommand() throws Exception
     {
