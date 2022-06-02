@@ -648,19 +648,12 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         }
     }
 
-    private ContextHandler getContextHandler(ServletContext servletContext)
-    {
-        if (servletContext instanceof ContextHandler.Context)
-            return ((ContextHandler.Context)servletContext).getContextHandler();
-        return null;
-    }
-
     /**
      * @throws Exception if unable to init the JSP Servlet
      */
     protected void initJspServlet() throws Exception
     {
-        ContextHandler ch = getContextHandler(getServletHandler().getServletContext());
+        ContextHandler ch = getServletHandler().getServletContextHandler();
         if (ch == null)
             throw new IllegalStateException();
         String classpath = ""; //ch.getClassPath(); todo: fix this
