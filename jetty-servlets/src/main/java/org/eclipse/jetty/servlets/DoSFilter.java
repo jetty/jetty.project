@@ -1216,7 +1216,7 @@ public class DoSFilter implements Filter
         }
 
         /**
-         * @param now the time now (in milliseconds)
+         * @param now the time now (in nanoseconds)
          * @return the current calculated request rate over the last second
          */
         public OverLimit isRateExceeded(long now)
@@ -1237,7 +1237,7 @@ public class DoSFilter implements Filter
             long rate = (now - last);
             if (TimeUnit.NANOSECONDS.toSeconds(rate) < 1L)
             {
-                return new Overage(Duration.ofMillis(rate), _maxRequestsPerSecond);
+                return new Overage(Duration.ofNanos(rate), _maxRequestsPerSecond);
             }
             return null;
         }
