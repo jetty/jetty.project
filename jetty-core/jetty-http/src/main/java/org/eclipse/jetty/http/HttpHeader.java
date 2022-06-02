@@ -88,6 +88,7 @@ public enum HttpHeader
     AGE("Age"),
     ALT_SVC("Alt-Svc"),
     ETAG("ETag"),
+    LINK("Link"),
     LOCATION("Location"),
     PROXY_AUTHENTICATE("Proxy-Authenticate"),
     RETRY_AFTER("Retry-After"),

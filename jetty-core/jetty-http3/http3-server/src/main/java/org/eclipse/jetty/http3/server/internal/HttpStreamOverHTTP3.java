@@ -240,9 +240,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        int status = response.getStatus();
-        boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
-        if (interimResponse)
+        if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
             if (hasContent)

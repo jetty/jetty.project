@@ -120,8 +120,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 if (responseHeaders(exchange))
                 {
                     int status = response.getStatus();
-                    boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
-                    if (frame.isEndStream() || informational)
+                    if (frame.isEndStream() || HttpStatus.isInterim(status))
                         responseSuccess(exchange);
                 }
                 else

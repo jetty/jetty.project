@@ -995,17 +995,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (committing)
         {
+            // Let HttpChannel.Listeners modify the response before commit
+            _combinedListener.onResponseBegin(_request);
             // We need an info to commit
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-            _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
 
-            // wrap callback to process 100 responses
+            // wrap callback to process informational responses
             final int status = response.getStatus();
-            final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
-                ? new Send100Callback(callback)
+            final Callback committed = HttpStatus.isInformational(status)
+                ? new Send1XXCallback(callback)
                 : new SendCallback(callback, content, true, complete);
 
             // committing write
@@ -1442,9 +1443,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class Send100Callback extends SendCallback
+    private class Send1XXCallback extends SendCallback
     {
-        private Send100Callback(Callback callback)
+        private Send1XXCallback(Callback callback)
         {
             super(callback, null, false, false);
         }

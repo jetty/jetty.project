@@ -53,6 +53,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -619,20 +620,43 @@ public class ServletContextResponse extends ContextResponse
             switch (sc)
             {
                 case -1:
+                {
                     _servletChannel.abort(new IOException(msg));
                     break;
-
+                }
                 case HttpStatus.PROCESSING_102:
-                    try (SharedBlockingCallback.Blocker blocker = _blocker.acquire())
+                {
+                    // TODO: should we check whether an Expect: 102 header is present?
+                    if (!isCommitted())
                     {
-                        Response.writeError(_request, _response, blocker, HttpStatus.PROCESSING_102);
+                        try (Blocking.Callback blocker = Blocking.callback())
+                        {
+                            _response.setStatus(HttpStatus.PROCESSING_102);
+                            _response.write(true, null, blocker);
+                            blocker.block();
+                        }
                     }
                     break;
-
+                }
+                case HttpStatus.EARLY_HINT_103:
+                {
+                    if (!isCommitted())
+                    {
+                        try (Blocking.Callback blocker = Blocking.callback())
+                        {
+                            _response.setStatus(HttpStatus.EARLY_HINT_103);
+                            _response.write(true, null, blocker);
+                            blocker.block();
+                        }
+                    }
+                    break;
+                }
                 default:
+                {
                     // This is just a state change
                     getState().sendError(sc, msg);
                     break;
+                }
             }
         }
 

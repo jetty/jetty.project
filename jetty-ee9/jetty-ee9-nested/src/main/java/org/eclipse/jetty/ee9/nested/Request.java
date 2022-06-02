@@ -911,9 +911,6 @@ public class Request implements HttpServletRequest
         return "";
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocalName()
-     */
     @Override
     public String getLocalName()
     {

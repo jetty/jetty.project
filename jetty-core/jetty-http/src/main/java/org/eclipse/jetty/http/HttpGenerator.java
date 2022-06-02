@@ -395,15 +395,21 @@ public class HttpGenerator
 
                     // Handle 1xx and no content responses
                     int status = info.getStatus();
-                    if (status >= 100 && status < 200)
+                    if (HttpStatus.isInformational(status))
                     {
                         _noContentResponse = true;
-
-                        if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
+                        switch (status)
                         {
-                            header.put(HttpTokens.CRLF);
-                            _state = State.COMPLETING_1XX;
-                            return Result.FLUSH;
+                            case HttpStatus.SWITCHING_PROTOCOLS_101:
+                                break;
+                            case HttpStatus.EARLY_HINT_103:
+                                generateHeaders(header, content, last);
+                                _state = State.COMPLETING_1XX;
+                                return Result.FLUSH;
+                            default:
+                                header.put(HttpTokens.CRLF);
+                                _state = State.COMPLETING_1XX;
+                                return Result.FLUSH;
                         }
                     }
                     else if (status == HttpStatus.NO_CONTENT_204 || status == HttpStatus.NOT_MODIFIED_304)
