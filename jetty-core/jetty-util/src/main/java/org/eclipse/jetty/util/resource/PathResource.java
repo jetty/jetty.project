@@ -312,13 +312,8 @@ public class PathResource extends Resource
         if (URIUtil.canonicalPath(subPath) == null)
             throw new MalformedURLException(subPath);
 
-        if ("/".equals(subPath))
+        if (URIUtil.SLASH.equals(subPath))
             return this;
-
-        // Sub-paths are always under PathResource
-        // compensate for input sub-paths like "/subdir"
-        // where default resolve behavior would be
-        // to treat that like an absolute path
 
         return new PathResource(this, subPath);
     }

@@ -998,8 +998,18 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     static URI resolve(URI uri, String subPath)
     {
+        // Sub-paths are always resolved under the given URI,
+        // we compensate for input sub-paths like "/subdir"
+        // where default resolve behavior would be to treat
+        // that like an absolute path.
+        if (subPath.startsWith(URIUtil.SLASH))
+            subPath = subPath.substring(1);
+
         if (uri.isOpaque())
         {
+            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
+            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
+            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
             String scheme = uri.getScheme();
             URI subUri = URI.create(uri.getSchemeSpecificPart());
             if (subUri.isOpaque())
