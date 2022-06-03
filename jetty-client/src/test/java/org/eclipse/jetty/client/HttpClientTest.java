@@ -1618,6 +1618,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .timeout(123231, TimeUnit.SECONDS)
             .idleTimeout(232342, TimeUnit.SECONDS)
             .followRedirects(false)
+            .tag("tag")
             .headers(headers -> headers.put(HttpHeader.ACCEPT, "application/json"))
             .headers(headers -> headers.put("X-Some-Other-Custom-Header", "some-other-value")));
 
@@ -1969,6 +1970,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
         assertEquals(original.getTimeout(), copy.getTimeout());
         assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
+        assertEquals(original.getTag(), copy.getTag());
         assertEquals(original.getHeaders(), copy.getHeaders());
     }
 
