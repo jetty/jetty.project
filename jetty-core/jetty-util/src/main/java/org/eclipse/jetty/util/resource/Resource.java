@@ -92,10 +92,19 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
      */
-    public static Resource newResource(URI uri)
-        throws MalformedURLException
+    public static Resource newResource(URI uri) throws IOException
     {
-        return newResource(uri.toURL());
+        try
+        {
+            Path path = Paths.get(uri);
+            return newResource(path);
+        }
+        catch (FileSystemNotFoundException e)
+        {
+            FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
+            Path path = Paths.get(uri);
+            return newResource(path, fileSystem);
+        }
     }
 
     /**

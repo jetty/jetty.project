@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -113,7 +112,7 @@ public class PathResourceTest
         PathResource resource = (PathResource)Resource.newResource(exampleJar);
 
         Path file = resource.getPath();
-        assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
+        assertThat("File for default FileSystem", file, is(exampleJar));
     }
 
     @Test

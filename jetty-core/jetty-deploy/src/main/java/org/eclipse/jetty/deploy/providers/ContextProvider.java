@@ -635,11 +635,7 @@ public class ContextProvider extends ScanningAppProvider
         }
 
         LOG.debug("Unpack {} -> {}", resourceBase, unpacked);
-        // TODO
-//        try (Resource jar = JarResource.newJarResource(resourceBase))
-//        {
-//            jar.copyTo(unpacked);
-//        }
+        resourceBase.copyTo(unpacked.toPath());
 
         extractLock.delete();
         resourceBase.close();

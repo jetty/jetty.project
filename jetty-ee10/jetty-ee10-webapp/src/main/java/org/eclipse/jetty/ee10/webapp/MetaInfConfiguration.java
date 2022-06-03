@@ -633,6 +633,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 return;
         }
 
+        // TODO do we want to keep a collection of URLs or should that be changed to a collection of URIs?
         Collection<URL> metaInfTlds = (Collection<URL>)context.getAttribute(METAINF_TLDS);
         if (metaInfTlds == null)
         {
