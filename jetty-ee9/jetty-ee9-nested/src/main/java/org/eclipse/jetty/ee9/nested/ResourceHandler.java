@@ -80,7 +80,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Resource welcome = getResource(welcomeInContext);
+            Resource welcome = resolve(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
         }
@@ -134,7 +134,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public Resource getResource(String path) throws IOException
+    public Resource resolve(String path) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
@@ -153,7 +153,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         if (_baseResource != null)
         {
-            r = _baseResource.getResource(path);
+            r = _baseResource.resolve(path);
 
             if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
             {

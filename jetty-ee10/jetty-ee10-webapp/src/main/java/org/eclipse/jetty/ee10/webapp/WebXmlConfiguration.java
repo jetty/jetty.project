@@ -100,7 +100,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // do web.xml file
-            Resource web = webInf.getResource("web.xml");
+            Resource web = webInf.resolve("web.xml");
             if (web.exists())
                 return web;
             if (LOG.isDebugEnabled())

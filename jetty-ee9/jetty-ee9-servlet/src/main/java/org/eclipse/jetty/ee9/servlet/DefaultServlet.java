@@ -409,7 +409,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      * @return The resource to serve.
      */
     @Override
-    public Resource getResource(String pathInContext)
+    public Resource resolve(String pathInContext)
     {
         Resource r = null;
         if (_relativeResourceBase != null)
@@ -419,7 +419,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (_resourceBase != null)
             {
-                r = _resourceBase.getResource(pathInContext);
+                r = _resourceBase.resolve(pathInContext);
                 if (!_contextHandler.checkAlias(pathInContext, r))
                     r = null;
             }
@@ -500,7 +500,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         for (String s : _welcomes)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, s);
-            Resource welcome = getResource(welcomeInContext);
+            Resource welcome = resolve(welcomeInContext);
             if (welcome != null && welcome.exists())
                 return welcomeInContext;
 

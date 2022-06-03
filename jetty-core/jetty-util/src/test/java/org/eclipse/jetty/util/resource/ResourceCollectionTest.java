@@ -155,7 +155,7 @@ public class ResourceCollectionTest
 
     private void assertThrowIllegalStateException(ResourceCollection coll)
     {
-        assertThrows(IllegalStateException.class, () -> coll.getResource("foo"));
+        assertThrows(IllegalStateException.class, () -> coll.resolve("foo"));
         assertThrows(IllegalStateException.class, coll::exists);
         assertThrows(IllegalStateException.class, coll::getPath);
         assertThrows(IllegalStateException.class, coll::getInputStream);
@@ -182,8 +182,8 @@ public class ResourceCollectionTest
             Resource.newResource("src/test/resources/org/eclipse/jetty/util/resource/three/"));
 
         assertThat(Arrays.asList(rc1.list()), contains("1.txt", "2.txt", "3.txt", "dir/"));
-        assertThat(Arrays.asList(rc1.getResource("dir").list()), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc1.getResource("unknown").list(), nullValue());
+        assertThat(Arrays.asList(rc1.resolve("dir").list()), contains("1.txt", "2.txt", "3.txt"));
+        assertThat(rc1.resolve("unknown").list(), nullValue());
     }
 
     @Test
@@ -217,7 +217,7 @@ public class ResourceCollectionTest
             "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
-        Resource r = rc.getResource("dir");
+        Resource r = rc.resolve("dir");
         assertTrue(r instanceof ResourceCollection);
         rc = (ResourceCollection)r;
         assertEquals(getContent(rc, "1.txt"), "1 - one");
@@ -242,7 +242,7 @@ public class ResourceCollectionTest
         assertEquals(getContent(r, "1.txt"), "1 - one");
         assertEquals(getContent(r, "2.txt"), "2 - two");
         assertEquals(getContent(r, "3.txt"), "3 - three");
-        r = r.getResource("dir");
+        r = r.resolve("dir");
         assertEquals(getContent(r, "1.txt"), "1 - one");
         assertEquals(getContent(r, "2.txt"), "2 - two");
         assertEquals(getContent(r, "3.txt"), "3 - three");
@@ -252,7 +252,7 @@ public class ResourceCollectionTest
 
     static String getContent(Resource r, String path) throws Exception
     {
-        Resource resource = r.getResource(path);
+        Resource resource = r.resolve(path);
         StringBuilder buffer = new StringBuilder();
         try (InputStream in = resource.getInputStream();
              InputStreamReader reader = new InputStreamReader(in);

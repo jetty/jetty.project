@@ -102,7 +102,7 @@ public class TestAnnotationConfiguration
             testContainerSciJar.toURI().toURL()
         }, Thread.currentThread().getContextClassLoader());
 
-        targetClasses = Resource.newResource(MavenTestingUtils.getTargetDir().toURI()).getResource("/test-classes");
+        targetClasses = Resource.newResource(MavenTestingUtils.getTargetDir().toURI()).resolve("/test-classes");
 
         classes = Arrays.asList(new Resource[]{webInfClasses, targetClasses});
 

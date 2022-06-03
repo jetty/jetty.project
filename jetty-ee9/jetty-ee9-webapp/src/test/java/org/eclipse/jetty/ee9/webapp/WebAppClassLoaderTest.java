@@ -61,8 +61,8 @@ public class WebAppClassLoaderTest
         _context.setExtraClasspath("target/test-classes/ext/*");
 
         _loader = new WebAppClassLoader(_context);
-        _loader.addJars(webapp.getResource("WEB-INF/lib"));
-        _loader.addClassPath(webapp.getResource("WEB-INF/classes"));
+        _loader.addJars(webapp.resolve("WEB-INF/lib"));
+        _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
         _context.setServer(new Server());

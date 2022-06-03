@@ -461,7 +461,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (target.isDirectory())
             {
                 //TODO think  how to handle an unpacked jar file (eg for osgi)
-                resourcesDir = target.getResource("/META-INF/resources");
+                resourcesDir = target.resolve("/META-INF/resources");
             }
             else
             {
@@ -769,7 +769,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         List<Resource> jarResources = new ArrayList<Resource>();
-        Resource webInfLib = webInf.getResource("/lib");
+        Resource webInfLib = webInf.resolve("/lib");
         if (webInfLib.exists() && webInfLib.isDirectory())
         {
             String[] files = webInfLib.list();
@@ -781,7 +781,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 try
                 {
-                    Resource file = webInfLib.getResource(files[f]);
+                    Resource file = webInfLib.resolve(files[f]);
                     String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
@@ -837,7 +837,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.getResource("classes/");
+            Resource classes = webInf.resolve("classes/");
             if (classes.exists())
                 return classes;
         }

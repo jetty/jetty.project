@@ -62,7 +62,7 @@ public class ResourceTest
             throws Exception
         {
             this.test = data.resource + "+" + path;
-            resource = data.resource.getResource(path);
+            resource = data.resource.resolve(path);
             this.exists = exists;
             this.dir = dir;
         }
@@ -71,7 +71,7 @@ public class ResourceTest
             throws Exception
         {
             this.test = data.resource + "+" + path;
-            resource = data.resource.getResource(path);
+            resource = data.resource.resolve(path);
             this.exists = exists;
             this.dir = dir;
             this.content = content;
@@ -270,7 +270,7 @@ public class ResourceTest
     {
         if (data.dir)
         {
-            Resource r = data.resource.getResource("foo%/b r");
+            Resource r = data.resource.resolve("foo%/b r");
             assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
         }
     }
@@ -337,14 +337,14 @@ public class ResourceTest
     public void testClimbAboveBase() throws Exception
     {
         Resource resource = Resource.newResource("/foo/bar");
-        assertThrows(MalformedURLException.class, () -> resource.getResource(".."));
+        assertThrows(MalformedURLException.class, () -> resource.resolve(".."));
 
-        Resource same = resource.getResource(".");
+        Resource same = resource.resolve(".");
         assertNotNull(same);
         assertTrue(same.isAlias());
 
-        assertThrows(MalformedURLException.class, () -> resource.getResource("./.."));
+        assertThrows(MalformedURLException.class, () -> resource.resolve("./.."));
 
-        assertThrows(MalformedURLException.class, () -> resource.getResource("./../bar"));
+        assertThrows(MalformedURLException.class, () -> resource.resolve("./../bar"));
     }
 }

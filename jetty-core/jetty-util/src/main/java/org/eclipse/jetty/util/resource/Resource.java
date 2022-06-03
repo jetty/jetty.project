@@ -409,16 +409,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract String[] list();
 
-    /**
-     * Returns the resource contained inside the current resource with the
-     * given name, which may or may not exist.
-     *
-     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
-     * the resulting Resource will return true from {@link #isAlias()}.
-     * @return the Resource for the resolved path within this Resource, never null
-     * @throws IOException if unable to resolve the path
-     */
-    public abstract Resource getResource(String path) throws IOException;
+    public abstract Resource resolve(String subPath) throws IOException;
 
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")
@@ -507,7 +498,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = getResource(l);
+            Resource item = resolve(l);
             items.add(item);
         }
 
@@ -878,7 +869,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 {
                     for (String i : list)
                     {
-                        Resource r = getResource(i);
+                        Resource r = resolve(i);
                         if (r.isDirectory())
                             deep.addAll(r.getAllResources());
                         else
@@ -959,7 +950,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             {
                 String dir = token.substring(0, token.length() - 2);
                 // Use directory
-                Resource dirResource = resourceFactory.getResource(dir);
+                Resource dirResource = resourceFactory.resolve(dir);
                 if (dirResource.exists() && dirResource.isDirectory())
                 {
                     // To obtain the list of entries
@@ -971,7 +962,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         {
                             try
                             {
-                                Resource resource = dirResource.getResource(entry);
+                                Resource resource = dirResource.resolve(entry);
                                 if (!resource.isDirectory())
                                 {
                                     returnedResources.add(resource);
@@ -992,7 +983,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             else
             {
                 // Simple reference, add as-is
-                returnedResources.add(resourceFactory.getResource(token));
+                returnedResources.add(resourceFactory.resolve(token));
             }
         }
 

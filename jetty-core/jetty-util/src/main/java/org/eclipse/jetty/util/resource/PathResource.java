@@ -304,7 +304,7 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource getResource(String subPath) throws IOException
+    public Resource resolve(String subPath) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
