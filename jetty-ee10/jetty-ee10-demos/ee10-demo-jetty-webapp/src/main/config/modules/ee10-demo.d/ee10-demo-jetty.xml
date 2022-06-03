@@ -22,7 +22,7 @@ Configure and deploy the test web application
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault-ee10.xml</Set>
-  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/demo-jetty.d/ee10-demo-jetty-override-web.xml
+  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/ee10-demo-jetty.d/ee10-demo-jetty-override-web.xml
   </Set>
   
   <!-- Enable WebSocket container -->

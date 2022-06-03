@@ -16,8 +16,8 @@ ee10-security
 etc/jetty-ee10-demo-realm.xml
 
 [files]
-basehome:modules/demo.d/jetty-ee10-demo-realm.xml|etc/jetty-ee10-demo-realm.xml
-basehome:modules/demo.d/jetty-ee10-demo-realm.properties|etc/jetty-ee10-demo-realm.properties
+basehome:modules/ee10-demo.d/jetty-ee10-demo-realm.xml|etc/jetty-ee10-demo-realm.xml
+basehome:modules/ee10-demo.d/jetty-ee10-demo-realm.properties|etc/jetty-ee10-demo-realm.properties
 
 [ini-template]
 # Create and configure the test realm
