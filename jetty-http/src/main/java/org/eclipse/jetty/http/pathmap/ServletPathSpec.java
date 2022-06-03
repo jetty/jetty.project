@@ -30,8 +30,10 @@ public class ServletPathSpec extends AbstractPathSpec
     private final PathSpecGroup _group;
     private final int _pathDepth;
     private final int _specLength;
+    private final int _matchLength;
     private final String _prefix;
     private final String _suffix;
+    private final MatchedPath _preMatchedPath;
 
     /**
      * If a servlet or filter path mapping isn't a suffix mapping, ensure
@@ -62,8 +64,10 @@ public class ServletPathSpec extends AbstractPathSpec
             _group = PathSpecGroup.ROOT;
             _pathDepth = -1; // Set pathDepth to -1 to force this to be at the end of the sort order.
             _specLength = 1;
+            _matchLength = 0;
             _prefix = null;
             _suffix = null;
+            _preMatchedPath = MatchedPath.from("", "/");
             return;
         }
 
@@ -74,8 +78,10 @@ public class ServletPathSpec extends AbstractPathSpec
             _group = PathSpecGroup.DEFAULT;
             _pathDepth = -1; // Set pathDepth to -1 to force this to be at the end of the sort order.
             _specLength = 1;
+            _matchLength = 0;
             _prefix = null;
             _suffix = null;
+            _preMatchedPath = null;
             return;
         }
 
@@ -90,6 +96,7 @@ public class ServletPathSpec extends AbstractPathSpec
             group = PathSpecGroup.PREFIX_GLOB;
             prefix = servletPathSpec.substring(0, specLength - 2);
             suffix = null;
+            _preMatchedPath = MatchedPath.from(prefix, null);
         }
         // suffix based
         else if (servletPathSpec.charAt(0) == '*' && servletPathSpec.length() > 1)
@@ -97,6 +104,7 @@ public class ServletPathSpec extends AbstractPathSpec
             group = PathSpecGroup.SUFFIX_GLOB;
             prefix = null;
             suffix = servletPathSpec.substring(2, specLength);
+            _preMatchedPath = null;
         }
         else
         {
@@ -108,6 +116,7 @@ public class ServletPathSpec extends AbstractPathSpec
                 LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
                         servletPathSpec);
             }
+            _preMatchedPath = MatchedPath.from(servletPathSpec, null);
         }
 
         int pathDepth = 0;
@@ -126,6 +135,7 @@ public class ServletPathSpec extends AbstractPathSpec
         _group = group;
         _pathDepth = pathDepth;
         _specLength = specLength;
+        _matchLength = prefix == null ? 0 : prefix.length();
         _prefix = prefix;
         _suffix = suffix;
 
@@ -213,9 +223,9 @@ public class ServletPathSpec extends AbstractPathSpec
                 return path;
 
             case PREFIX_GLOB:
-                if (path.length() == (_specLength - 2))
+                if (path.length() == _matchLength)
                     return null;
-                return path.substring(_specLength - 2);
+                return path.substring(_matchLength);
 
             default:
                 return null;
@@ -241,7 +251,7 @@ public class ServletPathSpec extends AbstractPathSpec
 
             case PREFIX_GLOB:
                 if (isWildcardMatch(path))
-                    return path.substring(0, _specLength - 2);
+                    return path.substring(0, _matchLength);
                 return null;
 
             case SUFFIX_GLOB:
@@ -278,7 +288,7 @@ public class ServletPathSpec extends AbstractPathSpec
     private boolean isWildcardMatch(String path)
     {
         // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
-        int cpl = _specLength - 2;
+        int cpl = _matchLength;
         if ((_group == PathSpecGroup.PREFIX_GLOB) && (path.regionMatches(0, _declaration, 0, cpl)))
             return (path.length() == cpl) || ('/' == path.charAt(cpl));
         return false;
@@ -291,19 +301,14 @@ public class ServletPathSpec extends AbstractPathSpec
         {
             case EXACT:
                 if (_declaration.equals(path))
-                    return MatchedPath.from(path, null);
+                    return _preMatchedPath;
                 break;
             case PREFIX_GLOB:
                 if (isWildcardMatch(path))
                 {
-                    String pathMatch = path;
-                    String pathInfo = null;
-                    if (path.length() != (_specLength - 2))
-                    {
-                        pathMatch = path.substring(0, _specLength - 2);
-                        pathInfo = path.substring(_specLength - 2);
-                    }
-                    return MatchedPath.from(pathMatch, pathInfo);
+                    if (path.length() == _matchLength)
+                        return _preMatchedPath;
+                    return MatchedPath.from(path.substring(0, _matchLength), path.substring(_matchLength));
                 }
                 break;
             case SUFFIX_GLOB:
@@ -313,7 +318,7 @@ public class ServletPathSpec extends AbstractPathSpec
             case ROOT:
                 // Only "/" matches
                 if ("/".equals(path))
-                    return MatchedPath.from("", path);
+                    return _preMatchedPath;
                 break;
             case DEFAULT:
                 // If we reached this point, then everything matches
