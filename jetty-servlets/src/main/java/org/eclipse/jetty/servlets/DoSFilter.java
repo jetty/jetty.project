@@ -1216,8 +1216,8 @@ public class DoSFilter implements Filter
         }
 
         /**
-         * @param now the time now (in nanoseconds)
-         * @return the current calculated request rate over the last second
+         * @param now the time now (in nanoseconds) used to calculate elapsed time since previous requests.
+         * @return the current calculated request rate over the last second if rate exceeded, else null.
          */
         public OverLimit isRateExceeded(long now)
         {
