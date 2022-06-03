@@ -57,13 +57,13 @@ public class TestMetaData
         assertTrue(jarDir.exists());
         fragFile = new File(jarDir, "zeta.jar");
         assertTrue(fragFile.exists());
-        fragResource = Resource.newResource(fragFile);
+        fragResource = Resource.newResource(fragFile.toPath());
         nonFragFile = new File(jarDir, "sigma.jar");
-        nonFragResource = Resource.newResource(nonFragFile);
+        nonFragResource = Resource.newResource(nonFragFile.toPath());
         assertTrue(nonFragFile.exists());
         webfragxml = Resource.newResource("jar:" + fragFile.toURI().toString() + "!/META-INF/web-fragment.xml");
-        containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container"));
-        webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses"));
+        containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
+        webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
         wac = new WebAppContext();
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);

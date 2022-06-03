@@ -86,7 +86,7 @@ public class ContextProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            Resource resource = Resource.newResource(new File(dir, name)); // TODO use paths
+            Resource resource = Resource.newResource(new File(dir, name).toPath()); // TODO use paths
             if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
 
@@ -616,7 +616,7 @@ public class ContextProvider extends ScanningAppProvider
                 if (LOG.isDebugEnabled())
                     LOG.debug("Reuse {} -> {}", resourceBase, unpacked);
                 resourceBase.close();
-                return Resource.newResource(unpacked);
+                return Resource.newResource(unpacked.toPath());
             }
 
             extractLock.createNewFile();
@@ -644,6 +644,6 @@ public class ContextProvider extends ScanningAppProvider
         extractLock.delete();
         resourceBase.close();
 
-        return Resource.newResource(unpacked);
+        return Resource.newResource(unpacked.toPath());
     }
 }

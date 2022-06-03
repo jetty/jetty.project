@@ -22,10 +22,14 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -64,7 +68,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final Map<String, Object> EMPTY_ENV = new HashMap<>();
     public static boolean __defaultUseCaches = true;
-    volatile Object _associate;
 
     /**
      * Change the default setting for url connection caches.
@@ -179,17 +182,11 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(url, useCaches);
     }
 
-    public static Resource newResource(File file)
-    {
-        return new PathResource(file.toPath(), null);
-    }
-
     /**
      * Construct a Resource from provided path
      *
      * @param path the path
      * @return the Resource for the provided path
-     * @since 9.4.10
      */
     public static Resource newResource(Path path)
     {
@@ -320,26 +317,34 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * @return true if the represented resource exists.
+     * @deprecated Replace with {@link #getPath()} and {@link Files#exists(Path, LinkOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract boolean exists();
 
     /**
      * @return true if the represented resource is a container/directory.
+     * @deprecated Replace with {@link #getPath()} and {@link Files#isDirectory(Path, LinkOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract boolean isDirectory();
 
     /**
      * Time resource was last modified.
      *
      * @return the last modified time as milliseconds since unix epoch
+     * @deprecated Replace with {@link #getPath()} and {@link Files#getLastModifiedTime(Path, LinkOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract long lastModified();
 
     /**
      * Length of the resource.
      *
      * @return the length of the resource
+     * @deprecated Replace with {@link #getPath()} and {@link Files#size(Path)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract long length();
 
     /**
@@ -348,12 +353,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return an URI representing the given resource
      */
     public abstract URI getURI();
-
-    public URI toUri()
-    {
-        // TODO deprecate toUri or getURI
-        return getURI();
-    }
 
     /**
      * The name of the resource.
@@ -367,7 +366,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @return an input stream to the resource
      * @throws IOException if unable to open the input stream
+     * @deprecated Replace with {@link #getPath()} and {@link Files#newInputStream(Path, OpenOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract InputStream getInputStream()
         throws IOException;
 
@@ -376,7 +377,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @return an readable bytechannel to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated Replace with {@link #getPath()} and {@link Files#newByteChannel(Path, OpenOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract ReadableByteChannel getReadableByteChannel()
         throws IOException;
 
@@ -386,7 +389,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
      * be deleted.
      * @throws SecurityException if unable to delete due to permissions
+     * @deprecated Replace with {@link #getPath()} and {@link IO#delete(Path)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract boolean delete()
         throws SecurityException;
 
@@ -396,7 +401,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param dest the destination name for the resource
      * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
      * @throws SecurityException if unable to rename due to permissions
+     * @deprecated Replace with {@link #getPath()} and {@link Files#move(Path, Path, CopyOption...)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract boolean renameTo(Resource dest)
         throws SecurityException;
 
@@ -406,24 +413,12 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @return a list of resource names contained in the given resource, or null.
      * Note: The resource names are not URL encoded.
+     * @deprecated Replace with {@link #getPath()} and {@link Files#walkFileTree(Path, FileVisitor)}.
      */
+    @Deprecated(forRemoval = true)
     public abstract String[] list();
 
     public abstract Resource resolve(String subPath) throws IOException;
-
-    // FIXME: this appears to not be used
-    @SuppressWarnings("javadoc")
-    public Object getAssociate()
-    {
-        return _associate;
-    }
-
-    // FIXME: this appear to not be used
-    @SuppressWarnings("javadoc")
-    public void setAssociate(Object o)
-    {
-        _associate = o;
-    }
 
     /**
      * @return true if this Resource is an alias to another real Resource
@@ -891,7 +886,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param file Target file.
      * @return URL of the target file.
      * @throws MalformedURLException if unable to convert File to URL
+     * @deprecated replace {@link File} usage with {@link Path} usage.
      */
+    @Deprecated(forRemoval = true)
     public static URL toURL(File file) throws MalformedURLException
     {
         return file.toURI().toURL();

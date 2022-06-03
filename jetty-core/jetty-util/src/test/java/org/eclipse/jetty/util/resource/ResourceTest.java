@@ -109,7 +109,7 @@ public class ResourceTest
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(file);
+            resource = Resource.newResource(file.toPath());
         }
 
         Scenario(String url, boolean exists, boolean dir, String content)
