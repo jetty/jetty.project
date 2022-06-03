@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
@@ -309,15 +308,15 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("App resource does not exist " + resource);
             resource = unpack(resource);
 
-            File file = resource.getFile();
+            Path file = resource.getPath();
 
 
-            final String contextName = file.getName();
+            final String contextName = file.getFileName().toString();
 
             // Resource aliases (after getting name) to ensure baseResource is not an alias
             if (resource.isAlias())
             {
-                file = new File(resource.getAlias()).toPath().toRealPath().toFile();
+                file = new File(resource.getAlias()).toPath().toRealPath();
                 resource = Resource.newResource(file);
                 if (!resource.exists())
                     throw new IllegalStateException("App resource does not exist " + resource);
@@ -350,7 +349,7 @@ public class ContextProvider extends ScanningAppProvider
                 return (ContextHandler)xmlc.configure();
             }
             // Otherwise it must be a directory or an archive
-            else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
+            else if (!Files.isDirectory(file) && !FileID.isWebArchiveFile(file))
             {
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
             }
@@ -374,8 +373,8 @@ public class ContextProvider extends ScanningAppProvider
             {
                 contextHandler = (ContextHandler)contextHandlerClass.getDeclaredConstructor().newInstance();
             }
-            contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
-            initializeContextPath(contextHandler, contextName, !file.isDirectory());
+            contextHandler.setBaseResource(Resource.newResource(file));
+            initializeContextPath(contextHandler, contextName, !Files.isDirectory(file));
             initializeWebAppContextDefaults(contextHandler);
 
             return contextHandler;
@@ -573,12 +572,12 @@ public class ContextProvider extends ScanningAppProvider
             resourceBase = Resource.newResource(alias);
         }
 
-        if (!isExtract() || resourceBase.isDirectory() || resourceBase.getFile() == null)
+        if (!isExtract() || resourceBase.isDirectory() || resourceBase.getPath() == null)
             return resourceBase;
 
         // is the extension a known extension
-        if (!resourceBase.getFile().getName().toLowerCase().endsWith(".war") &&
-            !resourceBase.getFile().getName().toLowerCase().endsWith(".jar"))
+        if (!resourceBase.getPath().getFileName().toString().toLowerCase().endsWith(".war") &&
+            !resourceBase.getPath().getFileName().toString().toLowerCase().endsWith(".jar"))
             return resourceBase;
 
         // Track the original web_app Resource, as this could be a PathResource.
@@ -636,10 +635,11 @@ public class ContextProvider extends ScanningAppProvider
         }
 
         LOG.debug("Unpack {} -> {}", resourceBase, unpacked);
-        try (Resource jar = JarResource.newJarResource(resourceBase))
-        {
-            jar.copyTo(unpacked);
-        }
+        // TODO
+//        try (Resource jar = JarResource.newJarResource(resourceBase))
+//        {
+//            jar.copyTo(unpacked);
+//        }
 
         extractLock.delete();
         resourceBase.close();

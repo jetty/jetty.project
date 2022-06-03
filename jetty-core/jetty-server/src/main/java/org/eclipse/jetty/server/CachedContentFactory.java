@@ -342,8 +342,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         // a non shared resource.  Also ignore max buffer size
         try
         {
-            if (_useFileMappedBuffer && resource.getFile() != null && resource.length() < Integer.MAX_VALUE)
-                return BufferUtil.toMappedBuffer(resource.getFile());
+            if (_useFileMappedBuffer && resource.getPath() != null && resource.length() < Integer.MAX_VALUE)
+                return BufferUtil.toMappedBuffer(resource.getPath());
         }
         catch (IOException | IllegalArgumentException e)
         {

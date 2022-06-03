@@ -22,6 +22,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -167,17 +169,6 @@ public class URLResource extends Resource
     }
 
     /**
-     * Returns an File representing the given resource or NULL if this
-     * is not possible.
-     */
-    @Override
-    public File getFile()
-        throws IOException
-    {
-        return null;
-    }
-
-    /**
      * Returns the name of the resource
      */
     @Override
@@ -309,6 +300,19 @@ public class URLResource extends Resource
     public boolean getUseCaches()
     {
         return _useCaches;
+    }
+
+    @Override
+    public Path getPath()
+    {
+        try
+        {
+            return Paths.get(_url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

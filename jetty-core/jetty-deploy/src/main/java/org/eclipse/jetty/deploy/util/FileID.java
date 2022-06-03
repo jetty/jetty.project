@@ -14,6 +14,8 @@
 package org.eclipse.jetty.deploy.util;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 /**
@@ -51,23 +53,29 @@ public class FileID
      */
     public static boolean isWebArchiveFile(File path)
     {
-        if (!path.isFile())
-        {
-            return false;
-        }
+        return isWebArchiveFile(path.toPath());
+    }
 
-        String name = path.getName().toLowerCase(Locale.ENGLISH);
+    public static boolean isWebArchiveFile(Path path)
+    {
+        if (!Files.isRegularFile(path))
+            return false;
+
+        String name = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
         return (name.endsWith(".war") || name.endsWith(".jar"));
     }
 
     public static boolean isXmlFile(File path)
     {
-        if (!path.isFile())
-        {
-            return false;
-        }
+        return isXmlFile(path.toPath());
+    }
 
-        String name = path.getName().toLowerCase(Locale.ENGLISH);
+    public static boolean isXmlFile(Path path)
+    {
+        if (!Files.isRegularFile(path))
+            return false;
+
+        String name = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
         return name.endsWith(".xml");
     }
 }

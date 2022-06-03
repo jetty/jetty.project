@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
@@ -92,12 +91,13 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         {
             Resource configResource = Resource.newResource(config);
 
-            if (configResource instanceof JarFileResource)
-                _configPath = extractPackedFile((JarFileResource)configResource);
-            else if (configResource instanceof PathResource)
-                _configPath = ((PathResource)configResource).getPath();
-            else if (configResource.getFile() != null)
-                setConfigFile(configResource.getFile());
+            // TODO
+//            if (configResource instanceof JarFileResource)
+//                _configPath = extractPackedFile((JarFileResource)configResource);
+            if (configResource instanceof PathResource)
+                _configPath = configResource.getPath();
+//            else if (configResource.getFile() != null)
+//                setConfigFile(configResource.getFile());
             else
                 throw new IllegalArgumentException(config);
         }
@@ -118,29 +118,29 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         return _configPath;
     }
 
-    private Path extractPackedFile(JarFileResource configResource) throws IOException
-    {
-        String uri = configResource.getURI().toASCIIString();
-        int colon = uri.lastIndexOf(":");
-        int bangSlash = uri.indexOf("!/");
-        if (colon < 0 || bangSlash < 0 || colon > bangSlash)
-            throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
-
-        String entryPath = StringUtil.sanitizeFileSystemName(uri.substring(colon + 2));
-
-        Path tmpDirectory = Files.createTempDirectory("users_store");
-        tmpDirectory.toFile().deleteOnExit();
-        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
-        Files.deleteIfExists(extractedPath);
-        extractedPath.toFile().deleteOnExit();
-        IO.copy(configResource.getInputStream(), new FileOutputStream(extractedPath.toFile()));
-        if (isHotReload())
-        {
-            LOG.warn("Cannot hot reload from packed configuration: {}", configResource);
-            setHotReload(false);
-        }
-        return extractedPath;
-    }
+//    private Path extractPackedFile(JarFileResource configResource) throws IOException
+//    {
+//        String uri = configResource.getURI().toASCIIString();
+//        int colon = uri.lastIndexOf(":");
+//        int bangSlash = uri.indexOf("!/");
+//        if (colon < 0 || bangSlash < 0 || colon > bangSlash)
+//            throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
+//
+//        String entryPath = StringUtil.sanitizeFileSystemName(uri.substring(colon + 2));
+//
+//        Path tmpDirectory = Files.createTempDirectory("users_store");
+//        tmpDirectory.toFile().deleteOnExit();
+//        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
+//        Files.deleteIfExists(extractedPath);
+//        extractedPath.toFile().deleteOnExit();
+//        IO.copy(configResource.getInputStream(), new FileOutputStream(extractedPath.toFile()));
+//        if (isHotReload())
+//        {
+//            LOG.warn("Cannot hot reload from packed configuration: {}", configResource);
+//            setHotReload(false);
+//        }
+//        return extractedPath;
+//    }
 
     /**
      * Set the Config Path from a {@link File} reference

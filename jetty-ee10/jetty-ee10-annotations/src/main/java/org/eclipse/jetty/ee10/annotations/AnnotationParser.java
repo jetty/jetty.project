@@ -766,7 +766,7 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", root);
 
-        File rootFile = root.getFile();
+        Path rootFile = root.getPath();
 
         MultiException me = new MultiException();
         Collection<Resource> resources = root.getAllResources();
@@ -777,10 +777,10 @@ public class AnnotationParser
                 if (r.isDirectory())
                     continue;
 
-                File file = r.getFile();
-                if (isValidClassFileName((file == null ? null : file.getName())))
+                Path file = r.getPath();
+                if (isValidClassFileName((file == null ? null : file.getFileName().toString())))
                 {
-                    Path classpath = rootFile.toPath().relativize(file.toPath());
+                    Path classpath = rootFile.relativize(file);
                     String str = classpath.toString();
                     str = str.substring(0, str.lastIndexOf(".class"));
                     str = StringUtil.replace(str, File.separatorChar, '.');
@@ -792,7 +792,7 @@ public class AnnotationParser
                         addParsedClass(str, r);
                         try (InputStream is = r.getInputStream())
                         {
-                            scanClass(handlers, Resource.newResource(file.getParentFile()), is);
+                            scanClass(handlers, Resource.newResource(file.getParent()), is);
                         }
                     }
                     catch (Exception ex)
@@ -831,20 +831,21 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(), _javaPlatform, false))
-            {
-                jarFile.stream().forEach(e ->
-                {
-                    try
-                    {
-                        parseJarEntry(handlers, jarResource, e);
-                    }
-                    catch (Exception ex)
-                    {
-                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
-                    }
-                });
-            }
+            // TODO
+//            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(), _javaPlatform, false))
+//            {
+//                jarFile.stream().forEach(e ->
+//                {
+//                    try
+//                    {
+//                        parseJarEntry(handlers, jarResource, e);
+//                    }
+//                    catch (Exception ex)
+//                    {
+//                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+//                    }
+//                });
+//            }
             me.ifExceptionThrow();
         }
     }

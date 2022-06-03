@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,6 +22,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +35,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -55,7 +57,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-//TODO remove
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
@@ -113,32 +114,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         if (url == null)
             return null;
-
-        String urlString = url.toExternalForm();
-        if (urlString.startsWith("file:"))
-        {
-            try
-            {
-                return new PathResource(url);
-            }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Bad PathResource: {}", url, e);
-                else
-                    LOG.warn("Bad PathResource: {} {}", url, e.toString());
-                return new BadResource(url, e.toString());
-            }
-        }
-        else if (urlString.startsWith("jar:file:"))
-        {
-            return new JarFileResource(url, useCaches);
-        }
-        else if (urlString.startsWith("jar:"))
-        {
-            return new JarResource(url, useCaches);
-        }
-
         return new URLResource(url, null, useCaches);
     }
 
@@ -151,7 +126,10 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static Resource newResource(String resource) throws IOException
     {
-        return newResource(resource, __defaultUseCaches);
+        URI uri = URI.create(resource);
+        FileSystem fileSystem = FileSystems.newFileSystem(uri, new HashMap<>());
+        Path path = Paths.get(uri);
+        return newResource(path);
     }
 
     /**
@@ -301,17 +279,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return r.isContainedIn(containingResource);
     }
 
-    public Path getPath()
-    {
-        try
-        {
-            return getFile().toPath();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+    public abstract Path getPath();
 
     public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
 
@@ -369,16 +337,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         // TODO deprecate toUri or getURI
         return getURI();
     }
-
-    /**
-     * File representing the given resource.
-     *
-     * @return an File representing the given resource or NULL if this
-     * is not possible.
-     * @throws IOException if unable to get the resource due to permissions
-     */
-    public abstract File getFile()
-        throws IOException;
 
     /**
      * The name of the resource.
@@ -728,10 +686,10 @@ public abstract class Resource implements ResourceFactory, Closeable
         try
         {
             // if a Resource supports File
-            File file = getFile();
+            Path file = getPath();
             if (file != null)
             {
-                return file.getName();
+                return file.getFileName().toString();
             }
         }
         catch (Throwable ignored)
@@ -839,24 +797,24 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param destination the destination file to create
      * @throws IOException if unable to copy the resource
      */
-    public void copyTo(File destination)
+    public void copyTo(Path destination)
         throws IOException
     {
-        if (destination.exists())
+        if (Files.exists(destination))
             throw new IllegalArgumentException(destination + " exists");
 
         // attempt simple file copy
-        File src = getFile();
+        Path src = getPath();
         if (src != null)
         {
-            Files.copy(src.toPath(), destination.toPath(),
+            Files.copy(src, destination,
                 StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
             return;
         }
 
         // use old school stream based copy
         try (InputStream in = getInputStream();
-             OutputStream out = new FileOutputStream(destination))
+             OutputStream out = Files.newOutputStream(destination))
         {
             IO.copy(in, out);
         }
@@ -1034,5 +992,22 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
 
         return returnedResources;
+    }
+
+    static URI resolve(URI uri, String subPath)
+    {
+        if (uri.isOpaque())
+        {
+            String scheme = uri.getScheme();
+            URI subUri = URI.create(uri.getSchemeSpecificPart());
+            if (subUri.isOpaque())
+                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
+            URI subUriResolved = subUri.resolve(subPath);
+            return URI.create(scheme + ":" + subUriResolved);
+        }
+        else
+        {
+            return uri.resolve(subPath);
+        }
     }
 }

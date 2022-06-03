@@ -20,6 +20,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -534,7 +539,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
-                webFrag = Resource.newResource(new File(jar.getFile(), "/META-INF/web-fragment.xml"));
+                webFrag = Resource.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
             }
             else
             {
@@ -607,7 +612,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             tlds = new HashSet<URL>();
             if (jar.isDirectory())
             {
-                tlds.addAll(getTlds(jar.getFile()));
+                tlds.addAll(getTlds(jar.getPath()));
             }
             else
             {
@@ -656,28 +661,31 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @return the list of tlds found
      * @throws IOException if unable to scan the directory
      */
-    public Collection<URL> getTlds(File dir) throws IOException
+    public Collection<URL> getTlds(Path dir) throws IOException
     {
-        if (dir == null || !dir.isDirectory())
+        if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
         HashSet<URL> tlds = new HashSet<URL>();
 
-        File[] files = dir.listFiles();
-        if (files != null)
+        Files.walkFileTree(dir, new SimpleFileVisitor<>()
         {
-            for (File f : files)
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
             {
-                if (f.isDirectory())
-                    tlds.addAll(getTlds(f));
-                else
-                {
-                    String name = f.getCanonicalPath();
-                    if (name.contains("META-INF") && name.endsWith(".tld"))
-                        tlds.add(f.toURI().toURL());
-                }
+                tlds.addAll(getTlds(dir));
+                return FileVisitResult.SKIP_SUBTREE;
             }
-        }
+
+            @Override
+            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
+            {
+                String name = f.normalize().toString();
+                if (name.contains("META-INF") && name.endsWith(".tld"))
+                    tlds.add(f.toUri().toURL());
+                return FileVisitResult.CONTINUE;
+            }
+        });
         return tlds;
     }
 
@@ -879,7 +887,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (resource.isDirectory())
                 return false;
 
-            if (resource.getFile() == null)
+            if (resource.getPath() == null)
                 return false;
         }
         catch (Throwable t)

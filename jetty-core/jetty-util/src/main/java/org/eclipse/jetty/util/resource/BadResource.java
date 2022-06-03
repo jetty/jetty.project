@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 
 /**
  * Bad Resource.
@@ -61,12 +61,6 @@ class BadResource extends URLResource
     }
 
     @Override
-    public File getFile()
-    {
-        return null;
-    }
-
-    @Override
     public InputStream getInputStream() throws IOException
     {
         throw new FileNotFoundException(_message);
@@ -93,8 +87,7 @@ class BadResource extends URLResource
     }
 
     @Override
-    public void copyTo(File destination)
-        throws IOException
+    public void copyTo(Path destination) throws IOException
     {
         throw new SecurityException(_message);
     }

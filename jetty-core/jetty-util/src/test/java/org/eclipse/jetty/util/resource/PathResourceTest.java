@@ -101,7 +101,7 @@ public class PathResourceTest
             assertThat(manifestPath, is(not(nullValue())));
 
             PathResource resource = new PathResource(manifestPath);
-            File file = resource.getFile();
+            Path file = resource.getPath();
             assertThat("File should be null for non-default FileSystem", file, is(nullValue()));
         }
     }
@@ -112,7 +112,7 @@ public class PathResourceTest
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
         PathResource resource = new PathResource(exampleJar);
 
-        File file = resource.getFile();
+        Path file = resource.getPath();
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
     }
 

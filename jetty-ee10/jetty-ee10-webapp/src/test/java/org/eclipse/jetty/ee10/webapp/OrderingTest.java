@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +65,7 @@ public class OrderingTest
         }
 
         @Override
-        public File getFile() throws IOException
+        public Path getPath()
         {
             return null;
         }

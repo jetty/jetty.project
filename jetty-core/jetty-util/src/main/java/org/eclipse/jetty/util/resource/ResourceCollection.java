@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -299,17 +299,14 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public File getFile() throws IOException
+    public Path getPath()
     {
         assertResourcesSet();
-
         for (Resource r : _resources)
         {
-            File f = r.getFile();
-            if (f != null)
-            {
-                return f;
-            }
+            Path p = r.getPath();
+            if (p != null)
+                return p;
         }
         return null;
     }
@@ -451,8 +448,7 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public void copyTo(File destination)
-        throws IOException
+    public void copyTo(Path destination) throws IOException
     {
         assertResourcesSet();
 

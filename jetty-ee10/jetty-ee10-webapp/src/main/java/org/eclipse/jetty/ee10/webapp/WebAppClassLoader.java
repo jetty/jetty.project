@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.security.PrivilegedExceptionAction;
@@ -236,7 +236,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         else
         {
             // Resolve file path if possible
-            File file = resource.getFile();
+            Path file = resource.getPath();
             if (file != null)
             {
                 URL url = resource.getURI().toURL();

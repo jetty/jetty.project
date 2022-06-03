@@ -157,7 +157,7 @@ public class ResourceCollectionTest
     {
         assertThrows(IllegalStateException.class, () -> coll.addPath("foo"));
         assertThrows(IllegalStateException.class, coll::exists);
-        assertThrows(IllegalStateException.class, coll::getFile);
+        assertThrows(IllegalStateException.class, coll::getPath);
         assertThrows(IllegalStateException.class, coll::getInputStream);
         assertThrows(IllegalStateException.class, coll::getReadableByteChannel);
         assertThrows(IllegalStateException.class, coll::getURI);
@@ -169,7 +169,7 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, () ->
         {
             Path destPath = workdir.getPathFile("bar");
-            coll.copyTo(destPath.toFile());
+            coll.copyTo(destPath);
         });
     }
 
@@ -236,7 +236,7 @@ public class ResourceCollectionTest
 
         File dest = MavenTestingUtils.getTargetTestingDir("copyto");
         FS.ensureDirExists(dest);
-        rc.copyTo(dest);
+        rc.copyTo(dest.toPath());
 
         Resource r = Resource.newResource(dest.toURI());
         assertEquals(getContent(r, "1.txt"), "1 - one");

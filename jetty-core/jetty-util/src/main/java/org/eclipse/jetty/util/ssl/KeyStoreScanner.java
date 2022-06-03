@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import java.io.File;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -39,42 +40,35 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
     private static final Logger LOG = LoggerFactory.getLogger(KeyStoreScanner.class);
 
     private final SslContextFactory sslContextFactory;
-    private final File keystoreFile;
+    private final Path keystoreFile;
     private final Scanner _scanner;
 
     public KeyStoreScanner(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
-        try
-        {
-            Resource keystoreResource = sslContextFactory.getKeyStoreResource();
-            File monitoredFile = keystoreResource.getFile();
-            if (monitoredFile == null || !monitoredFile.exists())
-                throw new IllegalArgumentException("keystore file does not exist");
-            if (monitoredFile.isDirectory())
-                throw new IllegalArgumentException("expected keystore file not directory");
+        Resource keystoreResource = sslContextFactory.getKeyStoreResource();
+        Path monitoredFile = keystoreResource.getPath();
+        if (monitoredFile == null || !Files.exists(monitoredFile))
+            throw new IllegalArgumentException("keystore file does not exist");
+        if (Files.isDirectory(monitoredFile))
+            throw new IllegalArgumentException("expected keystore file not directory");
 
-            if (keystoreResource.getAlias() != null)
-            {
-                // this resource has an alias, use the alias, as that's what's returned in the Scanner
-                monitoredFile = new File(keystoreResource.getAlias());
-            }
-
-            keystoreFile = monitoredFile;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Monitored Keystore File: {}", monitoredFile);
-        }
-        catch (IOException e)
+        if (keystoreResource.getAlias() != null)
         {
-            throw new IllegalArgumentException("could not obtain keystore file", e);
+            // this resource has an alias, use the alias, as that's what's returned in the Scanner
+            monitoredFile = Paths.get(keystoreResource.getAlias());
         }
 
-        File parentFile = keystoreFile.getParentFile();
-        if (!parentFile.exists() || !parentFile.isDirectory())
+        keystoreFile = monitoredFile;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Monitored Keystore File: {}", monitoredFile);
+
+        Path parentFile = keystoreFile.getParent();
+        if (!Files.exists(parentFile) || !Files.isDirectory(parentFile))
             throw new IllegalArgumentException("error obtaining keystore dir");
 
         _scanner = new Scanner();
-        _scanner.addDirectory(parentFile.toPath());
+        _scanner.addDirectory(parentFile);
         _scanner.setScanInterval(1);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
@@ -89,7 +83,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (LOG.isDebugEnabled())
             LOG.debug("added {}", filename);
 
-        if (keystoreFile.toPath().toString().equals(filename))
+        if (keystoreFile.toString().equals(filename))
             reload();
     }
 
@@ -99,7 +93,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (LOG.isDebugEnabled())
             LOG.debug("changed {}", filename);
 
-        if (keystoreFile.toPath().toString().equals(filename))
+        if (keystoreFile.toString().equals(filename))
             reload();
     }
 
@@ -109,7 +103,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (LOG.isDebugEnabled())
             LOG.debug("removed {}", filename);
 
-        if (keystoreFile.toPath().toString().equals(filename))
+        if (keystoreFile.toString().equals(filename))
             reload();
     }
 

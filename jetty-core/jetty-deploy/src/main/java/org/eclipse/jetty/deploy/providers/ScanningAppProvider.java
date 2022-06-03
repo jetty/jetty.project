@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.deploy.providers;
 
-import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -150,11 +151,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             throw new IllegalStateException("No configuration dir specified");
 
         LOG.info("Deployment monitor {}", _monitored);
-        List<File> files = new ArrayList<>();
+        List<Path> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
-            if (resource.exists() && resource.getFile().canRead())
-                files.add(resource.getFile());
+            if (resource.exists() && Files.isReadable(resource.getPath()))
+                files.add(resource.getPath());
             else
                 LOG.warn("Does not exist: {}", resource);
         }

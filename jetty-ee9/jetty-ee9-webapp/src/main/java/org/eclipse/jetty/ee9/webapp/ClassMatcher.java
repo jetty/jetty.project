@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractSet;
@@ -128,7 +128,7 @@ public class ClassMatcher extends AbstractSet<String>
 
     private static class LocationEntry extends Entry
     {
-        private final File _file;
+        private final Path _path;
 
         protected LocationEntry(String name, boolean inclusive)
         {
@@ -137,7 +137,7 @@ public class ClassMatcher extends AbstractSet<String>
                 throw new IllegalArgumentException(name);
             try
             {
-                _file = Resource.newResource(getName()).getFile();
+                _path = Resource.newResource(getName()).getPath();
             }
             catch (IOException e)
             {
@@ -145,9 +145,9 @@ public class ClassMatcher extends AbstractSet<String>
             }
         }
 
-        public File getFile()
+        public Path getPath()
         {
-            return _file;
+            return _path;
         }
     }
 
@@ -353,18 +353,18 @@ public class ClassMatcher extends AbstractSet<String>
                 if (!(entry instanceof LocationEntry))
                     throw new IllegalStateException();
 
-                File file = ((LocationEntry)entry).getFile();
+                Path file = ((LocationEntry)entry).getPath();
 
-                if (file.isDirectory())
+                if (Files.isDirectory(file))
                 {
-                    if (path.startsWith(file.toPath()))
+                    if (path.startsWith(file))
                     {
                         return true;
                     }
                 }
                 else
                 {
-                    if (path.equals(file.toPath()))
+                    if (path.equals(file))
                     {
                         return true;
                     }

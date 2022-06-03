@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 
 /**
  * EmptyResource
@@ -75,7 +75,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public File getFile() throws IOException
+    public Path getPath()
     {
         return null;
     }

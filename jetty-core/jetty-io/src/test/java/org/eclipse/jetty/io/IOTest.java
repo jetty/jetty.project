@@ -453,7 +453,8 @@ public class IOTest
     @Test
     public void testDeleteNull()
     {
-        assertFalse(IO.delete(null));
+        assertFalse(IO.delete((File)null));
+        assertFalse(IO.delete((Path)null));
     }
 
     @Test

@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class FileDestroyable implements Destroyable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileDestroyable.class);
-    final List<File> _files = new ArrayList<File>();
+    final List<Path> _files = new ArrayList<Path>();
 
     public FileDestroyable()
     {
@@ -35,10 +37,10 @@ public class FileDestroyable implements Destroyable
 
     public FileDestroyable(String file) throws IOException
     {
-        _files.add(Resource.newResource(file).getFile());
+        _files.add(Resource.newResource(file).getPath());
     }
 
-    public FileDestroyable(File file)
+    public FileDestroyable(Path file)
     {
         _files.add(file);
     }
@@ -47,16 +49,16 @@ public class FileDestroyable implements Destroyable
     {
         try (Resource r = Resource.newResource(file);)
         {
-            _files.add(r.getFile());
+            _files.add(r.getPath());
         }
     }
 
-    public void addFile(File file)
+    public void addFile(Path file)
     {
         _files.add(file);
     }
 
-    public void addFiles(Collection<File> files)
+    public void addFiles(Collection<Path> files)
     {
         _files.addAll(files);
     }
@@ -65,7 +67,7 @@ public class FileDestroyable implements Destroyable
     {
         try (Resource r = Resource.newResource(file);)
         {
-            _files.remove(r.getFile());
+            _files.remove(r.getPath());
         }
     }
 
@@ -77,9 +79,9 @@ public class FileDestroyable implements Destroyable
     @Override
     public void destroy()
     {
-        for (File file : _files)
+        for (Path file : _files)
         {
-            if (file.exists())
+            if (Files.exists(file))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Destroy {}", file);

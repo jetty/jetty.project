@@ -174,7 +174,7 @@ public class XmlConfiguration
 
             if (webapp != null)
             {
-                Path webappPath = webapp.getFile().toPath().toAbsolutePath();
+                Path webappPath = webapp.getPath().toAbsolutePath();
                 getProperties().put("jetty.webapp", webappPath.toString());
                 getProperties().put("jetty.webapps", webappPath.getParent().toString());
                 getProperties().put("jetty.webapps.uri", normalizeURI(webappPath.getParent().toUri().toString()));

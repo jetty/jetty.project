@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -3102,9 +3103,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 Resource resource = ServletContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    File file = resource.getFile();
+                    Path file = resource.getPath();
                     if (file != null)
-                        return file.getCanonicalPath();
+                        return file.normalize().toString();
                 }
             }
             catch (Exception e)

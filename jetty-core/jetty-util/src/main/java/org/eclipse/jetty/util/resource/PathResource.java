@@ -25,18 +25,20 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -54,7 +56,6 @@ public class PathResource extends Resource
     private final Path path;
     private final Path alias;
     private final URI uri;
-    private final boolean belongsToDefaultFileSystem;
 
     private Path checkAliasPath()
     {
@@ -239,7 +240,6 @@ public class PathResource extends Resource
         assertValidPath(path);
         this.uri = this.path.toUri();
         this.alias = checkAliasPath();
-        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -249,18 +249,19 @@ public class PathResource extends Resource
      * @param parent the parent path resource
      * @param childPath the child sub path
      */
-    private PathResource(PathResource parent, String childPath)
+    private PathResource(PathResource parent, String childPath) throws IOException
     {
         // Calculate the URI and the path separately, so that any aliasing done by
         // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
         // The checkAliasPath normalization checks will only work correctly if the getPath implementation here does not normalize.
-        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
-        if (isDirectory() && !childPath.endsWith("/"))
-            childPath += "/";
-        this.uri = URIUtil.addPath(parent.uri, childPath);
-        this.alias = checkAliasPath();
-        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
+        this(Resource.resolve(parent.getURI(), childPath));
+//        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
+//        if (isDirectory() && !childPath.endsWith("/"))
+//            childPath += "/";
+//        this.uri = URIUtil.addPath(parent.uri, childPath);
+//        this.alias = checkAliasPath();
+//        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -275,7 +276,7 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
         {
-            throw new IllegalArgumentException("not an absolute uri");
+            throw new IllegalArgumentException("not an absolute uri: " + uri);
         }
 
         if (!uri.getScheme().equalsIgnoreCase("file"))
@@ -301,7 +302,6 @@ public class PathResource extends Resource
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
         this.alias = checkAliasPath();
-        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -335,7 +335,7 @@ public class PathResource extends Resource
         {
             if (resource instanceof PathResource)
             {
-                Path path = ((PathResource)resource).getPath();
+                Path path = resource.getPath();
                 return Files.isSameFile(getPath(), path);
             }
         }
@@ -432,14 +432,6 @@ public class PathResource extends Resource
     public boolean exists()
     {
         return Files.exists(path, NO_FOLLOW_LINKS);
-    }
-
-    @Override
-    public File getFile() throws IOException
-    {
-        if (!belongsToDefaultFileSystem)
-            return null;
-        return path.toFile();
     }
 
     /**
@@ -618,21 +610,50 @@ public class PathResource extends Resource
     }
 
     @Override
-    public void copyTo(File destination) throws IOException
+    public void copyTo(Path destination) throws IOException
     {
         if (isDirectory())
-        {
-            IO.copyDir(this.path.toFile(), destination);
-        }
+            Files.walkFileTree(this.path, new TreeCopyFileVisitor(destination));
         else
-        {
-            Files.copy(this.path, destination.toPath());
-        }
+            Files.copy(this.path, destination);
     }
 
     @Override
     public String toString()
     {
         return this.uri.toASCIIString();
+    }
+
+    private static class TreeCopyFileVisitor extends SimpleFileVisitor<Path>
+    {
+        private final Path target;
+
+        public TreeCopyFileVisitor(Path target)
+        {
+            this.target = target;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+        {
+            Path resolve = target.resolve(dir);
+            if (Files.notExists(resolve))
+                Files.createDirectories(resolve);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+        {
+            Path resolvedTarget = target.resolve(file);
+            Files.copy(file, resolvedTarget, StandardCopyOption.REPLACE_EXISTING);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc)
+        {
+            return FileVisitResult.CONTINUE;
+        }
     }
 }
