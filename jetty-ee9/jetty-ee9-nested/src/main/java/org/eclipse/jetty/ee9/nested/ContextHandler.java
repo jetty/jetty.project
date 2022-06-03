@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -1409,7 +1408,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Resource resource = baseResource.getResource(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;

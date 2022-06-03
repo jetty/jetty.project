@@ -21,7 +21,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -57,7 +56,7 @@ public class FileServer
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path userDir = Paths.get(System.getProperty("user.dir"));
-        PathResource pathResource = new PathResource(userDir);
+        Resource pathResource = Resource.newResource(userDir);
 
         Server server = createServer(port, pathResource);
 

@@ -52,7 +52,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = new PathResource(manifestPath);
+            PathResource resource = (PathResource)Resource.newResource(manifestPath);
 
             try (InputStream inputStream = resource.getInputStream())
             {
@@ -76,7 +76,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = new PathResource(manifestPath);
+            PathResource resource = (PathResource)Resource.newResource(manifestPath);
 
             try (ReadableByteChannel channel = resource.getReadableByteChannel())
             {
@@ -100,7 +100,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = new PathResource(manifestPath);
+            PathResource resource = (PathResource)Resource.newResource(manifestPath);
             Path file = resource.getPath();
             assertThat("File should be null for non-default FileSystem", file, is(nullValue()));
         }
@@ -110,7 +110,7 @@ public class PathResourceTest
     public void testDefaultFileSystemGetFile() throws Exception
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource resource = new PathResource(exampleJar);
+        PathResource resource = (PathResource)Resource.newResource(exampleJar);
 
         Path file = resource.getPath();
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
@@ -121,8 +121,8 @@ public class PathResourceTest
     {
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource rPathResource = new PathResource(rpath);
-        PathResource ePathResource = new PathResource(epath);
+        PathResource rPathResource = (PathResource)Resource.newResource(rpath);
+        PathResource ePathResource = (PathResource)Resource.newResource(epath);
 
         assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
         assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
@@ -131,7 +131,7 @@ public class PathResourceTest
         try
         {
             Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
-            ePathResource2 = new PathResource(epath2);
+            ePathResource2 = (PathResource)Resource.newResource(epath2);
         }
         catch (Throwable th)
         {

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -267,8 +266,7 @@ public class URLResource extends Resource
      * given name
      */
     @Override
-    public Resource addPath(String path)
-        throws IOException
+    public Resource getResource(String path) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the

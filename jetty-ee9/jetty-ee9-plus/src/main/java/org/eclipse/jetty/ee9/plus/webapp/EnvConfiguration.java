@@ -93,7 +93,7 @@ public class EnvConfiguration extends AbstractConfiguration
             org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
             if (webInf != null && webInf.isDirectory())
             {
-                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.addPath("jetty-env.xml");
+                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.getResource("jetty-env.xml");
                 if (jettyEnv.exists())
                 {
                     jettyEnvXmlResource = jettyEnv;

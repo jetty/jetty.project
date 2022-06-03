@@ -47,7 +47,7 @@ public class OrderingTest
         }
 
         @Override
-        public Resource addPath(String path) throws IOException, MalformedURLException
+        public Resource getResource(String path) throws IOException, MalformedURLException
         {
             return null;
         }

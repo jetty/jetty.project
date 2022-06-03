@@ -301,7 +301,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     try
                     {
-                        Resource resource = lib.addPath(entry);
+                        Resource resource = lib.getResource(entry);
                         if (LOG.isDebugEnabled())
                             LOG.debug("addJar - {}", resource);
                         String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);

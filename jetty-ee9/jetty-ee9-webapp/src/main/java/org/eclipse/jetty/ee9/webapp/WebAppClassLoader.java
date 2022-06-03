@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -302,7 +301,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     try
                     {
-                        Resource resource = lib.addPath(entry);
+                        Resource resource = lib.getResource(entry);
                         if (LOG.isDebugEnabled())
                             LOG.debug("addJar - {}", resource);
                         String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);

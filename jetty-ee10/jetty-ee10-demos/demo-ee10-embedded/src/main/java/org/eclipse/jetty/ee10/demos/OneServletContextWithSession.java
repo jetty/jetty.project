@@ -22,7 +22,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class OneServletContextWithSession
@@ -62,7 +61,7 @@ public class OneServletContextWithSession
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path dir = Paths.get(System.getProperty("user.dir"));
-        PathResource baseResource = new PathResource(dir);
+        Resource baseResource = Resource.newResource(dir);
         Server server = createServer(port, baseResource);
 
         server.start();

@@ -35,7 +35,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -218,7 +217,7 @@ public class TestAnnotationParser
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
-        parser.parse(handlers, new PathResource(jdk10Jar));
+        parser.parse(handlers, Resource.newResource(jdk10Jar));
         // Should throw no exceptions
     }
 

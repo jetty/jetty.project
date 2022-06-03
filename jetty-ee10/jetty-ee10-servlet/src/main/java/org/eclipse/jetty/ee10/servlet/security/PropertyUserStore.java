@@ -172,7 +172,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         if (_configPath == null)
             return null;
-        return new PathResource(_configPath);
+        return Resource.newResource(_configPath);
     }
 
     /**

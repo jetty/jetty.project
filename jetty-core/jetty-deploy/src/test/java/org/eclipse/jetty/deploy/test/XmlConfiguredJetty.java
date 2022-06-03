@@ -182,7 +182,7 @@ public class XmlConfiguredJetty
 
     public void addConfiguration(File xmlConfigFile)
     {
-        addConfiguration(new PathResource(xmlConfigFile));
+        addConfiguration(Resource.newResource(xmlConfigFile));
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException

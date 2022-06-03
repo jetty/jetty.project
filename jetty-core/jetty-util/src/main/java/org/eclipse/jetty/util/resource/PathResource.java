@@ -13,18 +13,16 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -39,6 +37,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -56,6 +55,7 @@ public class PathResource extends Resource
     private final Path path;
     private final Path alias;
     private final URI uri;
+    private final FileSystem fileSystem;
 
     private Path checkAliasPath()
     {
@@ -193,34 +193,13 @@ public class PathResource extends Resource
     }
 
     /**
-     * Construct a new PathResource from a File object.
-     * <p>
-     * An invocation of this convenience constructor of the form.
-     * </p>
-     * <pre>
-     * new PathResource(file);
-     * </pre>
-     * <p>
-     * behaves in exactly the same way as the expression
-     * </p>
-     * <pre>
-     * new PathResource(file.toPath());
-     * </pre>
-     *
-     * @param file the file to use
-     */
-    public PathResource(File file)
-    {
-        this(file.toPath());
-    }
-
-    /**
      * Construct a new PathResource from a Path object.
      *
      * @param path the path to use
      */
-    public PathResource(Path path)
+    PathResource(Path path, FileSystem fileSystem)
     {
+        this.fileSystem = fileSystem;
         Path absPath = path;
         try
         {
@@ -251,11 +230,11 @@ public class PathResource extends Resource
      */
     private PathResource(PathResource parent, String childPath) throws IOException
     {
+        this(Resource.resolve(parent.getURI(), childPath));
         // Calculate the URI and the path separately, so that any aliasing done by
         // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
         // The checkAliasPath normalization checks will only work correctly if the getPath implementation here does not normalize.
-        this(Resource.resolve(parent.getURI(), childPath));
 //        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
 //        if (isDirectory() && !childPath.endsWith("/"))
 //            childPath += "/";
@@ -272,7 +251,7 @@ public class PathResource extends Resource
      * @param uri the URI to build this PathResource from.
      * @throws IOException if unable to construct the PathResource from the URI.
      */
-    public PathResource(URI uri) throws IOException
+    PathResource(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
         {
@@ -302,30 +281,7 @@ public class PathResource extends Resource
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
         this.alias = checkAliasPath();
-    }
-
-    /**
-     * Create a new PathResource from a provided URL object.
-     * <p>
-     * An invocation of this convenience constructor of the form.
-     * </p>
-     * <pre>
-     * new PathResource(url);
-     * </pre>
-     * <p>
-     * behaves in exactly the same way as the expression
-     * </p>
-     * <pre>
-     * new PathResource(url.toURI());
-     * </pre>
-     *
-     * @param url the url to attempt to create PathResource from
-     * @throws IOException if URL doesn't point to a location that can be transformed to a PathResource
-     * @throws URISyntaxException if the provided URL was malformed
-     */
-    public PathResource(URL url) throws IOException, URISyntaxException
-    {
-        this(url.toURI());
+        this.fileSystem = null;
     }
 
     @Override
@@ -348,7 +304,7 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subPath) throws IOException
+    public Resource getResource(String subPath) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
@@ -381,7 +337,7 @@ public class PathResource extends Resource
     @Override
     public void close()
     {
-        // not applicable for FileSytem / Path
+        IO.close(fileSystem);
     }
 
     @Override

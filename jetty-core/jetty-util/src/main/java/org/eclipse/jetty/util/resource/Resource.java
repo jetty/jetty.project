@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.IO;
@@ -60,6 +62,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
+    private static final Map<String, Object> EMPTY_ENV = new HashMap<>();
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
 
@@ -127,9 +130,18 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static Resource newResource(String resource) throws IOException
     {
         URI uri = URI.create(resource);
-        FileSystem fileSystem = FileSystems.newFileSystem(uri, new HashMap<>());
-        Path path = Paths.get(uri);
-        return newResource(path);
+        try
+        {
+            // If the URI has no scheme, we consider the string actually was a path.
+            Path path = uri.getScheme() == null ? Paths.get(resource) : Paths.get(uri);
+            return newResource(path);
+        }
+        catch (FileSystemNotFoundException e)
+        {
+            FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
+            Path path = Paths.get(uri);
+            return newResource(path, fileSystem);
+        }
     }
 
     /**
@@ -155,7 +167,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 !resource.startsWith("jar:"))
             {
                 // It's likely a file/path reference.
-                return new PathResource(Paths.get(resource));
+                return new PathResource(Paths.get(resource), null);
             }
             else
             {
@@ -169,7 +181,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     public static Resource newResource(File file)
     {
-        return new PathResource(file.toPath());
+        return new PathResource(file.toPath(), null);
     }
 
     /**
@@ -181,7 +193,12 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static Resource newResource(Path path)
     {
-        return new PathResource(path);
+        return new PathResource(path, null);
+    }
+
+    private static Resource newResource(Path path, FileSystem fileSystem)
+    {
+        return new PathResource(path, fileSystem);
     }
 
     /**
@@ -400,20 +417,8 @@ public abstract class Resource implements ResourceFactory, Closeable
      * the resulting Resource will return true from {@link #isAlias()}.
      * @return the Resource for the resolved path within this Resource, never null
      * @throws IOException if unable to resolve the path
-     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
-     * a relative path attempts to access above the root resource.
      */
-    public abstract Resource addPath(String path)
-        throws IOException, MalformedURLException;
-
-    /**
-     * Get a resource from within this resource.
-     */
-    @Override
-    public Resource getResource(String path) throws IOException
-    {
-        return addPath(path);
-    }
+    public abstract Resource getResource(String path) throws IOException;
 
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")
@@ -502,7 +507,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = addPath(l);
+            Resource item = getResource(l);
             items.add(item);
         }
 
@@ -873,7 +878,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 {
                     for (String i : list)
                     {
-                        Resource r = addPath(i);
+                        Resource r = getResource(i);
                         if (r.isDirectory())
                             deep.addAll(r.getAllResources());
                         else
@@ -966,7 +971,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         {
                             try
                             {
-                                Resource resource = dirResource.addPath(entry);
+                                Resource resource = dirResource.getResource(entry);
                                 if (!resource.isDirectory())
                                 {
                                     returnedResources.add(resource);

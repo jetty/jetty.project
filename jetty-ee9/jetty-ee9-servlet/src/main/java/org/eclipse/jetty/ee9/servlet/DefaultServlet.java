@@ -419,7 +419,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (_resourceBase != null)
             {
-                r = _resourceBase.addPath(pathInContext);
+                r = _resourceBase.getResource(pathInContext);
                 if (!_contextHandler.checkAlias(pathInContext, r))
                     r = null;
             }

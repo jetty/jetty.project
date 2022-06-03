@@ -60,20 +60,20 @@ public class ResourceAliasTest
 
         assertTrue(Files.exists(text));
 
-        Resource baseResource = new PathResource(baseDir);
+        Resource baseResource = Resource.newResource(baseDir);
         assertTrue(baseResource.exists(), "baseResource exists");
 
-        Resource fooResource = baseResource.addPath("%foo");
+        Resource fooResource = baseResource.getResource("%foo");
         assertTrue(fooResource.exists(), "fooResource exists");
         assertTrue(fooResource.isDirectory(), "fooResource isDir");
         assertFalse(fooResource.isAlias(), "fooResource isAlias");
 
-        Resource barResource = fooResource.addPath("bar%");
+        Resource barResource = fooResource.getResource("bar%");
         assertTrue(barResource.exists(), "barResource exists");
         assertTrue(barResource.isDirectory(), "barResource isDir");
         assertFalse(barResource.isAlias(), "barResource isAlias");
 
-        Resource textResource = barResource.addPath("test.txt");
+        Resource textResource = barResource.getResource("test.txt");
         assertTrue(textResource.exists(), "textResource exists");
         assertFalse(textResource.isDirectory(), "textResource isDir");
     }
@@ -109,7 +109,7 @@ public class ResourceAliasTest
             resource = Resource.newResource(file.toUri().toString());
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
-            resource = dir.addPath("test.txt");
+            resource = dir.getResource("test.txt");
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
 
@@ -129,7 +129,7 @@ public class ResourceAliasTest
 
             try
             {
-                resource = dir.addPath("test.txt\0");
+                resource = dir.getResource("test.txt\0");
                 assertTrue(resource.exists());
                 assertNotNull(resource.getAlias());
             }

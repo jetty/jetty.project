@@ -120,7 +120,7 @@ public class Runner
                 if (".".equals(path) || "..".equals(path))
                     continue;
 
-                try (Resource item = lib.addPath(path))
+                try (Resource item = lib.getResource(path))
                 {
                     if (item.isDirectory())
                         addJars(item);
