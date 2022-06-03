@@ -15,15 +15,15 @@ https
 http2
 test-keystore
 work
-demo-ee10-async-rest
-demo-ee10-jaas
-demo-ee10-jetty
-demo-ee10-moved-context
-demo-ee10-proxy
-demo-ee10-rewrite
-demo-ee10-jndi
-demo-ee10-spec
-demo-ee10-jsp
+ee10-demo-async-rest
+ee10-demo-jaas
+ee10-demo-jetty
+ee10-demo-moved-context
+ee10-demo-proxy
+ee10-demo-rewrite
+ee10-demo-jndi
+ee10-demo-spec
+ee10-demo-jsp
 ee10-demo-root
 
 [ini-template]

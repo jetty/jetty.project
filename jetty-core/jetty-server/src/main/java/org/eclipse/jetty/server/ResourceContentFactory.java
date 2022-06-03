@@ -51,7 +51,7 @@ public class ResourceContentFactory implements ContentFactory
         try
         {
             // try loading the content from our factory.
-            Resource resource = _factory.getResource(pathInContext);
+            Resource resource = Resource.newResource(_factory.getResource("/").getURI().resolve(pathInContext));
             return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)

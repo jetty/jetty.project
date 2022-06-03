@@ -1198,7 +1198,6 @@ public class ForwardedRequestCustomizerTest
         expectations.accept(actual);
     }
 
-
     private static class TestRequest
     {
         String description;
