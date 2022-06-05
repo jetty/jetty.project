@@ -288,9 +288,8 @@ public class ServletPathSpec extends AbstractPathSpec
     private boolean isWildcardMatch(String path)
     {
         // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
-        int cpl = _matchLength;
-        if ((_group == PathSpecGroup.PREFIX_GLOB) && (path.regionMatches(0, _declaration, 0, cpl)))
-            return (path.length() == cpl) || ('/' == path.charAt(cpl));
+        if (_group == PathSpecGroup.PREFIX_GLOB && path.length() >= _matchLength && path.regionMatches(0, _declaration, 0, _matchLength))
+            return path.length() == _matchLength || path.charAt(_matchLength) == '/';
         return false;
     }
 
