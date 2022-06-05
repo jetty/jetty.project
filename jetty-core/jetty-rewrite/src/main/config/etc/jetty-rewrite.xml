@@ -1,30 +1,14 @@
 <?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-  <!-- =========================================================== -->
-  <!-- configure rewrite handler                                   -->
-  <!-- =========================================================== -->
   <Call name="insertHandler">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-        <!-- TODO
-        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
-        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
-        -->
-        <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
-     
-	    <!-- Set DispatcherTypes  -->
-        <!-- TODO
-	    <Set name="dispatcherTypes">
-	      <Array type="jakarta.servlet.DispatcherType">
-	        <Item><Call class="jakarta.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
-	        <Item><Call class="jakarta.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
-	      </Array>
-    	</Set>
+        <Set name="originalPathAttribute">
+          <Property name="jetty.rewrite.originalPathAttribute" default="jetty.rewrite.originalRequestPath" />
+        </Set>
         <Get id="Rewrite" name="ruleContainer" />
-        -->
-        <!-- see rewrite-rules.xml in $JETTY_BASE for how to add a rule(s) -->
+        <!-- see jetty-rewrite-rules.xml in $JETTY_BASE for how to add a rule(s) -->
       </New>
     </Arg>
   </Call>

@@ -17,11 +17,5 @@ lib/jetty-rewrite-${jetty.version}.jar
 etc/jetty-rewrite-customizer.xml
 
 [ini-template]
-## Whether to rewrite the request URI
-# jetty.rewrite.rewriteRequestURI=true
-
-## Whether to rewrite the path info
-# jetty.rewrite.rewritePathInfo=true
-
-## Request attribute key under with the original path is stored
-# jetty.rewrite.originalPathAttribute=requestedPath
+## Request attribute name used to store the original request path.
+# jetty.rewrite.originalPathAttribute=jetty.rewrite.originalRequestPath

@@ -2,42 +2,42 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
 
-  <!-- protect favicon handling
+  <!-- Protects favicon handling by not processing other rules.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
         <Set name="pattern">/favicon.ico</Set>
-        <Set name="name">Cache-Control</Set>
-        <Set name="value">Max-Age=3600,public</Set>
+        <Set name="headerName">Cache-Control</Set>
+        <Set name="headerValue">Max-Age=3600,public</Set>
         <Set name="terminating">true</Set>
       </New>
     </Arg>
   </Call>
   -->
 
-  <!-- redirect from the welcome page to a specific page
+  <!-- Rewrites from a directory URI to a welcome page URI.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
         <Set name="pattern">/test/rewrite/</Set>
-        <Set name="replacement">/test/rewrite/info.html</Set>
+        <Set name="replacement">/test/rewrite/index.html</Set>
       </New>
     </Arg>
   </Call>
   -->
 
-  <!-- replace the entire request URI
+  <!-- Rewrites a URI to another URI.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
         <Set name="pattern">/test/some/old/context</Set>
-        <Set name="replacement">/test/rewritten/newcontext</Set>
+        <Set name="replacement">/test/rewritten/new/context</Set>
       </New>
     </Arg>
   </Call>
   -->
 
-  <!-- replace the beginning of the request URI
+  <!-- Rewrites the beginning of the request URI.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
@@ -48,7 +48,7 @@
   </Call>
   -->
 
-  <!-- reverse the order of the path sections
+  <!-- Rewrites a URI by reversing the order of the path segments.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
@@ -59,7 +59,7 @@
   </Call>
   -->
 
-  <!-- add a cookie to each path visited
+  <!-- Adds a cookie to each path visited.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule">
@@ -71,7 +71,7 @@
   </Call>
   -->
 
-  <!--  actual redirect, instead of internal rewrite
+  <!-- Redirects (instead of rewriting) to a different URI.
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
@@ -82,7 +82,7 @@
   </Call>
   -->
 
-  <!-- add a response rule
+  <!-- A response rule.
   <Call name="addRule">
     <Arg>
        <New class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
@@ -94,13 +94,4 @@
   </Call>
   -->
 
-  <!-- Add rule to protect against IE ssl bug (see msie module and rewrite-msie.xml)
-  <Call name="addRule">
-    <Arg>
-      <New class="org.eclipse.jetty.rewrite.handler.MsieRule"/>
-    </Arg>
-  </Call>
-  -->
-
 </Configure>
-

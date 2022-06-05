@@ -19,138 +19,21 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 
 /**
- * <p> Rewrite handler is responsible for managing the rules. Its capabilities
- * is not only limited for URL rewrites such as RewritePatternRule or RewriteRegexRule.
- * There is also handling for cookies, headers, redirection, setting status or error codes
- * whenever the rule finds a match.
- *
- * <p> The rules can be matched by the either: pattern matching of @{@link org.eclipse.jetty.http.pathmap.ServletPathSpec}
- * (eg {@link PatternRule}), regular expressions (eg {@link RegexRule}) or custom logic.
- *
- * <p> The rules can be grouped into rule containers (class {@link RuleContainer}), and will only
- * be applied if the request matches the conditions for their container
- * (e.g., by virtual host name)
- *
- * <p>The list of predefined rules is:
- * <ul>
- * <li> {@link CookiePatternRule} - adds a new cookie in response. </li>
- * <li> {@link HeaderPatternRule} - adds/modifies the HTTP headers in response. </li>
- * <li> {@link RedirectPatternRule} - sets the redirect location. </li>
- * <li> {@link ResponsePatternRule} - sets the status/error codes. </li>
- * <li> {@link RewritePatternRule} - rewrites the requested URI. </li>
- * <li> {@link RewriteRegexRule} - rewrites the requested URI using regular expression for pattern matching. </li>
- * <li> {@link ForwardedSchemeHeaderRule} - set the scheme according to the headers present. </li>
- * <li> {@link VirtualHostRuleContainer} - checks whether the request matches one of a set of virtual host names.</li>
- * </ul>
- *
- *
- * Here is a typical jetty.xml configuration would be: <pre>
- *
- *     &lt;New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler"&gt;
- *       &lt;Set name="rules"&gt;
- *         &lt;Array type="org.eclipse.jetty.rewrite.handler.Rule"&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="rewrite" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule"&gt;
- *               &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
- *               &lt;Set name="replacement"&gt;/test&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule"&gt;
- *               &lt;Set name="pattern"&gt;/session/&lt;/Set&gt;
- *               &lt;Set name="code"&gt;400&lt;/Set&gt;
- *               &lt;Set name="reason"&gt;Setting error code 400&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="header" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule"&gt;
- *               &lt;Set name="pattern"&gt;*.jsp&lt;/Set&gt;
- *               &lt;Set name="name"&gt;server&lt;/Set&gt;
- *               &lt;Set name="value"&gt;dexter webserver&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="header" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule"&gt;
- *               &lt;Set name="pattern"&gt;*.jsp&lt;/Set&gt;
- *               &lt;Set name="name"&gt;title&lt;/Set&gt;
- *               &lt;Set name="value"&gt;driven header purpose&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule"&gt;
- *               &lt;Set name="pattern"&gt;/test/dispatch&lt;/Set&gt;
- *               &lt;Set name="location"&gt;http://jetty.eclipse.org&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="regexRewrite" class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule"&gt;
- *               &lt;Set name="regex"&gt;/test-jaas/$&lt;/Set&gt;
- *               &lt;Set name="replacement"&gt;/demo&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="forwardedHttps" class="org.eclipse.jetty.rewrite.handler.ForwardedSchemeHeaderRule"&gt;
- *               &lt;Set name="header"&gt;X-Forwarded-Scheme&lt;/Set&gt;
- *               &lt;Set name="headerValue"&gt;https&lt;/Set&gt;
- *               &lt;Set name="scheme"&gt;https&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *           &lt;Item&gt;
- *             &lt;New id="virtualHost" class="org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer"&gt;
- *
- *               &lt;Set name="virtualHosts"&gt;
- *                 &lt;Array type="java.lang.String"&gt;
- *                   &lt;Item&gt;eclipse.com&lt;/Item&gt;
- *                   &lt;Item&gt;www.eclipse.com&lt;/Item&gt;
- *                   &lt;Item&gt;eclipse.org&lt;/Item&gt;
- *                   &lt;Item&gt;www.eclipse.org&lt;/Item&gt;
- *                 &lt;/Array&gt;
- *               &lt;/Set&gt;
- *
- *               &lt;Call name="addRule"&gt;
- *                 &lt;Arg&gt;
- *                   &lt;New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule"&gt;
- *                     &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
- *                     &lt;Set name="name"&gt;CookiePatternRule&lt;/Set&gt;
- *                     &lt;Set name="value"&gt;1&lt;/Set&gt;
- *                   &lt;/New&gt;
- *                 &lt;/Arg&gt;
- *               &lt;/Call&gt;
- *
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- *
- *         &lt;/Array&gt;
- *       &lt;/Set&gt;
- *     &lt;/New&gt;
- *
- *     &lt;Set name="handler"&gt;
- *       &lt;Ref id="RewriteHandler"/&gt;
- *         &lt;Set name="handler"&gt;
- *           &lt;New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection"&gt;
- *             &lt;Set name="handlers"&gt;
- *               &lt;Array type="org.eclipse.jetty.server.Handler"&gt;
- *                 &lt;Item&gt;
- *                   &lt;New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/&gt;
- *                 &lt;/Item&gt;
- *                 &lt;Item&gt;
- *                   &lt;New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/&gt;
- *                 &lt;/Item&gt;
- *               &lt;/Array&gt;
- *             &lt;/Set&gt;
- *           &lt;/New&gt;
- *         &lt;/Set&gt;
- *       &lt;/Ref&gt;
- *     &lt;/Set&gt;
- * </pre>
+ * <p>{@code RewriteHandler} rewrites incoming requests through a set of {@link Rule}s.</p>
+ * <p>{@code RewriteHandler} can rewrite the request URI, but also HTTP cookies and HTTP headers.
+ * When a rule matches, {@code RewriteHandler} can perform actions such as redirect to a
+ * different URI or directly produce a response with a configurable HTTP status code.</p>
+ * <p>Rules can be grouped into a {@link RuleContainer}, which is itself a {@code Rule}.
+ * If the container rule matches (for example, virtual host name when using
+ * {@link VirtualHostRuleContainer}), then the contained rules will be applied.</p>
+ * <p>Rules are applied in the same sequence they are added to the container.
+ * If a rule matches, it applies some logic (typically wrapping the request),
+ * and the next rule is invoked (with the wrapped request), until a
+ * {@link Rule#isTerminating() terminating rule} is found, or all the rules have
+ * been processed.</p>
+ * <p>Request URI matching is performed either via Servlet pattern matching (using
+ * {@link PatternRule} subclasses), via regular expression matching (using
+ * {@link RegexRule} subclasses), or by a custom implementation of {@code Rule}.</p>
  */
 public class RewriteHandler extends Handler.Wrapper
 {
@@ -168,9 +51,15 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
-     * Returns the list of rules.
-     *
-     * @return an array of {@link Rule}.
+     * @return the {@link RuleContainer} used by this handler
+     */
+    public RuleContainer getRuleContainer()
+    {
+        return _rules;
+    }
+
+    /**
+     * @return the list of {@link Rule}s.
      */
     public List<Rule> getRules()
     {
@@ -178,9 +67,9 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
-     * Assigns the rules to process.
+     * <p>Sets the list of rules, discarding the previous ones.</p>
      *
-     * @param rules an array of {@link Rule}.
+     * @param rules the list of {@link Rule}s to set
      */
     public void setRules(List<Rule> rules)
     {
@@ -188,9 +77,9 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
-     * Add a Rule
+     * <p>Adds a {@link Rule} to the existing ones.</p>
      *
-     * @param rule The rule to add to the end of the rules array
+     * @param rule the rule to add to the rules list
      */
     public void addRule(Rule rule)
     {
@@ -198,8 +87,7 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the originalPathAttribute. If non null, this string will be used
-     * as the attribute name to store the original request path.
+     * @see RuleContainer#getOriginalPathAttribute()
      */
     public String getOriginalPathAttribute()
     {
@@ -207,8 +95,7 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
-     * @param originalPathAttribute If non null, this string will be used
-     * as the attribute name to store the original request path.
+     * @see RuleContainer#setOriginalPathAttribute(String)
      */
     public void setOriginalPathAttribute(String originalPathAttribute)
     {
