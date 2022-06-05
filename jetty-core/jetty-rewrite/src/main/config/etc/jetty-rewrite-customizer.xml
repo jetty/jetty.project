@@ -1,19 +1,13 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-  <!-- =========================================================== -->
-  <!-- configure rewrite rule container as a customizer            -->
-  <!-- =========================================================== -->
-  <!-- TODO no longer needed?
   <Call name="addCustomizer">
     <Arg>
       <New id="Rewrite" class="org.eclipse.jetty.rewrite.RewriteCustomizer">
-        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
-        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
-        <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
+        <Set name="originalPathAttribute">
+          <Property name="jetty.rewrite.originalPathAttribute" default="jetty.rewrite.originalRequestPath" />
+        </Set>
       </New>
     </Arg>
-  </Call>  
-  -->
+  </Call>
 </Configure>
-

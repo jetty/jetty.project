@@ -21,6 +21,12 @@ import org.eclipse.jetty.rewrite.handler.RuleContainer;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Request;
 
+/**
+ * <p>A {@link RuleContainer} that is an {@link org.eclipse.jetty.server.HttpConfiguration.Customizer},
+ * so that its rules are processed at request customization time.</p>
+ *
+ * @see org.eclipse.jetty.server.HttpConfiguration#addCustomizer(Customizer)
+ */
 public class RewriteCustomizer extends RuleContainer implements Customizer
 {
     @Override

@@ -25,8 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base container to group rules. Can be extended so that the contained rules
- * will only be applied under certain conditions
+ * <p>A container that groups {@link Rule}s and is itself a {@code Rule}.</p>
+ * <p>The contained rules will be applied only if the container rule matches.</p>
  */
 public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
 {
@@ -43,7 +43,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
      */
     public List<Rule> getRules()
     {
-        return _rules;
+        return List.copyOf(_rules);
     }
 
     /**
@@ -62,9 +62,9 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     }
 
     /**
-     * Add a Rule
+     * <p>Adds a {@link Rule} to the existing ones.</p>
      *
-     * @param rule The rule to add to the end of the rules array
+     * @param rule the rule to add to the rules list
      */
     public void addRule(Rule rule)
     {
@@ -72,8 +72,8 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     }
 
     /**
-     * @return the originalPathAttribte. If non null, this string will be used
-     * as the attribute name to store the original request path.
+     * @return the request attribute name used to store the request original path
+     * @see #setOriginalPathAttribute(String)
      */
     public String getOriginalPathAttribute()
     {
@@ -81,8 +81,14 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     }
 
     /**
-     * @param originalPathAttribute If non null, this string will be used
-     * as the attribute name to store the original request path.
+     * <p>Sets a request attribute name that will be used to store the request original path.</p>
+     * <p>A request attribute name that stores the request original query is derived from this
+     * attribute name by adding {@link #ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX}, as in:</p>
+     * <pre>
+     * String originalQueryAttribute = ruleContainer.getOriginalPathAttribute() + ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX;
+     * </pre>
+     *
+     * @param originalPathAttribute the request attribute name used to store the request original path
      */
     public void setOriginalPathAttribute(String originalPathAttribute)
     {
@@ -100,12 +106,14 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     @Override
     public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        if (_originalPathAttribute != null)
+        String originalPathAttribute = getOriginalPathAttribute();
+        if (originalPathAttribute != null)
         {
             HttpURI httpURI = input.getHttpURI();
-            input.setAttribute(_originalPathAttribute, httpURI.getPath());
-            if (_originalQueryStringAttribute != null)
-                input.setAttribute(_originalQueryStringAttribute, httpURI.getQuery());
+            input.setAttribute(originalPathAttribute, httpURI.getPath());
+            String originalQueryStringAttribute = _originalQueryStringAttribute;
+            if (originalQueryStringAttribute != null)
+                input.setAttribute(originalQueryStringAttribute, httpURI.getQuery());
         }
 
         boolean match = false;
