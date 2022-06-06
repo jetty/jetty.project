@@ -18,8 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,26 +31,19 @@ import java.nio.file.Paths;
 class BadResource extends Resource
 {
 
-    private final URL _url;
+    private final URI _uri;
     private final String _message;
 
-    BadResource(URL url, String message)
+    BadResource(URI uri, String message)
     {
-        _url = url;
+        _uri = uri;
         _message = message;
     }
 
     @Override
     public Path getPath()
     {
-        try
-        {
-            return Paths.get(_url.toURI());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return Paths.get(_uri);
     }
 
     @Override
@@ -93,20 +84,13 @@ class BadResource extends Resource
     @Override
     public URI getURI()
     {
-        try
-        {
-            return _url.toURI();
-        }
-        catch (URISyntaxException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return _uri;
     }
 
     @Override
     public String getName()
     {
-        return _url.toExternalForm();
+        return _uri.toASCIIString();
     }
 
     @Override
@@ -150,6 +134,6 @@ class BadResource extends Resource
     @Override
     public String toString()
     {
-        return super.toString() + "; BadResource=" + _message;
+        return getClass().getSimpleName() + "[" + this._uri.toASCIIString() + "; BadResource=" + _message + "]";
     }
 }

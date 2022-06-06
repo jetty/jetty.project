@@ -29,6 +29,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -141,7 +142,19 @@ public abstract class Resource implements ResourceFactory, Closeable
             return new PathResource(uri);
 
         // Otherwise build a PoolingPathResource.
-        return new PoolingPathResource(uri);
+        try
+        {
+            return new PoolingPathResource(uri);
+        }
+        catch (NoSuchFileException nsfe)
+        {
+            // The filesystem cannot be created for that URI (e.g.: non-existent jar file).
+            return new BadResource(uri, nsfe.toString());
+        }
+        catch (IOException ex)
+        {
+            throw new IllegalArgumentException(ex);
+        }
     }
 
     /**
