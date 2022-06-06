@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
@@ -87,21 +88,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static Resource newResource(URL url)
     {
-        return newResource(url, __defaultUseCaches);
-    }
-
-    /**
-     * Construct a resource from a url.
-     *
-     * @param url the url for which to make the resource
-     * @param useCaches true enables URLConnection caching if applicable to the type of resource
-     * @return a new resource from the given URL
-     */
-    static Resource newResource(URL url, boolean useCaches)
-    {
-        if (url == null)
-            return null;
-        return new URLResource(url, null, useCaches);
+        try
+        {
+            return newResource(url.toURI());
+        }
+        catch (IOException | URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
     }
 
     /**
@@ -140,41 +134,6 @@ public abstract class Resource implements ResourceFactory, Closeable
 
         // Build a PoolingPathResource.
         return new PoolingPathResource(uri);
-    }
-
-    /**
-     * Construct a resource from a string.
-     *
-     * @param resource A URL or filename.
-     * @param useCaches controls URLConnection caching
-     * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
-     */
-    public static Resource newResource(String resource, boolean useCaches) throws IOException
-    {
-        URL url;
-        try
-        {
-            // Try to format as a URL?
-            url = new URL(resource);
-        }
-        catch (MalformedURLException e)
-        {
-            if (!resource.startsWith("ftp:") &&
-                !resource.startsWith("file:") &&
-                !resource.startsWith("jar:"))
-            {
-                // It's likely a file/path reference.
-                return new PathResource(Paths.get(resource).toUri());
-            }
-            else
-            {
-                LOG.warn("Bad Resource: {}", resource);
-                throw e;
-            }
-        }
-
-        return newResource(url, useCaches);
     }
 
     /**
@@ -282,7 +241,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             url = Loader.getResource(name);
         if (url == null)
             return null;
-        return newResource(url, useCaches);
+        return newResource(url);
     }
 
     public static boolean isContainedIn(Resource r, Resource containingResource) throws MalformedURLException

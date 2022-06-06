@@ -16,8 +16,13 @@ package org.eclipse.jetty.util.resource;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Bad Resource.
@@ -25,15 +30,40 @@ import java.nio.file.Path;
  * A Resource that is returned for a bade URL.  Acts as a resource
  * that does not exist and throws appropriate exceptions.
  */
-class BadResource extends URLResource
+class BadResource extends Resource
 {
 
-    private String _message = null;
+    private final URL _url;
+    private final String _message;
 
     BadResource(URL url, String message)
     {
-        super(url, null);
+        _url = url;
         _message = message;
+    }
+
+    @Override
+    public Path getPath()
+    {
+        try
+        {
+            return Paths.get(_url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean isContainedIn(Resource r) throws MalformedURLException
+    {
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
     }
 
     @Override
@@ -61,7 +91,32 @@ class BadResource extends URLResource
     }
 
     @Override
+    public URI getURI()
+    {
+        try
+        {
+            return _url.toURI();
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String getName()
+    {
+        return _url.toExternalForm();
+    }
+
+    @Override
     public InputStream getInputStream() throws IOException
+    {
+        throw new FileNotFoundException(_message);
+    }
+
+    @Override
+    public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         throw new FileNotFoundException(_message);
     }
