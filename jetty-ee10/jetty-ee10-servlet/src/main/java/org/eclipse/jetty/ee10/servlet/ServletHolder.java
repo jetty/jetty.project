@@ -47,6 +47,8 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.RunAsToken;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -604,8 +606,12 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
             //check run-as rolename and convert to token from IdentityService
             if (_runAsRole != null)
             {
-                // TODO
-                throw new IllegalStateException("Unimplemented");
+                IdentityService identityService = getServletHandler().getIdentityService();
+                if (identityService != null)
+                {
+                    RunAsToken runAsToken = identityService.newRunAsToken(_runAsRole);
+                    servlet = new RunAs(servlet, identityService, runAsToken);
+                }
             }
 
             if (!isAsyncSupported())
@@ -1306,7 +1312,62 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
             return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedServlet.toString());
         }
     }
+    
+    private static class RunAs extends Wrapper
+    {
+        final IdentityService _identityService;
+        final RunAsToken _runAsToken;
 
+        public RunAs(Servlet servlet, IdentityService identityService, RunAsToken runAsToken)
+        {
+            super(servlet);
+            _identityService = identityService;
+            _runAsToken = runAsToken;
+        }
+
+        @Override
+        public void init(ServletConfig config) throws ServletException
+        {
+            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+            try
+            {
+                getWrapped().init(config);
+            }
+            finally
+            {
+                _identityService.unsetRunAs(oldRunAs);
+            }
+        }
+
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+            try
+            {
+                getWrapped().service(req, res);
+            }
+            finally
+            {
+                _identityService.unsetRunAs(oldRunAs);
+            }
+        }
+
+        @Override
+        public void destroy()
+        {
+            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+            try
+            {
+                getWrapped().destroy();
+            }
+            finally
+            {
+                _identityService.unsetRunAs(oldRunAs);
+            }
+        }
+    }
+    
     private static class NotAsync extends Wrapper
     {
         public NotAsync(Servlet servlet)
