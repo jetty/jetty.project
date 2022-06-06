@@ -17,7 +17,7 @@
     <maven.deploy.plugin.version>3.0.0-M2</maven.deploy.plugin.version>
     <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
     <maven.remote-resources.plugin.version>1.6.0</maven.remote-resources.plugin.version>
-    <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
   </properties>
 
   <build>
