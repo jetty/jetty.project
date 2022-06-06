@@ -3,6 +3,9 @@
 [description]
 Enables Annotation scanning for deployed web applications.
 
+[environment]
+ee8
+
 [depend]
 plus
 

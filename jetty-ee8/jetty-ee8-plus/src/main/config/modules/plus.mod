@@ -1,5 +1,8 @@
 [description]
-Enables Servlet 3.1 resource injection. 
+Enables Servlet 3.1 resource injection.
+
+[environment]
+ee8
 
 [depend]
 server
