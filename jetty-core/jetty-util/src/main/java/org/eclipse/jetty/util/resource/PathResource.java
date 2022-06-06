@@ -342,7 +342,7 @@ public class PathResource extends Resource
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() + "[" + this.uri.toASCIIString() + "]";
+        return getClass().getSimpleName() + "[" + this.uri.toASCIIString() + "]";
     }
 
     private static class TreeCopyFileVisitor extends SimpleFileVisitor<Path>

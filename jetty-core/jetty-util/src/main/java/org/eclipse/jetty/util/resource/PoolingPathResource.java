@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PoolingPathResource extends PathResource
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PoolingPathResource.class);
 
     private static final Map<String, ?> EMPTY_ENV = new HashMap<>();
     private static final Map<FileSystem, AtomicInteger> POOL = new HashMap<>();
