@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -31,6 +33,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,6 +67,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
+    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+
     public static boolean __defaultUseCaches = true;
 
     /**
@@ -147,7 +154,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         try
         {
-            return new PathResource(path.toUri());
+            return newResource(path.toUri());
         }
         catch (IOException e)
         {
@@ -263,14 +270,20 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#exists(Path, LinkOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract boolean exists();
+    public boolean exists()
+    {
+        return Files.exists(getPath(), NO_FOLLOW_LINKS);
+    }
 
     /**
      * @return true if the represented resource is a container/directory.
      * @deprecated Replace with {@link #getPath()} and {@link Files#isDirectory(Path, LinkOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract boolean isDirectory();
+    public boolean isDirectory()
+    {
+        return Files.isDirectory(getPath(), FOLLOW_LINKS);
+    }
 
     /**
      * Time resource was last modified.
@@ -279,7 +292,19 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#getLastModifiedTime(Path, LinkOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract long lastModified();
+    public long lastModified()
+    {
+        try
+        {
+            FileTime ft = Files.getLastModifiedTime(getPath(), FOLLOW_LINKS);
+            return ft.toMillis();
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return 0;
+        }
+    }
 
     /**
      * Length of the resource.
@@ -288,7 +313,18 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#size(Path)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract long length();
+    public long length()
+    {
+        try
+        {
+            return Files.size(getPath());
+        }
+        catch (IOException e)
+        {
+            // in case of error, use File.length logic of 0L
+            return 0L;
+        }
+    }
 
     /**
      * URI representing the resource.
@@ -312,8 +348,10 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#newInputStream(Path, OpenOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract InputStream getInputStream()
-        throws IOException;
+    public InputStream getInputStream() throws IOException
+    {
+        return Files.newInputStream(getPath(), StandardOpenOption.READ);
+    }
 
     /**
      * Readable ByteChannel for the resource.
@@ -323,8 +361,10 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#newByteChannel(Path, OpenOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract ReadableByteChannel getReadableByteChannel()
-        throws IOException;
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
+    }
 
     /**
      * Deletes the given resource
@@ -335,8 +375,18 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link IO#delete(Path)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract boolean delete()
-        throws SecurityException;
+    public boolean delete() throws SecurityException
+    {
+        try
+        {
+            return Files.deleteIfExists(getPath());
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return false;
+        }
+    }
 
     /**
      * Rename the given resource
@@ -347,8 +397,26 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#move(Path, Path, CopyOption...)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract boolean renameTo(Resource dest)
-        throws SecurityException;
+    public boolean renameTo(Resource dest) throws SecurityException
+    {
+        if (dest instanceof PathResource destRes)
+        {
+            try
+            {
+                Path result = Files.move(getPath(), destRes.getPath());
+                return Files.exists(result, NO_FOLLOW_LINKS);
+            }
+            catch (IOException e)
+            {
+                LOG.trace("IGNORED", e);
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     /**
      * list of resource names contained in the given resource.
@@ -359,7 +427,35 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @deprecated Replace with {@link #getPath()} and {@link Files#walkFileTree(Path, FileVisitor)}.
      */
     @Deprecated(forRemoval = true)
-    public abstract String[] list();
+    public String[] list()
+    {
+        try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
+        {
+            List<String> entries = new ArrayList<>();
+            for (Path entry : dir)
+            {
+                String name = entry.getFileName().toString();
+
+                if (Files.isDirectory(entry))
+                {
+                    name += "/";
+                }
+
+                entries.add(name);
+            }
+            int size = entries.size();
+            return entries.toArray(new String[size]);
+        }
+        catch (DirectoryIteratorException e)
+        {
+            LOG.debug("Directory list failure", e);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Directory list access failure", e);
+        }
+        return null;
+    }
 
     public Resource resolve(String subPath) throws IOException
     {
@@ -778,6 +874,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         Path src = getPath();
         if (src != null)
         {
+            // TODO ATOMIC_MOVE seems useless for a copy and REPLACE_EXISTING contradicts the
+            //  javadoc that explicitly states "Will not replace existing destination file."
             Files.copy(src, destination,
                 StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
             return;

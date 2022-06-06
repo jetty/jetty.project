@@ -14,27 +14,14 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.DirectoryIteratorException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -48,10 +35,8 @@ import org.slf4j.LoggerFactory;
 public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
-    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
-    public static Set<String> ALLOWED_SCHEMES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("file", "jrt")));
+    public static Set<String> ALLOWED_SCHEMES = Set.of("file", "jrt");
 
     private final Path path;
     private final Path alias;
@@ -73,14 +58,14 @@ public class PathResource extends Resource
         {
             try
             {
-                return Paths.get(uri).toRealPath(FOLLOW_LINKS);
+                return Paths.get(uri).toRealPath();
             }
-            catch (IOException ignored)
+            catch (IOException ioe)
             {
                 // If the toRealPath() call fails, then let
                 // the alias checking routines continue on
                 // to other techniques.
-                LOG.trace("IGNORED", ignored);
+                LOG.trace("IGNORED", ioe);
             }
         }
 
@@ -100,7 +85,7 @@ public class PathResource extends Resource
                 return path.getParent().resolve(Files.readSymbolicLink(path));
             if (Files.exists(path))
             {
-                Path real = abs.toRealPath(FOLLOW_LINKS);
+                Path real = abs.toRealPath();
                 if (!isSameName(abs, real))
                     return real;
             }
@@ -212,10 +197,11 @@ public class PathResource extends Resource
         if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
-        Path path;
         try
         {
-            path = Paths.get(uri);
+            this.path = Paths.get(uri);
+            this.uri = uri;
+            this.alias = checkAliasPath();
         }
         catch (IllegalArgumentException e)
         {
@@ -226,10 +212,6 @@ public class PathResource extends Resource
             LOG.trace("IGNORED", e);
             throw new IOException("Unable to build Path from: " + uri, e);
         }
-
-        this.path = path.toAbsolutePath();
-        this.uri = uri;
-        this.alias = checkAliasPath();
     }
 
     @Override
@@ -254,20 +236,6 @@ public class PathResource extends Resource
     @Override
     public void close()
     {
-    }
-
-    @Override
-    public boolean delete() throws SecurityException
-    {
-        try
-        {
-            return Files.deleteIfExists(path);
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return false;
-        }
     }
 
     @Override
@@ -300,12 +268,6 @@ public class PathResource extends Resource
         return true;
     }
 
-    @Override
-    public boolean exists()
-    {
-        return Files.exists(path, NO_FOLLOW_LINKS);
-    }
-
     /**
      * @return the {@link Path} of the resource
      */
@@ -315,26 +277,9 @@ public class PathResource extends Resource
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
-    {
-        return Files.newInputStream(path, StandardOpenOption.READ);
-    }
-
-    @Override
     public String getName()
     {
         return path.toAbsolutePath().toString();
-    }
-
-    @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return newSeekableByteChannel();
-    }
-
-    public SeekableByteChannel newSeekableByteChannel() throws IOException
-    {
-        return Files.newByteChannel(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -355,50 +300,7 @@ public class PathResource extends Resource
     @Override
     public boolean isContainedIn(Resource r)
     {
-        try
-        {
-            PathResource pr = PathResource.class.cast(r);
-            return (path.startsWith(pr.getPath()));
-        }
-        catch (ClassCastException e)
-        {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isDirectory()
-    {
-        return Files.isDirectory(path, FOLLOW_LINKS);
-    }
-
-    @Override
-    public long lastModified()
-    {
-        try
-        {
-            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
-            return ft.toMillis();
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return 0;
-        }
-    }
-
-    @Override
-    public long length()
-    {
-        try
-        {
-            return Files.size(path);
-        }
-        catch (IOException e)
-        {
-            // in case of error, use File.length logic of 0L
-            return 0L;
-        }
+        return r instanceof PathResource pr && path.startsWith(pr.getPath());
     }
 
     @Override
@@ -428,64 +330,11 @@ public class PathResource extends Resource
     }
 
     @Override
-    public String[] list()
-    {
-        try (DirectoryStream<Path> dir = Files.newDirectoryStream(path))
-        {
-            List<String> entries = new ArrayList<>();
-            for (Path entry : dir)
-            {
-                String name = entry.getFileName().toString();
-
-                if (Files.isDirectory(entry))
-                {
-                    name += "/";
-                }
-
-                entries.add(name);
-            }
-            int size = entries.size();
-            return entries.toArray(new String[size]);
-        }
-        catch (DirectoryIteratorException e)
-        {
-            LOG.debug("Directory list failure", e);
-        }
-        catch (IOException e)
-        {
-            LOG.debug("Directory list access failure", e);
-        }
-        return null;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        if (dest instanceof PathResource)
-        {
-            PathResource destRes = (PathResource)dest;
-            try
-            {
-                Path result = Files.move(path, destRes.path);
-                return Files.exists(result, NO_FOLLOW_LINKS);
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    @Override
     public void copyTo(Path destination) throws IOException
     {
+        // TODO reconcile this impl with super's
         if (isDirectory())
-            Files.walkFileTree(this.path, new TreeCopyFileVisitor(destination));
+            Files.walkFileTree(this.path, new TreeCopyFileVisitor(this.path, destination));
         else
             Files.copy(this.path, destination);
     }
@@ -493,31 +342,33 @@ public class PathResource extends Resource
     @Override
     public String toString()
     {
-        return this.uri.toASCIIString();
+        return getClass().getSimpleName() + "@" + hashCode() + "[" + this.uri.toASCIIString() + "]";
     }
 
     private static class TreeCopyFileVisitor extends SimpleFileVisitor<Path>
     {
+        private final String relativeTo;
         private final Path target;
 
-        public TreeCopyFileVisitor(Path target)
+        public TreeCopyFileVisitor(Path relativeTo, Path target)
         {
+            this.relativeTo = relativeTo.getRoot().relativize(relativeTo).toString();
             this.target = target;
         }
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
         {
-            Path resolve = target.resolve(dir);
-            if (Files.notExists(resolve))
-                Files.createDirectories(resolve);
+            Path resolvedTarget = target.resolve(dir.getRoot().resolve(relativeTo).relativize(dir).toString());
+            if (Files.notExists(resolvedTarget))
+                Files.createDirectories(resolvedTarget);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
         {
-            Path resolvedTarget = target.resolve(file);
+            Path resolvedTarget = target.resolve(file.getRoot().resolve(relativeTo).relativize(file).toString());
             Files.copy(file, resolvedTarget, StandardCopyOption.REPLACE_EXISTING);
             return FileVisitResult.CONTINUE;
         }

@@ -49,7 +49,7 @@ public class PoolingPathResource extends PathResource
         super(createFsIfNeeded(uri), true);
     }
 
-    private static URI createFsIfNeeded(URI uri) throws IOException
+    private static URI createFsIfNeeded(URI uri)
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
@@ -74,6 +74,10 @@ public class PoolingPathResource extends PathResource
                 {
                     FileSystem fileSystem = Paths.get(uri).getFileSystem();
                     retain(fileSystem);
+                }
+                catch (IOException ex)
+                {
+                    throw new IllegalArgumentException(ex);
                 }
             }
             return uri;
