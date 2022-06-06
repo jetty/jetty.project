@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.IO;
@@ -128,11 +129,11 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
 
-        // If the scheme is file, we can build a non-pooling PathResource.
-        if (uri.getScheme().equalsIgnoreCase("file"))
+        // If the scheme is allowed by PathResource, we can build a non-pooling PathResource.
+        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
             return new PathResource(uri);
 
-        // Build a PoolingPathResource.
+        // Otherwise build a PoolingPathResource.
         return new PoolingPathResource(uri);
     }
 

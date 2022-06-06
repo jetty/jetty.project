@@ -31,7 +31,12 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -45,6 +50,8 @@ public class PathResource extends Resource
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+
+    public static Set<String> ALLOWED_SCHEMES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("file", "jrt")));
 
     private final Path path;
     private final Path alias;
@@ -198,12 +205,12 @@ public class PathResource extends Resource
         this(uri, false);
     }
 
-    PathResource(URI uri, boolean bypassFileSchemeCheck) throws IOException
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck) throws IOException
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassFileSchemeCheck && !uri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("not file: scheme");
+        if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
+            throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         Path path;
         try

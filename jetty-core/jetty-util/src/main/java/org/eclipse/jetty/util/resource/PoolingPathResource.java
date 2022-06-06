@@ -21,6 +21,7 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,8 +53,8 @@ public class PoolingPathResource extends PathResource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (uri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("file: scheme must not be pooled");
+        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
+            throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         try (AutoLock ignore = POOL_LOCK.lock())
         {
