@@ -211,34 +211,20 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Find a classpath resource.
+     * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
+     * found, then the {@link Loader#getResource(String)} method is used.
+     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
+     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      *
      * @param resource the relative name of the resource
      * @return Resource or null
      */
     public static Resource newClassPathResource(String resource)
     {
-        return newClassPathResource(resource, true, false);
-    }
-
-    /**
-     * Find a classpath resource.
-     * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
-     * found, then the {@link Loader#getResource(String)} method is used.
-     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
-     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
-     *
-     * @param name The relative name of the resource
-     * @param useCaches True if URL caches are to be used.
-     * @param checkParents True if forced searching of parent Classloaders is performed to work around
-     * loaders with inverted priorities
-     * @return Resource or null
-     */
-    public static Resource newClassPathResource(String name, boolean useCaches, boolean checkParents)
-    {
-        URL url = Resource.class.getResource(name);
+        URL url = Resource.class.getResource(resource);
 
         if (url == null)
-            url = Loader.getResource(name);
+            url = Loader.getResource(resource);
         if (url == null)
             return null;
         return newResource(url);
