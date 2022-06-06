@@ -13,19 +13,15 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,8 +33,6 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +49,6 @@ public class PathResource extends Resource
     private final Path path;
     private final Path alias;
     private final URI uri;
-    private final FileSystem fileSystem;
 
     private Path checkAliasPath()
     {
@@ -193,57 +186,6 @@ public class PathResource extends Resource
     }
 
     /**
-     * Construct a new PathResource from a Path object.
-     *
-     * @param path the path to use
-     */
-    PathResource(Path path, FileSystem fileSystem)
-    {
-        this.fileSystem = fileSystem;
-        Path absPath = path;
-        try
-        {
-            absPath = path.toRealPath(NO_FOLLOW_LINKS);
-        }
-        catch (IOError | IOException e)
-        {
-            // Not able to resolve real/canonical path from provided path
-            // This could be due to a glob reference, or a reference
-            // to a path that doesn't exist (yet)
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to get real/canonical path for {}", path, e);
-        }
-
-        this.path = absPath;
-
-        assertValidPath(path);
-        this.uri = this.path.toUri();
-        this.alias = checkAliasPath();
-    }
-
-    /**
-     * Construct a new PathResource from a parent PathResource
-     * and child sub path
-     *
-     * @param parent the parent path resource
-     * @param childPath the child sub path
-     */
-    private PathResource(PathResource parent, String childPath) throws IOException
-    {
-        this(Resource.resolve(parent.getURI(), childPath));
-        // Calculate the URI and the path separately, so that any aliasing done by
-        // FileSystem.getPath(path,childPath) is visible as a difference to the URI
-        // obtained via URIUtil.addDecodedPath(uri,childPath)
-        // The checkAliasPath normalization checks will only work correctly if the getPath implementation here does not normalize.
-//        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
-//        if (isDirectory() && !childPath.endsWith("/"))
-//            childPath += "/";
-//        this.uri = URIUtil.addPath(parent.uri, childPath);
-//        this.alias = checkAliasPath();
-//        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
-    }
-
-    /**
      * Construct a new PathResource from a URI object.
      * <p>
      * Must be an absolute URI using the <code>file</code> scheme.
@@ -253,15 +195,15 @@ public class PathResource extends Resource
      */
     PathResource(URI uri) throws IOException
     {
-        if (!uri.isAbsolute())
-        {
-            throw new IllegalArgumentException("not an absolute uri: " + uri);
-        }
+        this(uri, false);
+    }
 
-        if (!uri.getScheme().equalsIgnoreCase("file"))
-        {
+    PathResource(URI uri, boolean bypassFileSchemeCheck) throws IOException
+    {
+        if (!uri.isAbsolute())
+            throw new IllegalArgumentException("not an absolute uri: " + uri);
+        if (!bypassFileSchemeCheck && !uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("not file: scheme");
-        }
 
         Path path;
         try
@@ -279,9 +221,8 @@ public class PathResource extends Resource
         }
 
         this.path = path.toAbsolutePath();
-        this.uri = path.toUri();
+        this.uri = uri;
         this.alias = checkAliasPath();
-        this.fileSystem = null;
     }
 
     @Override
@@ -304,35 +245,8 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource resolve(String subPath) throws IOException
-    {
-        // Check that the path is within the root,
-        // but use the original path to create the
-        // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subPath) == null)
-            throw new MalformedURLException(subPath);
-
-        if (URIUtil.SLASH.equals(subPath))
-            return this;
-
-        return new PathResource(this, subPath);
-    }
-
-    private void assertValidPath(Path path)
-    {
-        // TODO merged from 9.2, check if necessary
-        String str = path.toString();
-        int idx = StringUtil.indexOfControlChars(str);
-        if (idx >= 0)
-        {
-            throw new InvalidPathException(str, "Invalid Character at index " + idx);
-        }
-    }
-
-    @Override
     public void close()
     {
-        IO.close(fileSystem);
     }
 
     @Override

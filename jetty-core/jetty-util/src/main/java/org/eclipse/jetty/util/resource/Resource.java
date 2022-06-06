@@ -23,9 +23,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -40,9 +37,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.IO;
@@ -66,7 +61,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
-    private static final Map<String, Object> EMPTY_ENV = new HashMap<>();
     public static boolean __defaultUseCaches = true;
 
     /**
@@ -83,28 +77,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static boolean getDefaultUseCaches()
     {
         return __defaultUseCaches;
-    }
-
-    /**
-     * Construct a resource from a uri.
-     *
-     * @param uri A URI.
-     * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
-     */
-    public static Resource newResource(URI uri) throws IOException
-    {
-        try
-        {
-            Path path = Paths.get(uri);
-            return newResource(path);
-        }
-        catch (FileSystemNotFoundException e)
-        {
-            FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
-            Path path = Paths.get(uri);
-            return newResource(path, fileSystem);
-        }
     }
 
     /**
@@ -142,18 +114,32 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static Resource newResource(String resource) throws IOException
     {
         URI uri = URI.create(resource);
-        try
-        {
-            // If the URI has no scheme, we consider the string actually was a path.
-            Path path = uri.getScheme() == null ? Paths.get(resource) : Paths.get(uri);
-            return newResource(path);
-        }
-        catch (FileSystemNotFoundException e)
-        {
-            FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
-            Path path = Paths.get(uri);
-            return newResource(path, fileSystem);
-        }
+
+        // If the URI has no scheme, we consider the string actually was a path.
+        if (uri.getScheme() == null)
+            return newResource(Paths.get(resource).toUri());
+
+        return newResource(uri);
+    }
+
+    /**
+     * Construct a resource from a uri.
+     *
+     * @param uri A URI.
+     * @return A Resource object.
+     * @throws MalformedURLException Problem accessing URI
+     */
+    public static Resource newResource(URI uri) throws IOException
+    {
+        if (!uri.isAbsolute())
+            throw new IllegalArgumentException("not an absolute uri: " + uri);
+
+        // If the scheme is file, we can build a non-pooling PathResource.
+        if (uri.getScheme().equalsIgnoreCase("file"))
+            return new PathResource(uri);
+
+        // Build a PoolingPathResource.
+        return new PoolingPathResource(uri);
     }
 
     /**
@@ -179,7 +165,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 !resource.startsWith("jar:"))
             {
                 // It's likely a file/path reference.
-                return new PathResource(Paths.get(resource), null);
+                return new PathResource(Paths.get(resource).toUri());
             }
             else
             {
@@ -199,12 +185,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static Resource newResource(Path path)
     {
-        return new PathResource(path, null);
-    }
-
-    private static Resource newResource(Path path, FileSystem fileSystem)
-    {
-        return new PathResource(path, fileSystem);
+        try
+        {
+            return new PathResource(path.toUri());
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Unsupported path: " + path, e);
+        }
     }
 
     /**
@@ -427,7 +415,44 @@ public abstract class Resource implements ResourceFactory, Closeable
     @Deprecated(forRemoval = true)
     public abstract String[] list();
 
-    public abstract Resource resolve(String subPath) throws IOException;
+    public Resource resolve(String subPath) throws IOException
+    {
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(subPath) == null)
+            throw new MalformedURLException(subPath);
+
+        if (URIUtil.SLASH.equals(subPath))
+            return this;
+
+        // Sub-paths are always resolved under the given URI,
+        // we compensate for input sub-paths like "/subdir"
+        // where default resolve behavior would be to treat
+        // that like an absolute path.
+        if (subPath.startsWith(URIUtil.SLASH))
+            subPath = subPath.substring(1);
+
+        URI uri = getURI();
+        URI resolvedUri;
+        if (uri.isOpaque())
+        {
+            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
+            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
+            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
+            String scheme = uri.getScheme();
+            URI subUri = URI.create(uri.getSchemeSpecificPart());
+            if (subUri.isOpaque())
+                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
+            URI subUriResolved = subUri.resolve(subPath);
+            resolvedUri = URI.create(scheme + ":" + subUriResolved);
+        }
+        else
+        {
+            resolvedUri = uri.resolve(subPath);
+        }
+        return newResource(resolvedUri);
+    }
 
     /**
      * @return true if this Resource is an alias to another real Resource
@@ -994,32 +1019,5 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
 
         return returnedResources;
-    }
-
-    static URI resolve(URI uri, String subPath)
-    {
-        // Sub-paths are always resolved under the given URI,
-        // we compensate for input sub-paths like "/subdir"
-        // where default resolve behavior would be to treat
-        // that like an absolute path.
-        if (subPath.startsWith(URIUtil.SLASH))
-            subPath = subPath.substring(1);
-
-        if (uri.isOpaque())
-        {
-            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
-            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
-            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
-            String scheme = uri.getScheme();
-            URI subUri = URI.create(uri.getSchemeSpecificPart());
-            if (subUri.isOpaque())
-                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
-            URI subUriResolved = subUri.resolve(subPath);
-            return URI.create(scheme + ":" + subUriResolved);
-        }
-        else
-        {
-            return uri.resolve(subPath);
-        }
     }
 }
