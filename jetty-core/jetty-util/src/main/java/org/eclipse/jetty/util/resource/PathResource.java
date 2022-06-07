@@ -345,7 +345,7 @@ public class PathResource extends Resource
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + this.uri.toASCIIString() + "]";
+        return this.uri.toASCIIString();
     }
 
     private static class TreeCopyFileVisitor extends SimpleFileVisitor<Path>

@@ -134,6 +134,6 @@ class BadResource extends Resource
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + this._uri.toASCIIString() + "; BadResource=" + _message + "]";
+        return this._uri.toASCIIString() + ";BadResource=" + _message;
     }
 }
