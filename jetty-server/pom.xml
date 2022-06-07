@@ -21,7 +21,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>
