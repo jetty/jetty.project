@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -71,7 +71,7 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private MappedResource<ServletHolder> _invokerEntry;
+    private MatchedResource<ServletHolder> _invokerEntry;
     private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
@@ -167,13 +167,13 @@ public class Invoker extends HttpServlet
             synchronized (_servletHandler)
             {
                 // find the entry for the invoker (me)
-                _invokerEntry = _servletHandler.getMappedServlet(servletPath);
+                _invokerEntry = _servletHandler.getMatchedServlet(servletPath);
 
                 // Check for existing mapping (avoid threaded race).
                 String path = URIUtil.addPaths(servletPath, servlet);
-                MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(path);
+                MatchedResource<ServletHolder> entry = _servletHandler.getMatchedServlet(path);
 
-                if (entry != null && !entry.equals(_invokerEntry))
+                if (entry != null && !entry.getResource().equals(_invokerEntry.getResource()))
                 {
                     // Use the holder
                     holder = entry.getResource();

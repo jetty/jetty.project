@@ -31,7 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -302,7 +302,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 target = target + httpreq.getPathInfo();
             }
 
-            MappedResource<WebSocketCreator> resource = configuration.getMatch(target);
+            MatchedResource<WebSocketCreator> resource = configuration.getMatched(target);
             if (resource == null)
             {
                 // no match.

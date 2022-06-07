@@ -23,7 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -89,7 +89,7 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     {
         if (configuration.getFactory().isUpgradeRequest(request, response))
         {
-            MappedResource<WebSocketCreator> resource = configuration.getMatch(target);
+            MatchedResource<WebSocketCreator> resource = configuration.getMatched(target);
             if (resource == null)
             {
                 // no match.

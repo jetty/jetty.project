@@ -105,7 +105,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
     {
         try
         {
-            if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
+            if (_ignorePathMap != null && _ignorePathMap.getMatched(request.getRequestURI()) != null)
                 return;
 
             if (!isEnabled())

@@ -50,6 +50,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
@@ -369,13 +371,16 @@ public class ServletHandler extends ScopedHandler
      *
      * @param target Path within _context or servlet name
      * @return PathMap Entries pathspec to ServletHolder
-     * @deprecated Use {@link #getMappedServlet(String)}
+     * @deprecated Use {@link #getMatchedServlet(String)} instead
      */
     @Deprecated
     public MappedResource<ServletHolder> getHolderEntry(String target)
     {
         if (target.startsWith("/"))
-            return getMappedServlet(target);
+        {
+            MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+            return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
+        }
         return null;
     }
 
@@ -465,16 +470,15 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
-        MappedResource<ServletHolder> mapping = getMappedServlet(target);
-        if (mapping != null)
+        MatchedResource<ServletHolder> matched = getMatchedServlet(target);
+        if (matched != null)
         {
-            servletHolder = mapping.getResource();
+            servletHolder = matched.getResource();
 
-            if (mapping.getPathSpec() != null)
+            if (matched.getPathSpec() != null)
             {
-                PathSpec pathSpec = mapping.getPathSpec();
-                String servletPath = pathSpec.getPathMatch(target);
-                String pathInfo = pathSpec.getPathInfo(target);
+                String servletPath = matched.getPathMatch();
+                String pathInfo = matched.getPathInfo();
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
@@ -558,24 +562,39 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
-     * ServletHolder matching path.
+     * ServletHolder matching target path.
      *
      * @param target Path within _context or servlet name
-     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @return MatchedResource, pointing to the {@link MappedResource} for the {@link ServletHolder}, and also the pathspec specific name/info sections for the match.
+     *      Named servlets have a null PathSpec and {@link MatchedResource}.
      */
-    public MappedResource<ServletHolder> getMappedServlet(String target)
+    public MatchedResource<ServletHolder> getMatchedServlet(String target)
     {
         if (target.startsWith("/"))
         {
             if (_servletPathMap == null)
                 return null;
-            return _servletPathMap.getMatch(target);
+            return _servletPathMap.getMatched(target);
         }
 
         ServletHolder holder = _servletNameMap.get(target);
         if (holder == null)
             return null;
-        return new MappedResource<>(null, holder);
+        return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
+    }
+
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @deprecated use {@link #getMatchedServlet(String)} instead
+     */
+    @Deprecated
+    public MappedResource<ServletHolder> getMappedServlet(String target)
+    {
+        MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+        return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)

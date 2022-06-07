@@ -327,7 +327,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         try
         {
-            if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
+            if (_ignorePathMap != null && _ignorePathMap.getMatched(request.getRequestURI()) != null)
                 return;
 
             StringBuilder sb = _buffers.get();

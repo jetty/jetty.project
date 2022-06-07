@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -34,7 +35,7 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean test(String s)
     {
-        return specs.getMatch(s) != null;
+        return specs.getMatched(s) != null;
     }
 
     @Override
@@ -53,17 +54,14 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
         {
             return (PathSpec)o;
         }
-        if (o instanceof String)
-        {
-            return PathMappings.asPathSpec((String)o);
-        }
-        return PathMappings.asPathSpec(o.toString());
+
+        return PathSpec.from(Objects.toString(o));
     }
 
     @Override
     public boolean add(String s)
     {
-        return specs.put(PathMappings.asPathSpec(s), Boolean.TRUE);
+        return specs.put(PathSpec.from(s), Boolean.TRUE);
     }
 
     @Override
