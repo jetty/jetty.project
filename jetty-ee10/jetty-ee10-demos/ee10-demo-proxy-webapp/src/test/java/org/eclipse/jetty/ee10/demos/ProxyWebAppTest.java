@@ -55,7 +55,7 @@ public class ProxyWebAppTest
         // This is a pieced together WebApp.
         // We don't have a valid WEB-INF/lib to rely on at this point.
         // So, open up server classes here, for purposes of this testcase.
-        webapp.getServerClassMatcher().add("-org.eclipse.jetty.proxy.");
+        webapp.getServerClassMatcher().add("-org.eclipse.jetty.ee10.proxy.");
         webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
         webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("classes").toString());
         server.setHandler(webapp);
@@ -73,7 +73,6 @@ public class ProxyWebAppTest
         LifeCycle.stop(server);
     }
 
-    @Disabled
     @Test
     @Tag("external")
     public void testProxyRequest() throws InterruptedException, ExecutionException, TimeoutException

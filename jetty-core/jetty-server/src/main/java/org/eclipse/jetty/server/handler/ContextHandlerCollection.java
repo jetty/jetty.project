@@ -67,13 +67,10 @@ public class ContextHandlerCollection extends Handler.Collection
     {
         _serializedExecutor.execute(() ->
         {
-            while (true)
-            {
-                List<Handler> handlers = getHandlers();
-                if (handlers == null)
-                    break;
-                super.setHandlers(newHandlers(handlers));
-            }
+            List<Handler> handlers = getHandlers();
+            if (handlers == null)
+                return;
+            super.setHandlers(newHandlers(handlers));
         });
     }
 
