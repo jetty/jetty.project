@@ -22,6 +22,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.UrlEncoded;
+
 /**
  * Bad Resource.
  *
@@ -134,6 +136,6 @@ class BadResource extends Resource
     @Override
     public String toString()
     {
-        return this._uri.toASCIIString() + ";BadResource=" + _message;
+        return this._uri.toASCIIString() + "#BadResource=" + UrlEncoded.encodeString(_message);
     }
 }
