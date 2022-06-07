@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -90,7 +91,7 @@ public class ShutdownMonitor
     private final String host;
     private int port;
     private String key;
-    private boolean exitVm;
+    private boolean exitVm = true;
     private boolean alive;
 
     /**
@@ -107,7 +108,8 @@ public class ShutdownMonitor
         this.host = System.getProperty("STOP.HOST", "127.0.0.1");
         this.port = Integer.getInteger("STOP.PORT", -1);
         this.key = System.getProperty("STOP.KEY", null);
-        this.exitVm = true;
+        //only change the default exitVm setting if STOP.EXIT is explicitly set
+        this.exitVm = Boolean.valueOf(System.getProperty("STOP.EXIT", "true"));
     }
 
     private void addLifeCycles(LifeCycle... lifeCycles)
@@ -308,6 +310,8 @@ public class ShutdownMonitor
             // establish the port and key that are in use
             debug("STOP.PORT=%d", port);
             debug("STOP.KEY=%s", key);
+            //also show if we're exiting the jvm or not
+            debug("STOP.EXIT=%b", exitVm);
         }
     }
 
