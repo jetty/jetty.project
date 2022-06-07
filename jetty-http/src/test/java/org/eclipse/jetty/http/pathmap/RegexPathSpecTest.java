@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -186,6 +187,28 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/a.do");
         assertNotMatches(spec, "/a/middle");
         assertNotMatches(spec, "/middle");
+    }
+
+    @Test
+    public void testNamedRegexGroup()
+    {
+        RegexPathSpec spec = new RegexPathSpec("^(?<name>(.*)/middle/)(?<info>.*)$");
+        assertEquals("^(?<name>(.*)/middle/)(?<info>.*)$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^(?<name>(.*)/middle/)(?<info>.*)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
+
+        assertMatches(spec, "/a/middle/c.do");
+        assertMatches(spec, "/a/b/c/d/middle/e/f");
+        assertMatches(spec, "/middle/");
+
+        assertNotMatches(spec, "/a.do");
+        assertNotMatches(spec, "/a/middle");
+        assertNotMatches(spec, "/middle");
+
+        MatchedPath matchedPath = spec.matched("/a/middle/c.do");
+        assertThat(matchedPath.getPathMatch(), is("/a/middle/"));
+        assertThat(matchedPath.getPathInfo(), is("c.do"));
     }
 
     @Test

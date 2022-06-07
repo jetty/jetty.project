@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Objects;
+
 /**
  * A path specification is a URI path template that can be matched against.
  * <p>
@@ -27,8 +29,7 @@ public interface PathSpec extends Comparable<PathSpec>
 {
     static PathSpec from(String pathSpecString)
     {
-        if (pathSpecString == null)
-            throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
+        Objects.requireNonNull(pathSpecString, "null PathSpec not supported");
 
         if (pathSpecString.length() == 0)
             return new ServletPathSpec("");

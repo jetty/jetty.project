@@ -20,6 +20,12 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.util.Map;
 
+/**
+ * The match details when using {@link PathMappings#getMatched(String)}, used to minimize return to the PathSpec or PathMappings for subsequent details
+ * that are now provided by the {@link MatchedPath} instance.
+ *
+ * @param <E> the type of resource (IncludeExclude uses boolean, WebSocket uses endpoint/endpoint config, servlet uses ServletHolder, etc)
+ */
 public class MatchedResource<E>
 {
     private final E resource;

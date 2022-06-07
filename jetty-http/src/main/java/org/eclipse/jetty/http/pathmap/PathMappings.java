@@ -392,9 +392,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         _exactMap.remove(exact);
                         // Recalculate _optimizeExact
-                        _optimizedExact = _mappings.stream()
-                            .filter((mapping) -> mapping.getPathSpec().getGroup() == PathSpecGroup.EXACT)
-                            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+                        _optimizedExact = canBeOptimized(PathSpecGroup.EXACT);
                     }
                     break;
                 case PREFIX_GLOB:
@@ -403,9 +401,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         _prefixMap.remove(prefix);
                         // Recalculate _optimizePrefix
-                        _optimizedPrefix = _mappings.stream()
-                            .filter((mapping) -> mapping.getPathSpec().getGroup() == PathSpecGroup.PREFIX_GLOB)
-                            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+                        _optimizedPrefix = canBeOptimized(PathSpecGroup.PREFIX_GLOB);
                     }
                     break;
                 case SUFFIX_GLOB:
@@ -414,15 +410,20 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         _suffixMap.remove(suffix);
                         // Recalculate _optimizeSuffix
-                        _optimizedSuffix = _mappings.stream()
-                            .filter((mapping) -> mapping.getPathSpec().getGroup() == PathSpecGroup.SUFFIX_GLOB)
-                            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+                        _optimizedSuffix = canBeOptimized(PathSpecGroup.SUFFIX_GLOB);
                     }
                     break;
             }
         }
 
         return removed;
+    }
+
+    private boolean canBeOptimized(PathSpecGroup suffixGlob)
+    {
+        return _mappings.stream()
+            .filter((mapping) -> mapping.getPathSpec().getGroup() == suffixGlob)
+            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
     }
 
     @Override

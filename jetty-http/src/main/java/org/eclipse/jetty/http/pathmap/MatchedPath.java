@@ -37,7 +37,7 @@ public interface MatchedPath
         @Override
         public String toString()
         {
-            return "MatchedPath.EMPTY";
+            return MatchedPath.class.getSimpleName() + ".EMPTY";
         }
     };
 
@@ -60,7 +60,7 @@ public interface MatchedPath
             @Override
             public String toString()
             {
-                return "MatchedPath.from[pathMatch=" + pathMatch + ", pathInfo=" + pathInfo + "]";
+                return MatchedPath.class.getSimpleName() + "[pathMatch=" + pathMatch + ", pathInfo=" + pathInfo + "]";
             }
         };
     }

@@ -89,6 +89,7 @@ public class ServletPathSpec extends AbstractPathSpec
         PathSpecGroup group;
         String prefix;
         String suffix;
+        MatchedPath preMatchedPath;
 
         // prefix based
         if (servletPathSpec.charAt(0) == '/' && servletPathSpec.endsWith("/*"))
@@ -96,7 +97,7 @@ public class ServletPathSpec extends AbstractPathSpec
             group = PathSpecGroup.PREFIX_GLOB;
             prefix = servletPathSpec.substring(0, specLength - 2);
             suffix = null;
-            _preMatchedPath = MatchedPath.from(prefix, null);
+            preMatchedPath = MatchedPath.from(prefix, null);
         }
         // suffix based
         else if (servletPathSpec.charAt(0) == '*' && servletPathSpec.length() > 1)
@@ -104,7 +105,7 @@ public class ServletPathSpec extends AbstractPathSpec
             group = PathSpecGroup.SUFFIX_GLOB;
             prefix = null;
             suffix = servletPathSpec.substring(2, specLength);
-            _preMatchedPath = null;
+            preMatchedPath = null;
         }
         else
         {
@@ -116,16 +117,15 @@ public class ServletPathSpec extends AbstractPathSpec
                 LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
                         servletPathSpec);
             }
-            _preMatchedPath = MatchedPath.from(servletPathSpec, null);
+            preMatchedPath = MatchedPath.from(servletPathSpec, null);
         }
 
         int pathDepth = 0;
         for (int i = 0; i < specLength; i++)
         {
-            int cp = servletPathSpec.codePointAt(i);
-            if (cp < 128)
+            char c = servletPathSpec.charAt(i);
+            if (c < 128)
             {
-                char c = (char)cp;
                 if (c == '/')
                     pathDepth++;
             }
@@ -138,10 +138,12 @@ public class ServletPathSpec extends AbstractPathSpec
         _matchLength = prefix == null ? 0 : prefix.length();
         _prefix = prefix;
         _suffix = suffix;
+        _preMatchedPath = preMatchedPath;
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating ServletPathSpec[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
+            LOG.debug("Creating {}[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
+                getClass().getSimpleName(),
                 _declaration, _group, _prefix, _suffix);
         }
     }

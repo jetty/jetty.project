@@ -60,7 +60,7 @@ public abstract class AbstractPathSpec implements PathSpec
     @Override
     public final int hashCode()
     {
-        return Objects.hash(this.getClass().getSimpleName() + ":" + getDeclaration());
+        return Objects.hash(getGroup().ordinal(), getSpecLength(), getDeclaration(), getClass().getName());
     }
 
     @Override

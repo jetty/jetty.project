@@ -441,7 +441,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         return _variables;
     }
 
-    public static class UriTemplateMatchedPath implements MatchedPath
+    private static class UriTemplateMatchedPath implements MatchedPath
     {
         private final UriTemplatePathSpec pathSpec;
         private final String path;
@@ -491,7 +491,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return "UriTemplateMatchedPath[" +
+            return getClass().getSimpleName() + "[" +
                 "pathSpec=" + pathSpec +
                 ", path=\"" + path + "\"" +
                 ", matcher=" + matcher +

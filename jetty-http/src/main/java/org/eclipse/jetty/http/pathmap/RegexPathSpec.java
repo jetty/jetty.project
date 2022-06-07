@@ -278,7 +278,7 @@ public class RegexPathSpec extends AbstractPathSpec
         return null;
     }
 
-    public class RegexMatchedPath implements MatchedPath
+    private class RegexMatchedPath implements MatchedPath
     {
         private final RegexPathSpec pathSpec;
         private final String path;
@@ -341,7 +341,7 @@ public class RegexPathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return "RegexMatchedPath[" +
+            return getClass().getSimpleName() + "[" +
                 "pathSpec=" + pathSpec +
                 ", path=\"" + path + "\"" +
                 ", matcher=" + matcher +
