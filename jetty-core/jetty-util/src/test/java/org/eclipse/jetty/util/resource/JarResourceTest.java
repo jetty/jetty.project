@@ -133,47 +133,6 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileCopyToDirectoryTraversal() throws Exception
-    {
-        Path extractZip = MavenTestingUtils.getTestResourcePathFile("TestData/extract.zip");
-
-        String s = "jar:" + extractZip.toUri().toASCIIString() + "!/";
-        Resource r = Resource.newResource(s);
-
-        assertThat(r, instanceOf(PoolingPathResource.class));
-
-        Path destParent = workDir.getPathFile("copyjar");
-        FS.ensureEmpty(destParent);
-
-        Path dest = destParent.toRealPath().resolve("extract");
-        FS.ensureEmpty(dest);
-
-        r.copyTo(dest);
-
-        // dest contains only the valid entry; dest.getParent() contains only the dest directory
-        assertEquals(1, listFiles(dest).size());
-        assertEquals(1, listFiles(dest.getParent()).size());
-
-        DirectoryStream.Filter<? super Path> dotdotFilenameFilter = (path) ->
-            path.getFileName().toString().equalsIgnoreCase("dotdot.dot");
-
-        assertEquals(0, listFiles(dest, dotdotFilenameFilter).size());
-        assertEquals(0, listFiles(dest.getParent(), dotdotFilenameFilter).size());
-
-        DirectoryStream.Filter<? super Path> extractfileFilenameFilter = (path) ->
-            path.getFileName().toString().equalsIgnoreCase("extract-filenotdir");
-
-        assertEquals(0, listFiles(dest, extractfileFilenameFilter).size());
-        assertEquals(0, listFiles(dest.getParent(), extractfileFilenameFilter).size());
-
-        DirectoryStream.Filter<? super Path> currentDirectoryFilenameFilter = (path) ->
-            path.getFileName().toString().equalsIgnoreCase("current.txt");
-
-        assertEquals(1, listFiles(dest, currentDirectoryFilenameFilter).size());
-        assertEquals(0, listFiles(dest.getParent(), currentDirectoryFilenameFilter).size());
-    }
-
-    @Test
     public void testEncodedFileName()
         throws Exception
     {
