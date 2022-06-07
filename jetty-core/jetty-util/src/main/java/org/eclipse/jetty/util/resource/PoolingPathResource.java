@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Java NIO Path Resource with file system pooling. All {@link FileSystem} implementations must use this class
- * except for the default one (returned by {@link FileSystems#getDefault()}).
+ * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
+ * must use this class, for instance the one handling the `jar` scheme.
  */
 public class PoolingPathResource extends PathResource
 {
