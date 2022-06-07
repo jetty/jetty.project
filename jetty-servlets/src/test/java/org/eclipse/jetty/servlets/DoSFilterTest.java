@@ -16,7 +16,6 @@ package org.eclipse.jetty.servlets;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
@@ -174,7 +173,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         for (int i = 0; i < 5; i++)
         {
             Thread.sleep(sleep);
-            if (rateTracker.isRateExceeded(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())) != null)
+            if (rateTracker.isRateExceeded(System.nanoTime()) != null)
                 exceeded = true;
         }
         return exceeded;
