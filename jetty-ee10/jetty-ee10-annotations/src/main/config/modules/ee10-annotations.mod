@@ -10,6 +10,7 @@ ee10
 ee10-plus
 
 [lib]
+lib/jetty-ee10-annotations-${jetty.version}.jar
 lib/ee10-annotations/*.jar
 
 [jpms]

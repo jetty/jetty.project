@@ -684,6 +684,8 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 
     private void updateHandles()
     {
+        _handles.clear();
+
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {

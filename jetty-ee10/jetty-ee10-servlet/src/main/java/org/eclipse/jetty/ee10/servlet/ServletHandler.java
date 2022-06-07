@@ -43,6 +43,7 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -82,6 +83,7 @@ public class ServletHandler extends Handler.Wrapper
 
     private final AutoLock _lock = new AutoLock();
     private ServletContextHandler _servletContextHandler;
+    private IdentityService _identityService;
     private ServletContext _servletContext;
     private final List<FilterHolder> _filters = new ArrayList<>();
     private final List<FilterMapping> _filterMappings = new ArrayList<>();
@@ -161,7 +163,8 @@ public class ServletHandler extends Handler.Wrapper
             if (_servletContextHandler != null)
             {
                 SecurityHandler securityHandler = _servletContextHandler.getDescendant(SecurityHandler.class);
-                // TODO: Security.
+                if (securityHandler != null)
+                    _identityService = securityHandler.getIdentityService();
             }
 
             _durable.clear();
@@ -418,6 +421,11 @@ public class ServletHandler extends Handler.Wrapper
         if (mapped != null)
             return mapped.getServletHolder();
         return null;
+    }
+    
+    protected IdentityService getIdentityService()
+    {
+        return _identityService;
     }
 
     @Override
@@ -805,7 +813,11 @@ public class ServletHandler extends Handler.Wrapper
 
     public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-        throw new UnsupportedOperationException("Unimplemented");
+        if (_servletContextHandler != null)
+        {
+            return _servletContextHandler.setServletSecurity(registration, servletSecurityElement);
+        }
+        return Collections.emptySet();
     }
 
     public FilterHolder newFilterHolder(Source source)

@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ForwardedRequestCustomizerTest
 {
     private Server server;
-    private RequestHandler handler;
     private LocalConnector connector;
     private LocalConnector connectorAlt;
     private LocalConnector connectorConfigured;
@@ -96,7 +95,7 @@ public class ForwardedRequestCustomizerTest
         connectorConfigured = new LocalConnector(server, http);
         server.addConnector(connectorConfigured);
 
-        handler = new RequestHandler();
+        RequestHandler handler = new RequestHandler();
         server.setHandler(handler);
 
         handler.requestTester = (request, response) ->
@@ -1146,6 +1145,57 @@ public class ForwardedRequestCustomizerTest
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(400));
+    }
+
+    public static Stream<Arguments> customHeaderNameRequestCases()
+    {
+        return Stream.of(
+            Arguments.of(new TestRequest("Old name then new name")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 1.1.1.1",
+                        "X-Custom-For: 2.2.2.2"
+                    )
+                    .configureCustomizer((forwardedRequestCustomizer) ->
+                        forwardedRequestCustomizer.setForwardedForHeader("X-Custom-For")),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("2.2.2.2").remotePort(0)
+            ),
+            Arguments.of(new TestRequest("New name then old name")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Custom-For: 2.2.2.2",
+                        "X-Forwarded-For: 1.1.1.1"
+                    )
+                    .configureCustomizer((forwardedRequestCustomizer) ->
+                        forwardedRequestCustomizer.setForwardedForHeader("X-Custom-For")),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("2.2.2.2").remotePort(0)
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("customHeaderNameRequestCases")
+    public void testCustomHeaderName(TestRequest request, Expectations expectations) throws Exception
+    {
+        request.configure(customizer);
+
+        String rawRequest = request.getRawRequest((header) -> header);
+        // System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat("status", response.getStatus(), is(200));
+
+        expectations.accept(actual);
     }
 
     private static class TestRequest

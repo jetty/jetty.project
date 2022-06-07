@@ -8,9 +8,4 @@ Double slashes in the path are treated as a single slash.
 rewrite
 
 [xml]
-etc/rewrite-compactpath.xml
-
-[ini-template]
-## Requires either rewrite or rewrite-customizer module
-## with rewritePathInfo==true
-jetty.rewrite.rewritePathInfo=true
+etc/jetty-rewrite-compactpath.xml

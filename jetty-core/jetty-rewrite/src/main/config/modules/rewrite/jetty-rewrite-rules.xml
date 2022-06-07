@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
+
+  <!-- Protects favicon handling by not processing other rules.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+        <Set name="pattern">/favicon.ico</Set>
+        <Set name="headerName">Cache-Control</Set>
+        <Set name="headerValue">Max-Age=3600,public</Set>
+        <Set name="terminating">true</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Rewrites from a directory URI to a welcome page URI.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+        <Set name="pattern">/test/rewrite/</Set>
+        <Set name="replacement">/test/rewrite/index.html</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Rewrites a URI to another URI.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+        <Set name="pattern">/test/some/old/context</Set>
+        <Set name="replacement">/test/rewritten/new/context</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Rewrites the beginning of the request URI.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+        <Set name="pattern">/test/rewrite/for/*</Set>
+        <Set name="replacement">/test/rewritten/</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Rewrites a URI by reversing the order of the path segments.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+        <Set name="regex">(.*?)/reverse/([^/]*)/(.*)</Set>
+        <Set name="replacement">$1/reverse/$3/$2</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Adds a cookie to each path visited.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule">
+        <Set name="pattern">/*</Set>
+        <Set name="name">visited</Set>
+        <Set name="value">yes</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Redirects (instead of rewriting) to a different URI.
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+        <Set name="pattern">/test/redirect/*</Set>
+        <Set name="location">/test/redirected</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- A response rule.
+  <Call name="addRule">
+    <Arg>
+       <New class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
+         <Set name="pattern">/400Error</Set>
+         <Set name="code">400</Set>
+         <Set name="message">ResponsePatternRule Demo</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+</Configure>

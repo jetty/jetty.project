@@ -317,19 +317,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
         {
-            if (resources.size() == 1)
-                context.setBaseResource(resources.stream().findFirst().get());
-            else
+            Resource[] collection = new Resource[resources.size() + 1];
+            int i = 0;
+            collection[i++] = context.getResourceBase();
+            for (Resource resource : resources)
             {
-                Resource[] collection = new Resource[resources.size() + 1];
-                int i = 0;
-                collection[i++] = context.getResourceBase();
-                for (Resource resource : resources)
-                {
-                    collection[i++] = resource;
-                }
-                context.setBaseResource(new ResourceCollection(collection));
+                collection[i++] = resource;
             }
+            context.setBaseResource(new ResourceCollection(collection));
         }
     }
 

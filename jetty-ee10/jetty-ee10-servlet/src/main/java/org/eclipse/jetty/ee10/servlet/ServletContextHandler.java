@@ -68,6 +68,8 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
@@ -1781,10 +1783,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-        /*
-        TODO: implement security.
         //Default implementation is to just accept them all. If using a webapp, then this behaviour is overridden in WebAppContext.setServletSecurity       
-        Collection<String> pathSpecs = registration.getMappings();
+        java.util.Collection<String> pathSpecs = registration.getMappings();
         if (pathSpecs != null)
         {
             for (String pathSpec : pathSpecs)
@@ -1796,7 +1796,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 }
             }
         }
-         */
         return Collections.emptySet();
     }
 
