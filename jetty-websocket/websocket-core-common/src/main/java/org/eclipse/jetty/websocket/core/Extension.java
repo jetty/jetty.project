@@ -24,6 +24,13 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     void init(ExtensionConfig config, WebSocketComponents components);
 
     /**
+     * Used to clean up any resources after connection close.
+     */
+    default void close()
+    {
+    }
+
+    /**
      * The active configuration for this extension.
      *
      * @return the configuration for this extension. never null.

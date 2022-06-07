@@ -44,7 +44,6 @@ public class FrameFlusher extends IteratingCallback
 {
     public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
-    private static final Throwable CLOSED_CHANNEL = new ClosedChannelException();
 
     private final AutoLock lock = new AutoLock();
     private final LongAdder messagesOut = new LongAdder();
@@ -185,7 +184,14 @@ public class FrameFlusher extends IteratingCallback
     {
         try (AutoLock l = lock.lock())
         {
-            closedCause = cause == null ? CLOSED_CHANNEL : cause;
+            closedCause = cause == null ? new ClosedChannelException()
+            {
+                @Override
+                public Throwable fillInStackTrace()
+                {
+                    return this;
+                }
+            } : cause;
         }
         iterate();
     }

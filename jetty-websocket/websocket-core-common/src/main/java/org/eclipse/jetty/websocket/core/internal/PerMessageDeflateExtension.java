@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,6 +145,17 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.init(configNegotiated, components);
+    }
+
+    @Override
+    public void close()
+    {
+        // TODO: use IteratingCallback.close() instead of creating exception with failFlusher methods.
+        ClosedChannelException exception = new ClosedChannelException();
+        incomingFlusher.failFlusher(exception);
+        outgoingFlusher.failFlusher(exception);
+        releaseInflater();
+        releaseDeflater();
     }
 
     private static String toDetail(Inflater inflater)
