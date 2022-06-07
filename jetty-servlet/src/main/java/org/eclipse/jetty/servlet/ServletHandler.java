@@ -45,6 +45,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
@@ -353,6 +355,24 @@ public class ServletHandler extends ScopedHandler
         return _filters.toArray(new FilterHolder[0]);
     }
 
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return PathMap Entries pathspec to ServletHolder
+     * @deprecated Use {@link #getMatchedServlet(String)} instead
+     */
+    @Deprecated
+    public MappedResource<MappedServlet> getHolderEntry(String target)
+    {
+        if (target.startsWith("/"))
+        {
+            MatchedResource<MappedServlet> matchedResource = getMatchedServlet(target);
+            return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
+        }
+        return null;
+    }
+
     public ServletContext getServletContext()
     {
         return _servletContext;
@@ -439,15 +459,23 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
-        MappedServlet mappedServlet = getMappedServlet(target);
-        if (mappedServlet != null)
+        MatchedResource<MappedServlet> matched = getMatchedServlet(target);
+        if (matched != null)
         {
+            MappedServlet mappedServlet = matched.getResource();
             servletHolder = mappedServlet.getServletHolder();
-            ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target);
-            if (servletPathMapping != null)
+
+            if (matched.getPathSpec() != null)
             {
-                // Setting the servletPathMapping also provides the servletPath and pathInfo
-                baseRequest.setServletPathMapping(servletPathMapping);
+                if (DispatcherType.INCLUDE.equals(baseRequest.getDispatcherType()))
+                {
+                    ServletPathMapping servletPathMapping = new ServletPathMapping(
+                        matched.getPathSpec(),
+                        servletHolder.getName(),
+                        target,
+                        matched.getMatchedPath());
+                    baseRequest.setServletPathMapping(servletPathMapping);
+                }
             }
         }
 
@@ -516,25 +544,39 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
-     * Get MappedServlet for target.
+     * ServletHolder matching target path.
      *
      * @param target Path within _context or servlet name
-     * @return MappedServlet matched by path or name.  Named servlets have a null PathSpec
+     * @return MatchedResource, pointing to the {@link MappedResource} for the {@link ServletHolder}, and also the pathspec specific name/info sections for the match.
+     *      Named servlets have a null PathSpec and {@link MatchedResource}.
      */
-    public MappedServlet getMappedServlet(String target)
+    public MatchedResource<MappedServlet> getMatchedServlet(String target)
     {
         if (target.startsWith("/"))
         {
             if (_servletPathMap == null)
                 return null;
-
-            MappedResource<MappedServlet> match = _servletPathMap.getMatch(target);
-            if (match == null)
-                return null;
-            return match.getResource();
+            return _servletPathMap.getMatched(target);
         }
 
-        return _servletNameMap.get(target);
+        MappedServlet holder = _servletNameMap.get(target);
+        if (holder == null)
+            return null;
+        return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
+    }
+
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @deprecated use {@link #getMatchedServlet(String)} instead
+     */
+    @Deprecated
+    public MappedServlet getMappedServlet(String target)
+    {
+        MatchedResource<MappedServlet> matchedResource = getMatchedServlet(target);
+        return matchedResource.getResource();
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)

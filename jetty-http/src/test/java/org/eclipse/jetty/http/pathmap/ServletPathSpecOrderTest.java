@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Tests of {@link PathMappings#getMatch(String)}, with a focus on correct mapping selection order
+ * Tests of {@link PathMappings#getMatched(String)}, with a focus on correct mapping selection order
  */
 @SuppressWarnings("Duplicates")
 public class ServletPathSpecOrderTest
@@ -53,6 +53,7 @@ public class ServletPathSpecOrderTest
         data.add(Arguments.of("/Other/path", "default"));
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/\u20ACuro/path", "money"));
+        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/", "root"));
 
         // Extra tests
@@ -87,6 +88,6 @@ public class ServletPathSpecOrderTest
     @MethodSource("data")
     public void testMatch(String inputPath, String expectedResource)
     {
-        assertThat("Match on [" + inputPath + "]", mappings.getMatch(inputPath).getResource(), is(expectedResource));
+        assertThat("Match on [" + inputPath + "]", mappings.getMatched(inputPath).getResource(), is(expectedResource));
     }
 }
