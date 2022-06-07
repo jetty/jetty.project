@@ -45,7 +45,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <argLine>
-              @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.util=org.eclipse.jetty.logging
+              @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging
             </argLine>
           </configuration>
         </plugin>
