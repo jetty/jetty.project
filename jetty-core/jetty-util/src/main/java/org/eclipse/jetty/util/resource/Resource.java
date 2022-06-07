@@ -33,6 +33,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
@@ -151,7 +152,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             // The filesystem cannot be created for that URI (e.g.: non-existent jar file).
             return new BadResource(uri, nsfe.toString());
         }
-        catch (IOException ex)
+        catch (ProviderNotFoundException ex)
         {
             throw new IllegalArgumentException(ex);
         }
@@ -499,11 +500,17 @@ public abstract class Resource implements ResourceFactory, Closeable
             URI subUri = URI.create(uri.getSchemeSpecificPart());
             if (subUri.isOpaque())
                 throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
+
+            if (!subUri.getPath().endsWith(URIUtil.SLASH))
+                subUri = URI.create(subUri + URIUtil.SLASH);
+
             URI subUriResolved = subUri.resolve(subPath);
             resolvedUri = URI.create(scheme + ":" + subUriResolved);
         }
         else
         {
+            if (!uri.getPath().endsWith(URIUtil.SLASH))
+                uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uri.resolve(subPath);
         }
         return newResource(resolvedUri);
