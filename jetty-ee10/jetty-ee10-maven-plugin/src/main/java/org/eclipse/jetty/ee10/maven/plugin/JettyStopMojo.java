@@ -86,6 +86,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             catch (NumberFormatException e)
             {
+                e.printStackTrace();
                 getLog().info("Server returned bad pid");
             }
             catch (ConnectException e)
