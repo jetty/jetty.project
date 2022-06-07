@@ -98,7 +98,6 @@ public class JarResourceTest
         assertEquals(4, deep.size());
     }
 
-/*
     @Test
     public void testJarFileIsContainedIn()
         throws Exception
@@ -108,15 +107,13 @@ public class JarResourceTest
         Resource r = Resource.newResource(s);
         Resource container = Resource.newResource(testZip);
 
-        assertThat(r, instanceOf(JarFileResource.class));
-        JarFileResource jarFileResource = (JarFileResource)r;
+        assertThat(r, instanceOf(PoolingPathResource.class));
 
-        assertTrue(jarFileResource.isContainedIn(container));
+        assertTrue(r.isContainedIn(container));
 
         container = Resource.newResource(testZip.getParent());
-        assertFalse(jarFileResource.isContainedIn(container));
+        assertFalse(r.isContainedIn(container));
     }
-*/
 
     @Test
     public void testJarFileLastModified()
@@ -135,7 +132,6 @@ public class JarResourceTest
         }
     }
 
-/*
     @Test
     public void testJarFileCopyToDirectoryTraversal() throws Exception
     {
@@ -144,8 +140,7 @@ public class JarResourceTest
         String s = "jar:" + extractZip.toUri().toASCIIString() + "!/";
         Resource r = Resource.newResource(s);
 
-        assertThat(r, instanceOf(JarResource.class));
-        JarResource jarResource = (JarResource)r;
+        assertThat(r, instanceOf(PoolingPathResource.class));
 
         Path destParent = workDir.getPathFile("copyjar");
         FS.ensureEmpty(destParent);
@@ -153,7 +148,7 @@ public class JarResourceTest
         Path dest = destParent.toRealPath().resolve("extract");
         FS.ensureEmpty(dest);
 
-        jarResource.copyTo(dest.toFile());
+        r.copyTo(dest);
 
         // dest contains only the valid entry; dest.getParent() contains only the dest directory
         assertEquals(1, listFiles(dest).size());
@@ -177,7 +172,6 @@ public class JarResourceTest
         assertEquals(1, listFiles(dest, currentDirectoryFilenameFilter).size());
         assertEquals(0, listFiles(dest.getParent(), currentDirectoryFilenameFilter).size());
     }
-*/
 
     @Test
     public void testEncodedFileName()
@@ -190,15 +184,14 @@ public class JarResourceTest
         assertTrue(r.exists());
     }
 
-/*
     @Test
     public void testJarFileResourceList() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource rez = resource.addPath("rez/");
+        Resource resource = Resource.newResource(URI.create(uri));
+        Resource rez = resource.resolve("rez/");
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
@@ -214,21 +207,19 @@ public class JarResourceTest
             };
         assertThat("Dir contents", actual, containsInAnyOrder(expected));
     }
-*/
 
     /**
      * Test getting a file listing of a Directory in a JAR
      * Where the JAR entries contain names that are URI encoded / escaped
      */
-/*
     @Test
     public void testJarFileResourceListPreEncodedEntries() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource rez = resource.addPath("rez/oddities/");
+        Resource resource = Resource.newResource(URI.create(uri));
+        Resource rez = resource.resolve("rez/oddities/");
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
@@ -244,16 +235,15 @@ public class JarResourceTest
         };
         assertThat("Dir contents", actual, containsInAnyOrder(expected));
     }
-*/
 
-   /* @Test
+    @Test
     public void testJarFileResourceListDirWithSpace() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
-        Resource anotherDir = resource.addPath("rez/another dir/");
+        Resource resource = Resource.newResource(URI.create(uri));
+        Resource anotherDir = resource.resolve("rez/another dir/");
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
@@ -264,7 +254,7 @@ public class JarResourceTest
             "..\\a different file.txt",
             };
         assertThat("Dir contents", actual, containsInAnyOrder(expected));
-    }*/
+    }
 
     private List<Path> listFiles(Path dir) throws IOException
     {
