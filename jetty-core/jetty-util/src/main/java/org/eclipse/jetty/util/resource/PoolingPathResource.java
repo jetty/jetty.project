@@ -19,9 +19,13 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.IO;
@@ -38,7 +42,7 @@ public class PoolingPathResource extends PathResource
     private static final Logger LOG = LoggerFactory.getLogger(PoolingPathResource.class);
 
     private static final Map<String, ?> EMPTY_ENV = new HashMap<>();
-    private static final Map<FileSystem, AtomicInteger> POOL = new HashMap<>();
+    private static final Map<FileSystem, Metadata> POOL = new HashMap<>();
     private static final AutoLock POOL_LOCK = new AutoLock();
 
     private boolean closed;
@@ -60,19 +64,19 @@ public class PoolingPathResource extends PathResource
             try
             {
                 FileSystem fileSystem = Paths.get(uri).getFileSystem();
-                retain(fileSystem);
+                retain(fileSystem, uri);
             }
             catch (FileSystemNotFoundException fsnfe)
             {
                 try
                 {
                     FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
-                    retain(fileSystem);
+                    retain(fileSystem, uri);
                 }
                 catch (FileSystemAlreadyExistsException fsaee)
                 {
                     FileSystem fileSystem = Paths.get(uri).getFileSystem();
-                    retain(fileSystem);
+                    retain(fileSystem, uri);
                 }
             }
             return uri;
@@ -89,53 +93,148 @@ public class PoolingPathResource extends PathResource
                 if (LOG.isDebugEnabled())
                     LOG.debug("closing {}", this);
                 closed = true;
-                FileSystem fileSystem = Paths.get(getURI()).getFileSystem();
-                release(fileSystem);
+                try
+                {
+                    FileSystem fileSystem = Paths.get(getURI()).getFileSystem();
+                    release(fileSystem);
+                }
+                catch (FileSystemNotFoundException fsnfe)
+                {
+                    // The FS has already been released by a sweep.
+                }
                 super.close();
             }
         }
     }
 
-    private static void retain(FileSystem fileSystem)
+    public static void sweep()
     {
-        POOL.compute(fileSystem, (k, v) ->
+        Set<Map.Entry<FileSystem, Metadata>> entries;
+        try (AutoLock ignore = POOL_LOCK.lock())
         {
-            if (v == null)
+            entries = POOL.entrySet();
+        }
+
+        for (Map.Entry<FileSystem, Metadata> entry : entries)
+        {
+            FileSystem fileSystem = entry.getKey();
+            Metadata metadata = entry.getValue();
+
+            if (metadata.path == null)
             {
-                v = new AtomicInteger(1);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("pooling new FS {}", fileSystem);
+                    LOG.debug("Filesystem {} not backed by a file", fileSystem);
+                return;
             }
-            else
+
+            try (AutoLock ignore = POOL_LOCK.lock())
             {
-                int count = v.incrementAndGet();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("incremented ref counter to {} for FS {}", count, fileSystem);
+                // We must check if the FS is still open under the lock as a concurrent thread may have closed it.
+                if (fileSystem.isOpen() &&
+                    !Files.isReadable(metadata.path) ||
+                    !Files.getLastModifiedTime(metadata.path).equals(metadata.lastModifiedTime) ||
+                    Files.size(metadata.path) != metadata.size)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("File {} backing filesystem {} has been removed or changed, closing it", metadata.path, fileSystem);
+                    POOL.remove(fileSystem);
+                    IO.close(fileSystem);
+                }
             }
-            return v;
-        });
+            catch (IOException e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Cannot read last access time or size of file {} backing filesystem {}", metadata.path, fileSystem);
+            }
+        }
     }
 
-    private void release(FileSystem fileSystem)
+    private static void retain(FileSystem fileSystem, URI uri)
     {
-        POOL.compute(fileSystem, (k, v) ->
+        assert POOL_LOCK.isHeldByCurrentThread();
+
+        Metadata metadata = POOL.get(fileSystem);
+        if (metadata == null)
         {
-            if (v == null)
-                return null;
-            int count = v.decrementAndGet();
-            if (count == 0)
+            LOG.debug("Pooling new FS {}", fileSystem);
+            metadata = new Metadata(uri);
+            POOL.put(fileSystem, metadata);
+        }
+        else
+        {
+            int count = metadata.counter.incrementAndGet();
+            LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
+        }
+    }
+
+    private static void release(FileSystem fileSystem)
+    {
+        assert POOL_LOCK.isHeldByCurrentThread();
+
+        Metadata metadata = POOL.get(fileSystem);
+        int count = metadata.counter.decrementAndGet();
+        if (count == 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ref counter reached 0, closing pooled FS {}", fileSystem);
+            IO.close(fileSystem);
+            POOL.remove(fileSystem);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decremented ref counter to {} for FS {}", count, fileSystem);
+        }
+    }
+
+    private static class Metadata
+    {
+        private final AtomicInteger counter;
+        private final FileTime lastModifiedTime;
+        private final long size;
+        private final Path path;
+
+        private Metadata(URI uri)
+        {
+            this.counter = new AtomicInteger(1);
+            Path path = uriToPath(uri);
+
+            long size = -1L;
+            FileTime lastModifiedTime = null;
+            if (path != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ref counter reached 0, closing pooled FS {}", fileSystem);
-                IO.close(k);
-                return null;
+                try
+                {
+                    size = Files.size(path);
+                    lastModifiedTime = Files.getLastModifiedTime(path);
+                }
+                catch (IOException ioe)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
+                }
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("decremented ref counter to {} for FS {}", count, fileSystem);
+                    LOG.debug("Filesystem at {} is not backed by a file", uri);
             }
-            return v;
-        });
+            this.path = path;
+            this.size = size;
+            this.lastModifiedTime = lastModifiedTime;
+        }
+
+        private static Path uriToPath(URI uri)
+        {
+            String scheme = uri.getScheme();
+            if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
+                return null;
+
+            String spec = uri.getRawSchemeSpecificPart();
+            int sep = spec.indexOf("!/");
+            if (sep != -1)
+                spec = spec.substring(0, sep);
+            return Paths.get(URI.create(spec)).toAbsolutePath();
+        }
     }
 }
