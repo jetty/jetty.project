@@ -63,6 +63,17 @@ public interface Index<V>
     V get(ByteBuffer b, int offset, int len);
 
     /**
+     * Check if there is an exact match from a String key
+     *
+     * @param s The key
+     * @return true if there is a match, false otherwise
+     */
+    default boolean contains(String s)
+    {
+        return get(s) != null;
+    }
+
+    /**
      * Get the best match from key in a String.
      *
      * @param s The string

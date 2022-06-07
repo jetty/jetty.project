@@ -22,9 +22,8 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Locale;
-import java.util.Set;
 
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Set<String> ALLOWED_SCHEMES = Set.of("file", "jrt");
+    public static Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("file")
+        .with("jrt")
+        .build();
 
     private final Path path;
     private final Path alias;
@@ -194,7 +197,7 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
+        if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         try
