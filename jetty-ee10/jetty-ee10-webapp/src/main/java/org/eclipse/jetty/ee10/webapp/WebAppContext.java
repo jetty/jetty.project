@@ -865,7 +865,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else if (getResourceBase() != null)
             {
-                // TODO deprecate toUri or getURI
                 name = getResourceBase().getURI().toASCIIString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
