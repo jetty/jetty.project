@@ -46,42 +46,52 @@ public class ServletPathMapping implements HttpServletMapping
         Objects.requireNonNull(pathSpec);
         _servletName = (servletName == null ? "" : servletName);
         _pattern = pathSpec.getDeclaration();
-        _servletPath = matchedPath.getPathMatch();
-        _pathInfo = matchedPath.getPathInfo();
 
         switch (pathSpec.getGroup())
         {
             case ROOT:
                 _mappingMatch = MappingMatch.CONTEXT_ROOT;
                 _matchValue = "";
+                _servletPath = "";
+                _pathInfo = "/";
                 break;
 
             case DEFAULT:
                 _mappingMatch = MappingMatch.DEFAULT;
                 _matchValue = "";
+                _servletPath = pathInContext;
+                _pathInfo = null;
                 break;
 
             case EXACT:
                 _mappingMatch = MappingMatch.EXACT;
                 _matchValue = _pattern.startsWith("/") ? _pattern.substring(1) : _pattern;
+                _servletPath = _pattern;
+                _pathInfo = null;
                 break;
 
             case PREFIX_GLOB:
                 _mappingMatch = MappingMatch.PATH;
+                _servletPath = pathSpec.getPrefix();
                 // TODO avoid the substring on the known servletPath!
                 _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
+                _pathInfo = matchedPath.getPathInfo();
                 break;
 
             case SUFFIX_GLOB:
                 _mappingMatch = MappingMatch.EXTENSION;
                 int dot = pathInContext.lastIndexOf('.');
                 _matchValue = pathInContext.substring(pathInContext.startsWith("/") ? 1 : 0, dot);
+                _servletPath = pathInContext;
+                _pathInfo = null;
                 break;
 
             case MIDDLE_GLOB:
             default:
                 _mappingMatch = null;
                 _matchValue = "";
+                _servletPath = matchedPath.getPathMatch();
+                _pathInfo = matchedPath.getPathInfo();
                 break;
         }
     }

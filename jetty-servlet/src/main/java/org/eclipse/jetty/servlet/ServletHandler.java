@@ -464,18 +464,11 @@ public class ServletHandler extends ScopedHandler
         {
             MappedServlet mappedServlet = matched.getResource();
             servletHolder = mappedServlet.getServletHolder();
+            ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target, matched.getMatchedPath());
 
-            if (matched.getPathSpec() != null)
+            if (servletPathMapping != null)
             {
-                if (DispatcherType.INCLUDE.equals(baseRequest.getDispatcherType()))
-                {
-                    ServletPathMapping servletPathMapping = new ServletPathMapping(
-                        matched.getPathSpec(),
-                        servletHolder.getName(),
-                        target,
-                        matched.getMatchedPath());
-                    baseRequest.setServletPathMapping(servletPathMapping);
-                }
+                baseRequest.setServletPathMapping(servletPathMapping);
             }
         }
 
@@ -1596,12 +1589,12 @@ public class ServletHandler extends ScopedHandler
             return _servletHolder;
         }
 
-        public ServletPathMapping getServletPathMapping(String pathInContext)
+        public ServletPathMapping getServletPathMapping(String pathInContext, MatchedPath matchedPath)
         {
             if (_servletPathMapping != null)
                 return _servletPathMapping;
             if (_pathSpec != null)
-                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
+                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext, matchedPath);
             return null;
         }
 
