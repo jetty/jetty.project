@@ -570,7 +570,8 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         if (resourceFile != null)
         {
-            return resourceFile.getFileName().toString();
+            Path fileName = resourceFile.getFileName();
+            return fileName == null ? "" : fileName.toString();
         }
 
         // Use URI itself.
