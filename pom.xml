@@ -69,7 +69,7 @@
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.7</json-smart.version>
-    <jsp.impl.version>10.0.10</jsp.impl.version>
+    <jsp.impl.version>10.1.0-SNAPSHOT</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.17.2</log4j2.version>
