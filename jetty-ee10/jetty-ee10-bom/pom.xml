@@ -182,8 +182,8 @@
       </dependency>
       <!-- Jakarta EE10 Dependencies -->
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
         <version>${jetty.servlet.api.version}</version>
       </dependency>
       <dependency>
