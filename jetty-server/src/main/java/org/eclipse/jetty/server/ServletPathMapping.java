@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Objects;
 import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.MappingMatch;
@@ -43,8 +42,48 @@ public class ServletPathMapping implements HttpServletMapping
 
     public ServletPathMapping(PathSpec pathSpec, String servletName, String pathInContext, MatchedPath matchedPath)
     {
-        Objects.requireNonNull(pathSpec);
         _servletName = (servletName == null ? "" : servletName);
+
+        if (pathSpec == null)
+        {
+            _pattern = null;
+            _mappingMatch = null;
+            _matchValue = "";
+            _servletPath = pathInContext;
+            _pathInfo = null;
+            return;
+        }
+
+        if (pathInContext == null)
+        {
+            _pattern = pathSpec.getDeclaration();
+            _mappingMatch = null;
+            _matchValue = "";
+            _servletPath = "";
+            _pathInfo = null;
+            return;
+        }
+
+        // Path Spec types that are not ServletPathSpec
+        if (!(pathSpec instanceof ServletPathSpec))
+        {
+            _pattern = pathSpec.getDeclaration();
+            _mappingMatch = null;
+            if (matchedPath != null)
+            {
+                _servletPath = matchedPath.getPathMatch();
+                _pathInfo = matchedPath.getPathInfo();
+            }
+            else
+            {
+                _servletPath = pathInContext;
+                _pathInfo = null;
+            }
+            _matchValue = _servletPath.substring(_servletPath.charAt(0) == '/' ? 1 : 0);
+            return;
+        }
+
+        // from here down is ServletPathSpec behavior
         _pattern = pathSpec.getDeclaration();
 
         switch (pathSpec.getGroup())
@@ -88,83 +127,13 @@ public class ServletPathMapping implements HttpServletMapping
 
             case MIDDLE_GLOB:
             default:
-                _mappingMatch = null;
-                _matchValue = "";
-                _servletPath = matchedPath.getPathMatch();
-                _pathInfo = matchedPath.getPathInfo();
-                break;
+                throw new IllegalStateException("ServletPathSpec of type MIDDLE_GLOB");
         }
     }
 
-    /**
-     * @deprecated use {@link ServletPathMapping(PathSpec, String, String, MatchedPath)} instead.
-     */
-    @Deprecated
     public ServletPathMapping(PathSpec pathSpec, String servletName, String pathInContext)
     {
-        _servletName = (servletName == null ? "" : servletName);
-        _pattern = pathSpec == null ? null : pathSpec.getDeclaration();
-
-        if (pathSpec instanceof ServletPathSpec && pathInContext != null)
-        {
-            switch (pathSpec.getGroup())
-            {
-                case ROOT:
-                    _mappingMatch = MappingMatch.CONTEXT_ROOT;
-                    _matchValue = "";
-                    _servletPath = "";
-                    _pathInfo = "/";
-                    break;
-
-                case DEFAULT:
-                    _mappingMatch = MappingMatch.DEFAULT;
-                    _matchValue = "";
-                    _servletPath = pathInContext;
-                    _pathInfo = null;
-                    break;
-
-                case EXACT:
-                    _mappingMatch = MappingMatch.EXACT;
-                    _matchValue = _pattern.startsWith("/") ? _pattern.substring(1) : _pattern;
-                    _servletPath = _pattern;
-                    _pathInfo = null;
-                    break;
-
-                case PREFIX_GLOB:
-                    _mappingMatch = MappingMatch.PATH;
-                    _servletPath = pathSpec.getPrefix();
-                    // TODO avoid the substring on the known servletPath!
-                    _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-                    _pathInfo = pathSpec.getPathInfo(pathInContext);
-                    break;
-
-                case SUFFIX_GLOB:
-                    _mappingMatch = MappingMatch.EXTENSION;
-                    int dot = pathInContext.lastIndexOf('.');
-                    _matchValue = pathInContext.substring(pathInContext.startsWith("/") ? 1 : 0, dot);
-                    _servletPath = pathInContext;
-                    _pathInfo = null;
-                    break;
-
-                case MIDDLE_GLOB:
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        else if (pathSpec != null)
-        {
-            _mappingMatch = null;
-            _servletPath = pathSpec.getPathMatch(pathInContext);
-            _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-            _pathInfo = pathSpec.getPathInfo(pathInContext);
-        }
-        else
-        {
-            _mappingMatch = null;
-            _matchValue = "";
-            _servletPath = pathInContext;
-            _pathInfo = null;
-        }
+        this(pathSpec, servletName, pathInContext, null);
     }
 
     @Override
