@@ -294,10 +294,17 @@ public class RegexPathSpec extends AbstractPathSpec
         @Override
         public String getPathMatch()
         {
-            String p = matcher.group("name");
-            if (p != null)
+            try
             {
-                return p;
+                String p = matcher.group("name");
+                if (p != null)
+                {
+                    return p;
+                }
+            }
+            catch (IllegalArgumentException ignore)
+            {
+                // ignore if group name not found.
             }
 
             if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
@@ -318,10 +325,17 @@ public class RegexPathSpec extends AbstractPathSpec
         @Override
         public String getPathInfo()
         {
-            String p = matcher.group("info");
-            if (p != null)
+            try
             {
-                return p;
+                String p = matcher.group("info");
+                if (p != null)
+                {
+                    return p;
+                }
+            }
+            catch (IllegalArgumentException ignore)
+            {
+                // ignore if group info not found.
             }
 
             // Path Info only valid for PREFIX_GLOB
