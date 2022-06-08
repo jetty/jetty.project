@@ -129,7 +129,7 @@ public class RegexPathSpecTest
     }
 
     @Test
-    public void testSuffixSpec()
+    public void testSuffixSpecTraditional()
     {
         RegexPathSpec spec = new RegexPathSpec("^(.*).do$");
         assertEquals("^(.*).do$", spec.getDeclaration(), "Spec.pathSpec");
@@ -146,6 +146,47 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa");
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/aa/bb.do/more");
+
+        assertThat(spec.getPathMatch("/a/b/c.do"), equalTo("/a/b/c.do"));
+        assertThat(spec.getPathInfo("/a/b/c.do"), nullValue());
+    }
+
+    /**
+     * A suffix type path spec, where the beginning of the path is evaluated
+     * but the rest of the path is ignored.
+     * The beginning is starts with a glob, contains a literal, and no terminal "$".
+     */
+    @Test
+    public void testSuffixSpecGlobish()
+    {
+        RegexPathSpec spec = new RegexPathSpec("^/[Hh]ello");
+        assertEquals("^/[Hh]ello", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/[Hh]ello", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
+
+        assertMatches(spec, "/hello");
+        assertMatches(spec, "/Hello");
+
+        assertNotMatches(spec, "/Hello/World");
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
+        assertNotMatches(spec, "/aa/bb.do/more");
+
+        assertThat(spec.getPathMatch("/hello"), equalTo("/hello"));
+        assertThat(spec.getPathInfo("/hello"), nullValue());
+
+        assertThat(spec.getPathMatch("/Hello"), equalTo("/Hello"));
+        assertThat(spec.getPathInfo("/Hello"), nullValue());
+
+        MatchedPath matchedPath = spec.matched("/hello");
+        assertThat(matchedPath.getPathMatch(), equalTo("/hello"));
+        assertThat(matchedPath.getPathInfo(), nullValue());
+
+        matchedPath = spec.matched("/Hello");
+        assertThat(matchedPath.getPathMatch(), equalTo("/Hello"));
+        assertThat(matchedPath.getPathInfo(), nullValue());
     }
 
     @Test
