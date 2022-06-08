@@ -62,9 +62,17 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
     public void close()
     {
-        for (Extension e : extensions)
+        for (Extension ext : extensions)
         {
-            e.close();
+            try
+            {
+                ext.close();
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Extension Error During Close", t);
+            }
         }
     }
 

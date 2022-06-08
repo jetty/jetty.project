@@ -151,7 +151,15 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     public void close()
     {
         // TODO: use IteratingCallback.close() instead of creating exception with failFlusher methods.
-        ClosedChannelException exception = new ClosedChannelException();
+        ClosedChannelException exception = new ClosedChannelException()
+        {
+            @Override
+            public Throwable fillInStackTrace()
+            {
+                return this;
+            }
+        };
+        incomingFlusher.close();
         incomingFlusher.failFlusher(exception);
         outgoingFlusher.failFlusher(exception);
         releaseInflater();

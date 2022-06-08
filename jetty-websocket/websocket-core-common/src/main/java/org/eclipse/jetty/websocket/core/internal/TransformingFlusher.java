@@ -83,6 +83,7 @@ public abstract class TransformingFlusher
      */
     public void failFlusher(Throwable t)
     {
+        // TODO: find a way to close the flusher in non error case without exception.
         boolean failed = false;
         try (AutoLock l = lock.lock())
         {
@@ -90,6 +91,10 @@ public abstract class TransformingFlusher
             {
                 failure = t;
                 failed = true;
+            }
+            else
+            {
+                failure.addSuppressed(t);
             }
         }
 

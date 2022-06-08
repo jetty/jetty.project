@@ -184,6 +184,7 @@ public class FrameFlusher extends IteratingCallback
     {
         try (AutoLock l = lock.lock())
         {
+            // TODO: find a way to not create exception if cause is null.
             closedCause = cause == null ? new ClosedChannelException()
             {
                 @Override
