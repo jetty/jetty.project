@@ -28,8 +28,8 @@
       <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

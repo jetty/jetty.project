@@ -370,8 +370,13 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>${jakarta.websocket.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
         <version>${jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
