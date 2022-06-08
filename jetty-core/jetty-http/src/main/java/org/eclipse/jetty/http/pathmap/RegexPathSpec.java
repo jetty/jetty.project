@@ -125,9 +125,8 @@ public class RegexPathSpec extends AbstractPathSpec
             declaration = regex;
         int specLength = declaration.length();
         // build up a simple signature we can use to identify the grouping
-        boolean inCharacterClass = false;
+        boolean inTextList = false;
         boolean inQuantifier = false;
-        boolean inCaptureGroup = false;
         StringBuilder signature = new StringBuilder();
 
         int pathDepth = 0;
@@ -140,6 +139,8 @@ public class RegexPathSpec extends AbstractPathSpec
                 case '^': // ignore anchors
                 case '$': // ignore anchors
                 case '\'': // ignore escaping
+                case '(': // ignore grouping
+                case ')': // ignore grouping
                     break;
                 case '+': // single char quantifier
                 case '?': // single char quantifier
@@ -148,32 +149,25 @@ public class RegexPathSpec extends AbstractPathSpec
                 case '.': // any char token
                     signature.append('g'); // glob
                     break;
-                case '(': // in regex capture group
-                    inCaptureGroup = true;
-                    break;
-                case ')':
-                    inCaptureGroup = false;
-                    signature.append('g');
-                    break;
-                case '{': // in regex quantifier
+                case '{':
                     inQuantifier = true;
                     break;
                 case '}':
                     inQuantifier = false;
                     break;
-                case '[': // in regex character class
-                    inCharacterClass = true;
+                case '[':
+                    inTextList = true;
                     break;
                 case ']':
-                    inCharacterClass = false;
+                    inTextList = false;
                     signature.append('g'); // glob
                     break;
                 case '/':
-                    if (!inCharacterClass && !inQuantifier && !inCaptureGroup)
+                    if (!inTextList && !inQuantifier)
                         pathDepth++;
                     break;
                 default:
-                    if (!inCharacterClass && !inQuantifier && !inCaptureGroup && Character.isLetterOrDigit(c))
+                    if (!inTextList && !inQuantifier && Character.isLetterOrDigit(c))
                     {
                         if (last == '\\') // escaped
                         {
@@ -312,6 +306,101 @@ public class RegexPathSpec extends AbstractPathSpec
     public boolean matches(final String path)
     {
         return getMatcher(path).matches();
+    }
+
+    @Override
+    public MatchedPath matched(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
+        {
+            return new RegexMatchedPath(this, path, matcher);
+        }
+        return null;
+    }
+
+    private class RegexMatchedPath implements MatchedPath
+    {
+        private final RegexPathSpec pathSpec;
+        private final String path;
+        private final Matcher matcher;
+
+        public RegexMatchedPath(RegexPathSpec regexPathSpec, String path, Matcher matcher)
+        {
+            this.pathSpec = regexPathSpec;
+            this.path = path;
+            this.matcher = matcher;
+        }
+
+        @Override
+        public String getPathMatch()
+        {
+            try
+            {
+                String p = matcher.group("name");
+                if (p != null)
+                {
+                    return p;
+                }
+            }
+            catch (IllegalArgumentException ignore)
+            {
+                // ignore if group name not found.
+            }
+
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                int idx = matcher.start(1);
+                if (idx > 0)
+                {
+                    if (this.path.charAt(idx - 1) == '/')
+                        idx--;
+                    return this.path.substring(0, idx);
+                }
+            }
+
+            // default is the full path
+            return this.path;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            try
+            {
+                String p = matcher.group("info");
+                if (p != null)
+                {
+                    return p;
+                }
+            }
+            catch (IllegalArgumentException ignore)
+            {
+                // ignore if group info not found.
+            }
+
+            // Path Info only valid for PREFIX_GLOB
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                String pathInfo = matcher.group(1);
+                if ("".equals(pathInfo))
+                    return "/";
+                else
+                    return pathInfo;
+            }
+
+            // default is null
+            return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" +
+                "pathSpec=" + pathSpec +
+                ", path=\"" + path + "\"" +
+                ", matcher=" + matcher +
+                ']';
     }
 
     @Override
