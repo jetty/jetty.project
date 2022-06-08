@@ -114,7 +114,7 @@ public class ServletPathMapping implements HttpServletMapping
                 _servletPath = pathSpec.getPrefix();
                 // TODO avoid the substring on the known servletPath!
                 _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-                _pathInfo = matchedPath.getPathInfo();
+                _pathInfo = matchedPath != null ? matchedPath.getPathInfo() : null;
                 break;
 
             case SUFFIX_GLOB:
