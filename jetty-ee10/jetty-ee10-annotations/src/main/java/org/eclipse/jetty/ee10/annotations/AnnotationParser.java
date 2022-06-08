@@ -831,21 +831,21 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            // TODO
-//            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(), _javaPlatform, false))
-//            {
-//                jarFile.stream().forEach(e ->
-//                {
-//                    try
-//                    {
-//                        parseJarEntry(handlers, jarResource, e);
-//                    }
-//                    catch (Exception ex)
-//                    {
-//                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
-//                    }
-//                });
-//            }
+            // TODO is the jarResource's Path always convertible to File?
+            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath().toFile(), _javaPlatform, false))
+            {
+                jarFile.stream().forEach(e ->
+                {
+                    try
+                    {
+                        parseJarEntry(handlers, jarResource, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                    }
+                });
+            }
             me.ifExceptionThrow();
         }
     }
