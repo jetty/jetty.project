@@ -3,7 +3,8 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+      day: 1
       time: "14:00"
     target-branch: "jetty-9.4.x"
     # Encourage more pull requests from oldest branch
@@ -22,7 +23,8 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+      day: 5
     target-branch: "jetty-10.0.x"
     ignore:
       - dependency-name: org.infinispan:*
@@ -38,7 +40,8 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+      day: 10
     target-branch: "jetty-11.0.x"
     ignore:
       - dependency-name: org.infinispan:*
