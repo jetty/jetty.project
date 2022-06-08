@@ -203,6 +203,8 @@ public class PathResource extends Resource
         try
         {
             this.path = Paths.get(uri);
+            if (Files.isDirectory(path) && !uri.getPath().endsWith(URIUtil.SLASH))
+                uri = URI.create(uri.toASCIIString() + URIUtil.SLASH);
             this.uri = uri;
             this.alias = checkAliasPath();
         }
