@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
@@ -208,7 +209,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      */
     public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
     {
-        MappedResource<WebSocketNegotiator> mapping = this.mappings.getMatch(target);
+        MatchedResource<WebSocketNegotiator> mapping = this.mappings.getMatched(target);
         if (mapping == null)
             return null;
 
