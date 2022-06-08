@@ -1848,9 +1848,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Resource resource = ContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    Path file = resource.getPath();
-                    if (file != null)
-                        return file.toAbsolutePath().normalize().toString();
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath != null)
+                        return resourcePath.toAbsolutePath().normalize().toString();
                 }
             }
             catch (Exception e)

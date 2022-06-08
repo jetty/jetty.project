@@ -304,12 +304,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             // TODO do this without Resource?
             Resource resource = Resource.newResource(url);
-            Path file = resource.getPath();
-            if (file != null && Files.exists(file))
+            Path path = resource.getPath();
+            if (path != null && Files.exists(path))
             {
                 if (classpath.length() > 0)
                     classpath.append(File.pathSeparatorChar);
-                classpath.append(file.toAbsolutePath());
+                classpath.append(path.toAbsolutePath());
             }
         }
         if (classpath.length() == 0)

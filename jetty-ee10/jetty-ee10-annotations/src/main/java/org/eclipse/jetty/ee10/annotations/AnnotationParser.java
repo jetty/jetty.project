@@ -766,7 +766,7 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", root);
 
-        Path rootFile = root.getPath();
+        Path rootPath = root.getPath();
 
         MultiException me = new MultiException();
         Collection<Resource> resources = root.getAllResources();
@@ -777,10 +777,10 @@ public class AnnotationParser
                 if (r.isDirectory())
                     continue;
 
-                Path file = r.getPath();
-                if (isValidClassFileName((file == null ? null : file.getFileName().toString())))
+                Path path = r.getPath();
+                if (isValidClassFileName((path == null ? null : path.getFileName().toString())))
                 {
-                    Path classpath = rootFile.relativize(file);
+                    Path classpath = rootPath.relativize(path);
                     String str = classpath.toString();
                     str = str.substring(0, str.lastIndexOf(".class"));
                     str = StringUtil.replace(str, File.separatorChar, '.');
@@ -792,20 +792,20 @@ public class AnnotationParser
                         addParsedClass(str, r);
                         try (InputStream is = r.getInputStream())
                         {
-                            scanClass(handlers, Resource.newResource(file.getParent()), is);
+                            scanClass(handlers, Resource.newResource(path.getParent()), is);
                         }
                     }
                     catch (Exception ex)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Error scanning file {}", file, ex);
-                        me.add(new RuntimeException("Error scanning file " + file, ex));
+                            LOG.debug("Error scanning file {}", path, ex);
+                        me.add(new RuntimeException("Error scanning file " + path, ex));
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Skipping scan on invalid file {}", file);
+                        LOG.debug("Skipping scan on invalid file {}", path);
                 }
             }
         }

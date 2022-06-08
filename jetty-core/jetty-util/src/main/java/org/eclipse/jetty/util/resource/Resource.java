@@ -773,10 +773,10 @@ public abstract class Resource implements ResourceFactory, Closeable
         try
         {
             // if a Resource supports File
-            Path file = getPath();
-            if (file != null)
+            Path path = getPath();
+            if (path != null)
             {
-                return file.getFileName().toString();
+                return path.getFileName().toString();
             }
         }
         catch (Throwable ignored)

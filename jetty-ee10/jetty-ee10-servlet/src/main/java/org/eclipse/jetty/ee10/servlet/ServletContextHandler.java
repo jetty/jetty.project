@@ -3102,9 +3102,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 Resource resource = ServletContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    Path file = resource.getPath();
-                    if (file != null)
-                        return file.normalize().toString();
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath != null)
+                        return resourcePath.normalize().toString();
                 }
             }
             catch (Exception e)

@@ -103,10 +103,10 @@ public class ClassPathResourceTest
 
         assertTrue(resource != null);
 
-        Path file = resource.getPath();
+        Path path = resource.getPath();
 
-        assertEquals(fileName, file.getFileName().toString(), "File name from class path is not equal.");
-        assertTrue(Files.isRegularFile(file), "File returned from class path should be a regular file.");
+        assertEquals(fileName, path.getFileName().toString(), "File name from class path is not equal.");
+        assertTrue(Files.isRegularFile(path), "File returned from class path should be a regular file.");
 
         // A class path must exist
         assertTrue(resource.exists(), "Class path resource does not exist.");

@@ -236,8 +236,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         else
         {
             // Resolve file path if possible
-            Path file = resource.getPath();
-            if (file != null)
+            Path path = resource.getPath();
+            if (path != null)
             {
                 URL url = resource.getURI().toURL();
                 addURL(url);

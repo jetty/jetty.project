@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
 public class FileDestroyable implements Destroyable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileDestroyable.class);
-    final List<Path> _files = new ArrayList<Path>();
+    final List<Path> _paths = new ArrayList<Path>();
 
     public FileDestroyable()
     {
@@ -37,55 +36,55 @@ public class FileDestroyable implements Destroyable
 
     public FileDestroyable(String file) throws IOException
     {
-        _files.add(Resource.newResource(file).getPath());
+        _paths.add(Resource.newResource(file).getPath());
     }
 
-    public FileDestroyable(Path file)
+    public FileDestroyable(Path path)
     {
-        _files.add(file);
+        _paths.add(path);
     }
 
     public void addFile(String file) throws IOException
     {
         try (Resource r = Resource.newResource(file);)
         {
-            _files.add(r.getPath());
+            _paths.add(r.getPath());
         }
     }
 
-    public void addFile(Path file)
+    public void addPath(Path path)
     {
-        _files.add(file);
+        _paths.add(path);
     }
 
-    public void addFiles(Collection<Path> files)
+    public void addPaths(Collection<Path> paths)
     {
-        _files.addAll(files);
+        _paths.addAll(paths);
     }
 
     public void removeFile(String file) throws IOException
     {
         try (Resource r = Resource.newResource(file);)
         {
-            _files.remove(r.getPath());
+            _paths.remove(r.getPath());
         }
     }
 
-    public void removeFile(File file)
+    public void removeFile(Path path)
     {
-        _files.remove(file);
+        _paths.remove(path);
     }
 
     @Override
     public void destroy()
     {
-        for (Path file : _files)
+        for (Path path : _paths)
         {
-            if (Files.exists(file))
+            if (Files.exists(path))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Destroy {}", file);
-                IO.delete(file);
+                    LOG.debug("Destroy {}", path);
+                IO.delete(path);
             }
         }
     }

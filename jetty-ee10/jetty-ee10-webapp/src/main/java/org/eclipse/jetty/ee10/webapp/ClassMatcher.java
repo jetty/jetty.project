@@ -353,18 +353,18 @@ public class ClassMatcher extends AbstractSet<String>
                 if (!(entry instanceof LocationEntry))
                     throw new IllegalStateException();
 
-                Path file = ((LocationEntry)entry).getPath();
+                Path entryPath = ((LocationEntry)entry).getPath();
 
-                if (Files.isDirectory(file))
+                if (Files.isDirectory(entryPath))
                 {
-                    if (path.startsWith(file))
+                    if (path.startsWith(entryPath))
                     {
                         return true;
                     }
                 }
                 else
                 {
-                    if (path.equals(file))
+                    if (path.equals(entryPath))
                     {
                         return true;
                     }

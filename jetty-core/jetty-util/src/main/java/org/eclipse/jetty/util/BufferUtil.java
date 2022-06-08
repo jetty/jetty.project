@@ -582,11 +582,11 @@ public class BufferUtil
         readFrom(file.toPath(), buffer);
     }
 
-    public static void readFrom(Path file, ByteBuffer buffer) throws IOException
+    public static void readFrom(Path path, ByteBuffer buffer) throws IOException
     {
-        try (SeekableByteChannel channel = Files.newByteChannel(file))
+        try (SeekableByteChannel channel = Files.newByteChannel(path))
         {
-            long needed = Files.size(file);
+            long needed = Files.size(path);
 
             while (needed > 0 && buffer.hasRemaining())
             {

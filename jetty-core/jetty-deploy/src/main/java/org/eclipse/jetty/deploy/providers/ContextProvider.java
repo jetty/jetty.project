@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -308,22 +309,22 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("App resource does not exist " + resource);
             resource = unpack(resource);
 
-            Path file = resource.getPath();
+            Path path = resource.getPath();
 
 
-            final String contextName = file.getFileName().toString();
+            final String contextName = path.getFileName().toString();
 
             // Resource aliases (after getting name) to ensure baseResource is not an alias
             if (resource.isAlias())
             {
-                file = new File(resource.getAlias()).toPath().toRealPath();
-                resource = Resource.newResource(file);
+                path = Paths.get(resource.getAlias()).toRealPath();
+                resource = Resource.newResource(path);
                 if (!resource.exists())
                     throw new IllegalStateException("App resource does not exist " + resource);
             }
 
             // Handle a context XML file
-            if (resource.exists() && FileID.isXmlFile(file))
+            if (resource.exists() && FileID.isXmlFile(path))
             {
                 XmlConfiguration xmlc = new XmlConfiguration(resource)
                 {
@@ -349,7 +350,7 @@ public class ContextProvider extends ScanningAppProvider
                 return (ContextHandler)xmlc.configure();
             }
             // Otherwise it must be a directory or an archive
-            else if (!Files.isDirectory(file) && !FileID.isWebArchiveFile(file))
+            else if (!Files.isDirectory(path) && !FileID.isWebArchiveFile(path))
             {
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
             }
@@ -373,8 +374,8 @@ public class ContextProvider extends ScanningAppProvider
             {
                 contextHandler = (ContextHandler)contextHandlerClass.getDeclaredConstructor().newInstance();
             }
-            contextHandler.setBaseResource(Resource.newResource(file));
-            initializeContextPath(contextHandler, contextName, !Files.isDirectory(file));
+            contextHandler.setBaseResource(Resource.newResource(path));
+            initializeContextPath(contextHandler, contextName, !Files.isDirectory(path));
             initializeWebAppContextDefaults(contextHandler);
 
             return contextHandler;
