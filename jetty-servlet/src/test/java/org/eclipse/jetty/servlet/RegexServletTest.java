@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -48,7 +47,7 @@ public class RegexServletTest
             @Override
             protected PathSpec asPathSpec(String pathSpec)
             {
-                return PathMappings.asPathSpec(pathSpec);
+                return PathSpec.from(pathSpec);
             }
         });
 
