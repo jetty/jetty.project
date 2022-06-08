@@ -133,6 +133,16 @@ public class ShutdownMonitorTest
         assertTrue(!monitor.isAlive());
     }
 
+    /*
+     * Disable these config tests because ShutdownMonitor is a 
+     * static singleton that cannot be unset, and thus would
+     * need each of these methods executed it its own jvm -
+     * current surefire settings only fork for a single test 
+     * class.
+     * 
+     * Undisable to test individually as needed.
+     */
+    @Disabled
     @Test
     public void testNoExitSystemProperty() throws Exception
     {
@@ -164,16 +174,7 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
-
-    /*
-     * Disable these config tests because ShutdownMonitor is a 
-     * static singleton that cannot be unset, and thus would
-     * need each of these methods executed it its own jvm -
-     * current surefire settings only fork for a single test 
-     * class.
-     * 
-     * Undisable to test individually as needed.
-     */
+    
     @Disabled
     @Test
     public void testExitVmDefault() throws Exception
