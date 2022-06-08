@@ -40,7 +40,7 @@
     <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-
+    <jsp.impl.version>10.0.14</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -271,6 +271,16 @@
         <version>${project.version}</version>
       </dependency>
       <!-- Jakarta EE 9 Dependencies -->
+       <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
