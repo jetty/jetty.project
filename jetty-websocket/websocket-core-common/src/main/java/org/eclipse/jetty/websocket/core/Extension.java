@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 /**
  * Interface for WebSocket Extensions.
@@ -29,7 +28,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames, Closeable
     /**
      * Used to clean up any resources after connection close.
      */
-    default void close() throws IOException
+    default void close()
     {
     }
 
