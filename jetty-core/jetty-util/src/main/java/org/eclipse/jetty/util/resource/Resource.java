@@ -139,7 +139,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             throw new IllegalArgumentException("not an absolute uri: " + uri);
 
         // If the scheme is allowed by PathResource, we can build a non-pooling PathResource.
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme().toLowerCase(Locale.ROOT)))
+        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
             return new PathResource(uri);
 
         // Otherwise build a PoolingPathResource.
