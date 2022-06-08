@@ -5,7 +5,8 @@ updates:
     open-pull-requests-limit: 20
     target-branch: "jetty-9.4.x"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+      day: 1
     # Associate with milestone 9.4.x
     milestone: 3
     ignore:
@@ -34,7 +35,8 @@ updates:
     open-pull-requests-limit: 20
     target-branch: "jetty-10.0.x"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+      day: 5
     # Associate with milestone 10.0.x
     milestone: 6
     ignore:
@@ -75,7 +77,8 @@ updates:
     open-pull-requests-limit: 20
     target-branch: "jetty-11.0.x"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+      day: 10
     # Associate with milestone 11.0.x
     milestone: 7
     ignore:
