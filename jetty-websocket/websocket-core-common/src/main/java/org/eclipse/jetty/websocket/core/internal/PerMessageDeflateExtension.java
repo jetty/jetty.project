@@ -159,7 +159,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 return this;
             }
         };
-        incomingFlusher.close();
         incomingFlusher.failFlusher(exception);
         outgoingFlusher.failFlusher(exception);
         releaseInflater();
