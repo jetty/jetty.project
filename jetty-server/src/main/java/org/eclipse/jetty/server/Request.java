@@ -1836,9 +1836,18 @@ public class Request implements HttpServletRequest
                 throw new BadMessageException(badMessage);
         }
 
-        _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
+        String encoded;
+        if (HttpMethod.CONNECT.is(request.getMethod()))
+        {
+            _originalURI = uri.getAuthority();
+            encoded = "/";
+        }
+        else
+        {
+            _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
+            encoded = uri.getPath();
+        }
 
-        String encoded = uri.getPath();
         String path;
         if (encoded == null)
         {

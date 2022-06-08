@@ -195,7 +195,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
-            String serverAddress = request.getRequestURI();
+            String serverAddress = baseRequest.getHttpURI().getAuthority();
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT request for {}", serverAddress);
 
