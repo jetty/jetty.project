@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
+import jakarta.security.auth.message.module.ServerAuthModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +101,20 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
 
         registrationContext.notifyListeners();
         return true;
+    }
+
+    @Override
+    public String registerServerAuthModule(ServerAuthModule serverAuthModule, Object context)
+    {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeServerAuthModule(Object context)
+    {
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
