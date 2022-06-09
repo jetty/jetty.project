@@ -46,6 +46,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
@@ -453,7 +454,7 @@ public class ServletHandler extends Handler.Wrapper
             if (_servletPathMap == null)
                 return null;
 
-            MappedResource<MappedServlet> match = _servletPathMap.getMatch(target);
+            MatchedResource<MappedServlet> match = _servletPathMap.getMatched(target);
             if (match == null)
                 return null;
             return match.getResource();
