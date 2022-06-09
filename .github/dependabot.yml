@@ -2,10 +2,12 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 30
     target-branch: "jetty-9.4.x"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+      day: "saturday"
+      time: "02:00"
     # Associate with milestone 9.4.x
     milestone: 3
     ignore:
@@ -31,10 +33,12 @@ updates:
 
   - package-ecosystem: "maven"
     directory: "/"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 50
     target-branch: "jetty-10.0.x"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+      day: "saturday"
+      time: "02:00"
     # Associate with milestone 10.0.x
     milestone: 6
     ignore:
@@ -72,10 +76,12 @@ updates:
 
   - package-ecosystem: "maven"
     directory: "/"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 30
     target-branch: "jetty-11.0.x"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+      day: "saturday"
+      time: "02:00"
     # Associate with milestone 11.0.x
     milestone: 7
     ignore:
