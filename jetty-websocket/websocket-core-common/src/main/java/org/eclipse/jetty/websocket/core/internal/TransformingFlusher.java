@@ -77,6 +77,34 @@ public abstract class TransformingFlusher
             notifyCallbackFailure(callback, failure);
     }
 
+    /**
+     * Used to fail this flusher possibly from an external event such as a callback.
+     * @param t the failure.
+     */
+    public void failFlusher(Throwable t)
+    {
+        // TODO: find a way to close the flusher in non error case without exception.
+        boolean failed = false;
+        try (AutoLock l = lock.lock())
+        {
+            if (failure == null)
+            {
+                failure = t;
+                failed = true;
+            }
+            else
+            {
+                failure.addSuppressed(t);
+            }
+        }
+
+        if (failed)
+        {
+            flusher.failed(t);
+            flusher.iterate();
+        }
+    }
+
     private void onFailure(Throwable t)
     {
         try (AutoLock l = lock.lock())
@@ -103,8 +131,14 @@ public abstract class TransformingFlusher
         private FrameEntry current;
 
         @Override
-        protected Action process()
+        protected Action process() throws Throwable
         {
+            try (AutoLock l = lock.lock())
+            {
+                if (failure != null)
+                    throw failure;
+            }
+
             if (finished)
             {
                 if (current != null)
@@ -134,8 +168,11 @@ public abstract class TransformingFlusher
             if (log.isDebugEnabled())
                 log.debug("onCompleteFailure {}", t.toString());
 
-            notifyCallbackFailure(current.callback, t);
-            current = null;
+            if (current != null)
+            {
+                notifyCallbackFailure(current.callback, t);
+                current = null;
+            }
             onFailure(t);
         }
     }
