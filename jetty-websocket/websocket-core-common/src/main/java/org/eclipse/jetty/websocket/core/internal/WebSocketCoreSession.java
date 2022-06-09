@@ -254,12 +254,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
     }
 
-    public void closeConnection(CloseStatus closeStatus, Callback callback)
+    private void closeConnection(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {}", closeStatus, this);
 
         abort();
+        extensionStack.close();
 
         // Forward Errors to Local WebSocket EndPoint
         if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
