@@ -405,12 +405,40 @@
             </goals>
             <configuration>
               <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-ee9-annotations-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/ee9-annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-annotations-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/ee9-annotations</outputDirectory>
+            </configuration>
+          </execution>
+>>>>>>> baedc368ed (ignore some upperbound, fix few and cleanup some poms)
           <execution>
             <id>copy-ee10-annotations-src-deps-jakarta-annotation</id>
             <phase>generate-resources</phase>
