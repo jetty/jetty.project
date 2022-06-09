@@ -373,7 +373,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
               <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
@@ -386,14 +386,40 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
               <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
           </execution>
-          <!-- TODO: ee9 annotations -->
+          <execution>
+            <id>copy-ee9-annotations-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/ee9-annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-annotations-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/ee9-annotations</outputDirectory>
+            </configuration>
+          </execution>
           <execution>
             <id>copy-ee10-apache-jsp-deps</id>
             <phase>generate-resources</phase>
@@ -659,6 +685,14 @@
                 <requireUpperBoundDeps>
                   <excludes combine.children="append">
                     <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
+                    <!-- we need to exclude some librairies which are different depending on ee8/ee9/ee10 -->
+                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
+                    <exclude>jakarta.servlet.jsp:jakarta.servlet.jsp-api</exclude>
+                    <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
+                    <exclude>jakarta.mail:jakarta.mail-api</exclude>
+                    <exclude>jakarta.annotation:jakarta.annotation-api</exclude>
+                    <exclude>jakarta.authentication:jakarta.authentication-api</exclude>
+                    <exclude>org.mortbay.jasper:apache-jsp</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
               </rules>
@@ -944,35 +978,35 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-conscrypt-server</artifactId>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>infinispan-embedded</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <type>pom</type>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>infinispan-embedded-query</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>infinispan-remote</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <type>pom</type>-->
-<!--      <optional>true</optional>-->
-<!--      <exclusions>-->
-<!--        <exclusion>-->
-<!--          <groupId>org.wildfly.common</groupId>-->
-<!--          <artifactId>*</artifactId>-->
-<!--        </exclusion>-->
-<!--      </exclusions>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>infinispan-remote-query</artifactId>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-embedded</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-embedded-query</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.common</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote-query</artifactId>
+    </dependency>
 <!--    <dependency>-->
 <!--      <groupId>org.eclipse.jetty</groupId>-->
 <!--      <artifactId>jetty-hazelcast</artifactId>-->

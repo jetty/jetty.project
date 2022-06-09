@@ -50,6 +50,7 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- FIXME to review it is not sure to work -->
        <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
@@ -58,11 +59,11 @@
         <scope>import</scope>
       </dependency>
       <!-- Jetty EE 9 Dependencies -->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-annotations</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-annotations</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-apache-jsp</artifactId>-->
@@ -78,11 +79,11 @@
 <!--        <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-jaas</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-jaas</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-jaspi</artifactId>-->
@@ -103,11 +104,11 @@
 <!--        <artifactId>jetty-ee9-openid</artifactId>-->
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-plus</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-plus</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-proxy</artifactId>-->
@@ -143,11 +144,7 @@
         <artifactId>jetty-ee9-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>test-ee9-sessions-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
 <!--        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>-->
@@ -189,6 +186,7 @@
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
       <!-- Jakarta EE 9 Dependencies -->
+      <!-- FIXME to review it is not sure to be a good idea to have this in the bom -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
