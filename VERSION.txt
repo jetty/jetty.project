@@ -1,3 +1,5 @@
+jetty-9.4.48-SNAPSHOT
+
 jetty-9.4.47.v20220610 - 10 June 2022
  + 4717 High CPU spikes with jetty winstone threads
  + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
