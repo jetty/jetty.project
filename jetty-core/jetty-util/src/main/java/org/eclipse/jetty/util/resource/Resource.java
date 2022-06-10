@@ -485,7 +485,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         // we compensate for input sub-paths like "/subdir"
         // where default resolve behavior would be to treat
         // that like an absolute path.
-        if (subPath.startsWith(URIUtil.SLASH))
+        while (subPath.startsWith(URIUtil.SLASH))
             subPath = subPath.substring(1);
 
         URI uri = getURI();
