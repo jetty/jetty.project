@@ -1,8 +1,23 @@
-jetty-9.4.47-SNAPSHOT
+jetty-9.4.47.v20220610 - 10 June 2022
+ + 4717 High CPU spikes with jetty winstone threads
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7801 Session cookie can be set twice after session id changed
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling
+ + 8014 Review HttpRequest URI construction
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
 
 jetty-9.4.46.v20220331 - 31 March 2022
  + 5965 Option --write-module-graph produces wrong .dot file
- + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases.
+ + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases
  + 7518 ArrayTrie getBest fails to match the empty string entry in certain
    cases
  + 7548 Interrupt flag is not always cleared in between requests
