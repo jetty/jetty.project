@@ -29,13 +29,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class FrameFlusher extends IteratingCallback
 {
     public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
-    private static final Throwable CLOSED_CHANNEL = new SentinelWebSocketCloseException();
+    private static final Throwable CLOSED_CHANNEL = new StaticException("Closed");
 
     private final AutoLock lock = new AutoLock();
     private final LongAdder messagesOut = new LongAdder();

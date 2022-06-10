@@ -20,10 +20,10 @@ import java.util.function.LongConsumer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseException;
 
 /**
  * <p>This flusher can be used to mutated and fragment {@link Frame}s and forwarded them on towards the application using the
@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseExceptio
  */
 public abstract class DemandingFlusher extends IteratingCallback implements DemandChain
 {
-    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new SentinelWebSocketCloseException();
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final IncomingFrames _emitFrame;
     private final AtomicLong _demand = new AtomicLong();

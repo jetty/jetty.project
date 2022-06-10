@@ -18,9 +18,9 @@ import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TransformingFlusher
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new SentinelWebSocketCloseException();
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final AutoLock lock = new AutoLock();
     private final Queue<FrameEntry> entries = new ArrayDeque<>();

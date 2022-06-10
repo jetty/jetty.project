@@ -11,22 +11,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.exception;
+package org.eclipse.jetty.util;
 
 /**
- * Suppressed exceptions are disabled for this implementation,
+ * This exception can safely be stored in a static variable as suppressed exceptions are disabled,
  * meaning calling {@link #addSuppressed(Throwable)} has no effect.
- * This means instances of {@link SentinelWebSocketCloseException} are suitable to be kept as static fields.
+ * This prevents potential memory leaks where a statically-stored exception would accumulate
+ * suppressed exceptions added to them.
  */
-public class SentinelWebSocketCloseException extends Exception
+public class StaticException extends Exception
 {
-    public SentinelWebSocketCloseException()
+    public StaticException()
     {
         this(null);
     }
 
-    public SentinelWebSocketCloseException(String message)
+    public StaticException(String message)
     {
+        // Make sure to call the super constructor that disables suppressed exception.
         super(message, null, false, true);
     }
 }
