@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseException;
 
 /**
  * <p>This flusher can be used to mutated and fragment {@link Frame}s and forwarded them on towards the application using the
@@ -38,6 +39,8 @@ import org.eclipse.jetty.websocket.core.IncomingFrames;
  */
 public abstract class DemandingFlusher extends IteratingCallback implements DemandChain
 {
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new SentinelWebSocketCloseException();
+
     private final IncomingFrames _emitFrame;
     private final AtomicLong _demand = new AtomicLong();
     private final AtomicReference<Throwable> _failure = new AtomicReference<>();
@@ -99,6 +102,18 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
         _frame = frame;
         _callback = new CountingCallback(callback, 1);
         succeeded();
+    }
+
+    /**
+     * Used to close this flusher when there is no explicit failure.
+     */
+    public void closeFlusher()
+    {
+        if (_failure.compareAndSet(null, SENTINEL_CLOSE_EXCEPTION))
+        {
+            failed(SENTINEL_CLOSE_EXCEPTION);
+            iterate();
+        }
     }
 
     /**

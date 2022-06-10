@@ -20,6 +20,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.SentinelWebSocketCloseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TransformingFlusher
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new SentinelWebSocketCloseException();
 
     private final AutoLock lock = new AutoLock();
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
@@ -78,12 +80,19 @@ public abstract class TransformingFlusher
     }
 
     /**
+     * Used to close this flusher when there is no explicit failure.
+     */
+    public void closeFlusher()
+    {
+        failFlusher(SENTINEL_CLOSE_EXCEPTION);
+    }
+
+    /**
      * Used to fail this flusher possibly from an external event such as a callback.
      * @param t the failure.
      */
     public void failFlusher(Throwable t)
     {
-        // TODO: find a way to close the flusher in non error case without exception.
         boolean failed = false;
         try (AutoLock l = lock.lock())
         {
