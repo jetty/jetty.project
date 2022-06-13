@@ -21,14 +21,29 @@ package org.eclipse.jetty.util;
  */
 public class StaticException extends Exception
 {
-    public StaticException()
-    {
-        this(null);
-    }
-
+    /**
+     * Create an instance with writable stack trace and suppression disabled.
+     *
+     * @param message – the detail message
+     *
+     * @see Throwable#Throwable(String, Throwable, boolean, boolean)
+     */
     public StaticException(String message)
     {
+        this(message, false);
+    }
+
+    /**
+     * Create an instance with suppression disabled.
+     *
+     * @param message – the detail message
+     * @param writableStackTrace whether or not the stack trace should be writable
+     *
+     * @see Throwable#Throwable(String, Throwable, boolean, boolean)
+     */
+    public StaticException(String message, boolean writableStackTrace)
+    {
         // Make sure to call the super constructor that disables suppressed exception.
-        super(message, null, false, true);
+        super(message, null, false, writableStackTrace);
     }
 }

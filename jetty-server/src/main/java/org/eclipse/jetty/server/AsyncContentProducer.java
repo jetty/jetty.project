@@ -33,14 +33,7 @@ class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new StaticException("ContentProducer has been recycled"));
-    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new StaticException("Unconsumed content")
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-    };
+    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new StaticException("Unconsumed content");
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -191,7 +184,7 @@ class AsyncContentProducer implements ContentProducer
         Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
         if (LOG.isTraceEnabled())
         {
-            x = new StaticException("Unconsumed content");
+            x = new StaticException("Unconsumed content", true);
             LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);
