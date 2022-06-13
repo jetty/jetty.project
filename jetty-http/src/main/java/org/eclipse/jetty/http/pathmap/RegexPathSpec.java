@@ -179,10 +179,10 @@ public class RegexPathSpec extends AbstractPathSpec
                 case '.': // any char token
                     signature.append('g'); // glob
                     break;
-                case '(': // ignore grouping
+                case '(': // in regex capture group
                     inCaptureGroup = true;
                     break;
-                case ')': // ignore grouping
+                case ')':
                     inCaptureGroup = false;
                     signature.append('g');
                     break;
