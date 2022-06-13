@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -150,17 +149,8 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     @Override
     public void close()
     {
-        // TODO: use IteratingCallback.close() instead of creating exception with failFlusher methods.
-        ClosedChannelException exception = new ClosedChannelException()
-        {
-            @Override
-            public Throwable fillInStackTrace()
-            {
-                return this;
-            }
-        };
-        incomingFlusher.failFlusher(exception);
-        outgoingFlusher.failFlusher(exception);
+        incomingFlusher.closeFlusher();
+        outgoingFlusher.closeFlusher();
         releaseInflater();
         releaseDeflater();
     }
