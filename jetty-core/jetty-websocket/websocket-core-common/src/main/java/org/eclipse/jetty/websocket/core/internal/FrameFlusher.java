@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -44,6 +45,7 @@ public class FrameFlusher extends IteratingCallback
 {
     public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
+    private static final Throwable CLOSED_CHANNEL = new StaticException("Closed");
 
     private final AutoLock lock = new AutoLock();
     private final LongAdder messagesOut = new LongAdder();
@@ -184,15 +186,7 @@ public class FrameFlusher extends IteratingCallback
     {
         try (AutoLock l = lock.lock())
         {
-            // TODO: find a way to not create exception if cause is null.
-            closedCause = cause == null ? new ClosedChannelException()
-            {
-                @Override
-                public Throwable fillInStackTrace()
-                {
-                    return this;
-                }
-            } : cause;
+            closedCause = cause == null ? CLOSED_CHANNEL : cause;
         }
         iterate();
     }
