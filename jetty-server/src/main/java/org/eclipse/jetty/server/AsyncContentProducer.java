@@ -189,10 +189,10 @@ class AsyncContentProducer implements ContentProducer
     {
         assertLocked();
         Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
-        if (LOG.isDebugEnabled())
+        if (LOG.isTraceEnabled())
         {
             x = new StaticException("Unconsumed content");
-            LOG.debug("consumeAll {}", this, x);
+            LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);
         // A specific HttpChannel mechanism must be used as the following code
