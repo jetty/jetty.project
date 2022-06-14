@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.io.ArrayRetainableByteBufferPool">
+        <Arg type="int"><Property name="jetty.retainableByteBufferPool.minCapacity" default="0"/></Arg>
+        <Arg type="int"><Property name="jetty.retainableByteBufferPool.factor" default="-1"/></Arg>
+        <Arg type="int"><Property name="jetty.retainableByteBufferPool.maxCapacity" default="-1"/></Arg>
+        <Arg type="int"><Property name="jetty.retainableByteBufferPool.maxBucketSize" default="2147483647"/></Arg>
+        <Arg type="long"><Property name="jetty.retainableByteBufferPool.maxHeapMemory" default="0"/></Arg>
+        <Arg type="long"><Property name="jetty.retainableByteBufferPool.maxDirectMemory" default="0"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
