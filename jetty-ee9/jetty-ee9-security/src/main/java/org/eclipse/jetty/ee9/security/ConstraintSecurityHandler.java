@@ -38,6 +38,7 @@ import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -472,7 +473,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         // As currently written, this allows regex patterns to be used.
         // This may not be supported by default in future releases.
-        return PathMappings.asPathSpec(mapping.getPathSpec());
+        return PathSpec.from(mapping.getPathSpec());
     }
 
     /**
@@ -575,7 +576,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
     {
-        MappedResource<Map<String, RoleInfo>> resource = _constraintRoles.getMatch(pathInContext);
+        MatchedResource<Map<String, RoleInfo>> resource = _constraintRoles.getMatched(pathInContext);
         if (resource == null)
             return null;
 

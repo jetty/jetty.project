@@ -386,14 +386,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @Override
     public void log(Request request, Response response)
     {
-        if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getHttpURI().toString()) != null)
-            return;
-
-        if (_filter != null && !_filter.test(request, response))
-            return;
-
         try
         {
+            if (_ignorePathMap != null && _ignorePathMap.getMatched(request.getHttpURI().toString()) != null)
+                return;
+
+            if (_filter != null && !_filter.test(request, response))
+                return;
+
             StringBuilder sb = _buffers.get();
             sb.setLength(0);
 
