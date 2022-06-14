@@ -47,12 +47,12 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     public ArrayRetainableByteBufferPool()
     {
-        this(0, -1, -1, Integer.MAX_VALUE, -1L, -1L);
+        this(0, -1, -1, Integer.MAX_VALUE);
     }
 
     public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, -1L, -1L);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, 0L, 0L);
     }
 
     public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
@@ -91,8 +91,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         _maxCapacity = maxCapacity;
         _direct = directArray;
         _indirect = indirectArray;
-        _maxHeapMemory = maxHeapMemory;
-        _maxDirectMemory = maxDirectMemory;
+        _maxHeapMemory = (maxHeapMemory != 0L) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxDirectMemory = (maxDirectMemory != 0L) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
         _bucketIndexFor = bucketIndexFor;
     }
 
