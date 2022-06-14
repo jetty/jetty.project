@@ -156,6 +156,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return retainableByteBuffer;
     }
 
+    protected Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+    {
+        return bucketFor(capacity, direct);
+    }
+
     private Bucket bucketFor(int capacity, boolean direct)
     {
         if (capacity < _minCapacity)

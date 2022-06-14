@@ -421,6 +421,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     private void releaseEncryptedInputBuffer()
     {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException();
         if (_encryptedInput != null && !_encryptedInput.hasRemaining())
         {
             _encryptedInput.release();
@@ -428,13 +430,30 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     }
 
-    protected void releaseDecryptedInputBuffer()
+    private void releaseDecryptedInputBuffer()
     {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException();
         if (_decryptedInput != null && !_decryptedInput.hasRemaining())
         {
             _bufferPool.release(_decryptedInput);
             _decryptedInput = null;
         }
+    }
+
+    private void releaseInputBuffers()
+    {
+        releaseEncryptedInputBuffer();
+        releaseDecryptedInputBuffer();
+    }
+
+    private void clearInputBuffers()
+    {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException();
+        if (_encryptedInput != null)
+            _encryptedInput.clear();
+        BufferUtil.clear(_decryptedInput);
     }
 
     private void releaseEncryptedOutputBuffer()
@@ -790,6 +809,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
+                        // Clear the input buffers so that releaseInputBuffers()
+                        // in the finally block will not leak them.
+                        clearInputBuffers();
                         Throwable f = handleException(x, "fill");
                         Throwable failure = handshakeFailed(f);
                         if (_flushState == FlushState.WAIT_FOR_FILL)
@@ -801,8 +823,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     finally
                     {
-                        releaseEncryptedInputBuffer();
-                        releaseDecryptedInputBuffer();
+                        releaseInputBuffers();
 
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
@@ -988,26 +1009,26 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         }
                     }
 
-                    // finish of any previous flushes
-                    if (_encryptedOutput != null)
-                    {
-                        int remaining = _encryptedOutput.remaining();
-                        if (remaining > 0)
-                        {
-                            boolean flushed = networkFlush(_encryptedOutput);
-                            int written = remaining - _encryptedOutput.remaining();
-                            if (written > 0)
-                                _bytesOut.addAndGet(written);
-                            if (!flushed)
-                                return false;
-                        }
-                    }
-
-                    boolean isEmpty = BufferUtil.isEmpty(appOuts);
-
                     Boolean result = null;
                     try
                     {
+                        // finish of any previous flushes
+                        if (_encryptedOutput != null)
+                        {
+                            int remaining = _encryptedOutput.remaining();
+                            if (remaining > 0)
+                            {
+                                boolean flushed = networkFlush(_encryptedOutput);
+                                int written = remaining - _encryptedOutput.remaining();
+                                if (written > 0)
+                                    _bytesOut.addAndGet(written);
+                                if (!flushed)
+                                    return false;
+                            }
+                        }
+
+                        boolean isEmpty = BufferUtil.isEmpty(appOuts);
+
                         if (_flushState != FlushState.IDLE)
                             return result = false;
 
@@ -1159,6 +1180,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
+                        // Clear the encrypted output buffer so that
+                        // releaseEncryptedOutputBuffer() in the finally block
+                        // will not leak it.
+                        BufferUtil.clear(_encryptedOutput);
                         Throwable failure = handleException(x, "flush");
                         throw handshakeFailed(failure);
                     }
@@ -1275,10 +1300,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doShutdownOutput()
         {
+            doShutdownOutput(false);
+        }
+
+        private void doShutdownOutput(boolean close)
+        {
             EndPoint endPoint = getEndPoint();
             try
             {
-                boolean close;
                 boolean flush = false;
                 try (AutoLock l = _lock.lock())
                 {
@@ -1296,7 +1325,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         flush = !oshut;
                     }
 
-                    close = ishut;
+                    if (!close)
+                        close = ishut;
                 }
 
                 if (flush)
@@ -1323,21 +1353,32 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     _flushState = FlushState.IDLE;
                                     releaseEncryptedOutputBuffer();
                                 }
-                            }, t -> endPoint.close()), write);
+                            }, t -> disconnect()), write);
                         }
                     }
                 }
 
                 if (close)
-                    endPoint.close();
+                    disconnect();
                 else
                     ensureFillInterested();
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
-                endPoint.close();
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
+                disconnect();
             }
+        }
+
+        private void disconnect()
+        {
+            try (AutoLock l = _lock.lock())
+            {
+                BufferUtil.clear(_encryptedOutput);
+                releaseEncryptedOutputBuffer();
+            }
+            getEndPoint().close();
         }
 
         private void closeOutbound()
@@ -1382,9 +1423,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doClose()
         {
+            try (AutoLock l = _lock.lock())
+            {
+                clearInputBuffers();
+                releaseInputBuffers();
+            }
             // First send the TLS Close Alert, then the FIN.
-            doShutdownOutput();
-            getEndPoint().close();
+            doShutdownOutput(true);
             super.doClose();
         }
 
