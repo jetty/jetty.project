@@ -60,6 +60,22 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         this.behavior = behavior;
     }
 
+    public void close()
+    {
+        for (Extension ext : extensions)
+        {
+            try
+            {
+                ext.close();
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Extension Error During Close", t);
+            }
+        }
+    }
+
     @ManagedAttribute(name = "Extension List", readonly = true)
     public List<Extension> getExtensions()
     {

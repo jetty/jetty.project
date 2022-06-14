@@ -48,7 +48,7 @@ public class RegexServletTest
             @Override
             protected PathSpec asPathSpec(String pathSpec)
             {
-                return PathMappings.asPathSpec(pathSpec);
+                return PathSpec.from(pathSpec);
             }
         });
 
