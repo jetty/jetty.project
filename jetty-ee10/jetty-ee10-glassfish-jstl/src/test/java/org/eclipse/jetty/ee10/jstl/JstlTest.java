@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
-@Disabled //TODO
 public class JstlTest
 {
     private static Server server;
