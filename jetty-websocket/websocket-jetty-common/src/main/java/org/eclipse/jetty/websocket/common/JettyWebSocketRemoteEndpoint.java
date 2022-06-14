@@ -69,13 +69,11 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         try
         {
-            FutureCallback b = new FutureCallback();
-            coreSession.close(statusCode, reason, b);
-            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+            coreSession.close(statusCode, reason, Callback.NOOP);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.trace("IGNORED", e);
+            LOG.trace("IGNORED", t);
         }
     }
 
