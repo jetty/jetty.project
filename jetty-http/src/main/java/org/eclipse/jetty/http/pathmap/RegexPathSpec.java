@@ -75,9 +75,12 @@ import org.eclipse.jetty.util.log.Logger;
  *     Some examples:
  * </p>
  * <code>
- *  RegexPathSpec("/^[Tt]est(/.*)?$") - type: SUFFIX
+ *  RegexPathSpec("^/[Tt]est(/.*)?$") - type: SUFFIX
  *    matched("/test/info")
  *      pathMatch: "/test/info"
+ *      pathInfo:  null
+ *    matched("/Test/data")
+ *      pathMatch: "/Test/data"
  *      pathInfo:  null
  *
  *  RegexPathSpec("^/test/info$") - type: EXACT
@@ -85,15 +88,15 @@ import org.eclipse.jetty.util.log.Logger;
  *      pathMatch: "/test/info"
  *      pathInfo:  null
  *
- *  RegexPathSpec("^/t(.*)/i(.*)$") - type: MIDDLE
- *    matched("/test/info")
- *      pathMatch: "/test/info"
+ *  RegexPathSpec("^/t(.*)/c(.*)$") - type: MIDDLE
+ *    matched("/test/code")
+ *      pathMatch: "/test/code"
  *      pathInfo:  null
  *
  *  RegexPathSpec("^/test(/.*)$") - type: PREFIX
- *    matched("/test/info")
+ *    matched("/test/more")
  *      pathMatch: "/test"
- *      pathInfo:  "/info"
+ *      pathInfo:  "/more"
  *
  *  RegexPathSpec("^/test(/i.*)(/c.*)?$") - type: PREFIX
  *    matched("/test/info")
@@ -387,11 +390,73 @@ public class RegexPathSpec extends AbstractPathSpec
         private final String path;
         private final Matcher matcher;
 
+        /**
+         * Cached split index for pathMatch vs pathInfo.
+         *
+         * (-2) is for unsearched
+         * (-1) is for searched, but not found
+         * any other value is the index
+         */
+        protected int splitIdx = -2;
+
         public RegexMatchedPath(RegexPathSpec regexPathSpec, String path, Matcher matcher)
         {
             this.pathSpec = regexPathSpec;
             this.path = path;
             this.matcher = matcher;
+        }
+
+        protected int getSplitIndex()
+        {
+            if (splitIdx >= -1)
+            {
+                return splitIdx;
+            }
+
+            if (matcher.groupCount() >= 1)
+            {
+                try
+                {
+                    int end =  matcher.end("name");
+                    if (end >= (-1))
+                    {
+                        splitIdx = end;
+                        return splitIdx;
+                    }
+                }
+                catch (IllegalArgumentException ignore)
+                {
+                    // ignore if group name not found.
+                }
+
+                // Try named group 'info'
+                try
+                {
+                    int start = matcher.start("info");
+                    if (start >= (-1))
+                    {
+                        splitIdx = start;
+                        return splitIdx;
+                    }
+                }
+                catch (IllegalArgumentException ignore)
+                {
+                    // ignore if group info not found.
+                }
+
+                if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB)
+                {
+                    int idx = matcher.start(1);
+                    if (idx >= (-1))
+                    {
+                        splitIdx = idx;
+                        return splitIdx;
+                    }
+                }
+
+                splitIdx = -1; // not found
+            }
+            return splitIdx;
         }
 
         @Override
@@ -411,29 +476,14 @@ public class RegexPathSpec extends AbstractPathSpec
                 {
                     // ignore if group name not found.
                 }
+            }
 
-                // Try named group 'info'
-                try
-                {
-                    int idx = matcher.start("info");
-                    if (idx >= 0)
-                        return this.path.substring(0, idx);
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // ignore if group info not found.
-                }
-
-                if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB)
-                {
-                    int idx = matcher.start(1);
-                    if (idx > 0)
-                    {
-                        if (this.path.charAt(idx - 1) == '/')
-                            idx--;
-                        return this.path.substring(0, idx);
-                    }
-                }
+            int idx = getSplitIndex();
+            if (idx >= 0)
+            {
+                if (this.path.charAt(idx - 1) == '/')
+                    idx--;
+                return this.path.substring(0, idx);
             }
 
             // default is the full path
@@ -458,28 +508,16 @@ public class RegexPathSpec extends AbstractPathSpec
                 {
                     // ignore if group info not found.
                 }
+            }
 
-                // Try split after named group 'name'
-                try
-                {
-                    int idx = matcher.end("name");
-                    if (idx >= 0)
-                        return this.path.substring(idx);
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // Ignore if group name not found.
-                }
-
-                // Path Info only valid for PREFIX_GLOB
-                if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB)
-                {
-                    String pathInfo = matcher.group(1);
-                    if ("".equals(pathInfo))
-                        return "/";
-                    else
-                        return pathInfo;
-                }
+            int idx = getSplitIndex();
+            if (idx >= 0)
+            {
+                String pathInfo = this.path.substring(idx);
+                if ("".equals(pathInfo))
+                    return "/";
+                else
+                    return pathInfo;
             }
 
             // default is null
