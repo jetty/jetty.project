@@ -53,7 +53,9 @@ public class Content
 
     /**
      * <p>Copies the given content source to the given content sink, notifying
-     * the given callback when the copy is complete.</p>
+     * the given callback when the copy is complete (either succeeded or failed).</p>
+     * <p>In case of failures, the content source is {@link Source#fail(Throwable) failed}
+     * too.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
@@ -169,7 +171,7 @@ public class Content
 
         /**
          * <p>Reads, blocking if necessary, the whole content source into a {@link String}, converting
-         * the bytes using the given {@link Charset}.</p>
+         * the bytes using UTF-8.</p>
          *
          * @param source the source to read
          * @return the String obtained from the content
@@ -177,10 +179,24 @@ public class Content
          */
         static String asString(Source source) throws IOException
         {
+            return asString(source, StandardCharsets.UTF_8);
+        }
+
+        /**
+         * <p>Reads, blocking if necessary, the whole content source into a {@link String}, converting
+         * the bytes using the given {@link Charset}.</p>
+         *
+         * @param source the source to read
+         * @param charset the charset to use to decode bytes
+         * @return the String obtained from the content
+         * @throws IOException if reading the content fails
+         */
+        public static String asString(Source source, Charset charset) throws IOException
+        {
             try
             {
                 FuturePromise<String> promise = new FuturePromise<>();
-                asString(source, StandardCharsets.UTF_8, promise);
+                asString(source, charset, promise);
                 return promise.get();
             }
             catch (Throwable x)

@@ -139,7 +139,7 @@ public interface CharsetStringBuilder
         public void append(ByteBuffer buf)
         {
             ensureSpace(buf.remaining());
-            BufferUtil.append(_buffer, buf);
+            _buffer.put(buf);
         }
 
         @Override

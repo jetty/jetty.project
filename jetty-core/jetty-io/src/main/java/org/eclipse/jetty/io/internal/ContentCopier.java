@@ -80,6 +80,7 @@ public class ContentCopier extends IteratingNestedCallback
         if (current != null)
             current.release();
         current = null;
+        source.fail(x);
         super.failed(x);
     }
 }

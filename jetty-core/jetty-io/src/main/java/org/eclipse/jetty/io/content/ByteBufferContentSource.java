@@ -75,6 +75,8 @@ public class ByteBufferContentSource implements Content.Source
                 return terminated = Content.Chunk.EOF;
             buffer = iterator.next().slice();
             last = !iterator.hasNext();
+            if (last)
+                terminated = Content.Chunk.EOF;
         }
         return Content.Chunk.from(buffer, last);
     }

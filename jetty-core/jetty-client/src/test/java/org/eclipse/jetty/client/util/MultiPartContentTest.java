@@ -13,23 +13,28 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.nio.file.Path;
+
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// TODO
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-@Disabled
 public class MultiPartContentTest extends AbstractHttpClientServerTest
 {
-    @Test
-    public void testNeedToUpdateThisTest()
-    {
-        fail("This test needs to be updated to use Core version of multipart (when available)");
-    }
-/*
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testEmptyMultiPart(Scenario scenario) throws Exception
@@ -37,9 +42,8 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts)
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(0, parts.size());
             }
         });
@@ -54,7 +58,8 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
         assertEquals(200, response.getStatus());
     }
-
+    // TODO: these tests don't work yet because of the Chunk retainability problem.
+/*
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testSimpleField(Scenario scenario) throws Exception
@@ -64,18 +69,17 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts)
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
+                MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
-                assertEquals(value, IO.toString(part.getInputStream()));
+                assertEquals(value, part.getContentAsString(null));
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        multiPart.addFieldPart(name, new StringRequestContent(value), null);
+        multiPart.addPart(new MultiPart.ContentSourcePart(name, null, HttpFields.EMPTY, new StringRequestContent(value)));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -404,19 +408,31 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
+*/
 
-    private abstract static class AbstractMultiPartHandler extends AbstractHandler
+    private abstract static class AbstractMultiPartHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
-            File tmpDir = MavenTestingUtils.getTargetTestingDir();
-            request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, new MultipartConfigElement(tmpDir.getAbsolutePath()));
-            handle(request, response);
+            Path tmpDir = MavenTestingUtils.getTargetTestingPath();
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
+            String boundary = MultiParts.extractBoundary(contentType);
+            MultiParts multiParts = new MultiParts(boundary);
+            multiParts.setFileDirectory(tmpDir);
+            multiParts.parse(request);
+            try
+            {
+                process(multiParts.join());
+                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+            }
+            catch (Exception x)
+            {
+                Response.writeError(request, response, callback, x);
+            }
         }
 
-        protected abstract void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+        protected abstract void process(MultiParts.Parts parts) throws Exception;
     }
-*/
 }
