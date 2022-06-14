@@ -187,56 +187,31 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-websocket-core-deps</id>
+            <id>copy-lib-ee10-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>copy-lib-websocket-core-src-deps</id>
+          <!-- execution>
+            <id>copy-lib-ee10-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/core/websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee-websocket-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <excludeArtifactIds>jetty-jakarta-servlet-api,jetty-schemas,jetty-test-helper</excludeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee-websocket-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee10.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/websocket</outputDirectory>
             </configuration>
-          </execution>
+          </execution -->
           <execution>
             <id>copy-lib-servlet-api-deps</id>
             <phase>generate-resources</phase>
