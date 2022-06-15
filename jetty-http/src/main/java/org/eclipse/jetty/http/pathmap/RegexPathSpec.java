@@ -55,15 +55,23 @@ import org.eclipse.jetty.util.log.Logger;
  *         <li>If there are no regex capturing groups,
  *           the entire path is returned in {@link MatchedPath#getPathMatch()},
  *           and a null returned for {@link MatchedPath#getPathInfo()}</li>
- *         <li>If the named regex capturing group {@code name} is present, that group
- *           is returned in {@link MatchedPath#getPathMatch()}</li>
- *         <li>If the named regex capturing group {@code info} is present, that group
- *           is returned in {@link MatchedPath#getPathInfo()}</li>
- *         <li>If the regex is of group type {@link PathSpecGroup#PREFIX_GLOB},
- *           the beginning of the regex is a literal, so it is split at the start of
- *           {@code java.util.regex.Matcher.group(1)}),
- *           taking care to handle trailing slash properly so that {@link MatchedPath#getPathMatch()}
- *           does not end in it, and {@link MatchedPath#getPathInfo()} starts with it.</li>
+ *         <li>If both the named regex capturing groups {@code name} and {@code info} are present, then
+ *           the {@code name} group is returned in {@link MatchedPath#getPathMatch()} and the
+ *           {@code info} group is returned in {@link MatchedPath#getPathInfo()}</li>
+ *         <li>
+ *             If there is only 1 regex capturing group
+ *             <ul>
+ *               <li>If the named regex capturing group {@code name} is present, the
+ *               input path up to the end of the capturing group is returned
+ *               in {@link MatchedPath#getPathMatch()} and any following characters (or null)
+ *               are returned in {@link MatchedPath#getPathInfo()} </li>
+ *               <li>other wise the input path up to the start of the capturing group is returned
+ *               in {@link MatchedPath#getPathMatch()} and any following characters (or null)
+ *               are returned in {@link MatchedPath#getPathInfo()}</li>
+ *             </ul>
+ *             If the split on pathMatch ends with {@code /} AND the pathInfo doesn't start with {@code /}
+ *             then the slash is moved from pathMatch to pathInfo.
+ *         </li>
  *         <li>
  *           All other RegexPathSpec signatures will return the entire path
  *           in {@link MatchedPath#getPathMatch()}, and a null returned for {@link MatchedPath#getPathInfo()}
@@ -304,13 +312,19 @@ public class RegexPathSpec extends AbstractPathSpec
     @Override
     public String getPathInfo(String path)
     {
-        return matched(path).getPathInfo();
+        MatchedPath matched = matched(path);
+        if (matched == null)
+            return null;
+        return matched.getPathInfo();
     }
 
     @Override
     public String getPathMatch(String path)
     {
-        return matched(path).getPathMatch();
+        MatchedPath matched = matched(path);
+        if (matched == null)
+            return "";
+        return matched.getPathMatch();
     }
 
     @Override
@@ -357,78 +371,92 @@ public class RegexPathSpec extends AbstractPathSpec
     {
         private final RegexPathSpec pathSpec;
         private final String path;
-        private final Matcher matcher;
-
-        private final String pathMatch;
-        private final String pathInfo;
+        private String pathMatch;
+        private String pathInfo;
 
         public RegexMatchedPath(RegexPathSpec regexPathSpec, String path, Matcher matcher)
         {
             this.pathSpec = regexPathSpec;
             this.path = path;
-            this.matcher = matcher;
 
+            calcPathMatchInfo(matcher);
+        }
+
+        private void calcPathMatchInfo(Matcher matcher)
+        {
             int groupCount = matcher.groupCount();
 
-            int idxNameStart = startOf(matcher, "name");
-            int idxNameEnd = endOf(matcher, "name");
-            int idxInfoStart = startOf(matcher, "info");
-            int idxInfoEnd = endOf(matcher, "info");
 
             if (groupCount == 0)
             {
                 pathMatch = path;
                 pathInfo = null;
+                return;
             }
-            else if (groupCount == 1)
+
+            if (groupCount == 1)
             {
-                if (idxNameStart >= 0)
+                // we know we are splitting
+                int idxNameEnd = endOf(matcher, "name");
+                if (idxNameEnd >= 0)
                 {
-                    pathMatch = path.substring(idxNameStart, idxNameEnd);
+                    pathMatch = path.substring(0, idxNameEnd);
                     pathInfo = path.substring(idxNameEnd);
+
+                    // If split on pathMatch ends with '/'
+                    // AND pathInfo doesn't have one, move the slash to pathInfo only move 1 level
+                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' &&
+                        !pathInfo.startsWith("/"))
+                    {
+                        pathMatch = pathMatch.substring(0, pathMatch.length() - 1);
+                        pathInfo = '/' + pathInfo;
+                    }
+                    return;
                 }
-                else
+
+                // Use start of anonymous group
+                int idx = matcher.start(1);
+                if (idx >= 0)
                 {
-                    pathMatch = path.substring(0, matcher.start(1));
-                    pathInfo = matcher.group(1);
+                    pathMatch = path.substring(0, idx);
+                    pathInfo = path.substring(idx);
+
+                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' &&
+                        !pathInfo.startsWith("/"))
+                    {
+                        pathMatch = pathMatch.substring(0, pathMatch.length() - 1);
+                        pathInfo = '/' + pathInfo;
+                    }
+                    return;
                 }
             }
-            else
+
+            // Reach here we have 2+ groups
+
+            String gName = valueOf(matcher, "name");
+            String gInfo = valueOf(matcher, "info");
+
+            // if both named groups exist
+            if (gName != null && gInfo != null)
             {
-                if (idxNameStart >= 0)
-                {
-                    pathMatch = path.substring(idxNameStart, idxNameEnd);
-                    if (idxInfoStart >= 0)
-                    {
-                        pathInfo = path.substring(idxInfoStart, idxInfoEnd);
-                    }
-                    else
-                    {
-                        pathInfo = path.substring(idxNameEnd);
-                    }
-                }
-                else if (idxInfoStart >= 0)
-                {
-                    pathMatch = path.substring(0, idxInfoStart);
-                    pathInfo = path.substring(idxInfoStart, idxInfoEnd);
-                }
-                else
-                {
-                    pathMatch = path;
-                    pathInfo = null;
-                }
+                pathMatch = gName;
+                pathInfo = gInfo;
+                return;
             }
+
+            pathMatch = path;
+            pathInfo = null;
         }
 
-        private int startOf(Matcher matcher, String groupName)
+        private String valueOf(Matcher matcher, String groupName)
         {
             try
             {
-                return matcher.start(groupName);
+                return matcher.group(groupName);
             }
             catch (IllegalArgumentException notFound)
             {
-                return -2;
+                return null;
             }
         }
 
@@ -462,7 +490,6 @@ public class RegexPathSpec extends AbstractPathSpec
             return getClass().getSimpleName() + "[" +
                 "pathSpec=" + pathSpec +
                 ", path=\"" + path + "\"" +
-                ", matcher=" + matcher +
                 ']';
         }
     }
