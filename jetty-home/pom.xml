@@ -374,9 +374,28 @@
             </goals>
             <configuration>
               <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee10-annotations-deps-jakarta-annotation</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.annotation</groupId>
+                  <artifactId>jakarta.annotation-api</artifactId>
+                  <version>2.1.0</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
+                </artifactItem>
+              </artifactItems>
             </configuration>
           </execution>
           <execution>
@@ -387,10 +406,29 @@
             </goals>
             <configuration>
               <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee10-annotations-src-deps-jakarta-annotation</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.annotation</groupId>
+                  <artifactId>jakarta.annotation-api</artifactId>
+                  <version>2.1.0</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
+                </artifactItem>
+              </artifactItems>
             </configuration>
           </execution>
           <execution>
