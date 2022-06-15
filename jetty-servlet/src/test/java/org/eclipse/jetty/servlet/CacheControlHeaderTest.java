@@ -86,7 +86,7 @@ public class CacheControlHeaderTest
         server = new Server();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(new HttpConfiguration());
-        connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector = new LocalConnector(server, null, null, null, null, -1, httpConnectionFactory);
 
         ServletContextHandler context = new ServletContextHandler();
 

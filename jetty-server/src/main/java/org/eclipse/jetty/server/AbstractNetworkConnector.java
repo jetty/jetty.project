@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -35,7 +36,12 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
 
     public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, acceptors, factories);
+        this(server, executor, scheduler, pool, null, acceptors, factories);
+    }
+
+    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, RetainableByteBufferPool retainablePool, int acceptors, ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, pool, retainablePool, acceptors, factories);
     }
 
     public void setHost(String host)

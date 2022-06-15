@@ -50,7 +50,7 @@ public class ServerFCGIConnection extends AbstractConnection
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
-        this.networkByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
+        this.networkByteBufferPool = connector.getRetainableByteBufferPool();
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;

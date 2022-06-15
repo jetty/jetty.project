@@ -157,7 +157,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine)
+                return new SslConnection(connector.getRetainableByteBufferPool(), connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine)
                 {
                     @Override
                     protected DecryptedEndPoint newDecryptedEndPoint()

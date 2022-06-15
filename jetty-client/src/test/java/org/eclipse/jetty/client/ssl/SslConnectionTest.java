@@ -19,10 +19,12 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -44,12 +46,13 @@ public class SslConnectionTest
         sslContextFactory.start();
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+        RetainableByteBufferPool retainableByteBufferPool = new ArrayRetainableByteBufferPool();
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.start();
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine();
         sslEngine.setUseClientMode(false);
-        SslConnection sslConnection = new SslConnection(byteBufferPool, threadPool, endPoint, sslEngine);
+        SslConnection sslConnection = new SslConnection(retainableByteBufferPool, byteBufferPool, threadPool, endPoint, sslEngine);
         EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
         sslEndPoint.setConnection(new AbstractConnection(sslEndPoint, threadPool)
         {

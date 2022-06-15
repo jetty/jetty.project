@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -71,12 +72,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        this(server, null, null, null, sslContextFactory, factories);
+        this(server, null, null, null, null, sslContextFactory, factories);
     }
 
-    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, RetainableByteBufferPool retainableBufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, 0, factories);
+        super(server, executor, scheduler, bufferPool, retainableBufferPool, 0, factories);
         this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
         addBean(this.selectorManager);
         this.sslContextFactory = sslContextFactory;

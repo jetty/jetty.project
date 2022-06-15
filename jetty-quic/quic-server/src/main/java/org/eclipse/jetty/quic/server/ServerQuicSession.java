@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
@@ -45,9 +46,9 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final Connector connector;
     private long expireNanoTime;
 
-    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
+    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, RetainableByteBufferPool retainableByteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
-        super(executor, scheduler, byteBufferPool, quicheConnection, connection, remoteAddress);
+        super(executor, scheduler, byteBufferPool, retainableByteBufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;
     }
 

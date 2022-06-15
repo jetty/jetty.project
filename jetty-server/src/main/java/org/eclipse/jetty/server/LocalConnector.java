@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -45,30 +46,35 @@ public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
-    {
-        super(server, executor, scheduler, pool, acceptors, factories);
-        setIdleTimeout(30000);
-    }
-
     public LocalConnector(Server server)
     {
-        this(server, null, null, null, -1, new HttpConnectionFactory());
+        this(server, null, null, null, null, -1, new HttpConnectionFactory());
     }
 
     public LocalConnector(Server server, SslContextFactory.Server sslContextFactory)
     {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
+        this(server, null, null, null, null,-1, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory)
     {
-        this(server, null, null, null, -1, connectionFactory);
+        this(server, null, null, null, null,-1, connectionFactory);
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
     {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
+        this(server, null, null, null, null,-1, AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
+    }
+
+    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
+    {
+        this(server, executor, scheduler, pool, null, acceptors, factories);
+    }
+
+    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, RetainableByteBufferPool retainablePool, int acceptors, ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, pool, retainablePool, acceptors, factories);
+        setIdleTimeout(30000);
     }
 
     @Override

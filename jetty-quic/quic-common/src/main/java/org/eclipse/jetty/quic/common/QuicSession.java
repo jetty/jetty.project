@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
@@ -66,6 +67,7 @@ public abstract class QuicSession extends ContainerLifeCycle
     private final Executor executor;
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final Flusher flusher;
@@ -74,11 +76,12 @@ public abstract class QuicSession extends ContainerLifeCycle
     private QuicheConnectionId quicheConnectionId;
     private long idleTimeout;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, RetainableByteBufferPool retainableByteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
     {
         this.executor = executor;
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
@@ -152,6 +155,11 @@ public abstract class QuicSession extends ContainerLifeCycle
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return retainableByteBufferPool;
     }
 
     public ProtocolSession getProtocolSession()

@@ -102,7 +102,7 @@ public class ResponseTest
         _server = new Server();
         Scheduler scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
-        LocalConnector connector = new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
+        LocalConnector connector = new LocalConnector(_server, null, scheduler, null, null, 1, new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
         _server.start();

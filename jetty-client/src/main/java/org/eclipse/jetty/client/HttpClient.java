@@ -628,6 +628,14 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * @return the {@link RetainableByteBufferPool} of this HttpClient
+     */
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return connector.getRetainableByteBufferPool();
+    }
+
+    /**
      * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
@@ -1157,7 +1165,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
-        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getRetainableByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

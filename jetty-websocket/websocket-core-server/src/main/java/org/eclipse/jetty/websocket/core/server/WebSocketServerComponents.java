@@ -18,6 +18,7 @@ import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -40,10 +41,11 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_INFLATER_POOL_ATTRIBUTE = "jetty.websocket.inflater";
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
     public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
+    public static final String WEBSOCKET_RETAINABLE_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.retainableBufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory, Executor executor)
+    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, RetainableByteBufferPool retainableBufferPool, DecoratedObjectFactory objectFactory, Executor executor)
     {
-        super(null, objectFactory, bufferPool, inflaterPool, deflaterPool, executor);
+        super(null, objectFactory, bufferPool, retainableBufferPool, inflaterPool, deflaterPool, executor);
     }
 
     /**
@@ -54,9 +56,10 @@ public class WebSocketServerComponents extends WebSocketComponents
      * This should be called when the server is starting, usually by a {@link javax.servlet.ServletContainerInitializer}.
      * </p>
      * <p>
-     * Servlet context attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE}
-     * and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link ByteBufferPool}, {@link DeflaterPool} or
-     * {@link InflaterPool} used by the components, otherwise this will try to use the pools shared on the {@link Server}.
+     * Servlet context attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_RETAINABLE_BUFFER_POOL_ATTRIBUTE},
+     * {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE} and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link ByteBufferPool},
+     * {@link RetainableByteBufferPool}, {@link DeflaterPool} or {@link InflaterPool} used by the components, otherwise this will try to use
+     * the pools shared on the {@link Server}.
      * </p>
      * @param server the server.
      * @param servletContext the ServletContext.
@@ -80,12 +83,16 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (bufferPool == null)
             bufferPool = server.getBean(ByteBufferPool.class);
 
+        RetainableByteBufferPool retainableBufferPool = (RetainableByteBufferPool)servletContext.getAttribute(WEBSOCKET_RETAINABLE_BUFFER_POOL_ATTRIBUTE);
+        if (retainableBufferPool == null)
+            retainableBufferPool = server.getBean(RetainableByteBufferPool.class);
+
         Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor == null)
             executor = server.getThreadPool();
 
         DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)servletContext.getAttribute(DecoratedObjectFactory.ATTR);
-        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
+        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, retainableBufferPool, objectFactory, executor);
         if (objectFactory != null)
             serverComponents.unmanage(objectFactory);
 

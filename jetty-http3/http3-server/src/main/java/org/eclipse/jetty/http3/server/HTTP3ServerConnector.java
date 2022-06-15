@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -41,12 +42,17 @@ public class HTTP3ServerConnector extends QuicServerConnector
 
     public HTTP3ServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        this(server, null, null, null, sslContextFactory, factories);
+        this(server, null, null, null, null, sslContextFactory, factories);
     }
 
     public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, sslContextFactory, factories);
+        this(server, executor, scheduler, bufferPool, null, sslContextFactory, factories);
+    }
+
+    public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, RetainableByteBufferPool retainableBufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, bufferPool, retainableBufferPool, sslContextFactory, factories);
         // Max concurrent streams that a client can open.
         getQuicConfiguration().setMaxBidirectionalRemoteStreams(128);
         // HTTP/3 requires a few mandatory unidirectional streams.

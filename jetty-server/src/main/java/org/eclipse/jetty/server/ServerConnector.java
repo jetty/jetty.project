@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.IO;
@@ -208,7 +209,32 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, acceptors, factories);
+        this(server, executor, scheduler, bufferPool, null, acceptors, selectors, factories);
+    }
+
+    /**
+     * @param server The server this connector will be accept connection for.
+     * @param executor An executor used to run tasks for handling requests, acceptors and selectors.
+     * If null then use the servers executor
+     * @param scheduler A scheduler used to schedule timeouts. If null then use the servers scheduler
+     * @param bufferPool A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
+     * @param retainableBufferPool A RetainableByteBuffer pool used to allocate buffers.  If null then create a private retainable pool with default configuration.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
+     * the selector threads are used to accept connections.
+     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
+    public ServerConnector(
+        @Name("server") Server server,
+        @Name("executor") Executor executor,
+        @Name("scheduler") Scheduler scheduler,
+        @Name("bufferPool") ByteBufferPool bufferPool,
+        @Name("retainableBufferPool") RetainableByteBufferPool retainableBufferPool,
+        @Name("acceptors") int acceptors,
+        @Name("selectors") int selectors,
+        @Name("factories") ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, bufferPool, retainableBufferPool, acceptors, factories);
         _manager = newSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(_manager, true);
         setAcceptorPriorityDelta(-2);

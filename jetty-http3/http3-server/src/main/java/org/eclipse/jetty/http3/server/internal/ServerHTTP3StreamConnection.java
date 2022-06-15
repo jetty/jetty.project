@@ -31,7 +31,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 
     public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
     {
-        super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
+        super(endPoint, connector.getExecutor(), connector.getRetainableByteBufferPool(), parser);
         this.connector = connector;
         this.httpConfiguration = httpConfiguration;
         this.session = session;

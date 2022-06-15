@@ -320,7 +320,7 @@ public class ProxyConnectionTest
             http.getHttpConfiguration().setResponseHeaderSize(1024);
             ProxyConnectionFactory proxy = new ProxyConnectionFactory(HttpVersion.HTTP_1_1.asString());
 
-            _connector = new LocalConnector(_server, null, null, null, 1, proxy, http);
+            _connector = new LocalConnector(_server, null, null, null, null, 1, proxy, http);
             _connector.setIdleTimeout(1000);
             _server.addConnector(_connector);
             _server.setHandler(new DumpHandler());

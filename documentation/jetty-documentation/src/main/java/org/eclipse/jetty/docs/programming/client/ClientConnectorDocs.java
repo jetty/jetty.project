@@ -387,7 +387,8 @@ public class ClientConnectorDocs
 
         // Wrap the "telnet" ClientConnectionFactory with the SslClientConnectionFactory.
         connectionFactory = new SslClientConnectionFactory(clientConnector.getSslContextFactory(),
-            clientConnector.getByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
+            clientConnector.getByteBufferPool(), clientConnector.getRetainableByteBufferPool(),
+            clientConnector.getExecutor(), connectionFactory);
 
         // We will obtain a SslConnection now.
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();

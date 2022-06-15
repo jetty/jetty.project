@@ -81,7 +81,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
         Connector connector = httpChannel.getConnector();
         EndPoint endPoint = httpChannel.getTunnellingEndPoint();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, byteBufferPool);
+        RetainableByteBufferPool retainableByteBufferPool = connector.getRetainableByteBufferPool();
         return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, retainableByteBufferPool, coreSession);
     }
 

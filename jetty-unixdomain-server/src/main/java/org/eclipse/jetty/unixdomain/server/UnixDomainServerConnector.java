@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -81,7 +82,12 @@ public class UnixDomainServerConnector extends AbstractConnector
 
     public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, int selectors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
+        this(server, executor, scheduler, pool, null, acceptors, selectors, factories);
+    }
+
+    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, RetainableByteBufferPool retainablePool, int acceptors, int selectors, ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, pool, retainablePool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(selectorManager, true);
     }

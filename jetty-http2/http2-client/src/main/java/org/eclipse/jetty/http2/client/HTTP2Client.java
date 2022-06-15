@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -156,6 +157,11 @@ public class HTTP2Client extends ContainerLifeCycle
     public ByteBufferPool getByteBufferPool()
     {
         return connector.getByteBufferPool();
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return connector.getRetainableByteBufferPool();
     }
 
     public void setByteBufferPool(ByteBufferPool bufferPool)
@@ -437,7 +443,7 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             if (isUseALPN())
                 factory = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
+            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getRetainableByteBufferPool(), getExecutor(), factory);
         }
         return factory;
     }

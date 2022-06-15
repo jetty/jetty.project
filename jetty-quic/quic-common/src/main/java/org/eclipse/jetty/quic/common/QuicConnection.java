@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
@@ -60,6 +61,7 @@ public abstract class QuicConnection extends AbstractConnection
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final AdaptiveExecutionStrategy strategy;
     private final Flusher flusher = new Flusher();
     private final Callback fillableCallback = new FillableCallback();
@@ -67,13 +69,14 @@ public abstract class QuicConnection extends AbstractConnection
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
 
-    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, RetainableByteBufferPool retainableByteBufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         if (!(endPoint instanceof DatagramChannelEndPoint))
             throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
     }
 
@@ -91,6 +94,11 @@ public abstract class QuicConnection extends AbstractConnection
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
+    }
+
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return retainableByteBufferPool;
     }
 
     public int getOutputBufferSize()

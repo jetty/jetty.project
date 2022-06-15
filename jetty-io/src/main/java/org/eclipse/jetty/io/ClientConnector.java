@@ -95,6 +95,7 @@ public class ClientConnector extends ContainerLifeCycle
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
+    private RetainableByteBufferPool retainableByteBufferPool;
     private SslContextFactory.Client sslContextFactory;
     private SelectorManager selectorManager;
     private int selectors = 1;
@@ -160,12 +161,25 @@ public class ClientConnector extends ContainerLifeCycle
         return byteBufferPool;
     }
 
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return retainableByteBufferPool;
+    }
+
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         if (isStarted())
             throw new IllegalStateException();
         updateBean(this.byteBufferPool, byteBufferPool);
         this.byteBufferPool = byteBufferPool;
+    }
+
+    public void setRetainableByteBufferPool(RetainableByteBufferPool retainableByteBufferPool)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        updateBean(this.retainableByteBufferPool, retainableByteBufferPool);
+        this.retainableByteBufferPool = retainableByteBufferPool;
     }
 
     public SslContextFactory.Client getSslContextFactory()
@@ -368,6 +382,8 @@ public class ClientConnector extends ContainerLifeCycle
             setScheduler(new ScheduledExecutorScheduler(String.format("client-scheduler@%x", hashCode()), false));
         if (byteBufferPool == null)
             setByteBufferPool(new MappedByteBufferPool());
+        if (retainableByteBufferPool == null)
+            setRetainableByteBufferPool(new ArrayRetainableByteBufferPool());
         if (sslContextFactory == null)
             setSslContextFactory(newSslContextFactory());
         selectorManager = newSelectorManager();

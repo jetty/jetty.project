@@ -55,7 +55,7 @@ public class ClientQuicConnection extends QuicConnection
 
     public ClientQuicConnection(ClientConnector connector, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), connector.getRetainableByteBufferPool(), endPoint);
         this.connector = connector;
         this.context = context;
     }
@@ -97,7 +97,7 @@ public class ClientQuicConnection extends QuicConnection
                 LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
 
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
-            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
+            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), getRetainableByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             if (LOG.isDebugEnabled())
                 LOG.debug("created {}", session);

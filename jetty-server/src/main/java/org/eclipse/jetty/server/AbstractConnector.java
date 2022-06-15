@@ -147,6 +147,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Executor _executor;
     private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
+    private final RetainableByteBufferPool _retainableByteBufferPool;
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
@@ -162,6 +163,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
 
+
     /**
      * @param server The server this connector will be added to. Must not be null.
      * @param executor An executor for this connector or null to use the servers executor
@@ -170,11 +172,33 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @param acceptors the number of acceptor threads to use, or -1 for a default value. If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
      * @param factories The Connection Factories to use.
      */
+    @Deprecated
     public AbstractConnector(
         Server server,
         Executor executor,
         Scheduler scheduler,
         ByteBufferPool pool,
+        int acceptors,
+        ConnectionFactory... factories)
+    {
+        this(server, executor, scheduler, pool, null, acceptors, factories);
+    }
+
+    /**
+     * @param server The server this connector will be added to. Must not be null.
+     * @param executor An executor for this connector or null to use the servers executor
+     * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link ScheduledExecutorScheduler} instance.
+     * @param pool A buffer pool for this connector or null to either a {@link ByteBufferPool} set as a server bean or none set, the new  {@link ArrayByteBufferPool} instance.
+     * @param retainablePool A retainable buffer pool for this connector or null to either a {@link RetainableByteBufferPool} set as a server bean or none set, the new  {@link ArrayRetainableByteBufferPool} instance.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
+     * @param factories The Connection Factories to use.
+     */
+    public AbstractConnector(
+        Server server,
+        Executor executor,
+        Scheduler scheduler,
+        ByteBufferPool pool,
+        RetainableByteBufferPool retainablePool,
         int acceptors,
         ConnectionFactory... factories)
     {
@@ -191,8 +215,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
         addBean(_byteBufferPool);
-        RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
+        if (retainablePool == null)
+            retainablePool = _server.getBean(RetainableByteBufferPool.class);
+        _retainableByteBufferPool = retainablePool != null ? retainablePool : new ArrayRetainableByteBufferPool();
+        addBean(retainablePool);
 
         addEventListener(new Container.Listener()
         {
@@ -258,6 +284,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public ByteBufferPool getByteBufferPool()
     {
         return _byteBufferPool;
+    }
+
+    @Override
+    public RetainableByteBufferPool getRetainableByteBufferPool()
+    {
+        return _retainableByteBufferPool;
     }
 
     @Override

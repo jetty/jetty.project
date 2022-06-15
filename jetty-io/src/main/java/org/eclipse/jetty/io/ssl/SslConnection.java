@@ -165,15 +165,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     };
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
+    public SslConnection(RetainableByteBufferPool retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        this(byteBufferPool, executor, endPoint, sslEngine, false, false);
-    }
-
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
-                         boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
-    {
-        this(RetainableByteBufferPool.findOrAdapt(null, byteBufferPool), byteBufferPool, executor, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
+        this(retainableByteBufferPool, byteBufferPool, executor, endPoint, sslEngine, false, false);
     }
 
     public SslConnection(RetainableByteBufferPool retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,

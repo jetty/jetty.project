@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -36,7 +37,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
 
     public NetworkTrafficServerConnector(Server server)
     {
-        this(server, null, null, null, 0, 0, new HttpConnectionFactory());
+        this(server, null, null, null, null, 0, 0, new HttpConnectionFactory());
     }
 
     public NetworkTrafficServerConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
@@ -52,6 +53,11 @@ public class NetworkTrafficServerConnector extends ServerConnector
     public NetworkTrafficServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, int selectors, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, pool, acceptors, selectors, factories);
+    }
+
+    public NetworkTrafficServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, RetainableByteBufferPool retainablePool, int acceptors, int selectors, ConnectionFactory... factories)
+    {
+        super(server, executor, scheduler, pool, retainablePool, acceptors, selectors, factories);
     }
 
     public NetworkTrafficServerConnector(Server server, SslContextFactory.Server sslContextFactory)

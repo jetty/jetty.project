@@ -26,7 +26,6 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -54,10 +53,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private boolean noData;
     private boolean remotelyClosed;
 
-    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
+    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, RetainableByteBufferPool retainableByteBufferPool, MessageParser parser)
     {
         super(endPoint, executor);
-        this.buffers = RetainableByteBufferPool.findOrAdapt(null, byteBufferPool);
+        this.buffers = retainableByteBufferPool;
         this.parser = parser;
         parser.init(MessageListener::new);
     }
