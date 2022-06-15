@@ -14,11 +14,11 @@ client
 ee10-annotations
 
 [lib]
-lib/jetty-websocket-core-common-${jetty.version}.jar
-lib/jetty-websocket-core-client-${jetty.version}.jar
-lib/websocket/jetty-ee10-websocket-jetty-api-${jetty.version}.jar
-lib/websocket/jetty-ee10-websocket-jetty-common-${jetty.version}.jar
-lib/websocket/jetty-ee10-websocket-jetty-client-${jetty.version}.jar
+lib/ee10-websocket/jetty-websocket-core-common-${jetty.version}.jar
+lib/ee10-websocket/jetty-websocket-core-client-${jetty.version}.jar
+lib/ee10-websocket/jetty-ee10-websocket-jetty-api-${jetty.version}.jar
+lib/ee10-websocket/jetty-ee10-websocket-jetty-common-${jetty.version}.jar
+lib/ee10-websocket/jetty-ee10-websocket-jetty-client-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

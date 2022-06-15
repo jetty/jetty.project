@@ -131,7 +131,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
                 apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
@@ -149,7 +149,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
                 apache-jsp,glassfish-jstl,jetty-start
@@ -187,54 +187,53 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-websocket-core-deps</id>
+            <id>copy-lib-ee10-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-websocket-core-src-deps</id>
+            <id>copy-lib-ee10-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/core/websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-ee-websocket-deps</id>
+            <id>copy-ee10-lib-jakarta-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <excludeArtifactIds>jetty-jakarta-servlet-api,jetty-schemas,jetty-test-helper</excludeArtifactIds>
+              <includeGroupIds>jakarta.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-ee-websocket-src-deps</id>
+            <id>copy-ee10-lib-jakarta-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee10.websocket</includeGroupIds>
+              <includeGroupIds>jakarta.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -270,10 +269,10 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-jakarta-servlet-api</artifactId>
+                  <groupId>jakarta.servlet</groupId>
+                  <artifactId>jakarta.servlet-api</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>6.0.0-SNAPSHOT</version>
+                  <version>6.0.0</version>
                   <classifier>sources</classifier>
                 </artifactItem>
                 <artifactItem>
@@ -643,7 +642,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
+              <excludeArtifactIds>websocket-core-client,websocket-core-common,websocket-core-server</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.ee10.demos,org.eclipse.jetty.ee10.websocket</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -656,8 +656,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
+              <excludeGroupIds>org.eclipse.jetty.ee10.demos,org.eclipse.jetty.ee10.websocket</excludeGroupIds>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
