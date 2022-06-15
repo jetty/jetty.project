@@ -304,44 +304,13 @@ public class RegexPathSpec extends AbstractPathSpec
     @Override
     public String getPathInfo(String path)
     {
-        // Path Info only valid for PREFIX_GLOB types
-        if (_group == PathSpecGroup.PREFIX_GLOB)
-        {
-            Matcher matcher = getMatcher(path);
-            if (matcher.matches())
-            {
-                if (matcher.groupCount() >= 1)
-                {
-                    String pathInfo = matcher.group(1);
-                    if ("".equals(pathInfo))
-                        return "/";
-                    else
-                        return pathInfo;
-                }
-            }
-        }
-        return null;
+        return matched(path).getPathInfo();
     }
 
     @Override
     public String getPathMatch(String path)
     {
-        Matcher matcher = getMatcher(path);
-        if (matcher.matches())
-        {
-            if (_group == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
-            {
-                int idx = matcher.start(1);
-                if (idx > 0)
-                {
-                    if (path.charAt(idx - 1) == '/')
-                        idx--;
-                    return path.substring(0, idx);
-                }
-            }
-            return path;
-        }
-        return null;
+        return matched(path).getPathMatch();
     }
 
     @Override
@@ -390,138 +359,101 @@ public class RegexPathSpec extends AbstractPathSpec
         private final String path;
         private final Matcher matcher;
 
-        /**
-         * Cached split index for pathMatch vs pathInfo.
-         *
-         * (-2) is for unsearched
-         * (-1) is for searched, but not found
-         * any other value is the index
-         */
-        protected int splitIdx = -2;
+        private final String pathMatch;
+        private final String pathInfo;
 
         public RegexMatchedPath(RegexPathSpec regexPathSpec, String path, Matcher matcher)
         {
             this.pathSpec = regexPathSpec;
             this.path = path;
             this.matcher = matcher;
+
+            int groupCount = matcher.groupCount();
+
+            int idxNameStart = startOf(matcher, "name");
+            int idxNameEnd = endOf(matcher, "name");
+            int idxInfoStart = startOf(matcher, "info");
+            int idxInfoEnd = endOf(matcher, "info");
+
+            if (groupCount == 0)
+            {
+                pathMatch = path;
+                pathInfo = null;
+            }
+            else if (groupCount == 1)
+            {
+                if (idxNameStart >= 0)
+                {
+                    pathMatch = path.substring(idxNameStart, idxNameEnd);
+                    pathInfo = path.substring(idxNameEnd);
+                }
+                else
+                {
+                    pathMatch = path.substring(0, matcher.start(1));
+                    pathInfo = matcher.group(1);
+                }
+            }
+            else
+            {
+                if (idxNameStart >= 0)
+                {
+                    pathMatch = path.substring(idxNameStart, idxNameEnd);
+                    if (idxInfoStart >= 0)
+                    {
+                        pathInfo = path.substring(idxInfoStart, idxInfoEnd);
+                    }
+                    else
+                    {
+                        pathInfo = path.substring(idxNameEnd);
+                    }
+                }
+                else if (idxInfoStart >= 0)
+                {
+                    pathMatch = path.substring(0, idxInfoStart);
+                    pathInfo = path.substring(idxInfoStart, idxInfoEnd);
+                }
+                else
+                {
+                    pathMatch = path;
+                    pathInfo = null;
+                }
+            }
         }
 
-        protected int getSplitIndex()
+        private int startOf(Matcher matcher, String groupName)
         {
-            if (splitIdx >= -1)
+            try
             {
-                return splitIdx;
+                return matcher.start(groupName);
             }
-
-            if (matcher.groupCount() >= 1)
+            catch (IllegalArgumentException notFound)
             {
-                try
-                {
-                    int end =  matcher.end("name");
-                    if (end >= (-1))
-                    {
-                        splitIdx = end;
-                        return splitIdx;
-                    }
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // ignore if group name not found.
-                }
-
-                // Try named group 'info'
-                try
-                {
-                    int start = matcher.start("info");
-                    if (start >= (-1))
-                    {
-                        splitIdx = start;
-                        return splitIdx;
-                    }
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // ignore if group info not found.
-                }
-
-                if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB)
-                {
-                    int idx = matcher.start(1);
-                    if (idx >= (-1))
-                    {
-                        splitIdx = idx;
-                        return splitIdx;
-                    }
-                }
-
-                splitIdx = -1; // not found
+                return -2;
             }
-            return splitIdx;
+        }
+
+        private int endOf(Matcher matcher, String groupName)
+        {
+            try
+            {
+                return matcher.end(groupName);
+            }
+            catch (IllegalArgumentException notFound)
+            {
+                return -2;
+            }
         }
 
         @Override
         public String getPathMatch()
         {
-            if (matcher.groupCount() >= 1)
-            {
-                try
-                {
-                    String p = matcher.group("name");
-                    if (p != null)
-                    {
-                        return p;
-                    }
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // ignore if group name not found.
-                }
-            }
-
-            int idx = getSplitIndex();
-            if (idx >= 0)
-            {
-                if (this.path.charAt(idx - 1) == '/')
-                    idx--;
-                return this.path.substring(0, idx);
-            }
-
-            // default is the full path
-            return this.path;
+            return this.pathMatch;
         }
 
         @Override
         public String getPathInfo()
         {
-            if (matcher.groupCount() >= 1)
-            {
-                // Try named group 'info'
-                try
-                {
-                    String p = matcher.group("info");
-                    if (p != null)
-                    {
-                        return p;
-                    }
-                }
-                catch (IllegalArgumentException ignore)
-                {
-                    // ignore if group info not found.
-                }
-            }
-
-            int idx = getSplitIndex();
-            if (idx >= 0)
-            {
-                String pathInfo = this.path.substring(idx);
-                if ("".equals(pathInfo))
-                    return "/";
-                else
-                    return pathInfo;
-            }
-
-            // default is null
-            return null;
+            return this.pathInfo;
         }
 
         @Override

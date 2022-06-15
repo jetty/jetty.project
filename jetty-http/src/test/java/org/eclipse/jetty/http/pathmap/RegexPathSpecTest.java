@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,7 +28,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexPathSpecTest
 {
@@ -81,97 +85,51 @@ public class RegexPathSpecTest
         assertThat(spec.getPathInfo("/rest/1.0/list"), nullValue());
     }
 
-    @Test
-    public void testPathInfo()
+    public static Stream<Arguments> matchedPathCases()
     {
-        RegexPathSpec spec = new RegexPathSpec("^/test(/.*)?$");
-        assertTrue(spec.matches("/test/info"));
-        assertThat(spec.getPathMatch("/test/info"), equalTo("/test"));
-        assertThat(spec.getPathInfo("/test/info"), equalTo("/info"));
-
-        spec = new RegexPathSpec("^/[Tt]est(/.*)?$");
-        assertTrue(spec.matches("/test/info"));
-        assertThat(spec.getPathMatch("/test/info"), equalTo("/test/info"));
-        assertThat(spec.getPathInfo("/test/info"), nullValue());
+        return Stream.of(
+            // Suffix (with optional capture group)
+            Arguments.of("^/[Tt]est(/.*)?$", "/test/info", "/test", "/info"),
+            Arguments.of("^(.*).do$", "/a.do", "/a.do", null),
+            Arguments.of("^(.*).do$", "/a/b/c.do", "/a/b/c.do", null),
+            Arguments.of("^(.*).do$", "/abcde.do", "/abcde.do", null),
+            // Exact (no capture group)
+            Arguments.of("^/test/info$", "/test/info", "/test/info", null),
+            // Middle (with one capture group)
+            Arguments.of("^/rest/([^/]*)/list$", "/rest/api/list", "/rest/api/list", null),
+            Arguments.of("^/rest/([^/]*)/list$", "/rest/1.0/list", "/rest/1.0/list", null),
+            // Middle (with two capture groups)
+            Arguments.of("^/t(.*)/i(.*)$", "/test/info", "/test/info", null),
+            // Prefix (with optional capture group)
+            Arguments.of("^/test(/.*)?$", "/test/info", "/test", "/info"),
+            Arguments.of("^/a/(.*)?$", "/a/b/c/d", "/a", "/b/c/d"),
+            // Prefix (with many capture groups)
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/info/code", "/test/info/code", null),
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/info/code/data", "/test/info/code/data", null),
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/ice/cream/dip", "/test/ice/cream/dip", null),
+            // Suffix (with only 1 named capture group of id "name")
+            Arguments.of("^(?<name>\\/.*)/.*\\.do$", "/test/info/code.do", "/test/info", "/code.do"),
+            Arguments.of("^(?<name>\\/.*)/.*\\.do$", "/a/b/c/d/e/f/g.do", "/a/b/c/d/e/f", "/g.do"),
+            // Suffix (with only 1 named capture group of id "info")
+            Arguments.of("^/.*(?<info>\\/.*\\.do)$", "/test/info/code.do", "/test/info", "/code.do"),
+            Arguments.of("^/.*(?<info>\\/.*\\.do)$", "/a/b/c/d/e/f/g.do", "/a/b/c/d/e/f", "/g.do"),
+            // Middle (with 2 named capture groups)
+            // this is pretty much an all glob signature
+            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/test/info/code.action", "/test/info", "/code.action"),
+            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/a/b/c/d/e/f/g.action", "/a/b/c/d/e/f", "/g.action")
+        );
     }
 
-    @Test
-    public void testMatchedPath()
+    @ParameterizedTest(name = "[{index}] RegexPathSpec(\"{0}\").matched(\"{1}\")")
+    @MethodSource("matchedPathCases")
+    public void testMatchedPath(String regex, String input, String expectedPathMatch, String expectedPathInfo)
     {
-        RegexPathSpec spec;
-        MatchedPath matched;
-
-        // Suffix (with optional capture group)
-        spec = new RegexPathSpec("^/[Tt]est(/.*)?$");
-        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertNull(matched.getPathInfo());
-
-        // Exact (no capture group)
-        spec = new RegexPathSpec("^/test/info$");
-        assertEquals(PathSpecGroup.EXACT, spec.getGroup());
-        matched = spec.matched("/test/info");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertNull(matched.getPathInfo());
-
-        // Middle (with two capture groups)
-        spec = new RegexPathSpec("^/t(.*)/i(.*)$");
-        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertNull(matched.getPathInfo());
-
-        // Prefix (with optional capture group)
-        spec = new RegexPathSpec("^/test(/.*)?$");
-        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info");
-        assertEquals("/test", matched.getPathMatch());
-        assertEquals("/info", matched.getPathInfo());
-
-        // Prefix (with many capture groups)
-        spec = new RegexPathSpec("^/test(/i.*)(/c.*)?$");
-        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info");
-        assertEquals("/test", matched.getPathMatch());
-        assertEquals("/info", matched.getPathInfo());
-        matched = spec.matched("/test/info/code");
-        assertEquals("/test", matched.getPathMatch());
-        assertEquals("/info/code", matched.getPathInfo());
-        matched = spec.matched("/test/ice/cream");
-        assertEquals("/test", matched.getPathMatch());
-        assertEquals("/ice/cream", matched.getPathInfo());
-
-        // Suffix (with only 1 named capture group)
-        spec = new RegexPathSpec("^(?<name>\\/.*)/.*\\.do$");
-        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info/code.do");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertEquals("/code.do", matched.getPathInfo());
-        matched = spec.matched("/a/b/c/d/e/f/g.do");
-        assertEquals("/a/b/c/d/e/f", matched.getPathMatch());
-        assertEquals("/g.do", matched.getPathInfo());
-
-        // Suffix (with only 1 named capture group)
-        spec = new RegexPathSpec("^/.*(?<info>\\/.*\\.do)$");
-        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info/code.do");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertEquals("/code.do", matched.getPathInfo());
-        matched = spec.matched("/a/b/c/d/e/f/g.do");
-        assertEquals("/a/b/c/d/e/f", matched.getPathMatch());
-        assertEquals("/g.do", matched.getPathInfo());
-
-        // Middle (with 2 named capture groups)
-        // this is pretty much an all glob signature
-        spec = new RegexPathSpec("^(?<name>\\/.*)(?<info>\\/.*\\.action)$");
-        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup());
-        matched = spec.matched("/test/info/code.action");
-        assertEquals("/test/info", matched.getPathMatch());
-        assertEquals("/code.action", matched.getPathInfo());
-        matched = spec.matched("/a/b/c/d/e/f/g.action");
-        assertEquals("/a/b/c/d/e/f", matched.getPathMatch());
-        assertEquals("/g.action", matched.getPathInfo());
+        RegexPathSpec spec = new RegexPathSpec(regex);
+        MatchedPath matched = spec.matched(input);
+        assertEquals(expectedPathMatch, matched.getPathMatch(),
+            String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathMatch()", regex, input));
+        assertEquals(expectedPathInfo, matched.getPathInfo(),
+            String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathInfo()", regex, input));
     }
 
     @Test
