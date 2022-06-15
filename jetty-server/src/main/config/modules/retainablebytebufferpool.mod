@@ -2,7 +2,7 @@
 Configures the RetainableByteBufferPool used by ServerConnectors.
 
 [tags]
-retainableByteBufferPool
+retainablebytebufferpool
 
 [xml]
 etc/jetty-retainablebytebufferpool.xml
@@ -21,11 +21,11 @@ etc/jetty-retainablebytebufferpool.xml
 ## a capacity that is multiple of this factor.
 #jetty.retainableByteBufferPool.factor=1024
 
-## Maximum size for each bucket.
+## Maximum number of ByteBuffers for each bucket.
 #jetty.retainableByteBufferPool.maxBucketSize=2147483647
 
-## Maximum heap memory retainable by the pool (0 for heuristic, -1 for unlimited).
+## Maximum heap memory bytes retainable by the pool (0 for heuristic, -1 for unlimited).
 #jetty.retainableByteBufferPool.maxHeapMemory=0
 
-## Maximum direct memory retainable by the pool (0 for heuristic, -1 for unlimited).
+## Maximum direct memory bytes retainable by the pool (0 for heuristic, -1 for unlimited).
 #jetty.retainableByteBufferPool.maxDirectMemory=0
