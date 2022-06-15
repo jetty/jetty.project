@@ -837,7 +837,10 @@ public class HttpChannelState
             }
             else if (_requestState != RequestState.COMPLETE)
             {
-                LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
+                if (QuietException.isQuiet(th))
+                    LOG.debug("unhandled in state {}", _requestState, th);
+                else
+                    LOG.warn("unhandled in state {}", _requestState, th);
             }
         }
     }

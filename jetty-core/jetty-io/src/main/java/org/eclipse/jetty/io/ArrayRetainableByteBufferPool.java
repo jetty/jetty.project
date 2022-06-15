@@ -30,6 +30,15 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>A {@link RetainableByteBuffer} pool where RetainableByteBuffers are held in {@link Pool}s that are
+ * held in array elements.</p>
+ * <p>Given a capacity {@code factor} of 1024, the first array element holds a Pool of RetainableByteBuffers
+ * each of capacity 1024, the second array element holds a Pool of RetainableByteBuffers each of capacity
+ * 2048, and so on.</p>
+ * The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
+ * divided by 4.</p>
+ */
 @ManagedObject
 public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, Dumpable
 {
@@ -45,21 +54,56 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final Function<Integer, Integer> _bucketIndexFor;
 
+    /**
+     * Creates a new ArrayRetainableByteBufferPool with a default configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
+     */
     public ArrayRetainableByteBufferPool()
     {
-        this(0, -1, -1, Integer.MAX_VALUE, -1L, -1L);
+        this(0, -1, -1, Integer.MAX_VALUE);
     }
 
+    /**
+     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
+     */
     public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, -1L, -1L);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, 0L, 0L);
     }
 
+    /**
+     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     */
     public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
         this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null);
     }
 
+    /**
+     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param bucketIndexFor a {@link Function} that takes a capacity and returns a bucket index
+     * @param bucketCapacity a {@link Function} that takes a bucket index and returns a capacity
+     */
     protected ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory,
                                             Function<Integer, Integer> bucketIndexFor, Function<Integer, Integer> bucketCapacity)
     {
@@ -91,8 +135,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         _maxCapacity = maxCapacity;
         _direct = directArray;
         _indirect = indirectArray;
-        _maxHeapMemory = maxHeapMemory;
-        _maxDirectMemory = maxDirectMemory;
+        _maxHeapMemory = (maxHeapMemory != 0L) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxDirectMemory = (maxDirectMemory != 0L) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
         _bucketIndexFor = bucketIndexFor;
     }
 
@@ -154,6 +198,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(buffer, releaser);
         retainableByteBuffer.acquire();
         return retainableByteBuffer;
+    }
+
+    protected Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+    {
+        return bucketFor(capacity, direct);
     }
 
     private Bucket bucketFor(int capacity, boolean direct)

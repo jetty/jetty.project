@@ -117,7 +117,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
-    protected static final Environment __environment = Environment.ensure("ee9");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee9");
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
@@ -226,7 +226,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public ContextHandler()
     {
         this(null, null, null);
-        Objects.requireNonNull(__environment);
+        Objects.requireNonNull(ENVIRONMENT);
     }
 
     public ContextHandler(String contextPath)
@@ -607,6 +607,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
+        // If we are being started directly (rather than via a start of the CoreContextHandler), then
+        // we need to run ourselves in the core context
+        if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
+        {
+            _coreContextHandler.getContext().call(this::doStart, null);
+            return;
+        }
+
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
@@ -2481,7 +2489,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected void doStart() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
+            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
             try
             {
                 super.doStart();
@@ -2496,7 +2504,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected void doStop() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
+            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
             try
             {
                 super.doStop();

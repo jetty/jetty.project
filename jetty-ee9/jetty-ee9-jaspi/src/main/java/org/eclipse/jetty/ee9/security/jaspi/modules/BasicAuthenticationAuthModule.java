@@ -40,7 +40,7 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
 
     private String realmName;
 
-    private static final String REALM_KEY = "org.eclipse.jetty.security.jaspi.modules.RealmName";
+    private static final String REALM_KEY = "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName";
 
     public BasicAuthenticationAuthModule()
     {

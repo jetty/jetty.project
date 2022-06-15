@@ -40,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@Disabled //TODO
 public class JspIncludeTest
 {
     private static Server server;
@@ -53,15 +54,22 @@ public class JspIncludeTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-
-        // Setup WebAppContext
-        File testWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
-
-        // Prepare WebApp libs
-        File libDir = new File(testWebAppDir, "WEB-INF/lib");
-        FS.ensureDirExists(libDir);
-        File testTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
-        JAR.create(testTagLibDir, new File(libDir, "testtaglib.jar"));
+        
+        //Base dir for test
+        File testDir = MavenTestingUtils.getTargetTestingDir("jsp");
+        File testLibDir = new File(testDir, "WEB-INF/lib");
+        FS.ensureDirExists(testLibDir);
+                
+        //Make a taglib jar
+        File srcTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
+        File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
+        IO.copy(srcTagLibDir, scratchTagLibDir);
+        File tagLibJar =  new File(testLibDir, "testtaglib.jar");
+        JAR.create(scratchTagLibDir, tagLibJar);
+        
+        //Copy content
+        File srcWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
+        IO.copyDir(srcWebAppDir, testDir);
 
         // Configure WebAppContext
         Configurations.setServerDefault(server).add(new JettyWebXmlConfiguration(), new AnnotationConfiguration());
@@ -71,7 +79,7 @@ public class JspIncludeTest
 
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
-        JspConfig.init(context, testWebAppDir.toURI(), scratchDir);
+        JspConfig.init(context, testDir.toURI(), scratchDir);
 
         server.setHandler(context);
 
@@ -94,12 +102,10 @@ public class JspIncludeTest
         server.stop();
     }
 
-    @Disabled //TODO
     @Test
     public void testTopWithIncluded() throws IOException
     {
         URI uri = baseUri.resolve("/top.jsp");
-        // System.out.println("GET (String): " + uri.toASCIIString());
 
         InputStream in = null;
         InputStreamReader reader = null;
