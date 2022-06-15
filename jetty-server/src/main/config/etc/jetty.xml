@@ -29,6 +29,9 @@
     <Call name="addBean">
       <Arg><Ref refid="byteBufferPool"/></Arg>
     </Call>
+    <Call name="addBean">
+      <Arg><Ref refid="retainableByteBufferPool"/></Arg>
+    </Call>
 
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->

@@ -11,6 +11,7 @@ resources
 [depend]
 threadpool
 bytebufferpool
+retainablebytebufferpool
 logging
 
 [lib]
