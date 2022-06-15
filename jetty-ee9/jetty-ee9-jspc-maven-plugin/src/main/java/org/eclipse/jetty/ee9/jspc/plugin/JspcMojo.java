@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class JspcMojo extends AbstractMojo
 {
     public static final String END_OF_WEBAPP = "</web-app>";
-    public static final String PRECOMPILED_FLAG = "org.eclipse.jetty.jsp.precompiled";
+    public static final String PRECOMPILED_FLAG = "org.eclipse.jetty.ee9.jsp.precompiled";
 
     /**
      * JettyJspC
