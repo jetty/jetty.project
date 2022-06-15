@@ -39,8 +39,6 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
@@ -65,6 +63,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -893,13 +892,14 @@ public class HttpClientTLSTest
         server.setHandler(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, Response response) throws Throwable
             {
                 failFlush.set(true);
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 if (close)
-                    jettyRequest.getHttpChannel().getEndPoint().close();
+                    endPoint.close();
                 else
-                    jettyRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                    endPoint.shutdownOutput();
             }
         });
         server.start();
@@ -975,13 +975,14 @@ public class HttpClientTLSTest
         server.setHandler(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Throwable
             {
                 failFlush.set(true);
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 if (close)
-                    jettyRequest.getHttpChannel().getEndPoint().close();
+                    endPoint.close();
                 else
-                    jettyRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                    endPoint.shutdownOutput();
             }
         });
         server.start();
