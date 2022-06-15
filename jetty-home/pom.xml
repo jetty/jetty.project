@@ -131,7 +131,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.demo,org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.ee9,org.eclipse.jetty.ee10,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
                 apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
@@ -246,10 +246,10 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-jakarta-servlet-api</artifactId>
+                  <groupId>jakarta.servlet</groupId>
+                  <artifactId>jakarta.servlet-api</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>6.0.0-SNAPSHOT</version>
+                  <version>6.0.0</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -459,63 +459,120 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-apache-jsp-deps</id>
+            <id>copy-ee10-jsp-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
-              </includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
-              <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-apache-jsp-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
-              </includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <prependGroupId>true</prependGroupId>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.mortbay.jasper</groupId>
+                  <artifactId>apache-jsp</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>10.1.0-SNAPSHOT</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.mortbay.jasper</groupId>
+                  <artifactId>apache-el</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>10.1.0-SNAPSHOT</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jdt</groupId>
+                  <artifactId>ecj</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.30.0</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${source-assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-glassfish-jstl-deps</id>
+            <id>copy-ee10-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.mortbay.jasper</groupId>
+                  <artifactId>apache-jsp</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>10.1.0-SNAPSHOT</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.mortbay.jasper</groupId>
+                  <artifactId>apache-el</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>10.1.0-SNAPSHOT</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jdt</groupId>
+                  <artifactId>ecj</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.30.0</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-glassfish-jstl-src-deps</id>
+            <id>copy-ee10-jstl-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.servlet.jsp.jstl</groupId>
+                  <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.0.0</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.glassfish.web</groupId>
+                  <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.0.0</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${source-assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee10-jstl-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <prependGroupId>true</prependGroupId>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.servlet.jsp.jstl</groupId>
+                  <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.0.0</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.glassfish.web</groupId>
+                  <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+                  <!-- FIXME MUST BE A PROPERTY -->
+                  <version>3.0.0</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <!-- TODO: add copy deps for ee9 apache-jsp and jstl -->
@@ -586,7 +643,6 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <!--              <includeArtifactIds></includeArtifactIds>-->
               <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -600,9 +656,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <!--              <includeArtifactIds></includeArtifactIds>-->
-              <includeTypes>jar</includeTypes>
               <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
+              <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -730,6 +785,8 @@
                     <exclude>jakarta.mail:jakarta.mail-api</exclude>
                     <exclude>jakarta.annotation:jakarta.annotation-api</exclude>
                     <exclude>jakarta.authentication:jakarta.authentication-api</exclude>
+                    <exclude>jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api</exclude>
+                    <exclude>org.glassfish.web:jakarta.servlet.jsp.jstl</exclude>
                     <exclude>org.mortbay.jasper:apache-jsp</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
