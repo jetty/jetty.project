@@ -30,8 +30,8 @@
     <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>6.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.1.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
+    <jakarta.servlet.jsp.jstl.api.version>3.0.0</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>3.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
     <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>4.0.0</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>4.0.0</jakarta.xml.bind.impl.version>
@@ -361,21 +361,6 @@
         <groupId>jakarta.xml.ws</groupId>
         <artifactId>jakarta.xml.ws-api</artifactId>
         <version>${jakarta.xml.ws.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
