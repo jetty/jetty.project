@@ -51,16 +51,15 @@
     <module>jetty-ee9-webapp</module>
     <module>jetty-ee9-servlets</module>
     <module>jetty-ee9-demos</module>
-<!--    <module>jetty-ee9-apache-jsp</module>-->
-<!--    <module>jetty-ee9-glassfish-jstl</module>-->
+    <module>jetty-ee9-apache-jsp</module>
+    <module>jetty-ee9-glassfish-jstl</module>
     <module>jetty-ee9-annotations</module>
 <!--    <module>jetty-ee9-ant</module>-->
-<!--    <module>jetty-ee9-cdi</module>-->
+    <module>jetty-ee9-cdi</module>
 <!--    <module>jetty-ee9-fcgi-server-proxy</module>-->
-<!--    <module>jetty-ee9-http-spi</module>-->
     <module>jetty-ee9-jaas</module>
-<!--    <module>jetty-ee9-jaspi</module>-->
-<!--    <module>jetty-ee9-jspc-maven-plugin</module>-->
+    <module>jetty-ee9-jaspi</module>
+    <module>jetty-ee9-jspc-maven-plugin</module>
 <!--    <module>jetty-ee9-maven-plugin</module>-->
 <!--    <module>jetty-ee9-openid</module>-->
 <!--    <module>jetty-ee9-osgi</module>-->

@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,14 +27,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class StandardDescriptorProcessorTest
 {
     //TODO add tests for other methods
-    
+    Server _server;
+
+    @BeforeEach
+    public void beforeEach() throws Exception
+    {
+        _server = new Server();
+        _server.start();
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        _server.stop();
+        Configurations.getKnown().forEach(System.err::println);
+    }
+
     @Test
     public void testVisitSessionConfig() throws Exception
     {
         File webXml = MavenTestingUtils.getTargetFile("test-classes/web-session-config.xml");
-        Server server = new Server();
         WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
+        wac.setServer(_server);
         wac.setResourceBase(MavenTestingUtils.getTargetTestingDir("testSessionConfig").getAbsolutePath());
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();

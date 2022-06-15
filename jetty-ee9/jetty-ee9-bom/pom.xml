@@ -64,31 +64,31 @@
         <artifactId>jetty-ee9-annotations</artifactId>
         <version>${project.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-apache-jsp</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-cdi</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-apache-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-cdi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-glassfish-jstl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaas</artifactId>
         <version>${project.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-jaspi</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-jaspi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>-->
