@@ -18,12 +18,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RegexPathSpec extends AbstractPathSpec
 {
-    private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UriTemplatePathSpec.class);
 
     private static final Map<Character, String> FORBIDDEN_ESCAPED = new HashMap<>();
 

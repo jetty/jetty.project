@@ -48,8 +48,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.ReadLineInputStream.Termination;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MultiPartInputStream
@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
 @Deprecated
 public class MultiPartInputStreamParser
 {
-    private static final Logger LOG = Log.getLogger(MultiPartInputStreamParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartInputStreamParser.class);
     public static final MultipartConfigElement __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     public static final MultiMap<Part> EMPTY_MAP = new MultiMap(Collections.emptyMap());
     protected InputStream _in;
