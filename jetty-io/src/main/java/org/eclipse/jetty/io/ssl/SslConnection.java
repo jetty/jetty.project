@@ -419,7 +419,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
 
-    private void releaseEncryptedInputBuffer()
+    private void releaseEmptyEncryptedInputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -430,7 +430,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     }
 
-    private void releaseDecryptedInputBuffer()
+    private void releaseEmptyDecryptedInputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -441,28 +441,23 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     }
 
-    private void releaseInputBuffers()
-    {
-        clearInputBuffers();
-        releaseEmptyInputBuffers();
-    }
-
-    private void releaseEmptyInputBuffers()
-    {
-        releaseEncryptedInputBuffer();
-        releaseDecryptedInputBuffer();
-    }
-
-    private void clearInputBuffers()
+    private void discardInputBuffers()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
         if (_encryptedInput != null)
             _encryptedInput.clear();
         BufferUtil.clear(_decryptedInput);
+        releaseEmptyInputBuffers();
     }
 
-    private void releaseEncryptedOutputBuffer()
+    private void releaseEmptyInputBuffers()
+    {
+        releaseEmptyEncryptedInputBuffer();
+        releaseEmptyDecryptedInputBuffer();
+    }
+
+    private void discardEncryptedOutputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -792,7 +787,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     // See also system property "jsse.SSLEngine.acceptLargeFragments".
                                     if (BufferUtil.isEmpty(_decryptedInput) && appBufferSize < getApplicationBufferSize())
                                     {
-                                        releaseDecryptedInputBuffer();
+                                        releaseEmptyDecryptedInputBuffer();
                                         continue;
                                     }
                                     throw new IllegalStateException("Unexpected unwrap result " + unwrap);
@@ -823,7 +818,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        releaseInputBuffers();
+                        discardInputBuffers();
                         Throwable f = handleException(x, "fill");
                         Throwable failure = handshakeFailed(f);
                         if (_flushState == FlushState.WAIT_FOR_FILL)
@@ -1192,7 +1187,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        releaseEncryptedOutputBuffer();
+                        discardEncryptedOutputBuffer();
                         Throwable failure = handleException(x, "flush");
                         throw handshakeFailed(failure);
                     }
@@ -1384,7 +1379,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try (AutoLock l = _lock.lock())
             {
-                releaseEncryptedOutputBuffer();
+                discardEncryptedOutputBuffer();
             }
             getEndPoint().close();
         }
@@ -1433,7 +1428,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try (AutoLock l = _lock.lock())
             {
-                releaseInputBuffers();
+                discardInputBuffers();
             }
             // First send the TLS Close Alert, then the FIN.
             doShutdownOutput(true);
@@ -1615,7 +1610,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB failed {}", SslConnection.this, x);
 
-                    releaseEncryptedOutputBuffer();
+                    discardEncryptedOutputBuffer();
 
                     _flushState = FlushState.IDLE;
                     failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH ||
