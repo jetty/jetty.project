@@ -33,15 +33,19 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Supports {@link PathSpecGroup} for {@link PathSpecGroup#EXACT}, {@link PathSpecGroup#PREFIX_GLOB}, {@link PathSpecGroup#MIDDLE_GLOB}, and {@link PathSpecGroup#SUFFIX_GLOB}.
  * This is done by evaluating the signature or the provided regex pattern for what is a literal vs a glob (of any kind).
- *     <ul>
- *         <li>Only literals, it's a {@link PathSpecGroup#EXACT}.</li>
- *         <li>Starts with literals, ends with globs, it's a {@link PathSpecGroup#PREFIX_GLOB}</li>
- *         <li>Starts with glob, has at least 1 literal, then any thing else, it's a {@link PathSpecGroup#SUFFIX_GLOB}</li>
- *         <li>All other signatures are a {@link PathSpecGroup#MIDDLE_GLOB}</li>
- *     </ul>
- *     The use of regex capture groups, regex character classes, regex quantifiers, and regex special contructs
- *     will be identified as a glob (for signature determination), all other characters are identified
- *     as literal.  The regex {@code ^} beginning of line, and regex {@code $} end of line are ignored.
+ * </p>
+ *
+ * <ul>
+ *   <li>Only literals, it's a {@link PathSpecGroup#EXACT}.</li>
+ *   <li>Starts with literals, ends with globs, it's a {@link PathSpecGroup#PREFIX_GLOB}</li>
+ *   <li>Starts with glob, has at least 1 literal, then any thing else, it's a {@link PathSpecGroup#SUFFIX_GLOB}</li>
+ *   <li>All other signatures are a {@link PathSpecGroup#MIDDLE_GLOB}</li>
+ * </ul>
+ *
+ * <p>
+ * The use of regex capture groups, regex character classes, regex quantifiers, and regex special contructs
+ * will be identified as a glob (for signature determination), all other characters are identified
+ * as literal.  The regex {@code ^} beginning of line, and regex {@code $} end of line are ignored.
  * </p>
  *
  * <p>
@@ -49,90 +53,44 @@ import org.eclipse.jetty.util.log.Logger;
  * </p>
  *
  * <p>
- *     There's a few steps in evaluating the matched input path for determining where the split
- *     in the input path should occur for {@link MatchedPath#getPathMatch()} and {@link MatchedPath#getPathInfo()}.
- *     <ol>
- *         <li>If there are no regex capturing groups,
- *           the entire path is returned in {@link MatchedPath#getPathMatch()},
- *           and a null returned for {@link MatchedPath#getPathInfo()}</li>
- *         <li>If both the named regex capturing groups {@code name} and {@code info} are present, then
- *           the {@code name} group is returned in {@link MatchedPath#getPathMatch()} and the
- *           {@code info} group is returned in {@link MatchedPath#getPathInfo()}</li>
- *         <li>
- *             If there is only 1 regex capturing group
- *             <ul>
- *               <li>If the named regex capturing group {@code name} is present, the
- *               input path up to the end of the capturing group is returned
- *               in {@link MatchedPath#getPathMatch()} and any following characters (or null)
- *               are returned in {@link MatchedPath#getPathInfo()} </li>
- *               <li>other wise the input path up to the start of the capturing group is returned
- *               in {@link MatchedPath#getPathMatch()} and any following characters (or null)
- *               are returned in {@link MatchedPath#getPathInfo()}</li>
- *             </ul>
- *             If the split on pathMatch ends with {@code /} AND the pathInfo doesn't start with {@code /}
- *             then the slash is moved from pathMatch to pathInfo.
- *         </li>
- *         <li>
- *           All other RegexPathSpec signatures will return the entire path
- *           in {@link MatchedPath#getPathMatch()}, and a null returned for {@link MatchedPath#getPathInfo()}
- *         </li>
- *     </ol>
+ * There's a few steps in evaluating the matched input path for determining where the split
+ * in the input path should occur for {@link MatchedPath#getPathMatch()} and {@link MatchedPath#getPathInfo()}.
  * </p>
  *
- * <p>
- *     Some examples:
- * </p>
- * <code>
- *  RegexPathSpec("^/[Tt]est(/.*)?$") - type: SUFFIX
- *    matched("/test/info")
- *      pathMatch: "/test/info"
- *      pathInfo:  null
- *    matched("/Test/data")
- *      pathMatch: "/Test/data"
- *      pathInfo:  null
- *
- *  RegexPathSpec("^/test/info$") - type: EXACT
- *    matched("/test/info")
- *      pathMatch: "/test/info"
- *      pathInfo:  null
- *
- *  RegexPathSpec("^/t(.*)/c(.*)$") - type: MIDDLE
- *    matched("/test/code")
- *      pathMatch: "/test/code"
- *      pathInfo:  null
- *
- *  RegexPathSpec("^/test(/.*)$") - type: PREFIX
- *    matched("/test/more")
- *      pathMatch: "/test"
- *      pathInfo:  "/more"
- *
- *  RegexPathSpec("^/test(/i.*)(/c.*)?$") - type: PREFIX
- *    matched("/test/info")
- *      pathMatch: "/test"
- *      pathInfo:  "/info"
- *    matched("/test/info/code")
- *      pathMatch: "/test"
- *      pathInfo:  "/info/code"
- *    matched("/test/ice/cream")
- *      pathMatch: "/test"
- *      pathInfo:  "/ice/cream"
- *
- * RegexPathSpec("^(?<name>\/.*)/.*\.do$") - type: SUFFIX
- *    matched("/test/info/code.do")
- *      pathMatch: "/test/info"
- *      pathInfo:  "/code.do"
- *    matched("/a/b/c/d/e/f/g.do")
- *      pathMatch: "/a/b/c/d/e/f"
- *      pathInfo:  "/g.do"
- *
- * RegexPathSpec("^(?<name>\/.*)(?<info>\/.*\.action)$") - type: MIDDLE
- *    matched("/test/info/code.action")
- *      pathMatch: "/test/info"
- *      pathInfo:  "/code.action"
- *    matched("/a/b/c/d/e/f/g.action")
- *      pathMatch: "/a/b/c/d/e/f"
- *      pathInfo:  "/g.action"
- * </code>
+ * <ol>
+ *   <li>
+ *     If there are no regex capturing groups,
+ *     the entire path is returned in {@link MatchedPath#getPathMatch()},
+ *     and a null returned for {@link MatchedPath#getPathInfo()}
+ *   </li>
+ *   <li>
+ *     If both the named regex capturing groups {@code name} and {@code info} are present, then
+ *     the {@code name} group is returned in {@link MatchedPath#getPathMatch()} and the
+ *     {@code info} group is returned in {@link MatchedPath#getPathInfo()}
+ *   </li>
+ *   <li>
+ *     If there is only 1 regex capturing group
+ *     <ul>
+ *       <li>
+ *         If the named regex capturing group {@code name} is present, the
+ *         input path up to the end of the capturing group is returned
+ *         in {@link MatchedPath#getPathMatch()} and any following characters (or null)
+ *         are returned in {@link MatchedPath#getPathInfo()}
+ *       </li>
+ *       <li>
+ *         other wise the input path up to the start of the capturing group is returned
+ *         in {@link MatchedPath#getPathMatch()} and any following characters (or null)
+ *         are returned in {@link MatchedPath#getPathInfo()}
+ *       </li>
+ *     </ul>
+ *     If the split on pathMatch ends with {@code /} AND the pathInfo doesn't start with {@code /}
+ *     then the slash is moved from pathMatch to pathInfo.
+ *   </li>
+ *   <li>
+ *     All other RegexPathSpec signatures will return the entire path
+ *     in {@link MatchedPath#getPathMatch()}, and a null returned for {@link MatchedPath#getPathInfo()}
+ *   </li>
+ * </ol>
  */
 public class RegexPathSpec extends AbstractPathSpec
 {
