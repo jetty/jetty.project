@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-unixsocket</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.10</version>
+    <version>10.0.11-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
