@@ -8,7 +8,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <name>EE10 :: Jetty Demo :: Servlet Spec :: Webapp</name>
-  <artifactId>ee10-demo-spec-webapp</artifactId>
+  <artifactId>jetty-ee10-demo-spec-webapp</artifactId>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.spec.webapp</bundle-symbolic-name>
@@ -113,7 +113,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.ee10.demos</groupId>
-                  <artifactId>ee10-demo-mock-resources</artifactId>
+                  <artifactId>jetty-ee10-demo-mock-resources</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
                   <includes>**</includes>
@@ -174,7 +174,7 @@
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.ee10.demos</groupId>
-              <artifactId>ee10-demo-mock-resources</artifactId>
+              <artifactId>jetty-ee10-demo-mock-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -201,11 +201,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-web-fragment</artifactId>
+      <artifactId>jetty-ee10-demo-web-fragment</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-container-initializer</artifactId>
+      <artifactId>jetty-ee10-demo-container-initializer</artifactId>
     </dependency>
 
     <!-- deliberately old version to test classloading -->

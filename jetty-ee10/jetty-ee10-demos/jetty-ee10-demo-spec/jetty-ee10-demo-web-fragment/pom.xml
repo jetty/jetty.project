@@ -8,7 +8,7 @@
   </parent>
 
   <name>EE10 :: Jetty Demo :: Servlet Spec :: Fragment Jar</name>
-  <artifactId>ee10-demo-web-fragment</artifactId>
+  <artifactId>jetty-ee10-demo-web-fragment</artifactId>
   <packaging>jar</packaging>
 
   <properties>

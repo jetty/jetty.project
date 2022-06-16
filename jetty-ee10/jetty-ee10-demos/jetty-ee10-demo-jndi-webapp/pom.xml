@@ -70,7 +70,7 @@
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.ee10.demos</groupId>
-              <artifactId>ee10-demo-mock-resources</artifactId>
+              <artifactId>jetty-ee10-demo-mock-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -81,7 +81,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-mock-resources</artifactId>
+      <artifactId>jetty-ee10-demo-mock-resources</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
