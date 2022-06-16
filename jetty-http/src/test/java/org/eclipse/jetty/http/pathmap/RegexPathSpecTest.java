@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,7 +28,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexPathSpecTest
 {
@@ -52,6 +56,9 @@ public class RegexPathSpecTest
 
         assertNotMatches(spec, "/aa");
         assertNotMatches(spec, "/a/");
+
+        assertThat(spec.getPathMatch("/a"), equalTo("/a"));
+        assertThat(spec.getPathInfo("/a"), nullValue());
     }
 
     @Test
@@ -73,20 +80,61 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/rest/admin/delete");
         assertNotMatches(spec, "/rest/list");
+
+        assertThat(spec.getPathMatch("/rest/1.0/list"), equalTo("/rest"));
+        assertThat(spec.getPathInfo("/rest/1.0/list"), equalTo("/1.0/list"));
     }
 
-    @Test
-    public void testPathInfo()
+    public static Stream<Arguments> matchedPathCases()
     {
-        RegexPathSpec spec = new RegexPathSpec("^/test(/.*)?$");
-        assertTrue(spec.matches("/test/info"));
-        assertThat(spec.getPathMatch("/test/info"), equalTo("/test"));
-        assertThat(spec.getPathInfo("/test/info"), equalTo("/info"));
+        return Stream.of(
+            // Suffix (with optional capture group)
+            Arguments.of("^/[Tt]est(/.*)?$", "/test/info", "/test", "/info"),
+            Arguments.of("^/[Tt]est(/.*)?$", "/test", "/test", null),
+            Arguments.of("^(.*).do$", "/a.do", "", "/a.do"),
+            Arguments.of("^(.*).do$", "/a/b/c.do", "", "/a/b/c.do"),
+            Arguments.of("^(.*).do$", "/abcde.do", "", "/abcde.do"),
+            // Exact (no capture group)
+            Arguments.of("^/test/info$", "/test/info", "/test/info", null),
+            // Middle (with one capture group)
+            Arguments.of("^/rest/([^/]*)/list$", "/rest/api/list", "/rest", "/api/list"),
+            Arguments.of("^/rest/([^/]*)/list$", "/rest/1.0/list", "/rest", "/1.0/list"),
+            // Middle (with two capture groups)
+            Arguments.of("^/t(.*)/i(.*)$", "/test/info", "/test/info", null),
+            // Prefix (with optional capture group)
+            Arguments.of("^/test(/.*)?$", "/test/info", "/test", "/info"),
+            Arguments.of("^/a/(.*)?$", "/a/b/c/d", "/a", "/b/c/d"),
+            // Prefix (with many capture groups)
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/info/code", "/test/info/code", null),
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/info/code/data", "/test/info/code/data", null),
+            Arguments.of("^/test(/i.*)(/c.*)(/d.*)?$", "/test/ice/cream/dip", "/test/ice/cream/dip", null),
+            // Suffix (with only 1 named capture group of id "name")
+            Arguments.of("^(?<name>\\/.*)/.*\\.do$", "/test/info/code.do", "/test/info", "/code.do"),
+            Arguments.of("^(?<name>\\/.*)/.*\\.do$", "/a/b/c/d/e/f/g.do", "/a/b/c/d/e/f", "/g.do"),
+            // Suffix (with only 1 named capture group of id "info")
+            Arguments.of("^/.*(?<info>\\/.*\\.do)$", "/test/info/code.do", "/test/info", "/code.do"),
+            Arguments.of("^/.*(?<info>\\/.*\\.do)$", "/a/b/c/d/e/f/g.do", "/a/b/c/d/e/f", "/g.do"),
+            // Middle (with 2 named capture groups)
+            // this is pretty much an all glob signature
+            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/test/info/code.action", "/test/info", "/code.action"),
+            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/a/b/c/d/e/f/g.action", "/a/b/c/d/e/f", "/g.action"),
+            // Named groups with gap in the middle
+            Arguments.of("^(?<name>\\/.*)/x/(?<info>.*\\.action)$", "/a/b/c/x/e/f/g.action", "/a/b/c", "e/f/g.action"),
+            // Named groups in opposite order
+            Arguments.of("^(?<info>\\/.*)/x/(?<name>.*\\.action)$", "/a/b/c/x/e/f/g.action", "e/f/g.action", "/a/b/c")
+        );
+    }
 
-        spec = new RegexPathSpec("^/[Tt]est(/.*)?$");
-        assertTrue(spec.matches("/test/info"));
-        assertThat(spec.getPathMatch("/test/info"), equalTo("/test/info"));
-        assertThat(spec.getPathInfo("/test/info"), nullValue());
+    @ParameterizedTest(name = "[{index}] RegexPathSpec(\"{0}\").matched(\"{1}\")")
+    @MethodSource("matchedPathCases")
+    public void testMatchedPath(String regex, String input, String expectedPathMatch, String expectedPathInfo)
+    {
+        RegexPathSpec spec = new RegexPathSpec(regex);
+        MatchedPath matched = spec.matched(input);
+        assertEquals(expectedPathMatch, matched.getPathMatch(),
+            String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathMatch()", regex, input));
+        assertEquals(expectedPathInfo, matched.getPathInfo(),
+            String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathInfo()", regex, input));
     }
 
     @Test
@@ -108,6 +156,9 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/rest/admin/delete");
         assertNotMatches(spec, "/rest/list");
+
+        assertThat(spec.getPathMatch("/rest/1.0/list"), equalTo("/rest/1.0/list"));
+        assertThat(spec.getPathInfo("/rest/1.0/list"), nullValue());
     }
 
     @Test
@@ -126,6 +177,9 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/a");
         assertNotMatches(spec, "/aa");
         assertNotMatches(spec, "/aa/bb");
+
+        assertThat(spec.getPathMatch("/a/b/c/d/e"), equalTo("/a"));
+        assertThat(spec.getPathInfo("/b/c/d/e"), nullValue());
     }
 
     @Test
@@ -147,8 +201,8 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/aa/bb.do/more");
 
-        assertThat(spec.getPathMatch("/a/b/c.do"), equalTo("/a/b/c.do"));
-        assertThat(spec.getPathInfo("/a/b/c.do"), nullValue());
+        assertThat(spec.getPathMatch("/a/b/c.do"), equalTo(""));
+        assertThat(spec.getPathInfo("/a/b/c.do"), equalTo("/a/b/c.do"));
     }
 
     /**
