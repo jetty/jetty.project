@@ -624,6 +624,7 @@ public class ClientConnector extends ContainerLifeCycle
          * {@link SocketChannel#connect(SocketAddress)}, as this is done later,
          * after configuring the socket, by the {@link ClientConnector} implementation.</p>
          *
+         * @param clientConnector the client connector requesting channel with associated address
          * @param address the destination socket address, typically specified in a URI
          * @param context the context to create the new socket channel
          * @return a new {@link SocketChannel} with an associated {@link SocketAddress} to connect to
