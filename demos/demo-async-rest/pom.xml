@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.10</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
