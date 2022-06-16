@@ -96,7 +96,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, -1, -1);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, 0, 0);
     }
 
     /**
@@ -138,20 +138,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     @Override
     protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
     {
-        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory)
-        {
-            @Override
-            protected ByteBuffer allocate(int capacity)
-            {
-                return ArrayByteBufferPool.this.acquire(capacity, false);
-            }
-
-            @Override
-            protected ByteBuffer allocateDirect(int capacity)
-            {
-                return ArrayByteBufferPool.this.acquire(capacity, true);
-            }
-        };
+        return new Retained(maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
     }
 
     @Override
@@ -311,6 +298,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             dump.add("Indirect Buckets size=" + indirect.size());
             dump.add("Direct Buckets size=" + direct.size());
         }
+        dump.add(asRetainableByteBufferPool());
         Dumpable.dumpObjects(out, indent, this, dump);
     }
 
@@ -323,5 +311,25 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             _maxCapacity,
             getMaxBucketSize(),
             getCapacityFactor());
+    }
+
+    private class Retained extends ArrayRetainableByteBufferPool
+    {
+        Retained(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            super(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        }
+
+        @Override
+        protected ByteBuffer allocate(int capacity)
+        {
+            return ArrayByteBufferPool.this.acquire(capacity, false);
+        }
+
+        @Override
+        protected ByteBuffer allocateDirect(int capacity)
+        {
+            return ArrayByteBufferPool.this.acquire(capacity, true);
+        }
     }
 }

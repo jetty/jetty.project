@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -189,9 +188,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (pool == null)
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
-        addBean(_byteBufferPool);
-        RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        addBean(retainableByteBufferPool == null ? _byteBufferPool.asRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
+        addBean(_byteBufferPool, pool == null);
 
         addEventListener(new Container.Listener()
         {

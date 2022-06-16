@@ -47,12 +47,22 @@ public interface RetainableByteBufferPool
 
     static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
     {
-        return (size, direct) ->
+        return new RetainableByteBufferPool()
         {
-            ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-            RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
-            retainableByteBuffer.acquire();
-            return retainableByteBuffer;
+            @Override
+            public RetainableByteBuffer acquire(int size, boolean direct)
+            {
+                ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
+                RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
+                retainableByteBuffer.acquire();
+                return retainableByteBuffer;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("NonRetainableByteBufferPool@%x{%s}", hashCode(), byteBufferPool.toString());
+            }
         };
     }
 }

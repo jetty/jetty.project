@@ -44,8 +44,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ArrayRetainableByteBufferPool.class);
 
-    private final Bucket[] _direct;
-    private final Bucket[] _indirect;
+    private final RetainedBucket[] _direct;
+    private final RetainedBucket[] _indirect;
     private final int _minCapacity;
     private final int _maxCapacity;
     private final long _maxHeapMemory;
@@ -122,13 +122,13 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             bucketCapacity = i -> (i + 1) * f;
 
         int length = bucketIndexFor.apply(maxCapacity) + 1;
-        Bucket[] directArray = new Bucket[length];
-        Bucket[] indirectArray = new Bucket[length];
+        RetainedBucket[] directArray = new RetainedBucket[length];
+        RetainedBucket[] indirectArray = new RetainedBucket[length];
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.apply(i), maxCapacity);
-            directArray[i] = new Bucket(capacity, maxBucketSize);
-            indirectArray[i] = new Bucket(capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
         }
 
         _minCapacity = minCapacity;
@@ -155,15 +155,15 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     @Override
     public RetainableByteBuffer acquire(int size, boolean direct)
     {
-        Bucket bucket = bucketFor(size, direct);
+        RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
             return newRetainableByteBuffer(size, direct, byteBuffer -> {});
-        Bucket.Entry entry = bucket.acquire();
+        RetainedBucket.Entry entry = bucket.acquire();
 
         RetainableByteBuffer buffer;
         if (entry == null)
         {
-            Bucket.Entry reservedEntry = bucket.reserve();
+            RetainedBucket.Entry reservedEntry = bucket.reserve();
             if (reservedEntry != null)
             {
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, byteBuffer ->
@@ -215,12 +215,12 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return bucketFor(capacity, direct);
     }
 
-    private Bucket bucketFor(int capacity, boolean direct)
+    private RetainedBucket bucketFor(int capacity, boolean direct)
     {
         if (capacity < _minCapacity)
             return null;
         int idx = _bucketIndexFor.apply(capacity);
-        Bucket[] buckets = direct ? _direct : _indirect;
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
         if (idx >= buckets.length)
             return null;
         return buckets[idx];
@@ -240,8 +240,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private long getByteBufferCount(boolean direct)
     {
-        Bucket[] buckets = direct ? _direct : _indirect;
-        return Arrays.stream(buckets).mapToLong(Bucket::size).sum();
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
+        return Arrays.stream(buckets).mapToLong(RetainedBucket::size).sum();
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers that are available")
@@ -258,7 +258,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private long getAvailableByteBufferCount(boolean direct)
     {
-        Bucket[] buckets = direct ? _direct : _indirect;
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
         return Arrays.stream(buckets).mapToLong(bucket -> bucket.values().stream().filter(Pool.Entry::isIdle).count()).sum();
     }
 
@@ -296,9 +296,9 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private long getAvailableMemory(boolean direct)
     {
-        Bucket[] buckets = direct ? _direct : _indirect;
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
         long total = 0L;
-        for (Bucket bucket : buckets)
+        for (RetainedBucket bucket : buckets)
         {
             int capacity = bucket._capacity;
             total += bucket.values().stream().filter(Pool.Entry::isIdle).count() * capacity;
@@ -313,11 +313,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         clearArray(_indirect, _currentHeapMemory);
     }
 
-    private void clearArray(Bucket[] poolArray, AtomicLong memoryCounter)
+    private void clearArray(RetainedBucket[] poolArray, AtomicLong memoryCounter)
     {
-        for (Bucket pool : poolArray)
+        for (RetainedBucket pool : poolArray)
         {
-            for (Bucket.Entry entry : pool.values())
+            for (RetainedBucket.Entry entry : pool.values())
             {
                 entry.remove();
                 memoryCounter.addAndGet(-entry.getPooled().capacity());
@@ -348,13 +348,13 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         long now = System.nanoTime();
         long totalClearedCapacity = 0L;
 
-        Bucket[] buckets = direct ? _direct : _indirect;
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
 
         while (totalClearedCapacity < excess)
         {
-            for (Bucket bucket : buckets)
+            for (RetainedBucket bucket : buckets)
             {
-                Bucket.Entry oldestEntry = findOldestEntry(now, bucket);
+                RetainedBucket.Entry oldestEntry = findOldestEntry(now, bucket);
                 if (oldestEntry == null)
                     continue;
 
@@ -399,8 +399,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
-        Bucket.Entry oldestEntry = null;
-        for (Bucket.Entry entry : bucket.values())
+        RetainedBucket.Entry oldestEntry = null;
+        for (RetainedBucket.Entry entry : bucket.values())
         {
             if (oldestEntry != null)
             {
@@ -416,11 +416,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return oldestEntry;
     }
 
-    private static class Bucket extends Pool<RetainableByteBuffer>
+    private static class RetainedBucket extends Pool<RetainableByteBuffer>
     {
         private final int _capacity;
 
-        Bucket(int capacity, int size)
+        RetainedBucket(int capacity, int size)
         {
             super(Pool.StrategyType.THREAD_ID, size, true);
             _capacity = capacity;
