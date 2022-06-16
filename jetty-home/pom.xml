@@ -470,14 +470,14 @@
                   <groupId>org.mortbay.jasper</groupId>
                   <artifactId>apache-jsp</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>10.1.0-SNAPSHOT</version>
+                  <version>10.1.0-M16</version>
                   <classifier>sources</classifier>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.mortbay.jasper</groupId>
                   <artifactId>apache-el</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>10.1.0-SNAPSHOT</version>
+                  <version>10.1.0-M16</version>
                   <classifier>sources</classifier>
                 </artifactItem>
                 <artifactItem>
@@ -504,13 +504,13 @@
                   <groupId>org.mortbay.jasper</groupId>
                   <artifactId>apache-jsp</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>10.1.0-SNAPSHOT</version>
+                  <version>10.1.0-M16</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.mortbay.jasper</groupId>
                   <artifactId>apache-el</artifactId>
                   <!-- FIXME MUST BE A PROPERTY -->
-                  <version>10.1.0-SNAPSHOT</version>
+                  <version>10.1.0-M16</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jdt</groupId>

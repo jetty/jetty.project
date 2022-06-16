@@ -38,7 +38,7 @@
     <jakarta.xml.ws.api.version>4.0.0</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>4.0.0-M4</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>2.1.0</jakarta.websocket.api.version>
-    <jsp.impl.version>10.1.0-SNAPSHOT</jsp.impl.version>
+    <jsp.impl.version>10.1.0-M16</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
   </properties>
 
