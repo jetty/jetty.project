@@ -193,69 +193,69 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-async-rest-jar</artifactId>
+        <artifactId>jetty-ee10-demo-async-rest-jar</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-jaas-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-async-rest-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-jetty-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-container-initializer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10.demos</groupId>
+        <artifactId>jetty-ee10-demo-jaas-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-jndi-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-jsp-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-jndi-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-mock-resources</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-proxy-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-spec-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-jsp-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-simple-webapp</artifactId>
+        <artifactId>jetty-ee10-demo-mock-resources</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10.demos</groupId>
+        <artifactId>jetty-ee10-demo-proxy-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10.demos</groupId>
+        <artifactId>jetty-ee10-demo-spec-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.demos</groupId>
-        <artifactId>ee10-demo-web-fragment</artifactId>
+        <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10.demos</groupId>
+        <artifactId>jetty-ee10-demo-web-fragment</artifactId>
         <version>${project.version}</version>
       </dependency>
       <!-- Jakarta EE10 Dependencies -->

@@ -159,7 +159,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-simple-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>
