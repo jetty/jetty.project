@@ -11,7 +11,7 @@ infinispan-remote
 sessions/infinispan/remote/infinispan-remote-query-libs
 
 [lib]
-lib/infinispan-remote-query-${jetty.version}.jar
+lib/jetty-infinispan-remote-query-${jetty.version}.jar
 
 [xml]
 etc/sessions/infinispan/infinispan-remote-query.xml
