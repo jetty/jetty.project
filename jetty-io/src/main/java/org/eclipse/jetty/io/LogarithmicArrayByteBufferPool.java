@@ -67,6 +67,14 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
     }
 
     @Override
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory,
+            c -> 32 - Integer.numberOfLeadingZeros(c - 1),
+            i -> 1 << i);
+    }
+
+    @Override
     protected int bucketFor(int capacity)
     {
         return 32 - Integer.numberOfLeadingZeros(capacity - 1);

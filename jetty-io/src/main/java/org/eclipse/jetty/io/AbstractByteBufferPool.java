@@ -30,26 +30,49 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 abstract class AbstractByteBufferPool implements ByteBufferPool
 {
     private final int _factor;
-    private final int _maxQueueLength;
+    private final int _maxCapacity;
+    private final int _maxBucketSize;
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
     private final AtomicLong _heapMemory = new AtomicLong();
     private final AtomicLong _directMemory = new AtomicLong();
-
+    private final RetainableByteBufferPool _retainableByteBufferPool;
+    
     /**
      * Creates a new ByteBufferPool with the given configuration.
      *
      * @param factor the capacity factor
-     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param maxBucketSize the maximum ByteBuffer queue length
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param retainedHeapMemory the max heap memory in bytes, -1 for no retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -1 for no retained memory or 0 to use default heuristic
      */
-    protected AbstractByteBufferPool(int factor, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
+    protected AbstractByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {
         _factor = factor <= 0 ? 1024 : factor;
-        _maxQueueLength = maxQueueLength;
+        _maxCapacity = maxCapacity > 0 ? maxCapacity : 64 * 1024;
+        _maxBucketSize = maxBucketSize;
         _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
         _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
+
+        if (retainedHeapMemory < 0 && retainedDirectMemory < 0)
+            _retainableByteBufferPool = RetainableByteBufferPool.from(this);
+        else
+            _retainableByteBufferPool = newRetainableByteBufferPool(maxCapacity, maxBucketSize,
+                (retainedHeapMemory != 0) ? retainedHeapMemory : _maxHeapMemory / 2,
+                (retainedDirectMemory != 0) ? retainedDirectMemory : _maxDirectMemory / 2);
+    }
+
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        return RetainableByteBufferPool.from(this);
+    }
+
+    @Override
+    public RetainableByteBufferPool asRetainableByteBufferPool()
+    {
+        return _retainableByteBufferPool;
     }
 
     protected int getCapacityFactor()
@@ -57,9 +80,14 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return _factor;
     }
 
-    protected int getMaxQueueLength()
+    protected int getMaxCapacity()
     {
-        return _maxQueueLength;
+        return _maxCapacity;
+    }
+
+    protected int getMaxBucketSize()
+    {
+        return _maxBucketSize;
     }
 
     @Deprecated

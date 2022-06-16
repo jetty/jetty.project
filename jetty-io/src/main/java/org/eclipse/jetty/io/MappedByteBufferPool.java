@@ -99,13 +99,13 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
      */
     public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory)
     {
-        super(factor, maxQueueLength, maxHeapMemory, maxDirectMemory);
+        super(factor, 0, maxQueueLength, maxHeapMemory, maxDirectMemory, -1, -1);
         _newBucket = newBucket;
     }
 
     private Bucket newBucket(int key, boolean direct)
     {
-        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(capacityFor(key), getMaxQueueLength(), updateMemory(direct));
+        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(capacityFor(key), getMaxBucketSize(), updateMemory(direct));
     }
 
     @Override
@@ -269,7 +269,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
     {
         return String.format("%s@%x{maxQueueLength=%s, factor=%s}",
             this.getClass().getSimpleName(), hashCode(),
-            getMaxQueueLength(),
+            getMaxBucketSize(),
             getCapacityFactor());
     }
 }

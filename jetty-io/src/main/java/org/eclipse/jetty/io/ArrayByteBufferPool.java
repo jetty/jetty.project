@@ -90,19 +90,35 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
-     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link ByteBufferPool.Bucket}
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      */
-    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        super(factor, maxQueueLength, maxHeapMemory, maxDirectMemory);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, -1, -1);
+    }
+
+    /**
+     * Creates a new ArrayByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link ByteBufferPool.Bucket}
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param retainedHeapMemory the max heap memory in bytes, -1 for no retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -1 for no retained memory or 0 to use default heuristic
+     */
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        super(factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
+        maxCapacity = getMaxCapacity();
 
         factor = getCapacityFactor();
         if (minCapacity <= 0)
             minCapacity = 0;
-        if (maxCapacity <= 0)
-            maxCapacity = 64 * 1024;
         if ((maxCapacity % factor) != 0 || factor >= maxCapacity)
             throw new IllegalArgumentException("The capacity factor must be a divisor of maxCapacity");
         _maxCapacity = maxCapacity;
@@ -117,6 +133,12 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             _direct[i] = newBucket(i, true);
             _indirect[i] = newBucket(i, false);
         }
+    }
+
+    @Override
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
     }
 
     @Override
@@ -162,7 +184,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     private Bucket newBucket(int key, boolean direct)
     {
-        return new Bucket(capacityFor(key), getMaxQueueLength(), updateMemory(direct));
+        return new Bucket(capacityFor(key), getMaxBucketSize(), updateMemory(direct));
     }
 
     @Override
@@ -286,7 +308,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             this.getClass().getSimpleName(), hashCode(),
             _minCapacity,
             _maxCapacity,
-            getMaxQueueLength(),
+            getMaxBucketSize(),
             getCapacityFactor());
     }
 }

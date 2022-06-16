@@ -36,23 +36,23 @@ public interface RetainableByteBufferPool
      * Finds a {@link RetainableByteBufferPool} implementation in the given container, or wrap the given
      * {@link ByteBufferPool} with an adapter.
      * @param container the container to search for an existing memory pool.
-     * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
-     * @return the {@link RetainableByteBufferPool} found or the wrapped one.
+     * @param byteBufferPool Use  {@link ByteBufferPool#asRetainableByteBufferPool()} to convert if no memory pool was found in the container.
+     * @return the {@link RetainableByteBufferPool} found or the converted one.
      */
     static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
     {
         RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
+        return retainableByteBufferPool == null ? byteBufferPool.asRetainableByteBufferPool() : retainableByteBufferPool;
+    }
+
+    static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
+    {
+        return (size, direct) ->
         {
-            // Wrap the ByteBufferPool instance.
-            retainableByteBufferPool = (size, direct) ->
-            {
-                ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-                RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
-                retainableByteBuffer.acquire();
-                return retainableByteBuffer;
-            };
-        }
-        return retainableByteBufferPool;
+            ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
+            RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
+            retainableByteBuffer.acquire();
+            return retainableByteBuffer;
+        };
     }
 }

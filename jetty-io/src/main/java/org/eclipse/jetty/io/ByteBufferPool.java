@@ -78,6 +78,11 @@ public interface ByteBufferPool
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
     }
 
+    default RetainableByteBufferPool asRetainableByteBufferPool()
+    {
+        return RetainableByteBufferPool.from(this);
+    }
+
     public static class Lease
     {
         private final ByteBufferPool byteBufferPool;
@@ -148,7 +153,7 @@ public interface ByteBufferPool
         }
     }
 
-    public static class Bucket
+    class Bucket
     {
         private final Queue<ByteBuffer> _queue = new ConcurrentLinkedQueue<>();
         private final int _capacity;
