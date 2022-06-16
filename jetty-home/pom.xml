@@ -407,40 +407,12 @@
             </goals>
             <configuration>
               <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>copy-ee9-annotations-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee9-annotations</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee9-annotations-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee9-annotations</outputDirectory>
-            </configuration>
-          </execution>
->>>>>>> baedc368ed (ignore some upperbound, fix few and cleanup some poms)
           <execution>
             <id>copy-ee10-annotations-src-deps-jakarta-annotation</id>
             <phase>generate-resources</phase>
@@ -643,7 +615,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
-<!--              <includeArtifactIds></includeArtifactIds>-->
+              <!--              <includeArtifactIds></includeArtifactIds>-->
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -656,7 +628,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
-<!--              <includeArtifactIds></includeArtifactIds>-->
+              <!--              <includeArtifactIds></includeArtifactIds>-->
               <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
@@ -852,22 +824,22 @@
   </dependencyManagement>
 
   <dependencies>
-<!--    <dependency>-->
-<!--      <groupId>jakarta.mail</groupId>-->
-<!--      <artifactId>jakarta.mail-api</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>jakarta.annotation</groupId>-->
-<!--      <artifactId>jakarta.annotation-api</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>jakarta.authentication</groupId>-->
-<!--      <artifactId>jakarta.authentication-api</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>jakarta.transaction</groupId>-->
-<!--      <artifactId>jakarta.transaction-api</artifactId>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>jakarta.mail</groupId>-->
+    <!--      <artifactId>jakarta.mail-api</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>jakarta.annotation</groupId>-->
+    <!--      <artifactId>jakarta.annotation-api</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>jakarta.authentication</groupId>-->
+    <!--      <artifactId>jakarta.authentication-api</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>jakarta.transaction</groupId>-->
+    <!--      <artifactId>jakarta.transaction-api</artifactId>-->
+    <!--    </dependency>-->
 
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -905,65 +877,65 @@
       <artifactId>jetty-start</artifactId>
       <classifier>shaded</classifier>
       <version>${project.version}</version>
-    </dependency>    
+    </dependency>
     <!-- ee9 specific dependencies -->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-quickstart</artifactId>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-quickstart</artifactId>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
     </dependency>
     <!-- not ready yet -->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-servlet</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-apache-jsp</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
-<!--      <exclusions>-->
-<!--        <exclusion>-->
-<!--          <groupId>javax.el</groupId>-->
-<!--          <artifactId>el-api</artifactId>-->
-<!--        </exclusion>-->
-<!--        <exclusion>-->
-<!--          <groupId>jakarta.el</groupId>-->
-<!--          <artifactId>jakarta.el-api</artifactId>-->
-<!--        </exclusion>-->
-<!--      </exclusions>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+    <!--      <artifactId>jetty-ee9-websocket-servlet</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+    <!--      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+    <!--      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
+    <!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-apache-jsp</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
+    <!--      <exclusions>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>javax.el</groupId>-->
+    <!--          <artifactId>el-api</artifactId>-->
+    <!--        </exclusion>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>jakarta.el</groupId>-->
+    <!--          <artifactId>jakarta.el-api</artifactId>-->
+    <!--        </exclusion>-->
+    <!--      </exclusions>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
       <version>${project.version}</version>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-proxy</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-cdi</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-proxy</artifactId>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-cdi</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-jaas</artifactId>
@@ -975,16 +947,16 @@
       <artifactId>jetty-ee9-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-openid</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-jaspi</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-openid</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+    <!--      <artifactId>jetty-ee9-jaspi</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
     <!-- ee10 specific dependencies -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
@@ -1082,7 +1054,7 @@
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
       <optional>true</optional>
-    </dependency>    
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
@@ -1137,6 +1109,7 @@
 <<<<<<< HEAD
       <artifactId>jetty-infinispan-remote-query</artifactId>
     </dependency>
+<<<<<<< HEAD
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-hazelcast</artifactId>
@@ -1178,6 +1151,28 @@
 <!--      <artifactId>jetty-nosql</artifactId>-->
 <!--      <optional>true</optional>-->
 <!--    </dependency>-->
+
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty</groupId>-->
+    <!--      <artifactId>jetty-hazelcast</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
+    <!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
+    <!--      <artifactId>jetty-memcached-sessions</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty</groupId>-->
+    <!--      <artifactId>jetty-nosql</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-keystore</artifactId>
