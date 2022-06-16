@@ -32,7 +32,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -192,7 +191,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
         addBean(_byteBufferPool);
         RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
+        addBean(retainableByteBufferPool == null ? _byteBufferPool.asRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
 
         addEventListener(new Container.Listener()
         {
