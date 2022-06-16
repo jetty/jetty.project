@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>ee10-demo-template</artifactId>
+  <artifactId>jetty-ee10-demo-template</artifactId>
   <name>EE10 :: Jetty Demo :: Template</name>
   <packaging>jar</packaging>
 
@@ -18,8 +18,8 @@
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <includes>
-              <include>index.html</include>
-              <include>small_powered_by.gif</include>
+            <include>index.html</include>
+            <include>small_powered_by.gif</include>
           </includes>
         </configuration>
       </plugin>

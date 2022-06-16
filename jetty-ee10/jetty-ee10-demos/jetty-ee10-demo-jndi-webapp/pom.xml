@@ -6,7 +6,7 @@
     <artifactId>jetty-ee10-demos</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>ee10-demo-jndi-webapp</artifactId>
+  <artifactId>jetty-ee10-demo-jndi-webapp</artifactId>
   <name>EE10 :: Jetty Demo :: JNDI :: WebApp</name>
   <packaging>war</packaging>
   <properties>
