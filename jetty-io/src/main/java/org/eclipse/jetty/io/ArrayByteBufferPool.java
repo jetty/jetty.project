@@ -138,7 +138,20 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     @Override
     protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
     {
-        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory)
+        {
+            @Override
+            protected ByteBuffer allocate(int capacity)
+            {
+                return ArrayByteBufferPool.this.acquire(capacity, false);
+            }
+
+            @Override
+            protected ByteBuffer allocateDirect(int capacity)
+            {
+                return ArrayByteBufferPool.this.acquire(capacity, true);
+            }
+        };
     }
 
     @Override

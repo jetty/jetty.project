@@ -191,9 +191,19 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return buffer;
     }
 
+    protected ByteBuffer allocate(int capacity)
+    {
+        return ByteBuffer.allocate(capacity);
+    }
+
+    protected ByteBuffer allocateDirect(int capacity)
+    {
+        return ByteBuffer.allocateDirect(capacity);
+    }
+
     private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<ByteBuffer> releaser)
     {
-        ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = direct ? allocateDirect(capacity) : allocate(capacity);
         BufferUtil.clear(buffer);
         RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(buffer, releaser);
         retainableByteBuffer.acquire();
