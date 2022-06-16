@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -30,7 +31,11 @@ public class TransportProvider implements ArgumentsProvider
         if (!StringUtil.isBlank(transports))
             return Arrays.stream(transports.split("\\s*,\\s*")).map(Transport::valueOf);
 
-        return Arrays.stream(Transport.values());
+        EnumSet<Transport> ts = EnumSet.allOf(Transport.class);
+        // Disable H3 tests unless explicitly enabled with a system property.
+        if (!Boolean.getBoolean(Transport.class.getName() + ".H3.enable"))
+            ts.remove(Transport.H3);
+        return ts.stream();
     }
 
     @Override
