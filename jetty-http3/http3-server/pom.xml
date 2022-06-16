@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.http3</groupId>
     <artifactId>http3-parent</artifactId>
-    <version>11.0.10-SNAPSHOT</version>
+    <version>11.0.10</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
