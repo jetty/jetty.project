@@ -78,7 +78,7 @@ public class FrameListenerTest
         context.addServlet(closeEndpoint, "/ws");
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new HandlerList(context.getCoreContextHandler(), new DefaultHandler()));
 
         server.start();
     }

@@ -136,9 +136,9 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
         JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
         {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
+            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getCoreContextHandler());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-            WebSocketMappings mapping = WebSocketMappings.ensureMappings(context.getServletContext());
+            WebSocketMappings mapping = WebSocketMappings.ensureMappings(context.getCoreContextHandler());
             serverContainer = JakartaWebSocketServerContainer.ensureContainer(context.getServletContext());
 
             if (LOG.isDebugEnabled())

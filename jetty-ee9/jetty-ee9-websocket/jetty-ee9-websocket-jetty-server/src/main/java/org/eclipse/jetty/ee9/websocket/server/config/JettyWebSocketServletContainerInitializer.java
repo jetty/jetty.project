@@ -85,7 +85,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
+        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getCoreContextHandler());
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
         if (LOG.isDebugEnabled())
             LOG.debug("initialize {} {}", container, components);

@@ -15,16 +15,23 @@ package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.websocket.server.HandshakeRequest;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {
     private final ServerUpgradeRequest delegate;
+    private Map<String, List<String>> parameterMap;
 
     public JsrHandshakeRequest(ServerUpgradeRequest req)
     {
@@ -34,53 +41,67 @@ public class JsrHandshakeRequest implements HandshakeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return delegate.getHeadersMap();
+        Map<String, List<String>> headers = delegate.getHeaders().getFieldNamesCollection().stream()
+            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
+        return Collections.unmodifiableMap(headers);
     }
 
     @Override
     public Object getHttpSession()
     {
-        return delegate.getSession();
+        // TODO
+        return null;
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        return delegate.getParameterMap();
+        if (parameterMap == null)
+        {
+            Fields requestParams = Request.extractQueryParameters(delegate);
+            parameterMap = new HashMap<>();
+            for (String name : requestParams.getNames())
+            {
+                parameterMap.put(name, requestParams.getValues(name));
+            }
+        }
+        return parameterMap;
     }
 
     @Override
     public String getQueryString()
     {
-        return delegate.getQueryString();
+        return delegate.getHttpURI().getQuery();
     }
 
     public PathSpec getRequestPathSpec()
     {
-        return (PathSpec)delegate.getServletAttribute(PathSpec.class.getName());
+        return (PathSpec)delegate.getAttribute(PathSpec.class.getName());
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, String> getPathParams()
     {
-        return (Map<String, String>)delegate.getServletAttribute(JakartaWebSocketServerContainer.PATH_PARAM_ATTRIBUTE);
+        return (Map<String, String>)delegate.getAttribute(JakartaWebSocketServerContainer.PATH_PARAM_ATTRIBUTE);
     }
 
     @Override
     public URI getRequestURI()
     {
-        return delegate.getRequestURI();
+        return delegate.getHttpURI().toURI();
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        return delegate.getUserPrincipal();
+        // TODO;
+        return null;
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        return delegate.isUserInRole(role);
+        // TODO;
+        return false;
     }
 }

@@ -31,13 +31,15 @@ public class JakartaServerUpgradeRequest implements UpgradeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        return servletRequest.getUserPrincipal();
+        // TODO: keep the wrapped request and ask it for user principal.
+        return null;
     }
 
     @Override
     public URI getRequestURI()
     {
-        return servletRequest.getRequestURI();
+        // TODO: keep the wrapped request and ask it for request URI.
+        return null;
     }
 
     @Override

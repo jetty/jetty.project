@@ -28,10 +28,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.FilterMapping;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -157,8 +159,15 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         HttpServletRequest httpreq = (HttpServletRequest)request;
         HttpServletResponse httpresp = (HttpServletResponse)response;
 
-        if (mappings.upgrade(httpreq, httpresp, defaultCustomizer))
-            return;
+        HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            if (mappings.upgrade(httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, defaultCustomizer))
+            {
+                callback.block();
+                return;
+            }
+        }
 
         // If we reach this point, it means we had an incoming request to upgrade
         // but it was either not a proper websocket upgrade, or it was possibly rejected
@@ -179,7 +188,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        mappings = WebSocketMappings.ensureMappings(config.getServletContext());
+        ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(config.getServletContext()));
+        mappings = WebSocketMappings.ensureMappings(contextHandler.getCoreContextHandler());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

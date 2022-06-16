@@ -25,6 +25,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
         // Configure the WebAppContext.
         setContextPath("/" + contextName);
-       .setResourceBase(contextDir);
+        setBaseResource(new PathResource(contextDir));
         addConfiguration(new JettyWebSocketConfiguration());
     }
 
