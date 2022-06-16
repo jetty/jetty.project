@@ -15,11 +15,11 @@
     <bundle-symbolic-name>${project.groupId}.infinispan</bundle-symbolic-name>
   </properties>
   <modules>
-    <module>infinispan-common</module>
-    <module>infinispan-embedded</module>
-    <module>infinispan-remote</module>
-    <module>infinispan-embedded-query</module>
-    <module>infinispan-remote-query</module>
+    <module>jetty-infinispan-common</module>
+    <module>jetty-infinispan-embedded</module>
+    <module>jetty-infinispan-remote</module>
+    <module>jetty-infinispan-embedded-query</module>
+    <module>jetty-infinispan-remote-query</module>
   </modules>
 
 </project>

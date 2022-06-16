@@ -5,7 +5,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>infinispan-remote-query</artifactId>
+  <artifactId>jetty-infinispan-remote-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
@@ -83,7 +83,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-common</artifactId>
+      <artifactId>jetty-infinispan-common</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.infinispan</groupId>

@@ -9,7 +9,7 @@ internal
 sessions
 
 [lib]
-lib/infinispan-common-${jetty.version}.jar
+lib/jetty-infinispan-common-${jetty.version}.jar
 lib/infinispan/*.jar
 
 [ini]

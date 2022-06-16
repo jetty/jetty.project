@@ -1232,27 +1232,27 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-common</artifactId>
+        <artifactId>jetty-infinispan-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
+        <artifactId>jetty-infinispan-embedded</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded-query</artifactId>
+        <artifactId>jetty-infinispan-embedded-query</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
+        <artifactId>jetty-infinispan-remote</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote-query</artifactId>
+        <artifactId>jetty-infinispan-remote-query</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
