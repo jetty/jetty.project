@@ -60,8 +60,8 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
             _retainableByteBufferPool = RetainableByteBufferPool.from(this);
         else
             _retainableByteBufferPool = newRetainableByteBufferPool(maxCapacity, maxBucketSize,
-                (retainedHeapMemory != 0) ? retainedHeapMemory : _maxHeapMemory / 2,
-                (retainedDirectMemory != 0) ? retainedDirectMemory : _maxDirectMemory / 2);
+                (retainedHeapMemory != 0) ? retainedHeapMemory : Runtime.getRuntime().maxMemory() / 4,
+                (retainedDirectMemory != 0) ? retainedDirectMemory : Runtime.getRuntime().maxMemory() / 4);
     }
 
     protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)

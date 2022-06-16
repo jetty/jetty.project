@@ -23,8 +23,14 @@ etc/jetty-bytebufferpool-logarithmic.xml
 ## Maximum queue length for each bucket (-1 for unbounded)
 #jetty.byteBufferPool.maxQueueLength=-1
 
-## Maximum heap memory retainable by the pool (0 for heuristic, -1 for unlimited)
+## Maximum heap memory held idle by the pool (0 for heuristic, -1 for unlimited).
 #jetty.byteBufferPool.maxHeapMemory=0
 
-## Maximum direct memory retainable by the pool (0 for heuristic, -1 for unlimited)
+## Maximum direct memory held idle by the pool (0 for heuristic, -1 for unlimited).
 #jetty.byteBufferPool.maxDirectMemory=0
+
+## Maximum heap memory retained whilst in use by the pool (0 for heuristic, -1 for unlimited).
+#jetty.byteBufferPool.retainedHeapMemory=0
+
+## Maximum direct memory retained whilst in use by the pool (0 for heuristic, -1 for unlimited).
+#jetty.byteBufferPool.retainedDirectMemory=0

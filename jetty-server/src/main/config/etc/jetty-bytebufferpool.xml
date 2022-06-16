@@ -8,5 +8,7 @@
     <Arg type="int"><Property name="jetty.byteBufferPool.maxQueueLength" default="-1"/></Arg>
     <Arg type="long"><Property name="jetty.byteBufferPool.maxHeapMemory" default="0"/></Arg>
     <Arg type="long"><Property name="jetty.byteBufferPool.maxDirectMemory" default="0"/></Arg>
+    <Arg type="long"><Property name="jetty.byteBufferPool.retainedHeapMemory" default="0"/></Arg>
+    <Arg type="long"><Property name="jetty.byteBufferPool.retainedDirectMemory" default="0"/></Arg>
   </New>
 </Configure>
