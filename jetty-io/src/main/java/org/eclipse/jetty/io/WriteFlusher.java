@@ -408,6 +408,7 @@ public abstract class WriteFlusher
     /**
      * Flushes the buffers iteratively until no progress is made.
      *
+     * @param address the datagram channel to send the buffers to (used by QUIC and HTTP/3)
      * @param buffers The buffers to flush
      * @return The unflushed buffers, or null if all flushed
      * @throws IOException if unable to flush
