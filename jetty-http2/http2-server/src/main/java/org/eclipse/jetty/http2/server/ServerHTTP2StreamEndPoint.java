@@ -57,8 +57,11 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
         Connection connection = getConnection();
         if (connection != null)
             result = connection.onIdleExpired();
-        offerFailure(failure);
-        consumer.accept(() -> close(failure));
+        if (result) 
+        {
+            offerFailure(failure);
+            consumer.accept(() -> close(failure));
+        }
         return result;
     }
 
