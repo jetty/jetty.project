@@ -64,6 +64,32 @@ public interface Session extends WebSocketPolicy, Closeable
     void close(int statusCode, String reason);
 
     /**
+     * Send a websocket Close frame, with status code.
+     * <p>
+     * This will enqueue a graceful close to the remote endpoint.
+     *
+     * @param statusCode the status code
+     * @param reason the (optional) reason. (can be null for no reason)
+     * @param callback the callback to track close frame sent (or failed)
+     * @see StatusCode
+     * @see #close()
+     * @see #close(CloseStatus)
+     * @see #disconnect()
+     */
+    default void close(int statusCode, String reason, WriteCallback callback)
+    {
+        try
+        {
+            close(statusCode, reason);
+            callback.writeSuccess();
+        }
+        catch (Throwable t)
+        {
+            callback.writeFailed(t);
+        }
+    }
+
+    /**
      * Issue a harsh disconnect of the underlying connection.
      * <p>
      * This will terminate the connection, without sending a websocket close frame.
