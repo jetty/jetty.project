@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.servlets;
 
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;

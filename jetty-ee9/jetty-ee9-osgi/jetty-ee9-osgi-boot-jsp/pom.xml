@@ -131,7 +131,7 @@
               org.apache.taglibs.standard.tei;version="2.0";resolution:=optional,
               org.apache.taglibs.standard.tlv;version="2.0";resolution:=optional,
               org.apache.tomcat;version="[10,11)";resolution:=optional,
-              org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
+              org.eclipse.jetty.ee9.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
               org.osgi.*,
               org.xml.*;resolution:=optional,
               org.xml.sax.*;resolution:=optional,
@@ -140,7 +140,7 @@
               org.w3c.dom.ls;resolution:=optional,
               javax.xml.parser;resolution:=optional
             </Import-Package>
-            <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
+            <DynamicImport-Package>org.eclipse.jetty.ee9.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))"
             </DynamicImport-Package>

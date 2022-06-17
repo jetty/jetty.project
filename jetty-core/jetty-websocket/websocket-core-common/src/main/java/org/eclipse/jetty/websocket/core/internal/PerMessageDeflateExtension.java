@@ -146,6 +146,15 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         super.init(configNegotiated, components);
     }
 
+    @Override
+    public void close()
+    {
+        incomingFlusher.closeFlusher();
+        outgoingFlusher.closeFlusher();
+        releaseInflater();
+        releaseDeflater();
+    }
+
     private static String toDetail(Inflater inflater)
     {
         return String.format("Inflater[finished=%b,read=%d,written=%d,remaining=%d,in=%d,out=%d]", inflater.finished(), inflater.getBytesRead(),

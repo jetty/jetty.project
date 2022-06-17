@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -33,15 +34,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final Content.Chunk.Error RECYCLED_ERROR_CHUNK = Content.Chunk.from(new IllegalStateException("ContentProducer has been recycled"));
-    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-    };
+    private static final Content.Chunk.Error RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"));
 
     private final AutoLock _lock = new AutoLock();
     private final ServletChannel _servletChannel;
@@ -169,7 +162,7 @@ class AsyncContentProducer implements ContentProducer
                             LOG.debug("checkMinDataRate aborting channel {}", this);
                         _servletChannel.abort(bad);
                     }
-                    consumeCurrentChunk(bad);
+                    consumeCurrentChunk();
                     throw bad;
                 }
             }
@@ -189,27 +182,27 @@ class AsyncContentProducer implements ContentProducer
     public boolean consumeAvailable()
     {
         assertLocked();
-        Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
-        if (LOG.isTraceEnabled())
-        {
-            x = new IOException("Unconsumed content");
-            LOG.trace("consumeAvailable {}", this, x);
-        }
-        consumeCurrentChunk(x);
-        boolean atEof = consumeAvailableChunks();
+
+        boolean atEof = consumeCurrentChunk();
+        if (LOG.isDebugEnabled())
+            LOG.debug("consumed current chunk of ServletChannel EOF={} {}", atEof, this);
+        if (atEof)
+            return true;
+
+        atEof = consumeAvailableChunks();
         if (LOG.isDebugEnabled())
             LOG.debug("consumed available chunks of ServletChannel EOF={} {}", atEof, this);
         return atEof;
     }
 
-    private void consumeCurrentChunk(Throwable x)
+    private boolean consumeCurrentChunk()
     {
         if (_transformedChunk != null && !_transformedChunk.isTerminal())
         {
             if (_transformedChunk != _rawChunk)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failing currently held transformed chunk {} {}", x, this);
+                    LOG.debug("releasing current transformed chunk {}", this);
                 _transformedChunk.skip(_transformedChunk.remaining());
                 _transformedChunk.release();
             }
@@ -219,15 +212,13 @@ class AsyncContentProducer implements ContentProducer
         if (_rawChunk != null && !_rawChunk.isTerminal())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failing currently held raw chunk {} {}", x, this);
+                LOG.debug("releasing current raw chunk {}", this);
             _rawChunk.skip(_rawChunk.remaining());
             _rawChunk.release();
-            _rawChunk = null;
+            _rawChunk = _rawChunk.isLast() ? Content.Chunk.EOF : null;
         }
 
-        Content.Chunk.Error errorChunk = Content.Chunk.from(x);
-        _transformedChunk = errorChunk;
-        _rawChunk = errorChunk;
+        return _rawChunk != null && _rawChunk.isLast();
     }
 
     private boolean consumeAvailableChunks()
@@ -451,7 +442,7 @@ class AsyncContentProducer implements ContentProducer
                 IOException failure = new IOException("Interceptor " + _interceptor + " did not consume any of the " + _rawChunk.remaining() + " remaining byte(s) of chunk");
                 if (chunk != null)
                     chunk.release();
-                consumeCurrentChunk(failure);
+                consumeCurrentChunk();
                 // Set the _error flag to mark the chunk as definitive, i.e.:
                 // do not try to produce new raw chunk to get a fresher error
                 // when the terminal chunk was caused by the interceptor not
@@ -472,7 +463,7 @@ class AsyncContentProducer implements ContentProducer
         catch (Throwable x)
         {
             IOException failure = new IOException("bad chunk", x);
-            consumeCurrentChunk(failure);
+            consumeCurrentChunk();
             // Set the _error flag to mark the chunk as definitive, i.e.:
             // do not try to produce new raw chunk to get a fresher error
             // when the terminal chunk was caused by the interceptor throwing.

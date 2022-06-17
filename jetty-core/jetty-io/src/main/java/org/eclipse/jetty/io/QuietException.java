@@ -20,6 +20,17 @@ package org.eclipse.jetty.io;
  */
 public interface QuietException
 {
+    static boolean isQuiet(Throwable throwable)
+    {
+        while (throwable != null)
+        {
+            if (throwable instanceof QuietException)
+                return true;
+            throwable = throwable.getCause();
+        }
+        return false;
+    }
+
     class Exception extends java.lang.Exception implements QuietException
     {
         public Exception()

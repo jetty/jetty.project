@@ -31,6 +31,7 @@ import org.eclipse.jetty.ee9.nested.Dispatcher;
 import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -66,7 +67,7 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private ServletHandler.MappedServlet _invokerEntry;
+    private MatchedResource<ServletHandler.MappedServlet> _invokerEntry;
     private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
@@ -162,16 +163,16 @@ public class Invoker extends HttpServlet
             try (AutoLock l = _servletHandler.lock())
             {
                 // find the entry for the invoker (me)
-                _invokerEntry = _servletHandler.getMappedServlet(servletPath);
+                _invokerEntry = _servletHandler.getMatchedServlet(servletPath);
 
                 // Check for existing mapping (avoid threaded race).
                 String path = URIUtil.addPaths(servletPath, servlet);
-                ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(path);
+                MatchedResource<ServletHandler.MappedServlet> entry = _servletHandler.getMatchedServlet(path);
 
-                if (entry != null && !entry.equals(_invokerEntry))
+                if (entry != null && !entry.getResource().equals(_invokerEntry.getResource()))
                 {
                     // Use the holder
-                    holder = (ServletHolder)entry.getServletHolder();
+                    holder = entry.getResource().getServletHolder();
                 }
                 else
                 {

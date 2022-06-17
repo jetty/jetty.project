@@ -30,7 +30,7 @@
     <asciidoctorj.version>2.5.4</asciidoctorj.version>
     <asm.version>9.3</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.3.0</bndlib.version>
+    <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.3</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -1232,27 +1232,27 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-common</artifactId>
+        <artifactId>jetty-infinispan-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
+        <artifactId>jetty-infinispan-embedded</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded-query</artifactId>
+        <artifactId>jetty-infinispan-embedded-query</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
+        <artifactId>jetty-infinispan-remote</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote-query</artifactId>
+        <artifactId>jetty-infinispan-remote-query</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

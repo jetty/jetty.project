@@ -97,12 +97,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-remote-query</artifactId>
+      <artifactId>jetty-infinispan-remote-query</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-embedded-query</artifactId>
+      <artifactId>jetty-infinispan-embedded-query</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

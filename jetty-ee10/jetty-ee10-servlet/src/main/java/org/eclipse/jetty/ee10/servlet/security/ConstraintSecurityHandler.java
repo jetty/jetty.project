@@ -38,7 +38,9 @@ import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -426,7 +428,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintRoles.get(PathMappings.asPathSpec(mapping.getPathSpec()));
+        Map<String, RoleInfo> mappings = _constraintRoles.get(PathSpec.from(mapping.getPathSpec()));
         if (mappings == null)
         {
             mappings = new HashMap<>();
@@ -571,7 +573,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request)
     {
-        MappedResource<Map<String, RoleInfo>> resource = _constraintRoles.getMatch(pathInContext);
+        MatchedResource<Map<String, RoleInfo>> resource = _constraintRoles.getMatched(pathInContext);
         if (resource == null)
             return null;
 
