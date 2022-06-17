@@ -13,7 +13,6 @@
         <Set name="period" property="jetty.lowresources.period"/>
         <Set name="lowResourcesIdleTimeout" property="jetty.lowresources.idleTimeout"/>
         <Set name="monitorThreads" property="jetty.lowresources.monitorThreads"/>
-        <Set name="maxConnections" property="jetty.lowresources.maxConnections"/>
         <Set name="maxMemory" property="jetty.lowresources.maxMemory"/>
         <Set name="maxLowResourcesTime" property="jetty.lowresources.maxLowResourcesTime"/>
         <Set name="acceptingInLowResources" property="jetty.lowresources.accepting"/>
