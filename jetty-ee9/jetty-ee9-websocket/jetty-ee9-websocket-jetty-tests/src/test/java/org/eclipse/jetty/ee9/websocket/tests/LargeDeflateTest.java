@@ -51,7 +51,7 @@ public class LargeDeflateTest
         _server.addConnector(_connector);
 
         ServletContextHandler handler = new ServletContextHandler();
-        _server.insertHandler(handler.getCoreContextHandler());
+        _server.setHandler(handler.getCoreContextHandler());
         JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
         {
             container.setIdleTimeout(Duration.ofDays(1));
