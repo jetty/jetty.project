@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its.jetty-start-distro-mojo-it</groupId>
+    <groupId>org.eclipse.jetty.ee10.its.jetty-start-distro-mojo-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -22,7 +22,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.eclipse.jetty.its.jetty-start-distro-mojo-it</groupId>
+      <groupId>org.eclipse.jetty.ee10.its.jetty-start-distro-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
 
@@ -102,7 +102,7 @@
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
-              <modules>jsp,jstl,testmod</modules>
+              <modules>ee10-apache-jsp,ee10-glassfish-jstl,testmod</modules>
               <jettyOptions>--debug</jettyOptions>
             </configuration>
           </execution>

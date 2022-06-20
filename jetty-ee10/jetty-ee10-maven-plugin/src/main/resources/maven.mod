@@ -5,8 +5,8 @@ Enables an un-assembled Maven webapp to run in a Jetty distribution.
 
 [depends]
 server
-webapp
-annotations
+ee10-webapp
+ee10-annotations
 
 [lib]
 lib/maven/**.jar

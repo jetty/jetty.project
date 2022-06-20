@@ -207,7 +207,7 @@ public class JettyHomeForker extends AbstractForker
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
-        tmp.append("server,http,webapp,deploy");
+        tmp.append("server,http,ee10-webapp,ee10-deploy");
         if (modules != null)
         {
             for (String m : modules)
@@ -350,7 +350,7 @@ public class JettyHomeForker extends AbstractForker
         modulesPath = Files.createDirectories(targetBasePath.resolve("modules"));
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
-        webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
+        webappPath = Files.createDirectories(targetBasePath.resolve("ee10-webapps"));
         mavenLibPath = Files.createDirectories(libPath.resolve("maven"));
 
         //copy in the jetty-maven-plugin jar
