@@ -16,7 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.io.ByteBufferPool.Bucket;
+import org.eclipse.jetty.io.AbstractByteBufferPool.Bucket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;

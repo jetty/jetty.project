@@ -14,10 +14,15 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -149,6 +154,97 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;
         return memory.get();
+    }
+
+    protected static class Bucket
+    {
+        private final Queue<ByteBuffer> _queue = new ConcurrentLinkedQueue<>();
+        private final int _capacity;
+        private final int _maxSize;
+        private final AtomicInteger _size;
+        private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
+        private final IntConsumer _memoryFunction;
+
+        @Deprecated
+        public Bucket(int capacity, int maxSize)
+        {
+            this(capacity, maxSize, i -> {});
+        }
+
+        public Bucket(int capacity, int maxSize, IntConsumer memoryFunction)
+        {
+            _capacity = capacity;
+            _maxSize = maxSize;
+            _size = maxSize > 0 ? new AtomicInteger() : null;
+            _memoryFunction = Objects.requireNonNull(memoryFunction);
+        }
+
+        public ByteBuffer acquire()
+        {
+            ByteBuffer buffer = _queue.poll();
+            if (buffer != null)
+            {
+                if (_size != null)
+                    _size.decrementAndGet();
+                _memoryFunction.accept(-buffer.capacity());
+            }
+
+            return buffer;
+        }
+
+        public void release(ByteBuffer buffer)
+        {
+            resetUpdateTime();
+            BufferUtil.reset(buffer);
+            if (_size == null || _size.incrementAndGet() <= _maxSize)
+            {
+                _queue.offer(buffer);
+                _memoryFunction.accept(buffer.capacity());
+            }
+            else
+            {
+                _size.decrementAndGet();
+            }
+        }
+
+        void resetUpdateTime()
+        {
+            _lastUpdate.lazySet(System.nanoTime());
+        }
+
+        public void clear()
+        {
+            int size = _size == null ? 0 : _size.get() - 1;
+            while (size >= 0)
+            {
+                ByteBuffer buffer = acquire();
+                if (buffer == null)
+                    break;
+                if (_size != null)
+                    --size;
+            }
+        }
+
+        boolean isEmpty()
+        {
+            return _queue.isEmpty();
+        }
+
+        int size()
+        {
+            return _queue.size();
+        }
+
+        long getLastUpdate()
+        {
+            return _lastUpdate.getOpaque();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{capacity=%d, size=%d, maxSize=%d}", getClass().getSimpleName(), hashCode(), _capacity, size(), _maxSize);
+        }
     }
 
     IntConsumer updateMemory(boolean direct)

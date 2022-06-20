@@ -18,7 +18,7 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.ByteBufferPool.Bucket;
+import org.eclipse.jetty.io.AbstractByteBufferPool.Bucket;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ public class ArrayByteBufferPoolTest
     public void testMinimumRelease()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(10, 100, 1000);
-        ByteBufferPool.Bucket[] buckets = bufferPool.bucketsFor(true);
+        Bucket[] buckets = bufferPool.bucketsFor(true);
 
         for (int size = 1; size <= 9; size++)
         {
@@ -45,7 +45,7 @@ public class ArrayByteBufferPoolTest
 
             assertTrue(buffer.isDirect());
             assertEquals(size, buffer.capacity());
-            for (ByteBufferPool.Bucket bucket : buckets)
+            for (Bucket bucket : buckets)
             {
                 if (bucket != null)
                     assertTrue(bucket.isEmpty());
@@ -53,7 +53,7 @@ public class ArrayByteBufferPoolTest
 
             bufferPool.release(buffer);
 
-            for (ByteBufferPool.Bucket bucket : buckets)
+            for (Bucket bucket : buckets)
             {
                 if (bucket != null)
                     assertTrue(bucket.isEmpty());
@@ -68,7 +68,7 @@ public class ArrayByteBufferPoolTest
         int factor = 1;
         int maxCapacity = 1024;
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(minCapacity, factor, maxCapacity);
-        ByteBufferPool.Bucket[] buckets = bufferPool.bucketsFor(true);
+        Bucket[] buckets = bufferPool.bucketsFor(true);
 
         for (int size = maxCapacity - 1; size <= maxCapacity + 1; size++)
         {
@@ -77,7 +77,7 @@ public class ArrayByteBufferPoolTest
 
             assertTrue(buffer.isDirect());
             assertThat(buffer.capacity(), greaterThanOrEqualTo(size));
-            for (ByteBufferPool.Bucket bucket : buckets)
+            for (Bucket bucket : buckets)
             {
                 if (bucket != null)
                     assertTrue(bucket.isEmpty());
@@ -87,7 +87,7 @@ public class ArrayByteBufferPoolTest
 
             int pooled = Arrays.stream(buckets)
                 .filter(Objects::nonNull)
-                .mapToInt(Bucket::size)
+                .mapToInt(AbstractByteBufferPool.Bucket::size)
                 .sum();
 
             if (size <= maxCapacity)
@@ -101,7 +101,7 @@ public class ArrayByteBufferPoolTest
     public void testAcquireRelease()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(10, 100, 1000);
-        ByteBufferPool.Bucket[] buckets = bufferPool.bucketsFor(true);
+        Bucket[] buckets = bufferPool.bucketsFor(true);
 
         for (int size = 390; size <= 510; size++)
         {
@@ -110,7 +110,7 @@ public class ArrayByteBufferPoolTest
 
             assertTrue(buffer.isDirect());
             assertThat(buffer.capacity(), greaterThanOrEqualTo(size));
-            for (ByteBufferPool.Bucket bucket : buckets)
+            for (Bucket bucket : buckets)
             {
                 if (bucket != null)
                     assertTrue(bucket.isEmpty());
@@ -120,7 +120,7 @@ public class ArrayByteBufferPoolTest
 
             int pooled = Arrays.stream(buckets)
                 .filter(Objects::nonNull)
-                .mapToInt(Bucket::size)
+                .mapToInt(AbstractByteBufferPool.Bucket::size)
                 .sum();
             assertEquals(1, pooled);
         }
@@ -130,7 +130,7 @@ public class ArrayByteBufferPoolTest
     public void testAcquireReleaseAcquire()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(10, 100, 1000);
-        ByteBufferPool.Bucket[] buckets = bufferPool.bucketsFor(true);
+        Bucket[] buckets = bufferPool.bucketsFor(true);
 
         for (int size = 390; size <= 510; size++)
         {
@@ -144,7 +144,7 @@ public class ArrayByteBufferPoolTest
 
             int pooled = Arrays.stream(buckets)
                 .filter(Objects::nonNull)
-                .mapToInt(Bucket::size)
+                .mapToInt(AbstractByteBufferPool.Bucket::size)
                 .sum();
             assertEquals(1, pooled);
 

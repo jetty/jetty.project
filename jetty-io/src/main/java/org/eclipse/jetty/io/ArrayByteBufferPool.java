@@ -44,8 +44,8 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     private final int _maxCapacity;
     private final int _minCapacity;
-    private final ByteBufferPool.Bucket[] _direct;
-    private final ByteBufferPool.Bucket[] _indirect;
+    private final Bucket[] _direct;
+    private final Bucket[] _indirect;
     private boolean _detailedDump = false;
 
     /**
@@ -90,7 +90,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
-     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link ByteBufferPool.Bucket}
+     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link Bucket}
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      */
@@ -105,7 +105,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
-     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link ByteBufferPool.Bucket}
+     * @param maxBucketSize the maximum ByteBuffer queue length in a {@link Bucket}
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param retainedHeapMemory the max heap memory in bytes, -1 for no retained memory or 0 to use default heuristic
@@ -126,8 +126,8 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
         // Initialize all buckets in constructor and never modify the array again.
         int length = bucketFor(maxCapacity) + 1;
-        _direct = new ByteBufferPool.Bucket[length];
-        _indirect = new ByteBufferPool.Bucket[length];
+        _direct = new Bucket[length];
+        _indirect = new Bucket[length];
         for (int i = 0; i < length; i++)
         {
             _direct[i] = newBucket(i, true);
@@ -145,7 +145,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     public ByteBuffer acquire(int size, boolean direct)
     {
         int capacity = size < _minCapacity ? size : capacityFor(bucketFor(size));
-        ByteBufferPool.Bucket bucket = bucketFor(size, direct);
+        Bucket bucket = bucketFor(size, direct);
         if (bucket == null)
             return newByteBuffer(capacity, direct);
         ByteBuffer buffer = bucket.acquire();
@@ -174,7 +174,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             return;
 
         boolean direct = buffer.isDirect();
-        ByteBufferPool.Bucket bucket = bucketFor(capacity, direct);
+        Bucket bucket = bucketFor(capacity, direct);
         if (bucket != null)
         {
             bucket.release(buffer);
@@ -232,7 +232,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         return bucket * getCapacityFactor();
     }
 
-    private ByteBufferPool.Bucket bucketFor(int capacity, boolean direct)
+    private Bucket bucketFor(int capacity, boolean direct)
     {
         if (capacity < _minCapacity)
             return null;
@@ -264,7 +264,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     }
 
     // Package local for testing
-    ByteBufferPool.Bucket[] bucketsFor(boolean direct)
+    Bucket[] bucketsFor(boolean direct)
     {
         return direct ? _direct : _indirect;
     }
