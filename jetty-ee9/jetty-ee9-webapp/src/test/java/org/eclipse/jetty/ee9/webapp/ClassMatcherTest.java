@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -298,8 +299,8 @@ public class ClassMatcherTest
     public void testJvmModule()
     {
         URI uri = TypeUtil.getLocationOfClass(String.class);
-        System.err.println(uri);
-        System.err.println(uri.toString().split("/")[0]);
-        System.err.println(uri.toString().split("/")[1]);
+        assertThat(uri, notNullValue());
+        assertThat(uri.getScheme(), is("jrt"));
+        assertThat(uri.getPath(), is("/java.base"));
     }
 }

@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
  * <p>Given a capacity {@code factor} of 1024, the first array element holds a queue of ByteBuffers
  * each of capacity 1024, the second array element holds a queue of ByteBuffers each of capacity
  * 2048, and so on.</p>
+ * <p>The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
+ * divided by 4.</p>
  */
 @ManagedObject
 public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpable
@@ -48,6 +50,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      */
     public ArrayByteBufferPool()
     {
@@ -56,6 +59,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -68,6 +72,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -86,8 +91,8 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
      * @param maxQueueLength the maximum ByteBuffer queue length
-     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
-     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {

@@ -757,7 +757,7 @@ public class ServletRequestState
             }
             else
             {
-                if (!(failure instanceof QuietException))
+                if (!QuietException.isQuiet(failure))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Async error", failure);

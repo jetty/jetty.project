@@ -58,7 +58,7 @@
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee10:jetty-ee10-maven-plugin</dependency>
           </dependenciesToScan>
         </configuration>
       </plugin>

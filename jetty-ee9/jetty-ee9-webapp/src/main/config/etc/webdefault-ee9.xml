@@ -200,7 +200,7 @@
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet id="jsp">
     <servlet-name>jsp</servlet-name>
-    <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee9.jsp.JettyJspServlet</servlet-class>
     <init-param>
       <param-name>xpoweredBy</param-name>
       <param-value>false</param-value>
