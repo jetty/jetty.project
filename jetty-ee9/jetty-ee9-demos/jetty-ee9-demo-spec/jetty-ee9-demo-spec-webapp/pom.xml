@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee9.demos</groupId>
+    <artifactId>jetty-ee9-demos</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <name>EE9 :: Jetty Demo :: Servlet Spec :: Webapp</name>
+  <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
+  <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.spec.webapp</bundle-symbolic-name>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>web-bundle-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- also make this webapp an osgi bundle -->
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+          <webResources>
+            <resource>
+              <directory>target</directory>
+              <includes>
+                <include>plugin-context.xml</include>
+              </includes>
+              <targetPath>META-INF</targetPath>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <supportedProjectTypes>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+          <instructions>
+            <Bundle-Description>Test Webapp for Servlet 5.0 Features</Bundle-Description>
+            <!-- TODO Add 'org.eclipse.jetty.util;version="[9.4.19,9.4.20)",' below, once 9.4.19 is released with a fix for #3726 -->
+            <Import-Package>
+              jakarta.transaction*;version="2.0.0", jakarta.servlet*;version="[5,6)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *
+            </Import-Package>
+            <_nouses />
+            <Export-Package>org.example.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
+            <Web-ContextPath>/</Web-ContextPath>
+            <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
+            <Jetty-ContextFilePath>/META-INF/plugin-context.xml</Jetty-ContextFilePath>
+          </instructions>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-xml-files</id>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <concat destfile="${project.build.directory}/plugin-context.xml">
+                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
+                </concat>
+                <concat destfile="${project.build.directory}/test-spec.xml">
+                  <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml" />
+                </concat>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee9.demos</groupId>
+                  <artifactId>jetty-ee9-demo-mock-resources</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <includes>**</includes>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireUpperBoundDeps>
+                  <excludes combine.children="append">
+                    <exclude>org.eclipse.jetty:jetty-util</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <configuration>
+            <scan>10</scan>
+            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <webApp>
+              <war>src/main/webapp</war>
+              <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
+              <contextPath>/test-spec</contextPath>
+              <containerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
+              <configurationDiscovered>true</configurationDiscovered>
+              <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
+            </webApp>
+            <loginServices>
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                <name>Test Realm</name>
+                <config>src/etc/realm.properties</config>
+              </loginService>
+            </loginServices>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty.ee9.demos</groupId>
+              <artifactId>jetty-ee9-demo-mock-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-web-fragment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-container-initializer</artifactId>
+    </dependency>
+
+    <!-- deliberately old version to test classloading -->
+    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>9.4.19.vXXXXXXXX</version>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.servlet</groupId>
+          <artifactId>jakarta.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+ -->
+  </dependencies>
+</project>
