@@ -87,7 +87,8 @@ public class ContextProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            Resource resource = Resource.newResource(new File(dir, name)); // TODO use paths
+            // TODO close resource!
+            Resource resource = Resource.newResource(new File(dir, name));
             if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
 
@@ -272,21 +273,11 @@ public class ContextProvider extends ScanningAppProvider
     {
         if (_defaultsDescriptor != null)
             webapp.setAttribute("defaultsDescriptor", _defaultsDescriptor);
-        /*
-        webapp.setExtractWAR(_extractWars);
-        webapp.setParentLoaderPriority(_parentLoaderPriority);
-        if (_configurationClasses != null)
-            webapp.setConfigurationClasses(_configurationClasses);
-
-        */
 
         if (_tempDirectory != null)
         {
-            // Since the Temp Dir is really a context base temp directory,
-            // Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
-            // instead of setting the WebAppContext.setTempDirectory(File).
-            // If we used .setTempDirectory(File) all webapps will wind up in the
-            // same temp / work directory, overwriting each others work.
+            // TODO work out temp directory
+            // TODO set if the temp directory is persistent
             webapp.setAttribute(Server.BASE_TEMP_DIR_ATTR, _tempDirectory);
         }
     }
@@ -307,7 +298,7 @@ public class ContextProvider extends ScanningAppProvider
             Resource resource = Resource.newResource(app.getFilename());
             if (!resource.exists())
                 throw new IllegalStateException("App resource does not exist " + resource);
-            resource = unpack(resource);
+            resource = unpack(resource); // TODO move unpacking to below.
 
             File file = resource.getFile();
 
@@ -334,12 +325,15 @@ public class ContextProvider extends ScanningAppProvider
                         super.initializeDefaults(context);
 
                         // If the XML created object is a ContextHandler
-                        if (context instanceof ContextHandler)
-                            // Initialize the context path prior to running context XML
-                            initializeContextPath((ContextHandler)context, contextName, true);
-
                         if (context instanceof ContextHandler contextHandler)
+                        {
                             initializeWebAppContextDefaults(contextHandler);
+                            initializeContextPath(contextHandler, contextName, true);
+
+                            // TODO look for associated WAR file or directory
+                            // TODO if it is a WAR file, then perhaps unpack it
+                            // TODO set as default baseResource
+                        }
                     }
                 };
 
@@ -374,9 +368,11 @@ public class ContextProvider extends ScanningAppProvider
             {
                 contextHandler = (ContextHandler)contextHandlerClass.getDeclaredConstructor().newInstance();
             }
-            contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
-            initializeContextPath(contextHandler, contextName, !file.isDirectory());
             initializeWebAppContextDefaults(contextHandler);
+            initializeContextPath(contextHandler, contextName, !file.isDirectory());
+
+            // TODO unpack here (after temp directory is known)
+            contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
 
             return contextHandler;
         }
