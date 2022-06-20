@@ -136,9 +136,9 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     }
 
     @Override
-    protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
     {
-        return new Retained(maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        return new Retained(factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
     }
 
     @Override
@@ -313,11 +313,11 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             getCapacityFactor());
     }
 
-    private class Retained extends ArrayRetainableByteBufferPool
+    protected class Retained extends ArrayRetainableByteBufferPool
     {
-        Retained(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        Retained(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
         {
-            super(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+            super(0, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
         }
 
         @Override
@@ -330,6 +330,12 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         protected ByteBuffer allocateDirect(int capacity)
         {
             return ArrayByteBufferPool.this.acquire(capacity, true);
+        }
+
+        @Override
+        protected void removed(RetainableByteBuffer retainedBuffer)
+        {
+            ArrayByteBufferPool.this.release(retainedBuffer.getBuffer());
         }
     }
 }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-
 /**
  * Extension of the {@link ArrayByteBufferPool} whose bucket sizes increase exponentially instead of linearly.
  * Each bucket will be double the size of the previous bucket, this decreases the amounts of buckets required
@@ -66,27 +64,6 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
     public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
         super(minCapacity, 1, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory);
-    }
-
-    @Override
-    protected RetainableByteBufferPool newRetainableByteBufferPool(int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
-    {
-        return new ArrayRetainableByteBufferPool(0, -1, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory,
-            c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-            i -> 1 << i)
-        {
-            @Override
-            protected ByteBuffer allocate(int capacity)
-            {
-                return LogarithmicArrayByteBufferPool.this.acquire(capacity, false);
-            }
-
-            @Override
-            protected ByteBuffer allocateDirect(int capacity)
-            {
-                return LogarithmicArrayByteBufferPool.this.acquire(capacity, true);
-            }
-        };
     }
 
     @Override

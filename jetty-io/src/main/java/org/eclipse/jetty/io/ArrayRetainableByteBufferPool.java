@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
  * The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
  * divided by 4.</p>
  */
+@SuppressWarnings("resource")
 @ManagedObject
 public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, Dumpable
 {
@@ -114,7 +115,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
         int f = factor <= 0 ? 1024 : factor;
         if ((maxCapacity % f) != 0 || f >= maxCapacity)
-            throw new IllegalArgumentException("The capacity factor must be a divisor of maxCapacity");
+            throw new IllegalArgumentException(String.format("The capacity factor(%d) must be a divisor of maxCapacity(%d)", f, maxCapacity));
 
         if (bucketIndexFor == null)
             bucketIndexFor = c -> (c - 1) / f;
@@ -157,7 +158,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     {
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
-            return newRetainableByteBuffer(size, direct, byteBuffer -> {});
+            return newRetainableByteBuffer(size, direct, this::removed);
         RetainedBucket.Entry entry = bucket.acquire();
 
         RetainableByteBuffer buffer;
@@ -166,9 +167,9 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             RetainedBucket.Entry reservedEntry = bucket.reserve();
             if (reservedEntry != null)
             {
-                buffer = newRetainableByteBuffer(bucket._capacity, direct, byteBuffer ->
+                buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
                 {
-                    BufferUtil.reset(byteBuffer);
+                    BufferUtil.reset(retainedBuffer.getBuffer());
                     reservedEntry.release();
                 });
                 reservedEntry.enable(buffer, true);
@@ -180,7 +181,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             }
             else
             {
-                buffer = newRetainableByteBuffer(size, direct, byteBuffer -> {});
+                buffer = newRetainableByteBuffer(size, direct, this::removed);
             }
         }
         else
@@ -201,7 +202,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         return ByteBuffer.allocateDirect(capacity);
     }
 
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<ByteBuffer> releaser)
+    protected void removed(RetainableByteBuffer retainedBuffer)
+    {
+    }
+
+    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
     {
         ByteBuffer buffer = direct ? allocateDirect(capacity) : allocate(capacity);
         BufferUtil.clear(buffer);
@@ -319,8 +324,11 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         {
             for (RetainedBucket.Entry entry : pool.values())
             {
-                entry.remove();
-                memoryCounter.addAndGet(-entry.getPooled().capacity());
+                if (entry.remove())
+                {
+                    memoryCounter.addAndGet(-entry.getPooled().capacity());
+                    removed(entry.getPooled());
+                }
             }
         }
     }
@@ -366,6 +374,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
                     else
                         _currentHeapMemory.addAndGet(-clearedCapacity);
                     totalClearedCapacity += clearedCapacity;
+                    removed(oldestEntry.getPooled());
                 }
                 // else a concurrent thread evicted the same entry -> do not account for its capacity.
             }

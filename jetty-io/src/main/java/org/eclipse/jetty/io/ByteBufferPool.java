@@ -43,7 +43,7 @@ public interface ByteBufferPool
      * @return the requested buffer
      * @see #release(ByteBuffer)
      */
-    public ByteBuffer acquire(int size, boolean direct);
+    ByteBuffer acquire(int size, boolean direct);
 
     /**
      * <p>Returns a {@link ByteBuffer}, usually obtained with {@link #acquire(int, boolean)}
@@ -52,7 +52,7 @@ public interface ByteBufferPool
      * @param buffer the buffer to return
      * @see #acquire(int, boolean)
      */
-    public void release(ByteBuffer buffer);
+    void release(ByteBuffer buffer);
 
     /**
      * <p>Removes a {@link ByteBuffer} that was previously obtained with {@link #acquire(int, boolean)}.</p>
@@ -78,12 +78,17 @@ public interface ByteBufferPool
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
     }
 
+    /**
+     * Get this pool as a {@link RetainableByteBufferPool}, which supports reference counting of the
+     * buffers and possibly a more efficient lookup mechanism based on the {@link org.eclipse.jetty.util.Pool} class.
+     * @return This pool wrapped as a RetainableByteBufferPool.
+     */
     default RetainableByteBufferPool asRetainableByteBufferPool()
     {
         return RetainableByteBufferPool.from(this);
     }
 
-    public static class Lease
+    class Lease
     {
         private final ByteBufferPool byteBufferPool;
         private final List<ByteBuffer> buffers;
