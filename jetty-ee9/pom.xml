@@ -71,6 +71,7 @@
 <!--    <module>jetty-ee9-tests</module>-->
     <module>jetty-ee9-bom</module>
     <module>test-ee9-sessions</module>
+    <module>jetty-ee9-home</module>
   </modules>
 
   <dependencyManagement>
