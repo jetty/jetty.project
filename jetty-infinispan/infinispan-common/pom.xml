@@ -65,11 +65,7 @@
         <!-- this is depending on an old log4j version which have this issue https://issues.apache.org/jira/browse/LOG4J2-3241 -->
         <exclusion>
           <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-core-java9</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-api-java9</artifactId>
+          <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
