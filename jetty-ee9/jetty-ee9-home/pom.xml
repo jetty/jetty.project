@@ -493,10 +493,10 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-proxy</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-proxy</artifactId>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-cdi</artifactId>
@@ -511,11 +511,11 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-annotations</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-openid</artifactId>
-      <optional>true</optional>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--      <artifactId>jetty-ee9-openid</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-jaspi</artifactId>
@@ -530,20 +530,20 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.demos</groupId>-->
+<!--      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>-->
+<!--      <version>${project.version}</version>-->
+<!--      <classifier>config</classifier>-->
+<!--      <type>jar</type>-->
+<!--      <optional>true</optional>-->
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>javax.el</groupId>-->
+<!--          <artifactId>el-api</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
@@ -576,14 +576,14 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.ee9.demos</groupId>-->
+<!--      <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>-->
+<!--      <version>${project.version}</version>-->
+<!--      <classifier>config</classifier>-->
+<!--      <type>jar</type>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
