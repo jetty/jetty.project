@@ -58,8 +58,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
@@ -81,13 +81,13 @@
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee9:jetty-ee9-maven-plugin</dependency>
           </dependenciesToScan>
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>run</id>

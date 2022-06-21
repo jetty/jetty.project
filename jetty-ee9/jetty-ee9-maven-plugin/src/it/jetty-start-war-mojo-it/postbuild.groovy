@@ -18,5 +18,5 @@
  */
 File buildLog = new File( basedir, 'build.log' )
 assert buildLog.text.contains( 'Started Server' )
-assert buildLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.IntegrationTestGetContent')
+assert buildLog.text.contains( 'Running org.eclipse.jetty.ee9.maven.plugin.it.IntegrationTestGetContent')
 assert buildLog.text.contains( 'contentCheck')

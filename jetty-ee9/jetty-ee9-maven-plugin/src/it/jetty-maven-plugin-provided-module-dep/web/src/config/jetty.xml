@@ -32,7 +32,7 @@
         </Arg>
         <Call name="addEventListener">
           <Arg>
-            <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
+            <New class="org.eclipse.jetty.ee9.maven.plugin.ServerConnectorListener">
             </New>
           </Arg>
         </Call>

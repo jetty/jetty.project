@@ -3,13 +3,16 @@
 [description]
 Enables an un-assembled Maven webapp to run in a Jetty distribution.
 
+[environment]
+ee9
+
 [depends]
 server
-webapp
-annotations
+ee9-webapp
+ee9-annotations
 
 [lib]
-lib/maven/**.jar
+lib/maven-ee9/**.jar
 
 [xml]
-etc/jetty-maven.xml
+etc/jetty-ee9-maven.xml

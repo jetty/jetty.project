@@ -3,6 +3,9 @@
 [description]
 Enables JAAS for deployed web applications.
 
+[environment]
+ee9
+
 [depend]
 server
 
@@ -10,7 +13,7 @@ server
 lib/jetty-ee9-jaas-${jetty.version}.jar
 
 [xml]
-etc/jetty-jaas.xml
+etc/jetty-ee9-jaas.xml
 
 [ini-template]
 ## The file location (relative to $jetty.base) for the

@@ -1,12 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables test setup
+Enables the glassfish version of JSTL for all webapps.
 
-[depend]
-http
+[environment]
+ee9
 
-
-[xml]
-etc/test-jetty.xml
-
+[lib]
+lib/ee9-glassfish-jstl/*.jar

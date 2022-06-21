@@ -3,18 +3,21 @@
 [description]
 Enables the Jetty Quickstart module for rapid deployment of preconfigured web applications.
 
+[environment]
+ee9
+
 [depend]
 server
-deploy
+ee9-deploy
 
 [lib]
-lib/jetty-quickstart-${jetty.version}.jar
+lib/jetty-ee9-quickstart-${jetty.version}.jar
 
 [xml]
-etc/jetty-quickstart.xml
+etc/jetty-ee9-quickstart.xml
 
 [files]
-basehome:modules/jetty-quickstart.d/quickstart-webapp.xml|etc/quickstart-webapp.xml
+basehome:modules/jetty-ee9-quickstart.d/quickstart-webapp.xml|etc/quickstart-webapp.xml
 
 
 [ini-template]

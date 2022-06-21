@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>test.jetty-maven-plugin-provided-module-dep</groupId>
+    <groupId>test.jetty-ee9-maven-plugin-provided-module-dep</groupId>
     <artifactId>parent</artifactId>
     <version>1.0-SNAPSHOT</version>
   </parent>

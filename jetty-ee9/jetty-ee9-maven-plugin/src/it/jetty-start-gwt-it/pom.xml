@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its</groupId>
+    <groupId>org.eclipse.jetty.ee9.its</groupId>
     <artifactId>it-parent-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -44,8 +44,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee9</groupId>
+          <artifactId>jetty-ee9-maven-plugin</artifactId>
           <configuration></configuration>
         </plugin>
         <plugin>
