@@ -784,7 +784,8 @@ public class HttpClientTLSTest
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                leakedBuffers.add(acquired);
+                if (acquired != null)
+                    leakedBuffers.add(acquired);
                 return acquired;
             }
 
@@ -852,7 +853,8 @@ public class HttpClientTLSTest
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                leakedBuffers.add(acquired);
+                if (acquired != null)
+                    leakedBuffers.add(acquired);
                 return acquired;
             }
 
@@ -934,7 +936,8 @@ public class HttpClientTLSTest
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                leakedBuffers.add(acquired);
+                if (acquired != null)
+                    leakedBuffers.add(acquired);
                 return acquired;
             }
 
