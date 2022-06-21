@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Deploy various {@link ServerEndpoint} annotated classes with invalid signatures,
  * check for {@link DeploymentException}
  */
+@Disabled
 public class DeploymentExceptionTest
 {
     public static Stream<Arguments> data()

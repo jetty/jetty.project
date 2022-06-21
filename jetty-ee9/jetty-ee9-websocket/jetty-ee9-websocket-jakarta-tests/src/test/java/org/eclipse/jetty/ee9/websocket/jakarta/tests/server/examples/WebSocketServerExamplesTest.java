@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@Disabled
 public class WebSocketServerExamplesTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketServerExamplesTest.class);
@@ -145,7 +146,6 @@ public class WebSocketServerExamplesTest
         return security;
     }
 
-    @Disabled
     @Test
     public void testMyAuthedSocket() throws Exception
     {
