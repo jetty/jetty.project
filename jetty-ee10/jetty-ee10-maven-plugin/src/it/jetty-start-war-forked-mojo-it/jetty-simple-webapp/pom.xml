@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
+    <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-forked-mojo-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
@@ -21,17 +21,17 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
+      <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-forked-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
@@ -65,8 +65,8 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>start-jetty</id>
@@ -101,7 +101,7 @@
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee10:jetty-ee10-maven-plugin</dependency>
           </dependenciesToScan>
           <includes>
             <include>**/*TestGetContent*</include>

@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.eclipse.jetty.its</groupId>
+  <groupId>org.eclipse.jetty.ee10.its</groupId>
   <artifactId>it-parent-pom</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -38,7 +38,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>@jackson-databind.version@</version>
+        <version>@jackson.databind.version@</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -51,8 +51,8 @@
         <version>@slf4j.version@</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-servlet</artifactId>
         <version>@project.version@</version>
       </dependency>
       <dependency>
@@ -76,8 +76,8 @@
         <version>@project.version@</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
         <version>@project.version@</version>
         <classifier>tests</classifier>
         <type>test-jar</type>

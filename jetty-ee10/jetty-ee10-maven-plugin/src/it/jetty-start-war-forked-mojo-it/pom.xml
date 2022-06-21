@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its</groupId>
+    <groupId>org.eclipse.jetty.ee10.its</groupId>
     <artifactId>it-parent-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../it-parent-pom/pom.xml</relativePath>
   </parent>
 
-  <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
+  <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-forked-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -31,7 +31,7 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
+        <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-forked-mojo-it</groupId>
         <artifactId>jetty-simple-base</artifactId>
         <version>${project.version}</version>
       </dependency>

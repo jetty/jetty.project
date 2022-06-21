@@ -207,7 +207,7 @@ public class ShutdownMonitor
         }
     }
 
-    protected void start() throws Exception
+    public void start() throws Exception
     {
         try (AutoLock l = _lock.lock())
         {
@@ -238,7 +238,7 @@ public class ShutdownMonitor
     }
 
     // For test purposes only.
-    void await() throws InterruptedException
+    public void await() throws InterruptedException
     {
         try (AutoLock.WithCondition l = _lock.lock())
         {
@@ -410,6 +410,10 @@ public class ShutdownMonitor
                         {
                             // Reply to client
                             informClient(out, "OK\r\n");
+                        }
+                        else if ("pid".equalsIgnoreCase(cmd))
+                        {
+                            informClient(out, Long.toString(ProcessHandle.current().pid()));
                         }
                     }
                     catch (Throwable x)

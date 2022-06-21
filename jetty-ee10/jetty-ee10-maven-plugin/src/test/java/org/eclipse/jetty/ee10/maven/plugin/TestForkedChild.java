@@ -43,8 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Test the JettyForkedChild class, which
  * is the main that is executed by jetty:run/start in mode FORKED.
  */
-
-@Disabled //TODO
 public class TestForkedChild
 {
     File testDir;
@@ -81,7 +79,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setResourceBase(baseDir.toPath());
+                webapp.setBaseResource(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[cmd.size()]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
@@ -142,6 +140,7 @@ public class TestForkedChild
         }
     }
 
+    @Disabled //Needs DefaultServlet
     @Test
     public void test() throws Exception
     {      

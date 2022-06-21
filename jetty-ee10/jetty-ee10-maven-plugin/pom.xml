@@ -3,12 +3,13 @@
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>EE10 :: Jetty :: Jetty Maven Plugin</name>
-  <description>Jetty maven plugins</description>
+  <description>Jetty EE10 maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
@@ -95,7 +96,7 @@
           </execution>
         </executions>
         <configuration>
-          <skipInvocation>true</skipInvocation>
+          <skipInvocation>false</skipInvocation>
           <addTestClassPath>true</addTestClassPath>
           <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
@@ -222,11 +223,11 @@
       <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
