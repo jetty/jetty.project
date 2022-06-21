@@ -603,7 +603,6 @@
             </configuration>
           </execution>
           <!-- TODO: ee9 jaspi -->
-
           <execution>
             <id>copy-ee9-deps</id>
             <phase>generate-resources</phase>
@@ -633,7 +632,6 @@
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
-
           <execution>
             <id>copy-ee10-deps</id>
             <phase>generate-resources</phase>
@@ -662,7 +660,30 @@
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
-
+          <execution>
+            <id>unpack-eeX-home</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee10</groupId>
+                  <artifactId>jetty-ee10-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee9</groupId>
+                  <artifactId>jetty-ee9-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
           <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
@@ -671,7 +692,7 @@
             </goals>
             <configuration>
               <includeGroupIds>
-                org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.ee9.demos, org.eclipse.jetty.ee10.demos
+                org.eclipse.jetty, org.eclipse.jetty.websocket
               </includeGroupIds>
               <excludeArtifactIds>jetty-infinispan-embedded,jetty-infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
@@ -778,7 +799,10 @@
                 <requireUpperBoundDeps>
                   <excludes combine.children="append">
                     <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
-                    <!-- we need to exclude some librairies which are different depending on ee8/ee9/ee10 -->
+                    <!--
+                      we need to exclude some libraries which are different depending on ee8/ee9/ee10
+                      enforcer is running at ee10/ee9/ee8 home level
+                    -->
                     <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
                     <exclude>jakarta.servlet.jsp:jakarta.servlet.jsp-api</exclude>
                     <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
@@ -931,16 +955,18 @@
     <!--      <optional>true</optional>-->
     <!--    </dependency>-->
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-jaas</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-home</artifactId>
       <version>${project.version}</version>
-      <optional>true</optional>
+      <type>zip</type>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <artifactId>jetty-ee9-home</artifactId>
       <version>${project.version}</version>
+      <type>zip</type>
     </dependency>
+
     <!--    <dependency>-->
     <!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
     <!--      <artifactId>jetty-ee9-openid</artifactId>-->
@@ -1122,170 +1148,55 @@
       <artifactId>jetty-nosql</artifactId>
       <optional>true</optional>
     </dependency>
+
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>jetty-hazelcast</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
+<!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
+<!--      <artifactId>jetty-memcached-sessions</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.eclipse.jetty</groupId>-->
+<!--      <artifactId>jetty-nosql</artifactId>-->
+<!--      <optional>true</optional>-->
+<!--    </dependency>-->
+
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty</groupId>-->
+    <!--      <artifactId>jetty-hazelcast</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
+    <!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
+    <!--      <artifactId>jetty-memcached-sessions</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty</groupId>-->
+    <!--      <artifactId>jetty-nosql</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-keystore</artifactId>
       <optional>true</optional>
     </dependency>
-    <!-- Demo EE10 Apps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-jaas-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-proxy-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>ee10-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
 
-    <!-- Demo EE9 Apps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <!-- dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-jaas-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <!-- dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-proxy-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>ee9-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
   </dependencies>
 
 </project>
