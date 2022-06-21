@@ -3,10 +3,12 @@
 [description]
 Enables test setup
 
+[environment]
+ee10
+
 [depend]
 http
 
-
 [xml]
-etc/test-jetty.xml
+etc/test-jetty-ee10.xml
 
