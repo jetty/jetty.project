@@ -21,9 +21,6 @@ etc/jetty-lowresources.xml
 ## Whether to monitor ThreadPool threads for low resources
 # jetty.lowresources.monitorThreads=true
 
-## Max number of connections allowed before being in low resources mode
-# jetty.lowresources.maxConnections=0
-
 ## Max memory allowed before being in low resources mode (in bytes)
 # jetty.lowresources.maxMemory=0
 

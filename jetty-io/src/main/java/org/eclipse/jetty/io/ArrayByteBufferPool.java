@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * <p>Given a capacity {@code factor} of 1024, the first array element holds a queue of ByteBuffers
  * each of capacity 1024, the second array element holds a queue of ByteBuffers each of capacity
  * 2048, and so on.</p>
- * The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
+ * <p>The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
  * divided by 4.</p>
  */
 @ManagedObject
