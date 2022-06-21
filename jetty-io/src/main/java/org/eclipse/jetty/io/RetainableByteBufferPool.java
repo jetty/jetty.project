@@ -15,8 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.component.Container;
-
 /**
  * <p>A {@link RetainableByteBuffer} pool.</p>
  * <p>Acquired buffers <b>must</b> be released by calling {@link RetainableByteBuffer#release()} otherwise the memory they hold will
@@ -31,19 +29,6 @@ public interface RetainableByteBufferPool
      * @return a memory buffer.
      */
     RetainableByteBuffer acquire(int size, boolean direct);
-
-    /**
-     * Finds a {@link RetainableByteBufferPool} implementation in the given container, or wrap the given
-     * {@link ByteBufferPool} with an adapter.
-     * @param container the container to search for an existing memory pool.
-     * @param byteBufferPool Use  {@link ByteBufferPool#asRetainableByteBufferPool()} to convert if no memory pool was found in the container.
-     * @return the {@link RetainableByteBufferPool} found or the converted one.
-     */
-    static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
-    {
-        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
-        return retainableByteBufferPool == null ? byteBufferPool.asRetainableByteBufferPool() : retainableByteBufferPool;
-    }
 
     static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
     {

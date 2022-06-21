@@ -75,12 +75,9 @@ public interface ByteBufferPool
     /**
      * Get this pool as a {@link RetainableByteBufferPool}, which supports reference counting of the
      * buffers and possibly a more efficient lookup mechanism based on the {@link org.eclipse.jetty.util.Pool} class.
-     * @return This pool wrapped as a RetainableByteBufferPool.
+     * @return This pool as a RetainableByteBufferPool.  The same instance is always returned by multiple calls to this method.
      */
-    default RetainableByteBufferPool asRetainableByteBufferPool()
-    {
-        return RetainableByteBufferPool.from(this);
-    }
+    RetainableByteBufferPool asRetainableByteBufferPool();
 
     class Lease
     {

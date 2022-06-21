@@ -187,7 +187,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         addBean(_scheduler);
         if (pool == null)
             pool = _server.getBean(ByteBufferPool.class);
-        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
+
+        // TODO improve this
+        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool(-1, -1, -1, -1, -1, -1, 0, 0);
         addBean(_byteBufferPool, pool == null);
 
         addEventListener(new Container.Listener()
