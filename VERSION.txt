@@ -1,4 +1,36 @@
-jetty-11.0.10-SNAPSHOT
+jetty-11.0.11-SNAPSHOT
+
+jetty-11.0.10 - 16 June 2022
+ + 1771 Add module for SecuredRedirect support
+ + 4414 GZipHandler not excluding inflation for specified paths
+ + 7635 QPACK decoder should fail connection if the encoder blocks more than
+   SETTINGS_QPACK_BLOCKED_STREAMS
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7754 jetty.sh ignores JAVA_OPTIONS environment variable
+ + 7801 Session cookie can be set twice after session id changed
+ + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no
+   longer possible with Jetty 10
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7880 DefaultServlet should not overwrite programmatically configured
+   precompressed formats with defaults
+ + 7891 Better Servlet PathMappings for Regex
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling
+ + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
+ + 7977 UpgradeHttpServletRequest.setAttribute &
+   UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
+ + 7994 Ability to construct a detached client Request
+ + 8014 Review HttpRequest URI construction
+ + 8057 Support Http Response 103 (Early Hints)
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
+ + 8161 Improve SSLConnection buffers handling
 
 jetty-11.0.9 - 30 March 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
@@ -771,7 +803,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
