@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.http2.internal;
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +35,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
@@ -39,31 +42,32 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.Attachable;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.Expirable
+public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dumpable, CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private Deque<DataEntry> dataQueue;
+    private Deque<Data> dataQueue;
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final long timeStamp = System.nanoTime();
-    private final ISession session;
+    private final HTTP2Session session;
     private final int streamId;
     private final MetaData.Request request;
     private final boolean local;
@@ -73,27 +77,21 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     private boolean remoteReset;
     private Listener listener;
     private long dataLength;
-    private long dataDemand;
-    private boolean dataInitial;
-    private boolean dataProcess;
+    private boolean dataEOF;
+    private boolean dataDemand;
+    private boolean dataStalled;
     private boolean committed;
     private long idleTimeout;
     private long expireNanoTime = Long.MAX_VALUE;
 
-    public HTTP2Stream(ISession session, int streamId, MetaData.Request request, boolean local)
+    public HTTP2Stream(HTTP2Session session, int streamId, MetaData.Request request, boolean local)
     {
         this.session = session;
         this.streamId = streamId;
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
-        this.dataInitial = true;
-    }
-
-    @Deprecated
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
-    {
-        this(session, streamId, request, local);
+        this.dataStalled = true;
     }
 
     @Override
@@ -121,7 +119,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     }
 
     @Override
-    public ISession getSession()
+    public HTTP2Session getSession()
     {
         return session;
     }
@@ -132,7 +130,6 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         send(new FrameList(frame), callback);
     }
 
-    @Override
     public void send(FrameList frameList, Callback callback)
     {
         if (startWrite(callback))
@@ -149,14 +146,14 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     public void data(DataFrame frame, Callback callback)
     {
         if (startWrite(callback))
-            session.data(this, this, frame);
+            session.data(this, frame, this);
     }
 
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
         Throwable resetFailure = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (isReset())
             {
@@ -171,13 +168,13 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         if (resetFailure != null)
             callback.failed(resetFailure);
         else
-            ((HTTP2Session)session).reset(this, frame, callback);
+            session.reset(this, frame, callback);
     }
 
     private boolean startWrite(Callback callback)
     {
         Throwable failure;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             failure = this.failure;
             if (failure == null && sendCallback == null)
@@ -213,7 +210,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     @Override
     public boolean isReset()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return localReset || remoteReset;
         }
@@ -221,16 +218,15 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
 
     private boolean isFailed()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return failure != null;
         }
     }
 
-    @Override
     public boolean isResetOrFailed()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return isReset() || isFailed();
         }
@@ -249,39 +245,16 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
     }
 
-    @Override
-    public boolean failAllData(Throwable x)
-    {
-        Deque<DataEntry> copy;
-        try (AutoLock l = lock.lock())
-        {
-            dataDemand = 0;
-            copy = dataQueue;
-            dataQueue = null;
-        }
-        DataEntry lastDataEntry = null;
-        if (copy != null)
-        {
-            copy.forEach(dataEntry -> dataEntry.callback.failed(x));
-            lastDataEntry = copy.isEmpty() ? null : copy.peekLast();
-        }
-        if (lastDataEntry == null)
-            return isRemotelyClosed();
-        return lastDataEntry.frame.isEndStream();
-    }
-
     public boolean isLocallyClosed()
     {
         return closeState.get() == CloseState.LOCALLY_CLOSED;
     }
 
-    @Override
     public void commit()
     {
         committed = true;
     }
 
-    @Override
     public boolean isCommitted()
     {
         return committed;
@@ -292,7 +265,6 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         return !isClosed();
     }
 
-    @Override
     public void notIdle()
     {
         long idleTimeout = getIdleTimeout();
@@ -317,7 +289,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     {
         this.idleTimeout = idleTimeout;
         notIdle();
-        ((HTTP2Session)session).scheduleTimeout(this);
+        session.scheduleTimeout(this);
     }
 
     protected void onIdleExpired(TimeoutException timeout)
@@ -356,71 +328,51 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     @Override
     public Data readData()
     {
-        DataEntry dataEntry;
-        try (AutoLock l = lock.lock())
+        Data data;
+        try (AutoLock ignored = lock.lock())
         {
             if (dataQueue == null || dataQueue.isEmpty())
-                return null;
-            dataEntry = dataQueue.poll();
+            {
+                if (dataEOF)
+                    return new Data(new DataFrame(getId(), BufferUtil.EMPTY_BUFFER, true));
+                else
+                    return null;
+            }
+            else
+            {
+                data = dataQueue.poll();
+                dataEOF = data.frame().isEndStream();
+            }
         }
-        DataFrame frame = dataEntry.frame;
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+        if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
             session.removeStream(this);
-        return new Data(frame, () -> dataEntry.callback.succeeded());
+        return data;
     }
 
-    @Override
     public void setListener(Listener listener)
     {
         this.listener = listener;
     }
 
-    @Override
     public void process(Frame frame, Callback callback)
     {
         notIdle();
         switch (frame.getType())
         {
-            case PREFACE:
-            {
-                onNewStream(callback);
-                break;
-            }
-            case HEADERS:
-            {
-                onHeaders((HeadersFrame)frame, callback);
-                break;
-            }
-            case DATA:
-            {
-                onData((DataFrame)frame, callback);
-                break;
-            }
-            case RST_STREAM:
-            {
-                onReset((ResetFrame)frame, callback);
-                break;
-            }
-            case PUSH_PROMISE:
-            {
-                onPush((PushPromiseFrame)frame, callback);
-                break;
-            }
-            case WINDOW_UPDATE:
-            {
-                onWindowUpdate((WindowUpdateFrame)frame, callback);
-                break;
-            }
-            case FAILURE:
-            {
-                onFailure((FailureFrame)frame, callback);
-                break;
-            }
-            default:
-            {
-                throw new UnsupportedOperationException();
-            }
+            case PREFACE -> onNewStream(callback);
+            case HEADERS -> onHeaders((HeadersFrame)frame, callback);
+            case RST_STREAM -> onReset((ResetFrame)frame, callback);
+            case PUSH_PROMISE -> onPush((PushPromiseFrame)frame, callback);
+            case WINDOW_UPDATE -> onWindowUpdate((WindowUpdateFrame)frame, callback);
+            case FAILURE -> onFailure((FailureFrame)frame, callback);
+            default -> throw new UnsupportedOperationException();
         }
+    }
+
+    public void process(Data data)
+    {
+        notIdle();
+        onData(data);
     }
 
     private void onNewStream(Callback callback)
@@ -440,120 +392,105 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
+        // Set EOF for either the request, the response or the trailers.
+        try (AutoLock ignored = lock.lock())
+        {
+            dataEOF = frame.isEndStream();
+        }
         callback.succeeded();
     }
 
-    private void onData(DataFrame frame, Callback callback)
+    private void onData(Data data)
     {
         // SPEC: remotely closed streams must be replied with a reset.
         if (isRemotelyClosed())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Data {} for already closed {}", data, this);
+            data.release();
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
-            callback.failed(new EOFException("stream_closed"));
             return;
         }
 
         if (isReset())
         {
             // Just drop the frame.
-            callback.failed(new IOException("stream_reset"));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Data {} for already reset {}", data, this);
+            data.release();
             return;
         }
 
         if (dataLength != Long.MIN_VALUE)
         {
+            DataFrame frame = data.frame();
             dataLength -= frame.remaining();
             if (dataLength < 0 || (frame.isEndStream() && dataLength != 0))
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invalid data length {} for {}", data, this);
+                data.release();
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
-                callback.failed(new IOException("invalid_data_length"));
                 return;
             }
         }
 
-        boolean initial;
-        boolean proceed = false;
-        DataEntry entry = new DataEntry(frame, callback);
-        try (AutoLock l = lock.lock())
+        boolean process;
+        try (AutoLock ignored = lock.lock())
         {
             if (dataQueue == null)
                 dataQueue = new ArrayDeque<>();
-            dataQueue.offer(entry);
-            initial = dataInitial;
-            if (initial)
-            {
-                dataInitial = false;
-                // Fake that we are processing data so we return
-                // from onBeforeData() before calling onData().
-                dataProcess = true;
-            }
-            else if (!dataProcess)
-            {
-                dataProcess = proceed = dataDemand > 0;
-            }
-        }
-        if (initial)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Starting data processing of {} for {}", frame, this);
-            notifyBeforeData(this);
-            try (AutoLock l = lock.lock())
-            {
-                dataProcess = proceed = dataDemand > 0;
-            }
+            process = dataQueue.isEmpty() && dataDemand;
+            dataQueue.offer(data);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} data processing of {} for {}", proceed ? "Proceeding" : "Stalling", frame, this);
-        if (proceed)
+            LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
+        if (process)
             processData();
     }
 
     @Override
-    public void demand(long n)
+    public void demand()
     {
-        if (n <= 0)
-            throw new IllegalArgumentException("Invalid demand " + n);
-        long demand;
-        boolean proceed = false;
-        try (AutoLock l = lock.lock())
+        boolean process = false;
+        try (AutoLock ignored = lock.lock())
         {
-            demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
-            if (!dataProcess)
-                dataProcess = proceed = dataQueue != null && !dataQueue.isEmpty();
+            dataDemand = true;
+            if (dataStalled && dataQueue != null && !dataQueue.isEmpty())
+            {
+                dataStalled = false;
+                process = true;
+            }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
-        if (proceed)
+            LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
+        if (process)
             processData();
     }
 
-    private void processData()
+    public void processData()
     {
         while (true)
         {
-            DataEntry dataEntry;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
-                if (dataQueue == null || dataQueue.isEmpty() || dataDemand == 0)
+                if (dataQueue == null || dataQueue.isEmpty() || !dataDemand)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Stalling data processing for {}", this);
-                    dataProcess = false;
+                    dataStalled = true;
                     return;
                 }
-                --dataDemand;
-                dataEntry = dataQueue.poll();
+                dataDemand = false;
+                dataStalled = false;
             }
-            DataFrame frame = dataEntry.frame;
-            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                session.removeStream(this);
-            notifyDataDemanded(this, frame, dataEntry.callback);
+            notifyDataAvailable(this);
         }
     }
 
-    private long demand()
+    private boolean hasDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return dataDemand;
         }
@@ -561,7 +498,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
 
     private void onReset(ResetFrame frame, Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             remoteReset = true;
             failure = new EofException("reset");
@@ -588,7 +525,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             failure = frame.getFailure();
         }
@@ -599,7 +536,6 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             callback.succeeded();
     }
 
-    @Override
     public boolean updateClose(boolean update, CloseState.Event event)
     {
         if (LOG.isDebugEnabled())
@@ -608,17 +544,12 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         if (!update)
             return false;
 
-        switch (event)
+        return switch (event)
         {
-            case RECEIVED:
-                return updateCloseAfterReceived();
-            case BEFORE_SEND:
-                return updateCloseBeforeSend();
-            case AFTER_SEND:
-                return updateCloseAfterSend();
-            default:
-                return false;
-        }
+            case RECEIVED -> updateCloseAfterReceived();
+            case BEFORE_SEND -> updateCloseBeforeSend();
+            case AFTER_SEND -> updateCloseAfterSend();
+        };
     }
 
     private boolean updateCloseAfterReceived()
@@ -628,27 +559,25 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             CloseState current = closeState.get();
             switch (current)
             {
-                case NOT_CLOSED:
+                case NOT_CLOSED ->
                 {
                     if (closeState.compareAndSet(current, CloseState.REMOTELY_CLOSED))
                         return false;
-                    break;
                 }
-                case LOCALLY_CLOSING:
+                case LOCALLY_CLOSING ->
                 {
                     if (closeState.compareAndSet(current, CloseState.CLOSING))
                     {
                         updateStreamCount(0, 1);
                         return false;
                     }
-                    break;
                 }
-                case LOCALLY_CLOSED:
+                case LOCALLY_CLOSED ->
                 {
                     close();
                     return true;
                 }
-                default:
+                default ->
                 {
                     return false;
                 }
@@ -663,22 +592,20 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             CloseState current = closeState.get();
             switch (current)
             {
-                case NOT_CLOSED:
+                case NOT_CLOSED ->
                 {
                     if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSING))
                         return false;
-                    break;
                 }
-                case REMOTELY_CLOSED:
+                case REMOTELY_CLOSED ->
                 {
                     if (closeState.compareAndSet(current, CloseState.CLOSING))
                     {
                         updateStreamCount(0, 1);
                         return false;
                     }
-                    break;
                 }
-                default:
+                default ->
                 {
                     return false;
                 }
@@ -693,20 +620,17 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             CloseState current = closeState.get();
             switch (current)
             {
-                case NOT_CLOSED:
-                case LOCALLY_CLOSING:
+                case NOT_CLOSED, LOCALLY_CLOSING ->
                 {
                     if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSED))
                         return false;
-                    break;
                 }
-                case REMOTELY_CLOSED:
-                case CLOSING:
+                case REMOTELY_CLOSED, CLOSING ->
                 {
                     close();
                     return true;
                 }
-                default:
+                default ->
                 {
                     return false;
                 }
@@ -724,13 +648,11 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         return recvWindow.get();
     }
 
-    @Override
     public int updateSendWindow(int delta)
     {
         return sendWindow.getAndAdd(delta);
     }
 
-    @Override
     public int updateRecvWindow(int delta)
     {
         return recvWindow.getAndAdd(delta);
@@ -755,7 +677,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
 
     private void updateStreamCount(int deltaStream, int deltaClosing)
     {
-        ((HTTP2Session)session).updateStreamCount(isLocal(), deltaStream, deltaClosing);
+        session.updateStreamCount(isLocal(), deltaStream, deltaClosing);
     }
 
     @Override
@@ -785,7 +707,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
 
     private Callback endWrite()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             Callback callback = sendCallback;
             sendCallback = null;
@@ -809,14 +731,14 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         }
     }
 
-    private void notifyBeforeData(Stream stream)
+    private void notifyDataAvailable(Stream stream)
     {
         Listener listener = this.listener;
         if (listener != null)
         {
             try
             {
-                listener.onBeforeData(stream);
+                listener.onDataAvailable(stream);
             }
             catch (Throwable x)
             {
@@ -825,29 +747,10 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         }
         else
         {
-            stream.demand(1);
-        }
-    }
-
-    private void notifyDataDemanded(Stream stream, DataFrame frame, Callback callback)
-    {
-        Listener listener = this.listener;
-        if (listener != null)
-        {
-            try
-            {
-                listener.onDataDemanded(stream, frame, callback);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-                callback.failed(x);
-            }
-        }
-        else
-        {
-            callback.succeeded();
-            stream.demand(1);
+            Data data = readData();
+            if (data != null)
+                data.release();
+            stream.demand();
         }
     }
 
@@ -939,14 +842,14 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,
             recvWindow,
-            demand(),
+            hasDemand(),
             localReset,
             remoteReset,
             closeState,
@@ -954,15 +857,62 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             attachment);
     }
 
-    private static class DataEntry
+    /**
+     * <p>An ordered list of frames belonging to the same stream.</p>
+     */
+    public static class FrameList
     {
-        private final DataFrame frame;
-        private final Callback callback;
+        private final List<StreamFrame> frames;
 
-        private DataEntry(DataFrame frame, Callback callback)
+        /**
+         * <p>Creates a frame list of just the given HEADERS frame.</p>
+         *
+         * @param headers the HEADERS frame
+         */
+        public FrameList(HeadersFrame headers)
         {
-            this.frame = frame;
-            this.callback = callback;
+            Objects.requireNonNull(headers);
+            this.frames = List.of(headers);
+        }
+
+        /**
+         * <p>Creates a frame list of the given frames.</p>
+         *
+         * @param headers the HEADERS frame for the headers
+         * @param data the DATA frame for the content, or null if there is no content
+         * @param trailers the HEADERS frame for the trailers, or null if there are no trailers
+         */
+        public FrameList(HeadersFrame headers, DataFrame data, HeadersFrame trailers)
+        {
+            Objects.requireNonNull(headers);
+            ArrayList<StreamFrame> frames = new ArrayList<>(3);
+            int streamId = headers.getStreamId();
+            if (data != null && data.getStreamId() != streamId)
+                throw new IllegalArgumentException("Invalid stream ID for DATA frame " + data);
+            if (trailers != null && trailers.getStreamId() != streamId)
+                throw new IllegalArgumentException("Invalid stream ID for HEADERS frame " + trailers);
+            frames.add(headers);
+            if (data != null)
+                frames.add(data);
+            if (trailers != null)
+                frames.add(trailers);
+            this.frames = Collections.unmodifiableList(frames);
+        }
+
+        /**
+         * @return the stream ID of the frames in this list
+         */
+        public int getStreamId()
+        {
+            return frames.get(0).getStreamId();
+        }
+
+        /**
+         * @return a List of non-null frames
+         */
+        public List<StreamFrame> getFrames()
+        {
+            return frames;
         }
     }
 }

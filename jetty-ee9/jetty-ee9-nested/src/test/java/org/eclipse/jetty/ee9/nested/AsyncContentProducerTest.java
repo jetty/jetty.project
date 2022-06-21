@@ -204,7 +204,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorGeneratesError()
     {
         AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.EOF));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> Content.Chunk.from(new Throwable("testAsyncContentProducerInterceptorGeneratesError interceptor error")));
@@ -227,7 +227,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorGeneratesEof()
     {
         AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.from(new Throwable("should not reach this"))));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.from(new Throwable("should not reach this"))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> Content.Chunk.EOF);
@@ -250,7 +250,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorThrows()
     {
         AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.EOF));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->
@@ -277,10 +277,10 @@ public class AsyncContentProducerTest
     {
         AtomicInteger contentReleasedCount = new AtomicInteger();
         AtomicInteger interceptorContentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false, contentReleasedCount::incrementAndGet)), Content.Chunk.EOF));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> Content.Chunk.from(ByteBuffer.allocate(1), false, interceptorContentReleasedCount::incrementAndGet));
+            contentProducer.setInterceptor(content -> Content.Chunk.from(ByteBuffer.allocate(1), false));
 
             assertThat(contentProducer.isReady(), is(true));
 
@@ -302,7 +302,7 @@ public class AsyncContentProducerTest
         AtomicInteger contentReleasedCount = new AtomicInteger();
         AtomicInteger specialContentInterceptedCount = new AtomicInteger();
         AtomicInteger nullContentInterceptedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(0), false, contentReleasedCount::incrementAndGet)), Content.Chunk.EOF));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(0), false)), Content.Chunk.EOF));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->

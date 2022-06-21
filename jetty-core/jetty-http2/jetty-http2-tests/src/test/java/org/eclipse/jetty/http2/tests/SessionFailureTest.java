@@ -39,12 +39,13 @@ public class SessionFailureTest extends AbstractTest
     public void testWrongPreface() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onFailure(Session session, Throwable failure, Callback callback)
             {
                 latch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -74,7 +75,7 @@ public class SessionFailureTest extends AbstractTest
     {
         final CountDownLatch writeLatch = new CountDownLatch(1);
         final CountDownLatch serverFailureLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -94,19 +95,21 @@ public class SessionFailureTest extends AbstractTest
             }
 
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onFailure(Session session, Throwable failure, Callback callback)
             {
                 serverFailureLatch.countDown();
+                callback.succeeded();
             }
         });
 
         final CountDownLatch clientFailureLatch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onFailure(Session session, Throwable failure, Callback callback)
             {
                 clientFailureLatch.countDown();
+                callback.succeeded();
             }
         });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);

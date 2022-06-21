@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Callback;
 
 public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
 {
@@ -111,9 +112,9 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
         }
 
         @Override
-        public void onClose(Session session, GoAwayFrame frame)
+        public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
-            delegate.onClose(session, frame);
+            delegate.onClose(session, frame, callback);
         }
 
         @Override
@@ -123,9 +124,9 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
         }
 
         @Override
-        public void onFailure(Session session, Throwable failure)
+        public void onFailure(Session session, Throwable failure, Callback callback)
         {
-            delegate.onFailure(session, failure);
+            delegate.onFailure(session, failure, callback);
         }
     }
 }

@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 
 /**
  * <p>Namespace class that contains the definitions of a {@link Source content source},
@@ -316,41 +317,6 @@ public class Content
          * @param failure the cause of the failure
          */
         void fail(Throwable failure);
-
-        /**
-         * <p>A wrapper of a nested source of content, that may transform the chunks obtained from
-         * the nested source.</p>
-         * <p>Typical implementations may split/coalesce the chunks read from the nested source,
-         * or encode/decode (for example gzip) them.</p>
-         * <p>Implementations should override {@link #transform(Chunk)} with the transformation
-         * logic.</p>
-         */
-        abstract class Transformer extends ContentSourceTransformer
-        {
-            public Transformer(Content.Source rawSource)
-            {
-                super(rawSource);
-            }
-
-            /**
-             * <p>Transforms the input chunk parameter into an output chunk.</p>
-             * <p>The input chunk parameter may be {@code null}, a signal to implementations
-             * to try to produce an output chunk, if possible, from previous input chunks.
-             * For example, a single compressed input chunk may be transformed into multiple
-             * uncompressed output chunks.</p>
-             * <p>Implementations should return an {@link Chunk.Error error chunk} in case
-             * of transformation errors.</p>
-             * <p>Exceptions thrown by this method are equivalent to returning an error chunk.</p>
-             * <p>Implementations of this method must arrange to {@link Chunk#release() release}
-             * the input chunk, unless they return it as is.
-             * The output chunk is released by the code that uses this Transformer.</p>
-             *
-             * @param rawChunk the input chunk to transform
-             * @return the transformed output chunk
-             */
-            @Override
-            protected abstract Chunk transform(Chunk rawChunk);
-        }
     }
 
     /**
@@ -428,7 +394,7 @@ public class Content
      * to release the {@code ByteBuffer} back into a pool), or the
      * {@link #release()} method overridden.</p>
      */
-    public interface Chunk
+    public interface Chunk extends Retainable
     {
         /**
          * <p>An empty, non-last, chunk.</p>
@@ -456,7 +422,6 @@ public class Content
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
-         * @param releaser the code to run when this Chunk is released
          * @return a new Chunk
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
@@ -475,6 +440,50 @@ public class Content
         static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
         {
             return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
+        }
+
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer, linked to the given Retainable.</p>
+         * <p>The {@link #retain()} and {@link #release()} methods of this Chunk will delegate to the
+         * given Retainable.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param retainable the Retainable this Chunk links to
+         * @return a new Chunk
+         */
+        static Chunk from(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        {
+            return new ByteBufferChunk.ReleasedByRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+        }
+
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer, with its own reference counter.</p>
+         * <p>This method should be used to create a Chunk that is not linked to other Retainable objects
+         * and may be passed to applications that may additionally retain/release this Chunk.</p>
+         * <p>A typical example are Chunks decoded (e.g. gzip) via {@link ContentSourceTransformer}:
+         * the decoded Chunk is not linked to the encoded Chunk, but needs its own reference counter
+         * as the decoded Chunk may in turn be {@link #slice(Chunk, int, int, boolean) sliced}.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
+         * @return a new Chunk
+         */
+        static Chunk fromWithReferenceCount(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
+        {
+            Retainable.ReferenceCounter referenceCounter = new Retainable.ReferenceCounter()
+            {
+                @Override
+                public boolean release()
+                {
+                    boolean released = super.release();
+                    if (released && releaser != null)
+                        releaser.accept(byteBuffer);
+                    return released;
+                }
+            };
+            return from(byteBuffer, last, referenceCounter);
         }
 
         /**
@@ -537,9 +546,31 @@ public class Content
         boolean isLast();
 
         /**
-         * <p>Releases the resources associated to this Chunk.</p>
+         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice, with the given
+         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk}.</p>
+         * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
+         * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
+         *
+         * @param source the original chunk
+         * @param position the position at which the slice begins
+         * @param limit the limit at which the slice ends
+         * @param last whether the new Chunk is last
+         * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
+         * of the source {@code Chunk}'s {@code ByteBuffer}
          */
-        void release();
+        default Chunk slice(Chunk source, int position, int limit, boolean last)
+        {
+            ByteBuffer sourceBuffer = source.getByteBuffer();
+            int sourceLimit = sourceBuffer.limit();
+            sourceBuffer.limit(limit);
+            int sourcePosition = sourceBuffer.position();
+            sourceBuffer.position(position);
+            ByteBuffer slice = sourceBuffer.slice();
+            sourceBuffer.limit(sourceLimit);
+            sourceBuffer.position(sourcePosition);
+            source.retain();
+            return from(slice, last, source);
+        }
 
         /**
          * @return the number of bytes remaining in this Chunk
@@ -632,11 +663,6 @@ public class Content
             public boolean isLast()
             {
                 return true;
-            }
-
-            @Override
-            public void release()
-            {
             }
         }
     }

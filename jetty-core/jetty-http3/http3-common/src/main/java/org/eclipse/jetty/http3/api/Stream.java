@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.Retainable;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -72,7 +73,7 @@ public interface Stream
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
      * applications <em>must</em> call, either immediately or later (possibly
-     * asynchronously) {@link Stream.Data#complete()} to notify the
+     * asynchronously) {@link Stream.Data#release()} to notify the
      * implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
@@ -190,7 +191,7 @@ public interface Stream
              *             // Process the content.
              *             process(data.getByteBuffer());
              *             // Notify that the content has been consumed.
-             *             data.complete();
+             *             data.release();
              *             if (!data.isLast())
              *             {
              *                 // Demand to be called back.
@@ -305,7 +306,7 @@ public interface Stream
              *             // Process the content.
              *             process(data.getByteBuffer());
              *             // Notify that the content has been consumed.
-             *             data.complete();
+             *             data.release();
              *             if (!data.isLast())
              *             {
              *                 // Demand to be called back.
@@ -362,27 +363,21 @@ public interface Stream
 
     /**
      * <p>A {@link Stream.Data} instance associates a {@link ByteBuffer}
-     * containing request bytes or response bytes with a completion event
-     * that applications <em>must</em> trigger when the bytes have been
-     * processed.</p>
+     * containing request bytes or response bytes.</p>
      *
      * @see Stream#readData()
      */
-    public static class Data
+    public static class Data implements Retainable
     {
         private final DataFrame frame;
-        private final Runnable complete;
 
-        public Data(DataFrame frame, Runnable complete)
+        public Data(DataFrame frame)
         {
             this.frame = Objects.requireNonNull(frame);
-            this.complete = Objects.requireNonNull(complete);
         }
 
         /**
          * @return the {@link ByteBuffer} containing the data bytes
-         *
-         * @see #complete()
          */
         public ByteBuffer getByteBuffer()
         {
@@ -396,17 +391,6 @@ public interface Stream
         public boolean isLast()
         {
             return frame.isLast();
-        }
-
-        /**
-         * <p>The method that applications <em>must</em> invoke to
-         * signal that the data bytes have been processed.</p>
-         *
-         * @see #getByteBuffer()
-         */
-        public void complete()
-        {
-            complete.run();
         }
 
         @Override

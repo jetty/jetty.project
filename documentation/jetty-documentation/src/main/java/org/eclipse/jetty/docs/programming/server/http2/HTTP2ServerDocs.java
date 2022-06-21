@@ -51,7 +51,7 @@ public class HTTP2ServerDocs
         // Create a Server instance.
         Server server = new Server();
 
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter();
+        ServerSessionListener sessionListener = new ServerSessionListener() {};
 
         // Create a ServerConnector with RawHTTP2ServerConnectionFactory.
         RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(sessionListener);
@@ -77,7 +77,7 @@ public class HTTP2ServerDocs
     public void accept()
     {
         // tag::accept[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -92,7 +92,7 @@ public class HTTP2ServerDocs
     public void preface()
     {
         // tag::preface[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -112,7 +112,7 @@ public class HTTP2ServerDocs
     public void request()
     {
         // tag::request[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -122,7 +122,10 @@ public class HTTP2ServerDocs
 
                 // Return a Stream.Listener to handle the request events,
                 // for example request content events or a request reset.
-                return new Stream.Listener.Adapter();
+                return new Stream.Listener()
+                {
+                    // Override callback methods for events you are interested in.
+                };
             }
         };
         // end::request[]
@@ -131,14 +134,14 @@ public class HTTP2ServerDocs
     public void requestContent()
     {
         // tag::requestContent[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 // Return a Stream.Listener to handle the request events.
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -164,7 +167,7 @@ public class HTTP2ServerDocs
     public void response()
     {
         // tag::response[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -178,7 +181,7 @@ public class HTTP2ServerDocs
                 }
                 else
                 {
-                    return new Stream.Listener.Adapter()
+                    return new Stream.Listener()
                     {
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -230,7 +233,7 @@ public class HTTP2ServerDocs
     {
         float maxRequestRate = 0F;
         // tag::reset[]
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -247,7 +250,10 @@ public class HTTP2ServerDocs
                     // The request is accepted.
                     MetaData.Request request = (MetaData.Request)frame.getMetaData();
                     // Return a Stream.Listener to handle the request events.
-                    return new Stream.Listener.Adapter();
+                    return new Stream.Listener()
+                    {
+                        // Override callback methods for events you are interested in.
+                    };
                 }
             }
             // tag::exclude[]
@@ -267,7 +273,7 @@ public class HTTP2ServerDocs
         // The favicon bytes.
         ByteBuffer faviconBuffer = BufferUtil.toBuffer(Resource.newResource("/path/to/favicon.ico"), true);
 
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             // By default, push is enabled.
             private boolean pushEnabled = true;
@@ -292,7 +298,7 @@ public class HTTP2ServerDocs
                     HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico");
                     MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
-                    stream.push(promiseFrame, new Stream.Listener.Adapter())
+                    stream.push(promiseFrame, null)
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
@@ -302,7 +308,10 @@ public class HTTP2ServerDocs
                         });
                 }
                 // Return a Stream.Listener to handle the request events.
-                return new Stream.Listener.Adapter();
+                return new Stream.Listener()
+                {
+                    // Override callback methods for events you are interested in.
+                };
             }
         };
         // end::push[]

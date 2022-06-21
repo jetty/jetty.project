@@ -20,7 +20,7 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -48,13 +49,13 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final AtomicLong bytesIn = new AtomicLong();
     private final RetainableByteBufferPool retainableByteBufferPool;
     private final Parser parser;
-    private final ISession session;
+    private final HTTP2Session session;
     private final int bufferSize;
     private final ExecutionStrategy strategy;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, HTTP2Session session, int bufferSize)
     {
         super(endPoint, executor);
         this.retainableByteBufferPool = retainableByteBufferPool;
@@ -69,14 +70,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     @Override
     public long getMessagesIn()
     {
-        HTTP2Session session = (HTTP2Session)getSession();
+        HTTP2Session session = getSession();
         return session.getStreamsOpened();
     }
 
     @Override
     public long getMessagesOut()
     {
-        HTTP2Session session = (HTTP2Session)getSession();
+        HTTP2Session session = getSession();
         return session.getStreamsClosed();
     }
 
@@ -92,7 +93,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         return session.getBytesWritten();
     }
 
-    public ISession getSession()
+    public HTTP2Session getSession()
     {
         return session;
     }
@@ -196,7 +197,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private void offerTask(Runnable task)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             tasks.offer(task);
         }
@@ -226,7 +227,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private Runnable pollTask()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return tasks.poll();
         }
@@ -257,7 +258,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             Runnable task = pollTask();
             if (LOG.isDebugEnabled())
-                LOG.debug("Dequeued task {}", String.valueOf(task));
+                LOG.debug("Dequeued task {}", task);
             if (task != null)
                 return task;
 
@@ -404,8 +405,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             NetworkBuffer networkBuffer = producer.networkBuffer;
             networkBuffer.retain();
-            Callback callback = networkBuffer;
-            session.onData(frame, callback);
+            session.onData(new StreamData(frame, networkBuffer));
         }
 
         @Override
@@ -416,7 +416,30 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class NetworkBuffer implements Callback
+    private static class StreamData extends Stream.Data
+    {
+        private final Retainable retainable;
+
+        private StreamData(DataFrame frame, Retainable retainable)
+        {
+            super(frame);
+            this.retainable = retainable;
+        }
+
+        @Override
+        public void retain()
+        {
+            retainable.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return retainable.release();
+        }
+    }
+
+    private class NetworkBuffer implements Retainable
     {
         private final RetainableByteBuffer delegate;
 
@@ -440,46 +463,27 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             return delegate.hasRemaining();
         }
 
-        public boolean release()
-        {
-            return delegate.release();
-        }
-
+        @Override
         public void retain()
         {
             delegate.retain();
         }
 
-        private void put(ByteBuffer source)
-        {
-            BufferUtil.append(delegate.getBuffer(), source);
-        }
-
         @Override
-        public void succeeded()
-        {
-            completed(null);
-        }
-
-        @Override
-        public void failed(Throwable failure)
-        {
-            completed(failure);
-        }
-
-        private void completed(Throwable failure)
+        public boolean release()
         {
             if (delegate.release())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained {}", this, failure);
+                    LOG.debug("Released retained {}", this);
+                return true;
             }
+            return false;
         }
 
-        @Override
-        public InvocationType getInvocationType()
+        private void put(ByteBuffer source)
         {
-            return InvocationType.NON_BLOCKING;
+            BufferUtil.append(delegate.getBuffer(), source);
         }
     }
 }

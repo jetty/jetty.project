@@ -40,7 +40,7 @@ public class HTTP2Docs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -66,7 +66,7 @@ public class HTTP2Docs
 
         // Implementation of Stream.Listener.onDataDemanded(...)
         // in case of asynchronous content consumption and demand.
-        Stream.Listener listener = new Stream.Listener.Adapter()
+        Stream.Listener listener = new Stream.Listener()
         {
             @Override
             public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)

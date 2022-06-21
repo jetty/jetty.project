@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 
 public class ByteBufferChunk implements Content.Chunk
 {
@@ -49,18 +50,16 @@ public class ByteBufferChunk implements Content.Chunk
         this.last = last;
     }
 
+    @Override
     public ByteBuffer getByteBuffer()
     {
         return byteBuffer;
     }
 
+    @Override
     public boolean isLast()
     {
         return last;
-    }
-
-    public void release()
-    {
     }
 
     @Override
@@ -84,11 +83,17 @@ public class ByteBufferChunk implements Content.Chunk
             this.releaser = new AtomicReference<>(releaser);
         }
 
-        public void release()
+        @Override
+        public boolean release()
         {
-            Runnable runnable = releaser.getAndSet(null);
-            if (runnable != null)
-                runnable.run();
+            boolean released = super.release();
+            if (released)
+            {
+                Runnable runnable = releaser.getAndSet(null);
+                if (runnable != null)
+                    runnable.run();
+            }
+            return released;
         }
     }
 
@@ -102,11 +107,40 @@ public class ByteBufferChunk implements Content.Chunk
             this.releaser = new AtomicReference<>(releaser);
         }
 
-        public void release()
+        @Override
+        public boolean release()
         {
-            Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
-            if (consumer != null)
-                consumer.accept(getByteBuffer());
+            boolean released = super.release();
+            if (released)
+            {
+                Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
+                if (consumer != null)
+                    consumer.accept(getByteBuffer());
+            }
+            return released;
+        }
+    }
+
+    public static class ReleasedByRetainable extends ByteBufferChunk
+    {
+        private final Retainable retainable;
+
+        public ReleasedByRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        {
+            super(byteBuffer, last);
+            this.retainable = retainable;
+        }
+
+        @Override
+        public void retain()
+        {
+            retainable.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return retainable.release();
         }
     }
 }

@@ -70,7 +70,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         start(new LoadHandler());
 
         // Only one connection to the server.
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         int runs = 10;
         int iterations = 512;
@@ -143,30 +143,34 @@ public class SmallThreadPoolLoadTest extends AbstractTest
 
         HeadersFrame requestFrame = new HeadersFrame(request, null, download);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
         AtomicBoolean reset = new AtomicBoolean();
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
                 if (frame.isEndStream())
-                    requestLatch.countDown();
+                    responseLatch.countDown();
+                stream.demand();
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callback.succeeded();
-                if (frame.isEndStream())
-                    requestLatch.countDown();
+                Stream.Data data = stream.readData();
+                data.release();
+                stream.demand();
+                if (data.frame().isEndStream())
+                    responseLatch.countDown();
             }
 
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 reset.set(true);
-                requestLatch.countDown();
+                responseLatch.countDown();
+                callback.succeeded();
             }
         });
         if (!download)
@@ -175,7 +179,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(contentLength), true), Callback.NOOP);
         }
 
-        boolean success = requestLatch.await(5, TimeUnit.SECONDS);
+        boolean success = responseLatch.await(5, TimeUnit.SECONDS);
         if (success)
             latch.countDown();
         else

@@ -31,8 +31,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -56,11 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FlowControlStalledTest
 {
-    protected ServerConnector connector;
-    protected HTTP2Client client;
-    protected Server server;
+    private ServerConnector connector;
+    private HTTP2Client client;
+    private Server server;
 
-    protected void start(FlowControlStrategy.Factory flowControlFactory, ServerSessionListener listener) throws Exception
+    private void start(FlowControlStrategy.Factory flowControlFactory, ServerSessionListener listener) throws Exception
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
@@ -83,7 +81,7 @@ public class FlowControlStalledTest
         client.start();
     }
 
-    protected Session newClient(Session.Listener listener) throws Exception
+    private Session newClient(Session.Listener listener) throws Exception
     {
         String host = "localhost";
         int port = connector.getLocalPort();
@@ -93,7 +91,7 @@ public class FlowControlStalledTest
         return promise.get(5, TimeUnit.SECONDS);
     }
 
-    protected MetaData.Request newRequest(String method, String target, HttpFields fields)
+    private MetaData.Request newRequest(String method, String target, HttpFields fields)
     {
         String host = "localhost";
         int port = connector.getLocalPort();
@@ -118,19 +116,19 @@ public class FlowControlStalledTest
         start(() -> new BufferingFlowControlStrategy(0.5f)
         {
             @Override
-            public void onStreamStalled(IStream stream)
+            public void onStreamStalled(Stream stream)
             {
                 super.onStreamStalled(stream);
                 stallLatch.get().countDown();
             }
 
             @Override
-            protected void onStreamUnstalled(IStream stream)
+            protected void onStreamUnstalled(Stream stream)
             {
                 super.onStreamUnstalled(stream);
                 unstallLatch.countDown();
             }
-        }, new ServerSessionListener.Adapter()
+        }, new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -156,24 +154,28 @@ public class FlowControlStalledTest
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 }
 
+                stream.demand();
                 return null;
             }
         });
 
         // Use a large session window so that only the stream gets stalled.
         client.setInitialSessionRecvWindow(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        Session client = newClient(new Session.Listener.Adapter());
+        Session client = newClient(new Session.Listener() {});
 
         CountDownLatch latch = new CountDownLatch(1);
-        Queue<Callback> callbacks = new ArrayDeque<>();
+        Queue<Stream.Data> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
-        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callbacks.offer(callback);
-                if (frame.isEndStream())
+                Stream.Data data = stream.readData();
+                // Do not release.
+                dataQueue.offer(data);
+                stream.demand();
+                if (data.frame().isEndStream())
                     latch.countDown();
             }
         });
@@ -185,16 +187,16 @@ public class FlowControlStalledTest
         stallLatch.set(new CountDownLatch(1));
 
         request = newRequest("GET", "/", HttpFields.EMPTY);
-        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
+        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), null);
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 
         // Consume all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Callback callback = callbacks.poll();
-            if (callback != null)
-                callback.succeeded();
+            Stream.Data data = dataQueue.poll();
+            if (data != null)
+                data.release();
         }
 
         // Make sure the unstall callback is invoked.
@@ -209,19 +211,19 @@ public class FlowControlStalledTest
         start(() -> new BufferingFlowControlStrategy(0.5f)
         {
             @Override
-            public void onSessionStalled(ISession session)
+            public void onSessionStalled(Session session)
             {
                 super.onSessionStalled(session);
                 stallLatch.get().countDown();
             }
 
             @Override
-            protected void onSessionUnstalled(ISession session)
+            protected void onSessionUnstalled(Session session)
             {
                 super.onSessionUnstalled(session);
                 unstallLatch.countDown();
             }
-        }, new ServerSessionListener.Adapter()
+        }, new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -247,13 +249,14 @@ public class FlowControlStalledTest
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 }
 
+                stream.demand();
                 return null;
             }
         });
 
         // Use a large stream window so that only the session gets stalled.
         client.setInitialStreamRecvWindow(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClient(new Session.Listener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -265,15 +268,18 @@ public class FlowControlStalledTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        Queue<Callback> callbacks = new ArrayDeque<>();
+        Queue<Stream.Data> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callbacks.offer(callback);
-                if (frame.isEndStream())
+                Stream.Data data = stream.readData();
+                // Do not release.
+                dataQueue.offer(data);
+                stream.demand();
+                if (data.frame().isEndStream())
                     latch.countDown();
             }
         });
@@ -285,16 +291,16 @@ public class FlowControlStalledTest
         stallLatch.set(new CountDownLatch(1));
 
         request = newRequest("GET", "/", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
+        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), null);
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 
-        // Consume all data.
+        // Release all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Callback callback = callbacks.poll();
-            if (callback != null)
-                callback.succeeded();
+            Stream.Data data = dataQueue.poll();
+            if (data != null)
+                data.release();
         }
 
         // Make sure the unstall callback is invoked.

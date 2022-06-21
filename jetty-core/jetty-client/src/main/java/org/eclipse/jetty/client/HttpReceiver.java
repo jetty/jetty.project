@@ -95,7 +95,7 @@ public abstract class HttpReceiver
             throw new IllegalArgumentException("Invalid demand " + n);
 
         boolean resume = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             demand = MathUtils.cappedAdd(demand, n);
             if (stalled)
@@ -104,7 +104,7 @@ public abstract class HttpReceiver
                 resume = true;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Response demand={}/{}, resume={}", n, demand, resume);
+                LOG.debug("Response demand={}/{}, resume={} on {}", n, demand, resume, this);
         }
 
         if (resume)
@@ -123,7 +123,7 @@ public abstract class HttpReceiver
 
     private long demand(LongUnaryOperator operator)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return demand = operator.applyAsLong(demand);
         }
@@ -131,7 +131,7 @@ public abstract class HttpReceiver
 
     protected boolean hasDemandOrStall()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             stalled = demand <= 0;
             return !stalled;
@@ -229,17 +229,11 @@ public abstract class HttpReceiver
             {
                 switch (fieldHeader)
                 {
-                    case SET_COOKIE:
-                    case SET_COOKIE2:
+                    case SET_COOKIE, SET_COOKIE2 ->
                     {
                         URI uri = exchange.getRequest().getURI();
                         if (uri != null)
                             storeCookie(uri, field);
-                        break;
-                    }
-                    default:
-                    {
-                        break;
                     }
                 }
             }
@@ -602,10 +596,11 @@ public abstract class HttpReceiver
     @Override
     public String toString()
     {
-        return String.format("%s@%x(rsp=%s,failure=%s)",
+        return String.format("%s@%x(rsp=%s,demand=%d,failure=%s)",
             getClass().getSimpleName(),
             hashCode(),
             responseState,
+            demand(),
             failure);
     }
 

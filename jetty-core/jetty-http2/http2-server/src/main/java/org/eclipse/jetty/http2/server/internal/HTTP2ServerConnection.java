@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.server.internal;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -29,16 +28,16 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.internal.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
@@ -65,7 +64,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private final String id;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, HTTP2Session session, int inputBufferSize, ServerSessionListener listener)
     {
         super(retainableByteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
         this.connector = connector;
@@ -83,7 +82,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public void onOpen()
     {
-        ISession session = getSession();
+        HTTP2Session session = getSession();
         notifyAccept(session);
         for (Frame frame : upgradeFrames)
         {
@@ -93,7 +92,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         produce();
     }
 
-    private void notifyAccept(ISession session)
+    private void notifyAccept(HTTP2Session session)
     {
         try
         {
@@ -105,7 +104,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public void onNewStream(IStream stream, HeadersFrame frame)
+    public void onNewStream(HTTP2Stream stream, HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
@@ -119,29 +118,25 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             offerTask(task, false);
     }
 
-    public void onData(IStream stream, DataFrame frame, Callback callback)
+    public void onDataAvailable(Stream stream)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Processing {} on {}", frame, stream);
+            LOG.debug("Processing data available on {}", stream);
 
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
-            Runnable task = channel.onData(frame, callback);
+            Runnable task = channel.onDataAvailable();
             if (task != null)
                 offerTask(task, false);
         }
-        else
-        {
-            callback.failed(new IOException("channel_not_found"));
-        }
     }
 
-    public void onTrailers(IStream stream, HeadersFrame frame)
+    public void onTrailers(Stream stream, HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing trailers {} on {}", frame, stream);
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onTrailer(frame);
@@ -150,20 +145,20 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public boolean onStreamTimeout(IStream stream, Throwable failure)
+    public boolean onStreamTimeout(Stream stream, Throwable failure)
     {
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         boolean result = channel != null && channel.onTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
     }
 
-    public void onStreamFailure(IStream stream, Throwable failure, Callback callback)
+    public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing stream failure on {}", stream, failure);
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
@@ -182,10 +177,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public boolean onSessionTimeout(Throwable failure)
     {
-        ISession session = getSession();
+        HTTP2Session session = getSession();
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
-                .map(stream -> (IStream)stream)
+                .map(stream -> (HTTP2Stream)stream)
                 .map(stream -> (HTTP2Channel.Server)stream.getAttachment())
                 .filter(Objects::nonNull)
                 .map(HTTP2Channel.Server::isIdle)
@@ -203,7 +198,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         callback.succeeded();
     }
 
-    public void push(IStream stream, MetaData.Request request)
+    public void push(HTTP2Stream stream, MetaData.Request request)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);

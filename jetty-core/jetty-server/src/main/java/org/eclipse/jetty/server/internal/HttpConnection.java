@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -80,6 +81,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 public class HttpConnection extends AbstractConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
+    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
     private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
@@ -1007,12 +1009,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
             RetainableByteBuffer retainable = _retainableByteBuffer;
-            stream._chunk = Content.Chunk.from(buffer, false, () ->
-            {
-                retainable.release();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), retainable, this);
-            });
+            stream._chunk = Content.Chunk.from(buffer, false, new ChunkRetainable(retainable, buffer));
             return true;
         }
 
@@ -1137,7 +1134,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
     }
 
-    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
+    private class ChunkRetainable extends Retainable.Wrapper
+    {
+        private final ByteBuffer buffer;
+
+        private ChunkRetainable(Retainable retainable, ByteBuffer buffer)
+        {
+            super(retainable);
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean release()
+        {
+            boolean released = super.release();
+            if (LOG.isDebugEnabled())
+                LOG.debug("content released {} {}/{} for {}", released, BufferUtil.toDetailString(buffer), getWrapped(), HttpConnection.this);
+            return released;
+        }
+    }
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {

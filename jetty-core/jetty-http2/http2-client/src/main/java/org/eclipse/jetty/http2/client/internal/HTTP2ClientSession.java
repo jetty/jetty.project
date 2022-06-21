@@ -16,13 +16,13 @@ package org.eclipse.jetty.http2.client.internal;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -47,7 +47,7 @@ public class HTTP2ClientSession extends HTTP2Session
 
         // HEADERS can be received for normal and pushed responses.
         int streamId = frame.getStreamId();
-        IStream stream = getStream(streamId);
+        HTTP2Stream stream = getStream(streamId);
         if (stream != null)
         {
             MetaData metaData = frame.getMetaData();
@@ -94,7 +94,7 @@ public class HTTP2ClientSession extends HTTP2Session
 
         int streamId = frame.getStreamId();
         int pushStreamId = frame.getPromisedStreamId();
-        IStream stream = getStream(streamId);
+        HTTP2Stream stream = getStream(streamId);
         if (stream == null)
         {
             if (LOG.isDebugEnabled())
@@ -102,7 +102,7 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         else
         {
-            IStream pushStream = createRemoteStream(pushStreamId, frame.getMetaData());
+            HTTP2Stream pushStream = createRemoteStream(pushStreamId, frame.getMetaData());
             if (pushStream != null)
             {
                 pushStream.process(frame, Callback.NOOP);
@@ -112,7 +112,7 @@ public class HTTP2ClientSession extends HTTP2Session
         }
     }
 
-    private Stream.Listener notifyPush(IStream stream, IStream pushStream, PushPromiseFrame frame)
+    private Stream.Listener notifyPush(HTTP2Stream stream, HTTP2Stream pushStream, PushPromiseFrame frame)
     {
         Stream.Listener listener = stream.getListener();
         if (listener == null)

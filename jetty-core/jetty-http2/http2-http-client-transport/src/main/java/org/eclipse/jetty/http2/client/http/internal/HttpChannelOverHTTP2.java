@@ -19,15 +19,14 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +87,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         this.stream = stream;
         if (stream != null)
-            ((IStream)stream).setAttachment(receiver);
+            ((HTTP2Stream)stream).setAttachment(receiver);
     }
 
     public boolean isFailed()
@@ -186,30 +185,31 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onData(Stream stream, DataFrame frame, Callback callback)
+        public void onDataAvailable(Stream stream)
         {
-            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
-            channel.onData(frame, callback);
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
+            channel.onDataAvailable();
         }
 
         @Override
-        public void onReset(Stream stream, ResetFrame frame)
+        public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             // TODO: needs to call HTTP2Channel?
-            receiver.onReset(stream, frame);
+            receiver.onReset(frame);
+            callback.succeeded();
         }
 
         @Override
         public boolean onIdleTimeout(Stream stream, Throwable x)
         {
-            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
             return channel.onTimeout(x);
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
-            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
             channel.onFailure(failure, callback);
         }
     }

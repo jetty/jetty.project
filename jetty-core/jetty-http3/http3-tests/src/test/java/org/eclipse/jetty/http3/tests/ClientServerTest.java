@@ -224,7 +224,7 @@ public class ClientServerTest extends AbstractClientServerTest
                             return;
                         }
                         // Recycle the ByteBuffer in data.frame.
-                        data.complete();
+                        data.release();
                         // Call me again immediately.
                         stream.demand();
                         if (data.isLast())
@@ -294,8 +294,8 @@ public class ClientServerTest extends AbstractClientServerTest
                         }
                         // Echo it back, then demand only when the write is finished.
                         stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
-                            // Always complete.
-                            .whenComplete((s, x) -> data.complete())
+                            // Always release.
+                            .whenComplete((s, x) -> data.release())
                             // Demand only if successful.
                             .thenRun(stream::demand);
                     }
@@ -330,7 +330,7 @@ public class ClientServerTest extends AbstractClientServerTest
                     {
                         // Consume data.
                         byteBuffer.put(data.getByteBuffer());
-                        data.complete();
+                        data.release();
                         if (data.isLast())
                             clientDataLatch.countDown();
                     }

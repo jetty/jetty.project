@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.api.Session;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
@@ -311,13 +311,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     @ManagedObject("The container of HTTP/2 sessions")
     public static class HTTP2SessionContainer implements Connection.Listener, Graceful, Dumpable
     {
-        private final Set<ISession> sessions = ConcurrentHashMap.newKeySet();
+        private final Set<HTTP2Session> sessions = ConcurrentHashMap.newKeySet();
         private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();
 
         @Override
         public void onOpened(Connection connection)
         {
-            ISession session = ((HTTP2Connection)connection).getSession();
+            HTTP2Session session = ((HTTP2Connection)connection).getSession();
             sessions.add(session);
             LifeCycle.start(session);
             if (isShutdown())
@@ -327,7 +327,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public void onClosed(Connection connection)
         {
-            ISession session = ((HTTP2Connection)connection).getSession();
+            HTTP2Session session = ((HTTP2Connection)connection).getSession();
             if (sessions.remove(session))
                 LifeCycle.stop(session);
         }
@@ -371,7 +371,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             return shutdown.get() != null;
         }
 
-        private CompletableFuture<Void> shutdown(ISession session)
+        private CompletableFuture<Void> shutdown(HTTP2Session session)
         {
             return session.shutdown();
         }

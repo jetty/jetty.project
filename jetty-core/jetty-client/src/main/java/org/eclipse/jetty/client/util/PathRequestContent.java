@@ -17,16 +17,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.content.PathContentSource;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>
  * <p>It is possible to specify a buffer size used to read content from the stream,
- * by default 4096 bytes, and whether the buffer should be direct or not.</p>
- * <p>If a {@link ByteBufferPool} is provided via {@link #setByteBufferPool(ByteBufferPool)},
- * the buffer will be allocated from that pool, otherwise one buffer will be
- * allocated and used to read the file.</p>
+ * by default 4096 bytes, whether the buffer should be direct or not, and a
+ * {@link RetainableByteBufferPool} from which {@code ByteBuffer}s will be acquired
+ * to read from the {@code Path}.</p>
  */
 public class PathRequestContent extends PathContentSource implements Request.Content
 {
@@ -49,9 +48,14 @@ public class PathRequestContent extends PathContentSource implements Request.Con
 
     public PathRequestContent(String contentType, Path filePath, int bufferSize) throws IOException
     {
-        super(filePath);
-        this.contentType = contentType;
+        this(contentType, filePath, null);
         setBufferSize(bufferSize);
+    }
+
+    public PathRequestContent(String contentType, Path filePath, RetainableByteBufferPool bufferPool) throws IOException
+    {
+        super(filePath, bufferPool);
+        this.contentType = contentType;
     }
 
     @Override

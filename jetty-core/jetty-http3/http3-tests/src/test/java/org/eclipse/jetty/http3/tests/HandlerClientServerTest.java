@@ -123,7 +123,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
                     copy.put(byteBuffer);
                     copy.flip();
                     clientReceivedBuffers.add(copy);
-                    data.complete();
+                    data.release();
 
                     if (data.isLast())
                     {

@@ -56,13 +56,13 @@ public class AsyncServletTest extends AbstractTest
 //            }
 //        });
 //
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 //        CountDownLatch latch = new CountDownLatch(1);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
 //        {
 //            @Override
 //            public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -93,13 +93,13 @@ public class AsyncServletTest extends AbstractTest
 //        long idleTimeout = 1000;
 //        client.setIdleTimeout(idleTimeout);
 //
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        FuturePromise<Stream> promise = new FuturePromise<>();
 //        CountDownLatch responseLatch = new CountDownLatch(1);
 //        CountDownLatch failLatch = new CountDownLatch(1);
-//        session.newStream(frame, promise, new Stream.Listener.Adapter()
+//        session.newStream(frame, promise, new Stream.Listener()
 //        {
 //            @Override
 //            public void onHeaders(Stream stream, HeadersFrame frame)
@@ -130,12 +130,12 @@ public class AsyncServletTest extends AbstractTest
 //        long idleTimeout = 1000;
 //        client.setIdleTimeout(10 * idleTimeout);
 //
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        FuturePromise<Stream> promise = new FuturePromise<>();
 //        CountDownLatch clientLatch = new CountDownLatch(1);
-//        session.newStream(frame, promise, new Stream.Listener.Adapter()
+//        session.newStream(frame, promise, new Stream.Listener()
 //        {
 //            @Override
 //            public boolean onIdleTimeout(Stream stream, Throwable x)
@@ -178,11 +178,11 @@ public class AsyncServletTest extends AbstractTest
 //
 //        prepareClient();
 //        client.start();
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        FuturePromise<Stream> promise = new FuturePromise<>();
-//        session.newStream(frame, promise, new Stream.Listener.Adapter());
+//        session.newStream(frame, promise, null);
 //        Stream stream = promise.get(5, TimeUnit.SECONDS);
 //
 //        // Wait for the server to be in ASYNC_WAIT.
@@ -288,11 +288,11 @@ public class AsyncServletTest extends AbstractTest
 //        prepareClient();
 //        client.start();
 //
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        CountDownLatch clientLatch = new CountDownLatch(1);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
 //        {
 //            @Override
 //            public void onHeaders(Stream stream, HeadersFrame frame)
