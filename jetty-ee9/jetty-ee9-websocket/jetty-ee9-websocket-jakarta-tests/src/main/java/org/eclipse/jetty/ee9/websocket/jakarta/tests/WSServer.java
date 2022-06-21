@@ -167,7 +167,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         public void deploy()
         {
             contexts.addHandler(context);
-            contexts.manage(context);
+            contexts.manage(context.getCoreContextHandler());
             context.setThrowUnavailableOnStartupException(true);
             if (LOG.isDebugEnabled())
                 LOG.debug("{}", context.dump());
