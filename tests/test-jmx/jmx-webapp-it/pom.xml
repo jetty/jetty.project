@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>9.4.48.v20220622</version>
+    <version>9.4.49-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jmx-webapp-it</artifactId>
