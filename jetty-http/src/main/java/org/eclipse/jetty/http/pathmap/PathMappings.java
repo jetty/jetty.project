@@ -171,20 +171,17 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         if (_optimizedExact)
                         {
                             int i = path.length();
-
-                            final Trie<MappedResource<E>> exact_map = _exactMap;
                             while (i >= 0)
                             {
-                                MappedResource<E> candidate = exact_map.getBest(path, 0, i);
+                                MappedResource<E> candidate = _exactMap.getBest(path, 0, i--);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                 {
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                                 }
-                                i--;
                             }
                             // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -197,17 +194,15 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         if (_optimizedPrefix)
                         {
                             int i = path.length();
-                            final Trie<MappedResource<E>> prefix_map = _prefixMap;
                             while (i >= 0)
                             {
-                                MappedResource<E> candidate = prefix_map.getBest(path, 0, i);
+                                MappedResource<E> candidate = _prefixMap.getBest(path, 0, i--);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                                i--;
                             }
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -220,12 +215,16 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         if (_optimizedSuffix)
                         {
                             int i = 0;
-                            final Trie<MappedResource<E>> suffix_map = _suffixMap;
+                            // Loop through each suffix mark
+                            // Input is "/a.b.c.foo"
+                            //  Loop 1: "b.c.foo"
+                            //  Loop 2: "c.foo"
+                            //  Loop 3: "foo"
                             while ((i = path.indexOf('.', i + 1)) > 0)
                             {
-                                MappedResource<E> candidate = suffix_map.get(path, i + 1, path.length() - i - 1);
+                                MappedResource<E> candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)

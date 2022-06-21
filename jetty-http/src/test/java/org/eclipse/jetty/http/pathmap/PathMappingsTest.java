@@ -325,6 +325,32 @@ public class PathMappingsTest
     }
 
     @Test
+    public void testServletMultipleSuffixMappings()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put(new ServletPathSpec("*.foo"), "resourceFoo");
+        p.put(new ServletPathSpec("*.bar"), "resourceBar");
+        p.put(new ServletPathSpec("*.zed"), "resourceZed");
+
+        MatchedResource<String> matched;
+
+        matched = p.getMatched("/a.b.c.foo");
+        assertThat(matched.getResource(), is("resourceFoo"));
+
+        matched = p.getMatched("/a.b.c.bar");
+        assertThat(matched.getResource(), is("resourceBar"));
+
+        matched = p.getMatched("/a.b.c.pop");
+        assertNull(matched);
+
+        matched = p.getMatched("/a.foo.c.pop");
+        assertNull(matched);
+
+        matched = p.getMatched("/a%2Efoo");
+        assertNull(matched);
+    }
+
+    @Test
     public void testRemoveUriTemplatePathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
