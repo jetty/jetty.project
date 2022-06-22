@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.websocket.server;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.ServletContext;
@@ -23,11 +24,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
@@ -125,8 +129,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         try
         {
             ServletContext servletContext = getServletContext();
-
-            components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+            ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
+            components = WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler());
             mapping = new WebSocketMappings(components);
 
             String max = getInitParameter("idleTimeout");
@@ -178,8 +182,15 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         throws ServletException, IOException
     {
         // provide a null default customizer the customizer will be on the negotiator in the mapping
-        if (mapping.upgrade(req, resp, null))
-            return;
+        HttpChannel channel = (HttpChannel)req.getAttribute(HttpChannel.class.getName());
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            if (mapping.upgrade(channel.getCoreRequest(), channel.getCoreResponse(), callback, null))
+            {
+                callback.block();
+                return;
+            }
+        }
 
         // If we reach this point, it means we had an incoming request to upgrade
         // but it was either not a proper websocket upgrade, or it was possibly rejected
@@ -271,9 +282,19 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
+        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback)
         {
-            return creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+            try
+            {
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                callback.succeeded();
+                return webSocket;
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+                return null;
+            }
         }
     }
 }

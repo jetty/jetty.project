@@ -19,7 +19,6 @@
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
 
     <jakarta.activation.api.version>2.1.0</jakarta.activation.api.version>
-    <!-- when changing annotation api version you must change in jetty-home with id <id>copy-ee10-annotations-deps-jakarta-annotation</id> -->
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>3.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>5.0.0</jakarta.el.api.version>

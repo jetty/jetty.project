@@ -109,7 +109,7 @@ public class BrowserDebugTool
         ServletHolder defHolder = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(defHolder, "/");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new HandlerList(context.getCoreContextHandler(), new DefaultHandler()));
 
         LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }

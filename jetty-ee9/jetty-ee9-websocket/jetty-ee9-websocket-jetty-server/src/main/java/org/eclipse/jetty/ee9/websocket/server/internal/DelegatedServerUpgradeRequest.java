@@ -18,32 +18,82 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {
+    private final URI requestURI;
+    private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
+    private final HttpServletRequest httpServletRequest;
+    private List<HttpCookie> cookies;
+    private Map<String, List<String>> parameterMap;
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        upgradeRequest = request;
+        this(request, Request.as(request, ContextHandler.CoreContextRequest.class).getHttpChannel().getRequest());
+    }
+
+    public DelegatedServerUpgradeRequest(ServerUpgradeRequest request, HttpServletRequest servletRequest)
+    {
+        this.upgradeRequest = request;
+        this.httpServletRequest = servletRequest;
+        this.queryString = httpServletRequest.getQueryString();
+
+        try
+        {
+            StringBuffer uri = httpServletRequest.getRequestURL();
+            if (this.queryString != null)
+                uri.append("?").append(this.queryString);
+            uri.replace(0, uri.indexOf(":"), request.isSecure() ? "wss" : "ws");
+            this.requestURI = new URI(uri.toString());
+        }
+        catch (Throwable t)
+        {
+            throw new BadMessageException("Bad WebSocket UpgradeRequest", t);
+        }
     }
 
     @Override
     public List<HttpCookie> getCookies()
     {
-        return upgradeRequest.getCookies();
+        if (cookies == null)
+        {
+            Cookie[] reqCookies = httpServletRequest.getCookies();
+            if (reqCookies != null)
+            {
+                cookies = Arrays.stream(reqCookies)
+                    .map(c -> new HttpCookie(c.getName(), c.getValue()))
+                    .collect(Collectors.toList());
+            }
+            else
+            {
+                cookies = Collections.emptyList();
+            }
+        }
+
+        return cookies;
     }
 
     @Override
@@ -57,37 +107,39 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getHeader(String name)
     {
-        return upgradeRequest.getHeader(name);
+        return upgradeRequest.getHeaders().get(name);
     }
 
     @Override
     public int getHeaderInt(String name)
     {
-        return upgradeRequest.getHeaderInt(name);
+        return httpServletRequest.getIntHeader(name);
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return upgradeRequest.getHeadersMap();
+        Map<String, List<String>> headers = upgradeRequest.getHeaders().getFieldNamesCollection().stream()
+            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(getHeaders(name))));
+        return Collections.unmodifiableMap(headers);
     }
 
     @Override
     public List<String> getHeaders(String name)
     {
-        return upgradeRequest.getHeaders(name);
+        return upgradeRequest.getHeaders().getValuesList(name);
     }
 
     @Override
     public String getHost()
     {
-        return upgradeRequest.getHost();
+        return upgradeRequest.getHttpURI().getHost();
     }
 
     @Override
     public String getHttpVersion()
     {
-        return upgradeRequest.getHttpVersion();
+        return upgradeRequest.getConnectionMetaData().getHttpVersion().asString();
     }
 
     @Override
@@ -99,13 +151,25 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getOrigin()
     {
-        return upgradeRequest.getOrigin();
+        return upgradeRequest.getHeaders().get(HttpHeader.ORIGIN);
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        return upgradeRequest.getParameterMap();
+        if (parameterMap == null)
+        {
+            Map<String, String[]> requestParams = httpServletRequest.getParameterMap();
+            if (requestParams != null)
+            {
+                parameterMap = new HashMap<>(requestParams.size());
+                for (Map.Entry<String, String[]> entry : requestParams.entrySet())
+                {
+                    parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
+                }
+            }
+        }
+        return parameterMap;
     }
 
     @Override
@@ -117,19 +181,19 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getQueryString()
     {
-        return upgradeRequest.getQueryString();
+        return queryString;
     }
 
     @Override
     public URI getRequestURI()
     {
-        return upgradeRequest.getRequestURI();
+        return requestURI;
     }
 
     @Override
     public HttpSession getSession()
     {
-        return upgradeRequest.getSession();
+        return httpServletRequest.getSession();
     }
 
     @Override
@@ -141,7 +205,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        return upgradeRequest.getUserPrincipal();
+        return httpServletRequest.getUserPrincipal();
     }
 
     @Override
@@ -153,78 +217,85 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public boolean isSecure()
     {
-        return upgradeRequest.isSecure();
+        return httpServletRequest.isSecure();
     }
 
     @Override
     public X509Certificate[] getCertificates()
     {
-        return upgradeRequest.getCertificates();
+        return (X509Certificate[])httpServletRequest.getAttribute("jakarta.servlet.request.X509Certificate");
     }
 
     @Override
     public HttpServletRequest getHttpServletRequest()
     {
-        return upgradeRequest.getHttpServletRequest();
+        return httpServletRequest;
     }
 
     @Override
     public Locale getLocale()
     {
-        return upgradeRequest.getLocale();
+        return httpServletRequest.getLocale();
     }
 
     @Override
     public Enumeration<Locale> getLocales()
     {
-        return upgradeRequest.getLocales();
+        return httpServletRequest.getLocales();
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return upgradeRequest.getLocalSocketAddress();
+        return upgradeRequest.getConnectionMetaData().getLocalSocketAddress();
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return upgradeRequest.getRemoteSocketAddress();
+        return upgradeRequest.getConnectionMetaData().getRemoteSocketAddress();
     }
 
     @Override
     public String getRequestPath()
     {
-        return upgradeRequest.getRequestPath();
+        return URIUtil.addPaths(httpServletRequest.getServletPath(), httpServletRequest.getPathInfo());
     }
 
     @Override
     public Object getServletAttribute(String name)
     {
-        return upgradeRequest.getServletAttribute(name);
+        return httpServletRequest.getAttribute(name);
     }
 
     @Override
     public Map<String, Object> getServletAttributes()
     {
-        return upgradeRequest.getServletAttributes();
+        Map<String, Object> attributes = new HashMap<>(2);
+        Enumeration<String> attributeNames = httpServletRequest.getAttributeNames();
+        while (attributeNames.hasMoreElements())
+        {
+            String name = attributeNames.nextElement();
+            attributes.put(name, httpServletRequest.getAttribute(name));
+        }
+        return attributes;
     }
 
     @Override
     public Map<String, List<String>> getServletParameters()
     {
-        return upgradeRequest.getServletParameters();
+        return getParameterMap();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        return upgradeRequest.isUserInRole(role);
+        return httpServletRequest.isUserInRole(role);
     }
 
     @Override
     public void setServletAttribute(String name, Object value)
     {
-        upgradeRequest.setServletAttribute(name, value);
+        httpServletRequest.setAttribute(name, value);
     }
 }

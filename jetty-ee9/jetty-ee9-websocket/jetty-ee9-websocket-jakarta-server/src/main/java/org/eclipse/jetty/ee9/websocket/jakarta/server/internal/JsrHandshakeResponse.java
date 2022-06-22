@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.websocket.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -23,23 +25,22 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 public class JsrHandshakeResponse implements HandshakeResponse
 {
     private final ServerUpgradeResponse delegate;
-    private Map<String, List<String>> headerMap;
 
     public JsrHandshakeResponse(ServerUpgradeResponse resp)
     {
         this.delegate = resp;
-        this.headerMap = new HashMap<>();
-        this.headerMap.putAll(resp.getHeadersMap());
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return headerMap;
+        Map<String, List<String>> headers = delegate.getHeaders().getFieldNamesCollection().stream()
+            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
+        return Collections.unmodifiableMap(headers);
     }
 
     public void setHeaders(Map<String, List<String>> headers)
     {
-        headers.forEach((key, values) -> delegate.setHeader(key, values));
+        headers.forEach((key, values) -> delegate.getHeaders().put(key, values));
     }
 }

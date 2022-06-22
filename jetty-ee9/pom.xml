@@ -67,7 +67,7 @@
 <!--    <module>jetty-ee9-proxy</module>-->
     <module>jetty-ee9-quickstart</module>
 <!--    <module>jetty-ee9-runner</module>-->
-<!--    <module>jetty-ee9-websocket</module>-->
+    <module>jetty-ee9-websocket</module>
 <!--    <module>jetty-ee9-tests</module>-->
     <module>jetty-ee9-bom</module>
     <module>test-ee9-sessions</module>
