@@ -1,4 +1,8 @@
-jetty-9.4.48-SNAPSHOT
+jetty-9.4.49-SNAPSHOT
+
+jetty-9.4.48.v20220622 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has . character in
+   prefix
 
 jetty-9.4.47.v20220610 - 10 June 2022
  + 4717 High CPU spikes with jetty winstone threads
