@@ -22,9 +22,9 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -777,15 +777,14 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                if (acquired != null)
-                    leakedBuffers.add(acquired);
+                leakedBuffers.add(acquired);
                 return acquired;
             }
 
@@ -846,15 +845,14 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                if (acquired != null)
-                    leakedBuffers.add(acquired);
+                leakedBuffers.add(acquired);
                 return acquired;
             }
 
@@ -929,15 +927,14 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
             public ByteBuffer acquire(int size, boolean direct)
             {
                 ByteBuffer acquired = super.acquire(size, direct);
-                if (acquired != null)
-                    leakedBuffers.add(acquired);
+                leakedBuffers.add(acquired);
                 return acquired;
             }
 
