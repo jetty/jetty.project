@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static jakarta.websocket.CloseReason.CloseCodes.NORMAL_CLOSURE;
@@ -70,6 +71,7 @@ public class ContainerProviderServerTest
         server.stop();
     }
 
+    @Disabled
     @Test
     public void testJakartaWsContainerInServer() throws Exception
     {

@@ -28,13 +28,15 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -97,8 +99,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
         // Create the Jetty ServerContainer implementation
         JakartaWebSocketServerContainer container = new JakartaWebSocketServerContainer(
-            WebSocketMappings.ensureMappings(servletContext),
-            WebSocketServerComponents.getWebSocketComponents(servletContext),
+            WebSocketMappings.ensureMappings(contextHandler.getCoreContextHandler()),
+            WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler()),
             coreClientSupplier);
 
         // Manage the lifecycle of the Container.
@@ -294,7 +296,13 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
-        handshaker.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
+
+        HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            handshaker.upgradeRequest(negotiator, httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, components, defaultCustomizer);
+            callback.block();
+        }
     }
 
     @Override

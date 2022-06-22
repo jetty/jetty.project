@@ -72,6 +72,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
                 public void lifeCycleStopping(LifeCycle event)
                 {
                     contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
+                    contextHandler.removeEventListener(this);
                 }
             });
         }

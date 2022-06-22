@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketShutdownContainer
+org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketShutdownContainer

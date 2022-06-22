@@ -90,7 +90,7 @@ public class WebSocketListenerTest
     }
 
     @ParameterizedTest
-    @MethodSource("org.eclipse.jetty.websocket.tests.listeners.TextListeners#getTextListeners")
+    @MethodSource("org.eclipse.jetty.ee9.websocket.tests.listeners.TextListeners#getTextListeners")
     public void testTextListeners(Class<?> clazz) throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
@@ -110,7 +110,7 @@ public class WebSocketListenerTest
     }
 
     @ParameterizedTest
-    @MethodSource("org.eclipse.jetty.websocket.tests.listeners.BinaryListeners#getBinaryListeners")
+    @MethodSource("org.eclipse.jetty.ee9.websocket.tests.listeners.BinaryListeners#getBinaryListeners")
     public void testBinaryListeners(Class<?> clazz) throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
