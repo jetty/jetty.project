@@ -135,6 +135,10 @@ jetty-11.0.8 - 07 February 2022
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
 
+jetty-10.0.11 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has `.` character
+   in prefix section
+
 jetty-10.0.10 - 16 June 2022
  + 1771 Add module for SecuredRedirect support
  + 4414 GZipHandler not excluding inflation for specified paths
@@ -839,7 +843,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
