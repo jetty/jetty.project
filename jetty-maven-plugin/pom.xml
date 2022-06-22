@@ -147,6 +147,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-api</artifactId>
+      <version>${maven.resolver.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-tools-api</artifactId>
     </dependency>
