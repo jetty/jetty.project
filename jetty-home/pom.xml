@@ -482,6 +482,67 @@
           </execution>
           <!-- TODO: add copy deps for ee9 apache-jsp and jstl -->
           <execution>
+            <id>copy-ee9-apache-jsp-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>
+                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
+              </includeGroupIds>
+              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <prependGroupId>true</prependGroupId>
+              <outputDirectory>${assembly-directory}/lib/ee9-apache-jsp</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-apache-jsp-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>
+                org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
+              </includeGroupIds>
+              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <prependGroupId>true</prependGroupId>
+              <outputDirectory>${source-assembly-directory}/lib/ee9-apache-jsp</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-glassfish-jstl-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <prependGroupId>true</prependGroupId>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/ee9-glassfish-jstl</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee9-glassfish-jstl-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <prependGroupId>true</prependGroupId>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/ee9-glassfish-jstl</outputDirectory>
+            </configuration>
+          </execution>
+
+          <execution>
             <id>copy-ee10-jaspi-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -770,10 +831,10 @@
       <version>${project.version}</version>
     </dependency>    
     <!-- ee9 specific dependencies -->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-quickstart</artifactId>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-quickstart</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
@@ -795,24 +856,24 @@
 <!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
 <!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
 <!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-apache-jsp</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-glassfish-jstl</artifactId>-->
-<!--      <exclusions>-->
-<!--        <exclusion>-->
-<!--          <groupId>javax.el</groupId>-->
-<!--          <artifactId>el-api</artifactId>-->
-<!--        </exclusion>-->
-<!--        <exclusion>-->
-<!--          <groupId>jakarta.el</groupId>-->
-<!--          <artifactId>jakarta.el-api</artifactId>-->
-<!--        </exclusion>-->
-<!--      </exclusions>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-apache-jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-glassfish-jstl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
