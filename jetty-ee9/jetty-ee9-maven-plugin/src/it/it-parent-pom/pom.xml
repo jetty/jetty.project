@@ -126,8 +126,8 @@
           <version>@maven.source.plugin.version@</version>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee9</groupId>
+          <artifactId>jetty-ee9-maven-plugin</artifactId>
           <version>${jetty.version}</version>
         </plugin>
         <plugin>
