@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>11.0.11-SNAPSHOT</version>
+    <version>11.0.12-SNAPSHOT</version>
   </parent>
 
   <artifactId>jetty-bom</artifactId>
@@ -53,159 +53,159 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>glassfish-jstl</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-annotations</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-ant</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-cdi</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-deploy</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.gcloud</groupId>
         <artifactId>jetty-gcloud-session-manager</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
         <type>zip</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
         <type>tar.gz</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-hpack</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-http-client-transport</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
         <artifactId>http3-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
         <artifactId>http3-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
         <artifactId>http3-http-client-transport</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
         <artifactId>http3-qpack</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
         <artifactId>http3-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-spi</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -215,7 +215,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-remote-query</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -225,37 +225,37 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-embedded-query</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-hazelcast</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaas</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaspi</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jndi</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -265,12 +265,12 @@
       <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
@@ -280,92 +280,92 @@
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-jsp</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-warurl</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-quiche-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-quiche-jna</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-httpservice</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-plus</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-proxy</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-quickstart</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-security</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-openid</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlets</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -375,97 +375,97 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixdomain-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util-ajax</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-webapp</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jakarta-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jakarta-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jakarta-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jetty-api</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jetty-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jetty-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-jetty-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-core-common</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-core-client</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-core-server</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
-        <version>11.0.11-SNAPSHOT</version>
+        <version>11.0.12-SNAPSHOT</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -481,7 +481,7 @@
           <dependency>
             <groupId>org.eclipse.jetty.quic</groupId>
             <artifactId>quic-quiche-foreign-incubator</artifactId>
-            <version>11.0.11-SNAPSHOT</version>
+            <version>11.0.12-SNAPSHOT</version>
           </dependency>
         </dependencies>
       </dependencyManagement>

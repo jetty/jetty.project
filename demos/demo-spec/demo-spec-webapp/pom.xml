@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>11.0.11-SNAPSHOT</version>
+    <version>11.0.12-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <name>Demo :: Servlet Spec :: Webapp</name>
