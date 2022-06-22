@@ -92,7 +92,6 @@ public class TestJettyJspServlet
     @Test
     public void testWithJsp() throws Exception
     {
-        //TODO this test is producing an IllegalStateException in ServletHolder.init
         //test that an ordinary jsp is served by jsp servlet
         String request =
             "GET /context/foo.jsp HTTP/1.1\r\n" +

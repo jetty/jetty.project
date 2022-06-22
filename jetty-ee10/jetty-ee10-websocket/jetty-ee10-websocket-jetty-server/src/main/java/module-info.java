@@ -13,7 +13,7 @@
 
 module org.eclipse.jetty.ee10.websocket.jetty.server
 {
-    requires jetty.servlet.api;
+    requires  jakarta.servlet;
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.ee10.websocket.jetty.common;
     requires org.eclipse.jetty.ee10.websocket.servlet;
