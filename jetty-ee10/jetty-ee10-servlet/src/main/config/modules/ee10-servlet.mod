@@ -11,5 +11,5 @@ server
 sessions
 
 [lib]
-lib/jetty-jakarta-servlet-api-6.0.0-SNAPSHOT.jar
+lib/jakarta.servlet-api-6.0.0.jar
 lib/jetty-ee10-servlet-${jetty.version}.jar

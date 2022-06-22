@@ -50,6 +50,7 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- FIXME to review it is not sure to work -->
        <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
@@ -78,26 +79,29 @@
         <artifactId>jetty-ee9-glassfish-jstl</artifactId>
         <version>${project.version}</version>
       </dependency>
+
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaas</artifactId>
         <version>${project.version}</version>
       </dependency>
+
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaspi</artifactId>
         <version>${project.version}</version>
       </dependency>
+
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>-->
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-maven-plugin</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-openid</artifactId>-->
@@ -113,11 +117,11 @@
 <!--        <artifactId>jetty-ee9-proxy</artifactId>-->
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-quickstart</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-quickstart</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-nested</artifactId>
@@ -143,11 +147,7 @@
         <artifactId>jetty-ee9-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>test-ee9-sessions-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
 <!--        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>-->
@@ -189,6 +189,7 @@
 <!--        <version>${project.version}</version>-->
 <!--      </dependency>-->
       <!-- Jakarta EE 9 Dependencies -->
+      <!-- FIXME to review it is not sure to be a good idea to have this in the bom -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>

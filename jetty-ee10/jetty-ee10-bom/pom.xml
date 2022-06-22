@@ -50,7 +50,8 @@
 
   <dependencyManagement>
     <dependencies>
-       <dependency>
+      <!-- FIXME to review it is not sure to work -->
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
         <version>12.0.0-SNAPSHOT</version>
@@ -88,18 +89,6 @@
         <artifactId>jetty-ee10-jaspi</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-jspc-maven-plugin</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <!-- TODO
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      -->
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-openid</artifactId>
@@ -175,15 +164,11 @@
         <artifactId>jetty-ee10-websocket-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>test-ee10-sessions-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <!-- Jakarta EE10 Dependencies -->
+      <!-- FIXME to review it is not sure to be a good idea to have this in the bom -->
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
         <version>${jetty.servlet.api.version}</version>
       </dependency>
       <dependency>
@@ -202,8 +187,8 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
         <version>${jakarta.websocket.api.version}</version>
       </dependency>
     </dependencies>

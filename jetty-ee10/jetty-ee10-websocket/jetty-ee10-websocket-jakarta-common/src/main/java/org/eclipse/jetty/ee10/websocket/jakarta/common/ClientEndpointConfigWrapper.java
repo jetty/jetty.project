@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import java.util.List;
+import javax.net.ssl.SSLContext;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.Extension;
@@ -53,5 +54,11 @@ public class ClientEndpointConfigWrapper extends EndpointConfigWrapper implement
     public Configurator getConfigurator()
     {
         return _endpointConfig.getConfigurator();
+    }
+
+    @Override
+    public SSLContext getSSLContext()
+    {
+        return _endpointConfig.getSSLContext();
     }
 }

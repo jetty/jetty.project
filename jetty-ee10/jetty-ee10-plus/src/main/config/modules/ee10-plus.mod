@@ -1,5 +1,5 @@
 [description]
-Enables Servlet 3.1 resource injection. 
+Enables Servlet resource injection. 
 
 [environment]
 ee10
@@ -12,4 +12,4 @@ ee10-webapp
 
 [lib]
 lib/jetty-ee10-plus-${jetty.version}.jar
-lib/jakarta.transaction-api-2.0.0.jar
+lib/jakarta.transaction-api-2.0.1.jar

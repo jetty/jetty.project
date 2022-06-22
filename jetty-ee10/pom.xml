@@ -13,34 +13,32 @@
   <packaging>pom</packaging>
 
   <properties>
-    <!-- FIXME we need a separate property for this one -->
-    <jetty.servlet.api.version>6.0.0-SNAPSHOT</jetty.servlet.api.version>
-
     <!-- TODO: Remove these javax.* entries? -->
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
 
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.0</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
-    <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-
+    <jakarta.activation.api.version>2.1.0</jakarta.activation.api.version>
+    <!-- when changing annotation api version you must change in jetty-home with id <id>copy-ee10-annotations-deps-jakarta-annotation</id> -->
+    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
+    <jakarta.authentication.api.version>3.0.0</jakarta.authentication.api.version>
+    <jakarta.el.api.version>5.0.0</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>4.0.1</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>2.1.0</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>2.1.0</jakarta.mail.api.version>
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
+    <jakarta.servlet.api.version>6.0.0</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>3.1.0</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>3.0.0</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>3.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
+    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>4.0.0</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>4.0.0</jakarta.xml.bind.impl.version>
+    <jakarta.xml.ws.api.version>4.0.0</jakarta.xml.ws.api.version>
+    <jakarta.xml.jaxws.impl.version>4.0.0-M4</jakarta.xml.jaxws.impl.version>
+    <jakarta.websocket.api.version>2.1.0</jakarta.websocket.api.version>
+    <jsp.impl.version>10.1.0-M16</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -71,6 +69,7 @@
     <module>jetty-examples</module>
     <module>jetty-ee10-bom</module>
     <module>test-ee10-sessions</module>
+    <module>jetty-ee10-home</module>
   </modules>
 
   <dependencyManagement>
@@ -260,9 +259,14 @@
       </dependency>
       <!-- Jakarta EE10 Dependencies -->
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>${jetty.servlet.api.version}</version>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>com.sun.xml.ws</groupId>
@@ -360,23 +364,18 @@
         <version>${jakarta.xml.ws.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>${jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>${jakarta.websocket.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
         <version>${jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
