@@ -39,41 +39,16 @@ import org.slf4j.LoggerFactory;
  * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
  * must use this class, for instance the one handling the `jar` scheme.
  */
-public class PoolingPathResource extends PathResource implements Closeable
+public class PoolingPathResource extends PathResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PoolingPathResource.class);
 
     private static final Map<FileSystem, Metadata> POOL = new HashMap<>();
     private static final AutoLock POOL_LOCK = new AutoLock();
 
-    private boolean closed;
-
     PoolingPathResource(URI uri) throws IOException
     {
         super(uri, true);
-    }
-
-    @Override
-    public void close()
-    {
-        try (AutoLock ignore = POOL_LOCK.lock())
-        {
-            if (!closed)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("closing {}", this);
-                closed = true;
-                try
-                {
-                    FileSystem fileSystem = Paths.get(getURI()).getFileSystem();
-                    release(fileSystem);
-                }
-                catch (FileSystemNotFoundException fsnfe)
-                {
-                    // The FS has already been released by a sweep.
-                }
-            }
-        }
     }
 
     public static Mount mount(URI uri) throws IOException

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.deploy.providers;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -577,8 +576,6 @@ public class ContextProvider extends ScanningAppProvider
             if (LOG.isDebugEnabled())
                 LOG.debug("{} anti-aliased to {}", resourceBase, resourceBase.getAlias());
             URI alias = resourceBase.getAlias();
-            if (resourceBase instanceof Closeable closeable)
-                IO.close(closeable);
             resourceBase = Resource.newResource(alias);
         }
 
@@ -625,8 +622,6 @@ public class ContextProvider extends ScanningAppProvider
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Reuse {} -> {}", resourceBase, unpacked);
-                if (resourceBase instanceof Closeable closeable)
-                    IO.close(closeable);
                 return Resource.newResource(unpacked.toPath());
             }
 
@@ -649,9 +644,6 @@ public class ContextProvider extends ScanningAppProvider
         resourceBase.copyTo(unpacked.toPath());
 
         extractLock.delete();
-        if (resourceBase instanceof Closeable closeable)
-            IO.close(closeable);
-
         return Resource.newResource(unpacked.toPath());
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -93,9 +92,6 @@ public class WebInfConfiguration extends AbstractConfiguration
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
-        Resource resourceBase = context.getResourceBase();
-        if (resourceBase instanceof Closeable closeable)
-            IO.close(closeable);
         //TODO there is something wrong with the config of the resource base as this should never be null
         context.setBaseResource(_preUnpackBaseResource == null ? null : _preUnpackBaseResource);
     }

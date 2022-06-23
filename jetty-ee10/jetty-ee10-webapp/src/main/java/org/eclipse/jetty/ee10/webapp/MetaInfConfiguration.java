@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
@@ -474,8 +473,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
             {
-                if (resourcesDir instanceof Closeable closeable)
-                    IO.close(closeable);
                 resourcesDir = EmptyResource.INSTANCE;
             }
 
@@ -547,8 +544,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
-                if (webFrag instanceof Closeable closeable)
-                    IO.close(closeable);
                 webFrag = EmptyResource.INSTANCE;
             }
 

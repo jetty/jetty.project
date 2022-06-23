@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -486,8 +485,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _cachedSize.addAndGet(-BufferUtil.length(buffer));
 
             _cachedFiles.decrementAndGet();
-            if (_resource instanceof Closeable closeable)
-                IO.close(closeable);
         }
 
         @Override

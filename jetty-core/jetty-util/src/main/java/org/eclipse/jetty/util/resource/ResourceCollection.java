@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.util.URIUtil;
  * If a resource is not found in the main resource, it looks it up in
  * the order the resources were constructed.
  */
-public class ResourceCollection extends Resource implements Closeable
+public class ResourceCollection extends Resource
 {
     private List<Resource> _resources;
 
@@ -430,18 +429,6 @@ public class ResourceCollection extends Resource implements Closeable
         ArrayList<String> result = new ArrayList<>(set);
         result.sort(Comparator.naturalOrder());
         return result;
-    }
-
-    @Override
-    public void close()
-    {
-        assertResourcesSet();
-
-        for (Resource r : _resources)
-        {
-            if (r instanceof Closeable closeable)
-                IO.close(closeable);
-        }
     }
 
     @Override

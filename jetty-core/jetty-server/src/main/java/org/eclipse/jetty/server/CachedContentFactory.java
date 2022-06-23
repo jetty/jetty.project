@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -492,8 +491,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _mappedBuffer.getAndSet(null);
 
             _cachedFiles.decrementAndGet();
-            if (_resource instanceof Closeable closeable)
-                IO.close(closeable);
         }
 
         @Override

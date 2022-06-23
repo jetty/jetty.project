@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -176,7 +174,5 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public void release()
     {
-        if (_resource instanceof Closeable closeable)
-            IO.close(closeable);
     }
 }

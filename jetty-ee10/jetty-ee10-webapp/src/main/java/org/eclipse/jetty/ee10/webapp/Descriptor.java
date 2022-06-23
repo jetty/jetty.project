@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.Closeable;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -45,11 +43,6 @@ public abstract class Descriptor
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
-            }
-            finally
-            {
-                if (_xml instanceof Closeable closeable)
-                    IO.close(closeable);
             }
         }
     }
