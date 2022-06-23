@@ -128,7 +128,7 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getServerClassMatcher().exclude("org.eclipse.jetty.plus.webapp."); //need visbility of the TestInjections class
+        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
@@ -242,7 +242,6 @@ public class PlusDescriptorProcessorTest
     }
     
     @Test
-    @Disabled // TODO
     public void testEnvEntries() throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
