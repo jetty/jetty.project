@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -209,9 +210,9 @@ public class PathResource extends Resource
             this.uri = uri;
             this.alias = checkAliasPath();
         }
-        catch (IllegalArgumentException e)
+        catch (FileSystemNotFoundException e)
         {
-            throw e;
+            throw new IllegalArgumentException(e);
         }
         catch (Exception e)
         {

@@ -53,36 +53,40 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        Resource r = Resource.newResource(s);
+        URI uri = URI.create(s);
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource r = Resource.newResource(uri);
 
-        Set<String> entries = new HashSet<>(r.list());
-        assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            Set<String> entries = new HashSet<>(r.list());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
-        Path extract = workDir.getPathFile("extract");
-        FS.ensureEmpty(extract);
+            Path extract = workDir.getPathFile("extract");
+            FS.ensureEmpty(extract);
 
-        r.copyTo(extract);
+            r.copyTo(extract);
 
-        Resource e = Resource.newResource(extract.toString());
+            Resource e = Resource.newResource(extract.toString());
 
-        entries = new HashSet<>(e.list());
-        assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            entries = new HashSet<>(e.list());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
-        s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
-        r = Resource.newResource(s);
+            s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
+            r = Resource.newResource(s);
 
-        entries = new HashSet<>(r.list());
-        assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
+            entries = new HashSet<>(r.list());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
-        Path extract2 = workDir.getPathFile("extract2");
-        FS.ensureEmpty(extract2);
+            Path extract2 = workDir.getPathFile("extract2");
+            FS.ensureEmpty(extract2);
 
-        r.copyTo(extract2);
+            r.copyTo(extract2);
 
-        e = Resource.newResource(extract2.toString());
+            e = Resource.newResource(extract2.toString());
 
-        entries = new HashSet<>(e.list());
-        assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
+            entries = new HashSet<>(e.list());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
+        }
     }
 
     @Test
@@ -91,10 +95,14 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        Resource r = Resource.newResource(s);
-        Collection<Resource> deep = r.getAllResources();
+        URI uri = URI.create(s);
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource r = Resource.newResource(uri);
+            Collection<Resource> deep = r.getAllResources();
 
-        assertEquals(4, deep.size());
+            assertEquals(4, deep.size());
+        }
     }
 
     @Test
@@ -103,15 +111,19 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        Resource r = Resource.newResource(s);
-        Resource container = Resource.newResource(testZip);
+        URI uri = URI.create(s);
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource r = Resource.newResource(uri);
+            Resource container = Resource.newResource(testZip);
 
-        assertThat(r, instanceOf(PoolingPathResource.class));
+            assertThat(r, instanceOf(PoolingPathResource.class));
 
-        assertTrue(r.isContainedIn(container));
+            assertTrue(r.isContainedIn(container));
 
-        container = Resource.newResource(testZip.getParent());
-        assertFalse(r.isContainedIn(container));
+            container = Resource.newResource(testZip.getParent());
+            assertFalse(r.isContainedIn(container));
+        }
     }
 
     @Test
@@ -121,12 +133,14 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
 
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers";
+        URI uri = URI.create(s);
 
-        try (ZipFile zf = new ZipFile(testZip.toFile()))
+        try (ZipFile zf = new ZipFile(testZip.toFile());
+             PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
-            Resource r = Resource.newResource(s);
+            Resource r = Resource.newResource(uri);
             assertEquals(last, r.lastModified());
         }
     }
@@ -138,32 +152,40 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
 
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt";
-        Resource r = Resource.newResource(s);
-        assertTrue(r.exists());
+        URI uri = URI.create(s);
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource r = Resource.newResource(uri);
+            assertTrue(r.exists());
+        }
     }
 
     @Test
     public void testJarFileResourceList() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = Resource.newResource(URI.create(uri));
-        Resource rez = resource.resolve("rez/");
+        URI uri = URI.create(s);
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource resource = Resource.newResource(uri);
+            Resource rez = resource.resolve("rez/");
 
-        assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
+            assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
-        List<String> actual = rez.list();
-        String[] expected = new String[]{
-            "one",
-            "aaa",
-            "bbb",
-            "oddities/",
-            "another dir/",
-            "ccc",
-            "deep/",
-            };
-        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            List<String> actual = rez.list();
+            String[] expected = new String[]{
+                "one",
+                "aaa",
+                "bbb",
+                "oddities/",
+                "another dir/",
+                "ccc",
+                "deep/",
+                };
+            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+        }
     }
 
     /**
@@ -174,44 +196,52 @@ public class JarResourceTest
     public void testJarFileResourceListPreEncodedEntries() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
+        URI uri = URI.create(s);
 
-        Resource resource = Resource.newResource(URI.create(uri));
-        Resource rez = resource.resolve("rez/oddities/");
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource resource = Resource.newResource(uri);
+            Resource rez = resource.resolve("rez/oddities/");
 
-        assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
+            assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
-        List<String> actual = rez.list();
-        String[] expected = new String[]{
-            ";",
-            "#hashcode",
-            "index.html#fragment",
-            "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
-            "a file with a space",
-            ";\" onmousedown=\"alert(document.location)\"",
-            "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
-        };
-        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            List<String> actual = rez.list();
+            String[] expected = new String[]{
+                ";",
+                "#hashcode",
+                "index.html#fragment",
+                "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
+                "a file with a space",
+                ";\" onmousedown=\"alert(document.location)\"",
+                "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
+            };
+            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+        }
     }
 
     @Test
     public void testJarFileResourceListDirWithSpace() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
+        URI uri = URI.create(s);
 
-        Resource resource = Resource.newResource(URI.create(uri));
-        Resource anotherDir = resource.resolve("rez/another dir/");
+        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        {
+            Resource resource = Resource.newResource(uri);
+            Resource anotherDir = resource.resolve("rez/another dir/");
 
-        assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
+            assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-        List<String> actual = anotherDir.list();
-        String[] expected = new String[]{
-            "a file.txt",
-            "another file.txt",
-            "..\\a different file.txt",
-            };
-        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            List<String> actual = anotherDir.list();
+            String[] expected = new String[]{
+                "a file.txt",
+                "another file.txt",
+                "..\\a different file.txt",
+                };
+            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+        }
     }
 
     private List<Path> listFiles(Path dir) throws IOException

@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +43,6 @@ public class PoolingPathResource extends PathResource implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(PoolingPathResource.class);
 
-    private static final Map<String, ?> EMPTY_ENV = new HashMap<>();
     private static final Map<FileSystem, Metadata> POOL = new HashMap<>();
     private static final AutoLock POOL_LOCK = new AutoLock();
 
@@ -50,38 +50,7 @@ public class PoolingPathResource extends PathResource implements Closeable
 
     PoolingPathResource(URI uri) throws IOException
     {
-        super(createFsIfNeeded(uri), true);
-    }
-
-    private static URI createFsIfNeeded(URI uri) throws IOException
-    {
-        if (!uri.isAbsolute())
-            throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-            throw new IllegalArgumentException("not an allowed scheme: " + uri);
-
-        try (AutoLock ignore = POOL_LOCK.lock())
-        {
-            try
-            {
-                FileSystem fileSystem = Paths.get(uri).getFileSystem();
-                retain(fileSystem, uri);
-            }
-            catch (FileSystemNotFoundException fsnfe)
-            {
-                try
-                {
-                    FileSystem fileSystem = FileSystems.newFileSystem(uri, EMPTY_ENV);
-                    retain(fileSystem, uri);
-                }
-                catch (FileSystemAlreadyExistsException fsaee)
-                {
-                    FileSystem fileSystem = Paths.get(uri).getFileSystem();
-                    retain(fileSystem, uri);
-                }
-            }
-            return uri;
-        }
+        super(uri, true);
     }
 
     @Override
@@ -104,6 +73,29 @@ public class PoolingPathResource extends PathResource implements Closeable
                     // The FS has already been released by a sweep.
                 }
             }
+        }
+    }
+
+    public static Mount mount(URI uri) throws IOException
+    {
+        if (!uri.isAbsolute())
+            throw new IllegalArgumentException("not an absolute uri: " + uri);
+        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
+            throw new IllegalArgumentException("not an allowed scheme: " + uri);
+
+        try (AutoLock ignore = POOL_LOCK.lock())
+        {
+            try
+            {
+                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                retain(fileSystem, uri);
+            }
+            catch (FileSystemAlreadyExistsException fsaee)
+            {
+                FileSystem fileSystem = Paths.get(uri).getFileSystem();
+                retain(fileSystem, uri);
+            }
+            return new Mount(uri);
         }
     }
 
@@ -235,6 +227,30 @@ public class PoolingPathResource extends PathResource implements Closeable
             if (sep != -1)
                 spec = spec.substring(0, sep);
             return Paths.get(URI.create(spec)).toAbsolutePath();
+        }
+    }
+
+    public static class Mount implements Closeable
+    {
+        private final URI uri;
+
+        private Mount(URI uri)
+        {
+            this.uri = uri;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            try (AutoLock ignore = POOL_LOCK.lock())
+            {
+                FileSystem fileSystem = Paths.get(uri).getFileSystem();
+                release(fileSystem);
+            }
+            catch (FileSystemNotFoundException fsnfe)
+            {
+                // The FS has already been released by a sweep.
+            }
         }
     }
 }
