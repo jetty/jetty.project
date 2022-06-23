@@ -187,56 +187,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-ee10-websocket-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee10-websocket-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-lib-jakarta-websocket-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-lib-jakarta-websocket-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-lib-http2-deps</id>
             <phase>generate-resources</phase>
             <goals>
