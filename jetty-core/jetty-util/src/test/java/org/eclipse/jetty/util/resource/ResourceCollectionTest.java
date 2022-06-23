@@ -165,7 +165,6 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, coll::isDirectory);
         assertThrows(IllegalStateException.class, coll::lastModified);
         assertThrows(IllegalStateException.class, coll::list);
-        assertThrows(IllegalStateException.class, coll::close);
         assertThrows(IllegalStateException.class, () ->
         {
             Path destPath = workdir.getPathFile("bar");
