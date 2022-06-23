@@ -46,10 +46,7 @@ public class FileDestroyable implements Destroyable
 
     public void addFile(String file) throws IOException
     {
-        try (Resource r = Resource.newResource(file);)
-        {
-            _paths.add(r.getPath());
-        }
+        _paths.add(Resource.newResource(file).getPath());
     }
 
     public void addPath(Path path)
@@ -64,10 +61,7 @@ public class FileDestroyable implements Destroyable
 
     public void removeFile(String file) throws IOException
     {
-        try (Resource r = Resource.newResource(file);)
-        {
-            _paths.remove(r.getPath());
-        }
+        _paths.remove(Resource.newResource(file).getPath());
     }
 
     public void removeFile(Path path)

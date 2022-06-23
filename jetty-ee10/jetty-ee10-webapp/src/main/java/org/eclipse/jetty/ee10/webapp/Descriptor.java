@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.io.Closeable;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -36,14 +41,15 @@ public abstract class Descriptor
         if (_root == null)
         {
             Objects.requireNonNull(parser);
-            try
+            try (InputStream is = Files.newInputStream(_xml.getPath(), StandardOpenOption.READ))
             {
-                _root = parser.parse(_xml.getInputStream());
+                _root = parser.parse(is);
                 _dtd = parser.getDTD();
             }
             finally
             {
-                _xml.close();
+                if (_xml instanceof Closeable closeable)
+                    IO.close(closeable);
             }
         }
     }

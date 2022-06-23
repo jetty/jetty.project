@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -64,7 +62,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-public abstract class Resource implements ResourceFactory, Closeable
+public abstract class Resource implements ResourceFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -270,12 +268,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return equals(resource);
     }
-
-    /**
-     * Release any temporary resources held by the resource.
-     */
-    @Override
-    public abstract void close();
 
     /**
      * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:

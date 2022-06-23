@@ -125,11 +125,6 @@ public class OrderingTest
         }
 
         @Override
-        public void close()
-        {
-        }
-
-        @Override
         public boolean renameTo(Resource dest) throws SecurityException
         {
             return false;

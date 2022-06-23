@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
  * must use this class, for instance the one handling the `jar` scheme.
  */
-public class PoolingPathResource extends PathResource
+public class PoolingPathResource extends PathResource implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(PoolingPathResource.class);
 
@@ -102,7 +103,6 @@ public class PoolingPathResource extends PathResource
                 {
                     // The FS has already been released by a sweep.
                 }
-                super.close();
             }
         }
     }

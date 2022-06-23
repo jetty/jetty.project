@@ -28,8 +28,10 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1872,8 +1874,8 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
-                            try (Resource resource = Resource.newResource(arg);
-                                 InputStream inputStream = resource.getInputStream())
+                            Resource resource = Resource.newResource(arg);
+                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                             {
                                 (envBuilder == null ? coreProperties : envProperties).load(inputStream);
                             }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
@@ -42,6 +43,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -473,7 +475,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
             {
-                resourcesDir.close();
+                if (resourcesDir instanceof Closeable closeable)
+                    IO.close(closeable);
                 resourcesDir = EmptyResource.INSTANCE;
             }
 
@@ -545,7 +548,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
-                webFrag.close();
+                if (webFrag instanceof Closeable closeable)
+                    IO.close(closeable);
                 webFrag = EmptyResource.INSTANCE;
             }
 

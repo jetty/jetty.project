@@ -41,11 +41,6 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public void close()
-    {
-    }
-
-    @Override
     public boolean exists()
     {
         return false;

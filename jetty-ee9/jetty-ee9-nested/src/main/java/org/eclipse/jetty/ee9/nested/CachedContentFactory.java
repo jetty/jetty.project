@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -484,7 +486,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _cachedSize.addAndGet(-BufferUtil.length(buffer));
 
             _cachedFiles.decrementAndGet();
-            _resource.close();
+            if (_resource instanceof Closeable closeable)
+                IO.close(closeable);
         }
 
         @Override

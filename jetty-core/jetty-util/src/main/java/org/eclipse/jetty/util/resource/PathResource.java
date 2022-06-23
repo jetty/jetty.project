@@ -240,11 +240,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public void close()
-    {
-    }
-
-    @Override
     public boolean equals(Object obj)
     {
         if (this == obj)

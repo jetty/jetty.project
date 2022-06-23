@@ -33,14 +33,13 @@ public class ClassPathResourceTest
     {
         final String classPathName = "Resource.class";
 
-        try (Resource resource = Resource.newClassPathResource(classPathName);)
-        {
-            // A class path cannot be a directory
-            assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+        Resource resource = Resource.newClassPathResource(classPathName);
 
-            // A class path must exist
-            assertTrue(resource.exists(), "Class path resource does not exist.");
-        }
+        // A class path cannot be a directory
+        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
     }
 
     /**
