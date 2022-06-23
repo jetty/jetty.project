@@ -411,6 +411,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public Resource resolve(String pathInContext)
     {
+        // TODO thought bubble
+        if (!_contextHandler.isCanonicalEncodingURIs())
+            pathInContext = URIUtil.encodePath(pathInContext);
+
         Resource r = null;
         if (_relativeResourceBase != null)
             pathInContext = URIUtil.addPaths(_relativeResourceBase, pathInContext);

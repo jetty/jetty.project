@@ -149,6 +149,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    private boolean _canonicalEncodingURIs = false;
 
     /**
      * Get the current ServletContext implementation.
@@ -286,6 +287,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean getAllowNullPathInfo()
     {
         return _allowNullPathInfo;
+    }
+
+    // TODO this is a thought bubble
+    public void setCanonicalEncodingURIs(boolean encoding)
+    {
+        _canonicalEncodingURIs = encoding;
+    }
+
+    // TODO this is a thought bubble
+    public boolean isCanonicalEncodingURIs()
+    {
+        return _canonicalEncodingURIs;
     }
 
     /**
