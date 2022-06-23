@@ -56,11 +56,6 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
         <configuration>
           <instructions>
             <Bundle-Description>jakarta.websocket.server Implementation</Bundle-Description>

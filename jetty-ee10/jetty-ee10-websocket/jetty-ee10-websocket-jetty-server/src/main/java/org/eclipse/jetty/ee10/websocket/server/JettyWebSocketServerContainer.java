@@ -147,7 +147,20 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        WebSocketCreator coreCreator = (req, resp, cb) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+        WebSocketCreator coreCreator = (req, resp, cb) ->
+        {
+            try
+            {
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                cb.succeeded();
+                return webSocket;
+            }
+            catch (Throwable t)
+            {
+                cb.failed(t);
+                return null;
+            }
+        };
         webSocketMappings.addMapping(ps, coreCreator, frameHandlerFactory, customizer);
     }
 
@@ -203,7 +216,6 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
         try (Blocking.Callback callback = Blocking.callback())
         {
-            // TODO: throwing here?
             boolean upgraded = handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, null);
             callback.block();
             return upgraded;

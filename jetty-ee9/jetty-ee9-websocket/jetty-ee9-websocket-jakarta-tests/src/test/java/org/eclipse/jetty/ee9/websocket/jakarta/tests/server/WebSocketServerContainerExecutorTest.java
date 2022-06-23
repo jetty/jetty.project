@@ -43,6 +43,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSURI;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
@@ -51,6 +52,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 
+@Disabled
 public class WebSocketServerContainerExecutorTest
 {
     @ServerEndpoint("/echo")

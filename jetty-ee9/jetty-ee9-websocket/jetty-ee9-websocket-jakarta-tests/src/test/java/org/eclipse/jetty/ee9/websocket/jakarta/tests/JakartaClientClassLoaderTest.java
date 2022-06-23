@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -157,6 +158,7 @@ public class JakartaClientClassLoaderTest
         return app;
     }
 
+    @Disabled
     @Test
     public void websocketProvidedByServer() throws Exception
     {
@@ -185,6 +187,7 @@ public class JakartaClientClassLoaderTest
         ClassLoader serverClassLoader = server.getServer().getClass().getClassLoader();
         assertThat(response.getContentAsString(), containsString("ClientClassLoader: " + serverClassLoader));    }
 
+    @Disabled
     @Test
     public void websocketProvidedByWebApp() throws Exception
     {

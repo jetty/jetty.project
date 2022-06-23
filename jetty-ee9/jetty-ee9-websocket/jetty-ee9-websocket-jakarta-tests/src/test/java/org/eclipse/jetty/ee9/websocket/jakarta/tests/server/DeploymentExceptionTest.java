@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HandlerCollection;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.InvalidCloseIntSocket;
@@ -28,12 +30,11 @@ import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.InvalidError
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.InvalidOpenCloseReasonSocket;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.InvalidOpenSessionIntSocket;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Deploy various {@link ServerEndpoint} annotated classes with invalid signatures,
  * check for {@link DeploymentException}
  */
+@Disabled
 public class DeploymentExceptionTest
 {
     public static Stream<Arguments> data()
@@ -75,8 +77,10 @@ public class DeploymentExceptionTest
     public void startServer() throws Exception
     {
         server = new Server(0);
-        contexts = new HandlerCollection(true, new Handler[0]);
-        server.setHandler(contexts);
+        contexts = new HandlerCollection(true);
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setHandler(contexts);
+        server.setHandler(contextHandler.getCoreContextHandler());
         server.start();
     }
 

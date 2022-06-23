@@ -341,7 +341,17 @@ public class ContextProvider extends ScanningAppProvider
                 getDeploymentManager().scope(xmlc, resource);
                 if (getConfigurationManager() != null)
                     xmlc.getProperties().putAll(getConfigurationManager().getProperties());
-                return (ContextHandler)xmlc.configure();
+
+                Object context = xmlc.configure();
+                if (context instanceof ContextHandler contextHandler)
+                    return contextHandler;
+                if (context instanceof Supplier<?> supplier)
+                {
+                    Object nestedContext = supplier.get();
+                    if (nestedContext instanceof ContextHandler contextHandler)
+                        return contextHandler;
+                }
+                throw new IllegalStateException("Unknown context type of " + context);
             }
             // Otherwise it must be a directory or an archive
             else if (!Files.isDirectory(path) && !FileID.isWebArchiveFile(path))

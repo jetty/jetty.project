@@ -252,7 +252,7 @@ public class WebAppTester extends ContainerLifeCycle
         public void deploy()
         {
             _contexts.addHandler(_context);
-            _contexts.manage(_context);
+            _contexts.manage(_context.getCoreContextHandler());
             _context.setThrowUnavailableOnStartupException(true);
             if (LOG.isDebugEnabled())
                 LOG.debug("{}", _context.dump());

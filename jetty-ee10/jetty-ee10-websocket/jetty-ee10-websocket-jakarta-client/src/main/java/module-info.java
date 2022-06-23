@@ -17,10 +17,10 @@ module org.eclipse.jetty.ee10.websocket.jakarta.client
     requires org.eclipse.jetty.ee10.websocket.jakarta.common;
     requires org.slf4j;
 
-    requires transitive jetty.websocket.api;
+    requires transitive jakarta.websocket;
     requires transitive org.eclipse.jetty.client;
 
-    requires static jetty.servlet.api;
+    requires static  jakarta.servlet;
 
     exports org.eclipse.jetty.ee10.websocket.jakarta.client;
 

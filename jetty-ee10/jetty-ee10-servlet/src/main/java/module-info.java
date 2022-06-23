@@ -17,7 +17,7 @@ module org.eclipse.jetty.ee10.servlet
 {
     requires org.slf4j;
 
-    requires transitive jetty.servlet.api;
+    requires transitive jakarta.servlet;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.session;
 

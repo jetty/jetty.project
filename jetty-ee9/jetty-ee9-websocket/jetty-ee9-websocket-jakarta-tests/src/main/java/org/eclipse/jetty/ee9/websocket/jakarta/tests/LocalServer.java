@@ -166,7 +166,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
             ((JakartaWebSocketServerContainer)container).addSessionListener(trackingListener));
         configureServletContextHandler(servletContextHandler);
-        return servletContextHandler;
+        return servletContextHandler.getCoreContextHandler();
     }
 
     protected void configureServletContextHandler(ServletContextHandler context) throws Exception

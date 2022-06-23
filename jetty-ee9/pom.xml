@@ -25,11 +25,11 @@
     <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.0</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
+    <jakarta.enterprise.cdi.api.version>3.0.1</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
@@ -40,7 +40,7 @@
     <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-
+    <jsp.impl.version>10.0.14</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -67,10 +67,11 @@
 <!--    <module>jetty-ee9-proxy</module>-->
 <!--    <module>jetty-ee9-quickstart</module>-->
 <!--    <module>jetty-ee9-runner</module>-->
-<!--    <module>jetty-ee9-websocket</module>-->
+    <module>jetty-ee9-websocket</module>
 <!--    <module>jetty-ee9-tests</module>-->
     <module>jetty-ee9-bom</module>
     <module>test-ee9-sessions</module>
+    <module>jetty-ee9-home</module>
   </modules>
 
   <dependencyManagement>
@@ -270,6 +271,16 @@
         <version>${project.version}</version>
       </dependency>
       <!-- Jakarta EE 9 Dependencies -->
+       <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>

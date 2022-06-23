@@ -22,7 +22,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            @{argLine} ${jetty.surefire.argLine} --add-modules jakarta.servlet --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
           </argLine>
         </configuration>
       </plugin>
@@ -44,8 +44,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
