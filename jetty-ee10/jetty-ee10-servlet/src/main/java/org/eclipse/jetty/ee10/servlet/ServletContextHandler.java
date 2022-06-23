@@ -972,13 +972,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 if (!path.endsWith(URIUtil.SLASH))
                     path = path + URIUtil.SLASH;
 
-                String[] l = resource.list();
+                List<String> l = resource.list();
                 if (l != null)
                 {
                     HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.length; i++)
+                    for (int i = 0; i < l.size(); i++)
                     {
-                        set.add(path + l[i]);
+                        set.add(path + l.get(i));
                     }
                     return set;
                 }

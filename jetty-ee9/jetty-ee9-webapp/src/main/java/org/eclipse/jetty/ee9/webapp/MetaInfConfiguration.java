@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -772,16 +773,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Resource webInfLib = webInf.resolve("/lib");
         if (webInfLib.exists() && webInfLib.isDirectory())
         {
-            String[] files = webInfLib.list();
+            List<String> files = webInfLib.list();
             if (files != null)
             {
-                Arrays.sort(files);
+                files.sort(Comparator.naturalOrder());
             }
-            for (int f = 0; files != null && f < files.length; f++)
+            for (int f = 0; files != null && f < files.size(); f++)
             {
                 try
                 {
-                    Resource file = webInfLib.resolve(files[f]);
+                    Resource file = webInfLib.resolve(files.get(f));
                     String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
@@ -792,7 +793,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 }
                 catch (Exception ex)
                 {
-                    LOG.warn("Unable to load WEB-INF file {}", files[f], ex);
+                    LOG.warn("Unable to load WEB-INF file {}", files.get(f), ex);
                 }
             }
         }

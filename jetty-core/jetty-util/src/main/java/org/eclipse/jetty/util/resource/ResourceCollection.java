@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -414,19 +414,19 @@ public class ResourceCollection extends Resource
      * @return The list of resource names(merged) contained in the collection of resources.
      */
     @Override
-    public String[] list()
+    public List<String> list()
     {
         assertResourcesSet();
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            String[] list = r.list();
+            List<String> list = r.list();
             if (list != null)
-                Collections.addAll(set, list);
+                set.addAll(list);
         }
 
-        String[] result = set.toArray(new String[0]);
-        Arrays.sort(result);
+        ArrayList<String> result = new ArrayList<>(set);
+        result.sort(Comparator.naturalOrder());
         return result;
     }
 

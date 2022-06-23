@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import org.eclipse.jetty.util.UrlEncoded;
 
@@ -122,7 +123,7 @@ class BadResource extends Resource
     }
 
     @Override
-    public String[] list()
+    public List<String> list()
     {
         return null;
     }

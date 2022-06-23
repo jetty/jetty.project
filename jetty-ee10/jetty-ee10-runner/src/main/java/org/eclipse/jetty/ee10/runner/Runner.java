@@ -111,7 +111,7 @@ public class Runner
             if (lib == null || !lib.exists())
                 throw new IllegalStateException("No such lib: " + lib);
 
-            String[] list = lib.list();
+            List<String> list = lib.list();
             if (list == null)
                 return;
 

@@ -24,8 +24,8 @@ import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -292,10 +292,10 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (lib.exists() && lib.isDirectory())
         {
-            String[] entries = lib.list();
+            List<String> entries = lib.list();
             if (entries != null)
             {
-                Arrays.sort(entries);
+                entries.sort(Comparator.naturalOrder());
 
                 for (String entry : entries)
                 {

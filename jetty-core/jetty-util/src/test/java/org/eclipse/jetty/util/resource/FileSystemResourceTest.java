@@ -32,9 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -528,8 +526,7 @@ public class FileSystemResourceTest
 
         try (Resource base = Resource.newResource(dir))
         {
-            String[] list = base.list();
-            List<String> actual = Arrays.asList(list);
+            List<String> actual = base.list();
 
             assertEquals(expected.size(), actual.size());
             for (String s : expected)

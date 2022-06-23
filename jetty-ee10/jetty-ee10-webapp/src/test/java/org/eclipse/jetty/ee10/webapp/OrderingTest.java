@@ -119,7 +119,7 @@ public class OrderingTest
         }
 
         @Override
-        public String[] list()
+        public List<String> list()
         {
             return null;
         }

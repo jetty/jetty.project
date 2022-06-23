@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * EmptyResource
@@ -111,7 +112,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public String[] list()
+    public List<String> list()
     {
         return null;
     }

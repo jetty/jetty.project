@@ -19,7 +19,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +55,7 @@ public class JarResourceTest
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         Resource r = Resource.newResource(s);
 
-        Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
+        Set<String> entries = new HashSet<>(r.list());
         assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
         Path extract = workDir.getPathFile("extract");
@@ -66,13 +65,13 @@ public class JarResourceTest
 
         Resource e = Resource.newResource(extract.toString());
 
-        entries = new HashSet<>(Arrays.asList(e.list()));
+        entries = new HashSet<>(e.list());
         assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
         s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
         r = Resource.newResource(s);
 
-        entries = new HashSet<>(Arrays.asList(r.list()));
+        entries = new HashSet<>(r.list());
         assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
         Path extract2 = workDir.getPathFile("extract2");
@@ -82,7 +81,7 @@ public class JarResourceTest
 
         e = Resource.newResource(extract2.toString());
 
-        entries = new HashSet<>(Arrays.asList(e.list()));
+        entries = new HashSet<>(e.list());
         assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
     }
 
@@ -154,7 +153,7 @@ public class JarResourceTest
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
-        List<String> actual = Arrays.asList(rez.list());
+        List<String> actual = rez.list();
         String[] expected = new String[]{
             "one",
             "aaa",
@@ -182,7 +181,7 @@ public class JarResourceTest
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
-        List<String> actual = Arrays.asList(rez.list());
+        List<String> actual = rez.list();
         String[] expected = new String[]{
             ";",
             "#hashcode",
@@ -206,7 +205,7 @@ public class JarResourceTest
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-        List<String> actual = Arrays.asList(anotherDir.list());
+        List<String> actual = anotherDir.list();
         String[] expected = new String[]{
             "a file.txt",
             "another file.txt",

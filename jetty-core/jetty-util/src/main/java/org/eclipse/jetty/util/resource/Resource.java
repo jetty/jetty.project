@@ -26,7 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
@@ -39,10 +38,10 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -279,20 +278,20 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract void close();
 
     /**
+     * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:
+     * {@link #getPath()} and {@link LinkOption#NOFOLLOW_LINKS}.
      * @return true if the represented resource exists.
-     * @deprecated Replace with {@link #getPath()} and {@link Files#exists(Path, LinkOption...)}.
      */
-    @Deprecated(forRemoval = true)
     public boolean exists()
     {
         return Files.exists(getPath(), NO_FOLLOW_LINKS);
     }
 
     /**
+     * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()}.
      * @return true if the represented resource is a container/directory.
-     * @deprecated Replace with {@link #getPath()} and {@link Files#isDirectory(Path, LinkOption...)}.
      */
-    @Deprecated(forRemoval = true)
     public boolean isDirectory()
     {
         return Files.isDirectory(getPath(), FOLLOW_LINKS);
@@ -300,11 +299,11 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Time resource was last modified.
-     *
-     * @return the last modified time as milliseconds since unix epoch
-     * @deprecated Replace with {@link #getPath()} and {@link Files#getLastModifiedTime(Path, LinkOption...)}.
+     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     * @return the last modified time as milliseconds since unix epoch or
+     * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
      */
-    @Deprecated(forRemoval = true)
     public long lastModified()
     {
         try
@@ -321,11 +320,10 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Length of the resource.
-     *
-     * @return the length of the resource
-     * @deprecated Replace with {@link #getPath()} and {@link Files#size(Path)}.
+     * Equivalent to {@link Files#size(Path)} with the following parameter:
+     * {@link #getPath()}.
+     * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
      */
-    @Deprecated(forRemoval = true)
     public long length()
     {
         try
@@ -381,14 +379,12 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Deletes the given resource
-     *
-     * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
-     * be deleted.
-     * @throws SecurityException if unable to delete due to permissions
-     * @deprecated Replace with {@link #getPath()} and {@link IO#delete(Path)}.
+     * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
+     * {@link #getPath()}.
+     * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
+     * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
      */
-    @Deprecated(forRemoval = true)
-    public boolean delete() throws SecurityException
+    public boolean delete()
     {
         try
         {
@@ -403,30 +399,22 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Rename the given resource
-     *
+     * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
+     * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
+     * on the {@code Path} returned by {@code move()}.
      * @param dest the destination name for the resource
      * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     * @throws SecurityException if unable to rename due to permissions
-     * @deprecated Replace with {@link #getPath()} and {@link Files#move(Path, Path, CopyOption...)}.
      */
-    @Deprecated(forRemoval = true)
-    public boolean renameTo(Resource dest) throws SecurityException
+    public boolean renameTo(Resource dest)
     {
-        if (dest instanceof PathResource destRes)
+        try
         {
-            try
-            {
-                Path result = Files.move(getPath(), destRes.getPath());
-                return Files.exists(result, NO_FOLLOW_LINKS);
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                return false;
-            }
+            Path result = Files.move(getPath(), dest.getPath());
+            return Files.exists(result, NO_FOLLOW_LINKS);
         }
-        else
+        catch (IOException e)
         {
+            LOG.trace("IGNORED", e);
             return false;
         }
     }
@@ -434,13 +422,15 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
+     * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
+     * {@link DirectoryStream}, taking the {@link Path#getFileName()} of each iterated entry and appending a {@code /} to
+     * the file name if testing it with {@link Files#isDirectory(Path, LinkOption...)} returns true.
      *
-     * @return a list of resource names contained in the given resource, or null.
+     * @return a list of resource names contained in the given resource, or null if {@link DirectoryIteratorException} or
+     * {@link IOException} was thrown while building the filename list.
      * Note: The resource names are not URL encoded.
-     * @deprecated Replace with {@link #getPath()} and {@link Files#walkFileTree(Path, FileVisitor)}.
      */
-    @Deprecated(forRemoval = true)
-    public String[] list()
+    public List<String> list()
     {
         try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
         {
@@ -456,8 +446,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
                 entries.add(name);
             }
-            int size = entries.size();
-            return entries.toArray(new String[size]);
+            return entries;
         }
         catch (DirectoryIteratorException e)
         {
@@ -547,7 +536,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (base == null || !isDirectory())
             return null;
 
-        String[] rawListing = list();
+        List<String> rawListing = list();
         if (rawListing == null)
         {
             return null;
@@ -956,7 +945,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             ArrayList<Resource> deep = new ArrayList<>();
             {
-                String[] list = list();
+                List<String> list = list();
                 if (list != null)
                 {
                     for (String i : list)
@@ -975,20 +964,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Generate a properly encoded URL from a {@link File} instance.
-     *
-     * @param file Target file.
-     * @return URL of the target file.
-     * @throws MalformedURLException if unable to convert File to URL
-     * @deprecated replace {@link File} usage with {@link Path} usage.
-     */
-    @Deprecated(forRemoval = true)
-    public static URL toURL(File file) throws MalformedURLException
-    {
-        return file.toURI().toURL();
     }
 
     /**
@@ -1048,10 +1023,10 @@ public abstract class Resource implements ResourceFactory, Closeable
                 if (dirResource.exists() && dirResource.isDirectory())
                 {
                     // To obtain the list of entries
-                    String[] entries = dirResource.list();
+                    List<String> entries = dirResource.list();
                     if (entries != null)
                     {
-                        Arrays.sort(entries);
+                        entries.sort(Comparator.naturalOrder());
                         for (String entry : entries)
                         {
                             try
