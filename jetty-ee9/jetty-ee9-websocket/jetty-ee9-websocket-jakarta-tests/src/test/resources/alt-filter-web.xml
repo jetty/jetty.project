@@ -12,12 +12,16 @@
   </context-param>
 
   <filter>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <init-param>
+      <param-name>customParam</param-name>
+      <param-value>true</param-value>
+    </init-param>
   </filter>
 
   <filter-mapping>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-name>org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/echo/*</url-pattern>
   </filter-mapping>
 </web-app>
