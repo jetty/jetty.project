@@ -171,7 +171,6 @@ public class LifeCycleCallbackCollectionTest
     }
 
     @Test
-    @Disabled // TODO
     public void testServletPostConstructPreDestroy() throws Exception
     {
         Server server = new Server();
