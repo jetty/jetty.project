@@ -320,8 +320,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
             if (LOG.isDebugEnabled())
                 LOG.debug("Waiting for {} for {}", thread, canWait);
-            if (canWait > 0)
-                thread.join(canWait);
+            if (canWait > 0) {
+                try {
+                    thread.join(canWait);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+            }
         }
     }
 
