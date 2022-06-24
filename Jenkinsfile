@@ -3,7 +3,10 @@
 pipeline {
   agent any
   // save some io during the build
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options {
+    skipDefaultCheckout()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
   stages {
     stage("Parallel Stage") {
       parallel {
@@ -12,6 +15,8 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 240, unit: 'MINUTES' ) {
+
+                checkout scm
                 mavenBuild( "jdk8", "clean install", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -42,6 +47,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
+                checkout scm
                 mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
                 recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
@@ -54,6 +60,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
+                checkout scm
                 mavenBuild( "jdk17", "clean install -Djacoco.skip=true", "maven3")
                 recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
@@ -66,6 +73,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
+                checkout scm
                 mavenBuild( "jdk11",
                             "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
                             "maven3")
@@ -80,6 +88,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
+                checkout scm
                 mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3")
               }
             }
