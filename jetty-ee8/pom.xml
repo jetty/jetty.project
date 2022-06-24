@@ -53,8 +53,7 @@
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-ee8-resources</id>
-            <phase>generate-resources</phase>
+:q            <phase>generate-resources</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>

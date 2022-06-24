@@ -38,10 +38,9 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ErrorHandler;
-import org.eclipse.jetty.ee9.nested.ManagedAttributeListener;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -50,13 +49,11 @@ import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -79,76 +76,9 @@ import org.slf4j.LoggerFactory;
  * the default being  {@link WebXmlConfiguration} and
  * {@link JettyWebXmlConfiguration}.
  *
- *
- * <p>
- * The Start/Configuration of a WebAppContext is rather complex so as to allow
- * pluggable behaviour to be added in almost arbitrary ordering.  The
- * sequence of a WebappContext start is as follows:
- * <blockquote>
- * {@link #doStart()}:
- * <ul>
- * <li>{@link #preConfigure()}
- * <ul>
- * <li>Add all Server class inclusions from all known configurations {@link Configurations#getKnown()}</li>
- * <li>{@link #loadConfigurations()}, which uses either explicitly set Configurations or takes the server
- * default (which is all known {@link Configuration#isEnabledByDefault()} Configurations.</li>
- * <li>Sort the configurations using {@link TopologicalSort} in {@link Configurations#sort()}.</li>
- * <li>Add all Server class exclusions from this webapps {@link Configurations}</li>
- * <li>Add all System classes inclusions and exclusions for this webapps {@link Configurations}</li>
- * <li>Instantiate the WebAppClassLoader (if one not already explicitly set)</li>
- * <li>{@link Configuration#preConfigure(WebAppContext)} which calls
- * {@link Configuration#preConfigure(WebAppContext)} for this webapps {@link Configurations}</li>
- * </ul>
- * </li>
- * <li>{@link ServletContextHandler#doStart()}
- * <ul>
- * <li>{@link ContextHandler#doStart()}
- * <ul>
- * <li>Init {@link MimeTypes}</li>
- * <li>enterScope
- * <ul>
- * <li>{@link #startContext()}
- * <ul>
- * <li>{@link #configure()}
- * <ul>
- * <li>Call {@link Configuration#configure(WebAppContext)} on enabled {@link Configurations}</li>
- * </ul>
- * </li>
- * <li>{@link MetaData#resolve(WebAppContext)}</li>
- * <li>{@link #startContext()}
- * <li>QuickStart may generate here and/or abort start
- * <ul>
- * <li>{@link ServletContextHandler#startContext}
- * <ul>
- * <li>Decorate listeners</li>
- * <li>{@link ContextHandler#startContext}
- * <ul>
- * <li>add {@link ManagedAttributeListener}</li>
- * <li>{@link AbstractHandler#doStart}</li>
- * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
- * </ul>
- * </li>
- * <li>{@link ServletHandler#initialize()}</li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * <li>exitScope</li>
- * </ul>
- * </li>
- * </ul>
- * </li>
- * <li>{@link #postConfigure()}</li>
- * </ul>
- *
- * </blockquote>
  */
 @ManagedObject("Web Application ContextHandler")
-public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
+public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
@@ -211,6 +141,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _throwUnavailableOnStartupException = false;
 
     private MetaData _metadata = new MetaData();
+    private boolean _defaultContextPath = true;
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -305,6 +236,47 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
             parent.addHandler(this);
+    }
+
+    @Override
+    public void initializeDefaults(Map<String, String> properties)
+    {
+        for (String property : properties.keySet())
+        {
+            String value = properties.get(property);
+            switch (property)
+            {
+                case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
+                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
+                case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
+                case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
+                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
+                case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
+                case Deployable.DEFAULT_DESCRIPTOR -> setDefaultsDescriptor(value);
+                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
+                case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
+                default -> LOG.debug("unknown property {}={}", property, value);
+            }
+        }
+        _defaultContextPath = true;
+    }
+
+    public boolean isContextPathDefault()
+    {
+        return _defaultContextPath;
+    }
+
+    @Override
+    public void setContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = false;
+    }
+
+    public void setDefaultContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = true;
     }
 
     /**

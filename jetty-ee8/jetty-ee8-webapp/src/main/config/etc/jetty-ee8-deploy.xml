@@ -21,7 +21,7 @@
     <Call name="addAppProvider">
       <Arg>
         <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
-          <Set name="defaultEnvironment">ee8</Set>
+          <Set name="environmentName">ee8</Set>
           <Set name="monitoredDirName">
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
               <Arg>

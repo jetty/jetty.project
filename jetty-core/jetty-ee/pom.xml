@@ -1,45 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-deploy</artifactId>
-  <name>Jetty Core :: Deployers</name>
-  <description>Jetty deployers</description>
-
+  <artifactId>jetty-ee</artifactId>
+  <name>Jetty Core :: EE Utility Classes</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.deploy.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.ee</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.*</spotbugs.onlyAnalyze>
   </properties>
-
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules org.eclipse.jetty.jmx --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>
     </plugins>
   </build>
-
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -55,14 +47,6 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ee</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ee</artifactId>
     </dependency>
   </dependencies>
 </project>

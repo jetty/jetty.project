@@ -20,11 +20,18 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Environment;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private DeploymentManager deployMan;
     private File webappsDir;
+
+    @Override
+    public String getEnvironmentName()
+    {
+        return Environment.ensure("mock").getName();
+    }
 
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
@@ -40,7 +47,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
     public void findWebapp(String name)
     {
-        App app = new App(deployMan, this, null, "mock-" + name);
+        App app = new App(deployMan, this, "mock-" + name);
         this.deployMan.addApp(app);
     }
 

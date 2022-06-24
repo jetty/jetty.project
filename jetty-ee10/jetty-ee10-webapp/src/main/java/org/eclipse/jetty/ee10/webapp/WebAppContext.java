@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -75,7 +76,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @ManagedObject("Web Application ContextHandler")
-public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
+public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
@@ -121,6 +122,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _logUrlOnStart = false;
     private boolean _parentLoaderPriority = Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
+    private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
 
@@ -226,6 +228,47 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
             setParent(parent);
+    }
+
+    @Override
+    public void initializeDefaults(Map<String, String> properties)
+    {
+        for (String property : properties.keySet())
+        {
+            String value = properties.get(property);
+            switch (property)
+            {
+                case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
+                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
+                case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
+                case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
+                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
+                case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
+                case Deployable.DEFAULT_DESCRIPTOR -> setDefaultsDescriptor(value);
+                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
+                case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
+                default -> LOG.debug("unknown property {}={}", property, value);
+            }
+        }
+        _defaultContextPath = true;
+    }
+
+    public boolean isContextPathDefault()
+    {
+        return _defaultContextPath;
+    }
+
+    @Override
+    public void setContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = false;
+    }
+
+    public void setDefaultContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = true;
     }
 
     /**

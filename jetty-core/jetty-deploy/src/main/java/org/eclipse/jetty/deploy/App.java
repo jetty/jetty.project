@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 
@@ -23,8 +30,9 @@ public class App
 {
     private final DeploymentManager _manager;
     private final AppProvider _provider;
-    private final String _environment;
+    private final String _environmentName;
     private final String _filename;
+    private final Map<String, String> _properties = new HashMap<>();
     private ContextHandler _context;
 
     /**
@@ -32,17 +40,33 @@ public class App
      *
      * @param manager the deployment manager
      * @param provider the app provider
-     * @param environment the name of the environment or null for the server environment.
      * @param filename the filename of the base resource of the application
      * @see App#getFilename()
      * @see App#getContextPath()
      */
-    public App(DeploymentManager manager, AppProvider provider, String environment, String filename)
+    public App(DeploymentManager manager, AppProvider provider, String filename)
     {
         _manager = manager;
         _provider = provider;
-        _environment = environment;
         _filename = filename;
+
+        try
+        {
+            String basename = FileID.getDot3Basename(filename);
+            File properties = new File(basename + ".properties");
+            if (properties.exists())
+            {
+                Properties p = new Properties();
+                p.load(new FileInputStream(properties));
+                p.keySet().stream().map(Object::toString).forEach(k -> _properties.put(k, p.getProperty(k)));
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        _environmentName = _properties.computeIfAbsent("environment", k -> _provider.getEnvironmentName());
     }
 
     /**
@@ -61,6 +85,11 @@ public class App
         return _provider;
     }
 
+    public Map<String, String> getProperties()
+    {
+        return _properties;
+    }
+
     /**
      * Get ContextHandler for the App.
      *
@@ -74,19 +103,7 @@ public class App
     public ContextHandler getContextHandler() throws Exception
     {
         if (_context == null)
-        {
             _context = getAppProvider().createContextHandler(this);
-
-            Attributes.Mapped attributes = _manager.getContextAttributes();
-            if (attributes != null && attributes.size() > 0)
-            {
-                // Merge the manager attributes under the existing attributes
-                for (String name : attributes.getAttributeNameSet())
-                {
-                    _context.setAttribute(name, attributes.getAttribute(name));
-                }
-            }
-        }
         return _context;
     }
 
@@ -117,9 +134,9 @@ public class App
         return _context == null ? null : _context.getContextPath();
     }
 
-    public String getEnvironment()
+    public String getEnvironmentName()
     {
-        return _environment;
+        return _environmentName;
     }
 
     /**

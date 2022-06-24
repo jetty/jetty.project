@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private int _scanInterval = 10;
     private Scanner _scanner;
     private boolean _useRealPaths;
-    private String _defaultEnvironment = "ee9"; // TODO null or ee10?
+    private String _environmentName;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -83,14 +84,15 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         addBean(_appMap);
     }
 
-    public String getDefaultEnvironment()
+    @Override
+    public String getEnvironmentName()
     {
-        return _defaultEnvironment;
+        return _environmentName;
     }
 
-    public void setDefaultEnvironment(String defaultEnvironment)
+    public void setEnvironmentName(String environmentName)
     {
-        _defaultEnvironment = defaultEnvironment;
+        _environmentName = environmentName;
     }
 
     /**
@@ -135,10 +137,17 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      */
     protected App createApp(String filename)
     {
-        // TODO otherways to work out the environment????
-        String environment = getDefaultEnvironment();
+        App app = new App(_deploymentManager, this, filename);
 
-        return new App(_deploymentManager, this, environment, filename);
+        // Only deploy apps for this environment
+        if (app.getEnvironmentName().equals(getEnvironmentName()))
+            return app;
+
+        boolean appProvider4env = _deploymentManager.getAppProviders().stream()
+            .map(AppProvider::getEnvironmentName).anyMatch(app.getEnvironmentName()::equals);
+        if (!appProvider4env)
+            LOG.warn("No AppProvider with environment {} for {}", app.getEnvironmentName(), app);
+        return null;
     }
 
     @Override
@@ -148,6 +157,17 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             LOG.debug("{}.doStart()", this.getClass().getSimpleName());
         if (_monitored.size() == 0)
             throw new IllegalStateException("No configuration dir specified");
+        if (_environmentName == null)
+        {
+            List<Environment> nonCore = Environment.getAll().stream().filter(environment -> !environment.equals(Environment.CORE)).toList();
+            if (nonCore.size() != 1)
+                throw new IllegalStateException("No environment configured");
+            _environmentName = nonCore.get(0).getName();
+        }
+
+        Environment environment = Environment.get(_environmentName);
+        if (environment == null)
+            throw new IllegalStateException("Unknown environment " + _environmentName);
 
         LOG.info("Deployment monitor {}", _monitored);
         List<File> files = new ArrayList<>();

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,9 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +122,6 @@ public class DeploymentManager extends ContainerLifeCycle
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
-    private Attributes.Mapped _contextAttributes = new Attributes.Mapped();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
@@ -373,22 +369,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return ret;
     }
 
-    /**
-     * Get a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name context attribute name
-     * @return the context attribute value
-     */
-    public Object getContextAttribute(String name)
-    {
-        return _contextAttributes.getAttribute(name);
-    }
-
-    public Attributes.Mapped getContextAttributes()
-    {
-        return _contextAttributes;
-    }
-
     @ManagedAttribute("Deployed Contexts")
     public ContextHandlerCollection getContexts()
     {
@@ -448,16 +428,6 @@ public class DeploymentManager extends ContainerLifeCycle
         {
             LOG.warn("Unable to stop Provider", e);
         }
-    }
-
-    /**
-     * Remove a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name the context attribute name
-     */
-    public void removeContextAttribute(String name)
-    {
-        _contextAttributes.removeAttribute(name);
     }
 
     /**
@@ -571,23 +541,6 @@ public class DeploymentManager extends ContainerLifeCycle
         requestAppGoal(appentry, nodeName);
     }
 
-    /**
-     * Set a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name the context attribute name
-     * @param value the context attribute value
-     */
-    public void setContextAttribute(String name, Object value)
-    {
-        _contextAttributes.setAttribute(name, value);
-    }
-
-    public void setContextAttributes(Attributes contextAttributes)
-    {
-        this._contextAttributes.clearAttributes();
-        this._contextAttributes.addAll(contextAttributes);
-    }
-
     public void setContexts(ContextHandlerCollection contexts)
     {
         this._contexts = contexts;
@@ -633,11 +586,5 @@ public class DeploymentManager extends ContainerLifeCycle
     public Collection<Node> getNodes()
     {
         return _lifecycle.getNodes();
-    }
-
-    public void scope(XmlConfiguration xmlc, Resource webapp)
-        throws IOException
-    {
-        xmlc.setJettyStandardIdsAndProperties(getServer(), webapp);
     }
 }
