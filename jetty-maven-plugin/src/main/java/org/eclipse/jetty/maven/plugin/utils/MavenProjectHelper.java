@@ -25,15 +25,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
-import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
-import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.jetty.maven.plugin.OverlayManager;
 import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 
@@ -46,7 +47,7 @@ import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 public class MavenProjectHelper
 {
     private MavenProject project;
-    private ArtifactResolver artifactResolver;
+    private RepositorySystem repositorySystem;
     private List<ArtifactRepository> remoteRepositories;
     private MavenSession session;
     private final Map<String, MavenProject> artifactToReactorProjectMap;
@@ -62,14 +63,14 @@ public class MavenProjectHelper
     
     /**
      * @param project the project being built
-     * @param artifactResolver a resolve for artifacts
+     * @param repositorySystem a resolve for artifacts
      * @param remoteRepositories repositories from which to resolve artifacts
      * @param session the current maven build session
      */
-    public MavenProjectHelper(MavenProject project, ArtifactResolver artifactResolver, List<ArtifactRepository> remoteRepositories, MavenSession session)
+    public MavenProjectHelper(MavenProject project, RepositorySystem repositorySystem, List<ArtifactRepository> remoteRepositories, MavenSession session)
     {
         this.project = project;
-        this.artifactResolver = artifactResolver;
+        this.repositorySystem = repositorySystem;
         this.remoteRepositories = remoteRepositories;
         this.session = session;
         //work out which dependent projects are in the reactor
@@ -145,26 +146,18 @@ public class MavenProjectHelper
      * @param version the version of the artifact to resolve
      * @param type the type of the artifact to resolve
      * @return a File representing the location of the artifact or null if not resolved
-     * @throws ArtifactResolverException
+     * @throws ArtifactResolutionException
      */
     public File resolveArtifact(String groupId, String artifactId, String version, String type)
-        throws ArtifactResolverException
+        throws ArtifactResolutionException
     {
-        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
-        coordinate.setGroupId(groupId);
-        coordinate.setArtifactId(artifactId);
-        coordinate.setVersion(version);
-        coordinate.setExtension(type);
+        ArtifactRequest request = new ArtifactRequest();
+        request.setRepositories(RepositoryUtils.toRepos(remoteRepositories));
+        request.setArtifact(new DefaultArtifact(groupId, artifactId, "", type, version));
+        ArtifactResult result = repositorySystem.resolveArtifact(session.getRepositorySession(), request);
 
-        ProjectBuildingRequest buildingRequest =
-                new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-
-        buildingRequest.setRemoteRepositories(remoteRepositories);
-
-        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
-
-        if (a != null)
-            return a.getFile();
+        if (result.isResolved())
+            return result.getArtifact().getFile();
         return null;
     }
     
