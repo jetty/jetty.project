@@ -45,7 +45,6 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.ee9.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.ee9.security.LoginService;
@@ -357,7 +356,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      */
     @Component
-    private ArtifactResolver artifactResolver;
+    private RepositorySystem repositorySystem;
     
     /**
      * The current maven session
@@ -410,7 +409,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             
             getLog().info("Configuring Jetty for project: " + getProjectName());
-            mavenProjectHelper = new MavenProjectHelper(project, artifactResolver, remoteRepositories, session);
+            mavenProjectHelper = new MavenProjectHelper(project, repositorySystem, remoteRepositories, session);
             mergedSystemProperties = mergeSystemProperties();
             configureSystemProperties();
             augmentPluginClasspath();
