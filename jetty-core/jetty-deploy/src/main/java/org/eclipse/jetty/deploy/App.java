@@ -24,8 +24,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}.
- *
- * </p>
  */
 public class App
 {
@@ -142,7 +140,7 @@ public class App
      */
     public String getEnvironmentName()
     {
-        String name = getProperties().get("environmnet");
+        String name = getProperties().get("environment");
         return name == null ? _manager.getDefaultEnvironmentName() : name;
     }
 
