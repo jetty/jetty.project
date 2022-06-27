@@ -26,13 +26,12 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Testing the use of an alternate {@link WebSocketUpgradeFilter}
@@ -43,7 +42,6 @@ public class AltFilterTest
 {
     public WorkDir testdir;
 
-    @Disabled
     @Test
     public void testEcho() throws Exception
     {
@@ -59,10 +57,9 @@ public class AltFilterTest
             wsb.start();
 
             FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
-            assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
-
-            FilterHolder filterSCI = app.getWebAppContext().getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
-            assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
+            assertThat(filterWebXml, notNullValue());
+            assertThat(app.getWebAppContext().getServletHandler().getFilters().length, equalTo(1));
+            assertThat(filterWebXml.getInitParameter("customParam"), equalTo("true"));
 
             List<Frame> send = new ArrayList<>();
             send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));

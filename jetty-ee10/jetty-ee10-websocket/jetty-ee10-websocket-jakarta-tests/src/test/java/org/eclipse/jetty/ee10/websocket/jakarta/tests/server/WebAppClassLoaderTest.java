@@ -35,7 +35,6 @@ import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -120,7 +119,6 @@ public class WebAppClassLoaderTest
         return classLoaderMap.get(event);
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"constructor", "onOpen", "onMessage", "onError", "onClose"})
     public void testForWebAppClassLoader(String event) throws Exception
