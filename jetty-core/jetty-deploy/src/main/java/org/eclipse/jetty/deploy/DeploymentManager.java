@@ -31,15 +31,16 @@ import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Path;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,6 +128,22 @@ public class DeploymentManager extends ContainerLifeCycle
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
 
     /**
+     * Get the default {@link Environment} name for deployed applications.
+     * @return The name of environment known to the {@link AppProvider}s returned from
+     * {@link #getAppProviders()} that matches {@link Deployable#EE_ENVIRONMENT_NAME}.
+     * If multiple names match, then the maximal name, according to {@link Deployable#EE_ENVIRONMENT_COMPARATOR}
+     * is returned.
+     */
+    public String getDefaultEnvironmentName()
+    {
+        return _providers.stream()
+            .map(AppProvider::getEnvironmentName)
+            .filter(Deployable.EE_ENVIRONMENT_NAME)
+            .max(Deployable.EE_ENVIRONMENT_COMPARATOR)
+            .orElse(null);
+    }
+
+    /**
      * Receive an app for processing.
      *
      * Most commonly used by the various {@link AppProvider} implementations.
@@ -135,7 +152,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void addApp(App app)
     {
-        LOG.debug("Deployable added: {}", app.getFilename());
+        LOG.info("addApp: {}", app);
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -401,6 +418,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void removeApp(App app)
     {
+        LOG.info("removeApp: {}", app);
         Iterator<AppEntry> it = _apps.iterator();
         while (it.hasNext())
         {
@@ -410,7 +428,6 @@ public class DeploymentManager extends ContainerLifeCycle
                 if (!AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
                     requestAppGoal(entry.app, AppLifeCycle.UNDEPLOYED);
                 it.remove();
-                LOG.debug("Deployable removed: {}", entry.app);
             }
         }
     }

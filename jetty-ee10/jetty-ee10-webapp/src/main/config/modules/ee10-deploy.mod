@@ -11,17 +11,17 @@ ee10-webapp
 [lib]
 
 [files]
-webapps-ee10/
+webapps/
 
 [xml]
 etc/jetty-ee10-deploy.xml
 
 [ini-template]
 ## Monitored directory name (relative to $jetty.base)
-# jetty.deploy.monitoredDir=webapps-ee10
+# jetty.deploy.monitoredDir=webapps
 ## - OR -
 ## Monitored directory path (fully qualified)
-# jetty.deploy.monitoredPath=/var/www/webapps-ee10
+# jetty.deploy.monitoredPath=/var/www/webapps
 
 ## Defaults Descriptor for all deployed webapps
 # jetty.deploy.defaultsDescriptor=${jetty.base}/etc/webdefault-ee10.xml

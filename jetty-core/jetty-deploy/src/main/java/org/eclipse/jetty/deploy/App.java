@@ -21,23 +21,25 @@ import java.util.Properties;
 
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Attributes;
 
 /**
- * The information about an App that is managed by the {@link DeploymentManager}
+ * The information about an App that is managed by the {@link DeploymentManager}.
+ *
+ * </p>
  */
 public class App
 {
     private final DeploymentManager _manager;
     private final AppProvider _provider;
-    private final String _environmentName;
     private final String _filename;
     private final Map<String, String> _properties = new HashMap<>();
     private ContextHandler _context;
 
     /**
      * Create an App with specified Origin ID and archivePath
-     *
+     * <p>
+     * Any properties file that exists with the same {@link FileID#getDot3Basename(String)} as the
+     * filename passed will be used to initialize the properties returned by {@link #getProperties()}.
      * @param manager the deployment manager
      * @param provider the app provider
      * @param filename the filename of the base resource of the application
@@ -65,8 +67,6 @@ public class App
         {
             throw new RuntimeException(e);
         }
-
-        _environmentName = _properties.computeIfAbsent("environment", k -> _provider.getEnvironmentName());
     }
 
     /**
@@ -134,9 +134,16 @@ public class App
         return _context == null ? null : _context.getContextPath();
     }
 
+    /**
+     * Get the environment name.
+     * If the property "environment" exists, then that is returned as the environment, otherwise
+     * the {@link DeploymentManager#getDefaultEnvironmentName()} is returned.
+     * @return The {@link org.eclipse.jetty.util.component.Environment} name for the application.
+     */
     public String getEnvironmentName()
     {
-        return _environmentName;
+        String name = getProperties().get("environmnet");
+        return name == null ? _manager.getDefaultEnvironmentName() : name;
     }
 
     /**
@@ -152,6 +159,6 @@ public class App
     @Override
     public String toString()
     {
-        return "App[" + _context + "," + _filename + "]";
+        return "App@%x[%s,%s,%s]".formatted(hashCode(), getEnvironmentName(), _context, _filename);
     }
 }

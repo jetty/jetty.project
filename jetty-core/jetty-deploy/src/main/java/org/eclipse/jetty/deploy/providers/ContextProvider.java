@@ -16,13 +16,10 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.util.FileID;
@@ -62,13 +59,15 @@ import org.slf4j.LoggerFactory;
  * <li>If a WAR file and a matching XML exist (eg foo.war and foo.xml) then the WAR is assumed to
  * be configured by the XML and only the XML is deployed.
  * </ul>
+ * <p>
+ * Only {@link App}s discovered that report {@link App#getEnvironmentName()} matching this providers
+ * {@link #getEnvironmentName()} will be deployed.
+ * </p>
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".  The properties will be initialized
  * with:<ul>
- *     <li>Any properties found in a property file with the basename matching the environment
- *     name (e.g. <code>ee10.properties</code>)</li>
- *     <li>The properties set on this class via {@link #getProperties()}</li>
- *     <li>Any properties found in a property file with a basename matching the {@link App#getFilename()} basename</li>
+ *     <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
+ *     <li>The properties set on this provider via {@link #getProperties()}</li>
  * </ul>
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")

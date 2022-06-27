@@ -169,7 +169,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         if (environment == null)
             throw new IllegalStateException("Unknown environment " + _environmentName);
 
-        LOG.info("Deployment monitor {}", _monitored);
+        LOG.info("Deployment monitor {} in {} at intervals {}s", getEnvironmentName(), _monitored, getScanInterval());
         List<File> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
@@ -211,9 +211,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
 
     protected void fileAdded(String filename) throws Exception
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("added {}", filename);
         App app = ScanningAppProvider.this.createApp(filename);
+        if (LOG.isDebugEnabled())
+            LOG.debug("fileAdded {}: {}", filename, app);
+
         if (app != null)
         {
             _appMap.put(filename, app);
@@ -223,14 +224,12 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
 
     protected void fileChanged(String filename) throws Exception
     {
+        App oldApp = _appMap.remove(filename);
+        if (oldApp != null)
+            _deploymentManager.removeApp(oldApp);
+        App app = ScanningAppProvider.this.createApp(filename);
         if (LOG.isDebugEnabled())
-            LOG.debug("changed {}", filename);
-        App app = _appMap.remove(filename);
-        if (app != null)
-        {
-            _deploymentManager.removeApp(app);
-        }
-        app = ScanningAppProvider.this.createApp(filename);
+            LOG.debug("fileChanged {}: {}", filename, app);
         if (app != null)
         {
             _appMap.put(filename, app);
@@ -240,9 +239,9 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
 
     protected void fileRemoved(String filename) throws Exception
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("removed {}", filename);
         App app = _appMap.remove(filename);
+        if (LOG.isDebugEnabled())
+            LOG.debug("fileRemoved {}: {}", filename, app);
         if (app != null)
             _deploymentManager.removeApp(app);
     }

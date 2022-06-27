@@ -28,7 +28,7 @@
                 <Property name="jetty.base" />
               </Arg>
               <Arg>
-                <Property name="jetty.deploy.monitoredDir" default="webapps-ee10" />
+                <Property name="jetty.deploy.monitoredDir" default="webapps" />
               </Arg>
             </Call>
           </Set>

@@ -18,10 +18,10 @@ etc/jetty-ee9-deploy.xml
 
 [ini-template]
 ## Monitored directory name (relative to $jetty.base)
-# jetty.deploy.monitoredDir=webapps-ee9
+# jetty.deploy.monitoredDir=webapps
 ## - OR -
 ## Monitored directory path (fully qualified)
-# jetty.deploy.monitoredPath=/var/www/webapps-ee9
+# jetty.deploy.monitoredPath=/var/www/webapps
 
 ## Defaults Descriptor for all deployed webapps
 # jetty.deploy.defaultsDescriptor=${jetty.base}/etc/webdefault-ee9.xml
