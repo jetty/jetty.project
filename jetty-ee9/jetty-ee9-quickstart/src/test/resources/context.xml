@@ -25,7 +25,7 @@ detected.
       <Arg>
         <New class="org.eclipse.jetty.ee9.servlet.ServletHolder">
           <Set name="name">FooServlet</Set>
-          <Set name="className">org.eclipse.jetty.quickstart.FooServlet</Set>
+          <Set name="className">org.eclipse.jetty.ee9.quickstart.FooServlet</Set>
         </New>
       </Arg>
       <Arg>/outer/*</Arg>
@@ -34,7 +34,7 @@ detected.
     <Call name="addFilterWithMapping">
       <Arg>
         <New class="org.eclipse.jetty.ee9.servlet.FilterHolder">
-            <Set name="className">org.eclipse.jetty.quickstart.FooFilter</Set>
+            <Set name="className">org.eclipse.jetty.ee9.quickstart.FooFilter</Set>
             <Set name="name">OuterFilter</Set>
         </New>
       </Arg>
@@ -46,7 +46,7 @@ detected.
        <Arg>
           <New class="org.eclipse.jetty.ee9.servlet.ListenerHolder">
             <Set name="listener">
-              <New class="org.eclipse.jetty.quickstart.FooContextListener"></New>
+              <New class="org.eclipse.jetty.ee9.quickstart.FooContextListener"></New>
             </Set>
           </New>
        </Arg>
