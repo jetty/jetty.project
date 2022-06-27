@@ -113,6 +113,13 @@
           </execution>
         </executions>
       </plugin>
+      <!-- see issue #8209 -->
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
