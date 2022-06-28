@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -376,6 +378,76 @@ public class IdleTimeoutTest extends AbstractTest
         // Session must not be closed, nor disconnected.
         assertFalse(session.isClosed());
         assertFalse(((HTTP2Session)session).isDisconnected());
+    }
+
+    @Test
+    public void testForgivingFailedClientEnforcingStreamIdleTimeout() throws Exception
+    {
+        final int idleTimeout = 1000;
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicBoolean failedDidNotThrow = new AtomicBoolean(false);
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                sleep(2 * idleTimeout);
+                try
+                {
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    failure.set(t);
+                    callback.failed(t);
+                    failedDidNotThrow.set(true);
+                }
+            }
+        });
+
+        Session session = newClientSession(new Session.Listener.Adapter());
+
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final CountDownLatch timeoutLatch = new CountDownLatch(1);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
+        session.newStream(requestFrame, new Promise.Adapter<>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(idleTimeout);
+            }
+        }, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                dataLatch.countDown();
+            }
+
+            @Override
+            public boolean onIdleTimeout(Stream stream, Throwable x)
+            {
+                assertThat(x, Matchers.instanceOf(TimeoutException.class));
+                timeoutLatch.countDown();
+                return true;
+            }
+        });
+
+        assertTrue(timeoutLatch.await(5, TimeUnit.SECONDS));
+        // We must not receive any DATA frame.
+        assertFalse(dataLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        // Stream must be gone.
+        assertTrue(session.getStreams().isEmpty());
+        // Session must not be closed, nor disconnected.
+        assertFalse(session.isClosed());
+        assertFalse(((HTTP2Session)session).isDisconnected());
+
+        // Callback.succeeded() should have thrown an exception, but Callback.failed() should not have thrown.
+        assertNotNull(failure.get());
+        assertTrue(failedDidNotThrow.get());
     }
 
     @Test

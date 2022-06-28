@@ -663,7 +663,15 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = x;
             }
             if (failure != null)
-                request._callback.failed(failure);
+            {
+                try (AutoLock ignored = _lock.lock())
+                {
+                    if (request._httpChannel != null && !request._httpChannel._completed)
+                        request._callback.failed(failure);
+                    else if (LOG.isDebugEnabled())
+                        LOG.debug("Process failed", failure);
+                }
+            }
 
             HttpStream stream;
             boolean completeStream;
@@ -1364,6 +1372,9 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
+                request = _request;
+                if (request._httpChannel != null && request._httpChannel._error != null && TypeUtil.isAssociated(request._httpChannel._error.getCause(), failure))
+                    return;
                 lockedOnComplete();
 
                 httpChannelState = _request._httpChannel;
@@ -1373,7 +1384,6 @@ public class HttpChannelState implements HttpChannel, Components
                 // Verify whether we can write an error response.
                 writeErrorResponse = !httpChannelState._stream.isCommitted();
                 stream = httpChannelState._stream;
-                request = _request;
 
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
