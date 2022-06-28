@@ -59,6 +59,7 @@
 <!--    <module>jetty-ee9-fcgi-server-proxy</module>-->
     <module>jetty-ee9-jaas</module>
     <module>jetty-ee9-jaspi</module>
+    <module>jetty-ee9-jndi</module>
     <module>jetty-ee9-jspc-maven-plugin</module>
 <!--    <module>jetty-ee9-maven-plugin</module>-->
 <!--    <module>jetty-ee9-openid</module>-->
@@ -68,7 +69,7 @@
     <module>jetty-ee9-quickstart</module>
 <!--    <module>jetty-ee9-runner</module>-->
     <module>jetty-ee9-websocket</module>
-<!--    <module>jetty-ee9-tests</module>-->
+    <module>jetty-ee9-tests</module>
     <module>jetty-ee9-bom</module>
     <module>test-ee9-sessions</module>
     <module>jetty-ee9-home</module>
@@ -111,6 +112,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaspi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-jndi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

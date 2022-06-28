@@ -4,6 +4,7 @@
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -22,7 +23,7 @@
 <!-- TODO   <module>test-http-client-transport</module>-->
 <!-- TODO   <module>test-integration</module>-->
     <module>test-jmx</module>
-<!-- TODO   <module>test-jndi</module>-->
+    <module>test-jndi</module>
 <!-- TODO   <module>test-loginservice</module>-->
 <!-- TODO   <module>test-quickstart</module>-->
     <module>test-websocket-client-provided-webapp</module>

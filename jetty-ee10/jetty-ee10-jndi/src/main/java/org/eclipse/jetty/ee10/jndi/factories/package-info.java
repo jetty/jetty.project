@@ -11,18 +11,8 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.jndi
-{
-    requires org.slf4j;
+/**
+ * Jetty EE10 Jndi : Factories
+ */
+package org.eclipse.jetty.ee10.jndi.factories;
 
-    requires transitive java.naming;
-    requires transitive org.eclipse.jetty.server;
-
-    // Only required if using DataSourceCloser.
-    requires static java.sql;
-    // requires static org.eclipse.jetty.security;
-
-    exports org.eclipse.jetty.jndi;
-    exports org.eclipse.jetty.jndi.java;
-    exports org.eclipse.jetty.jndi.local;
-}

@@ -11,18 +11,15 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.jndi
+module org.eclipse.jetty.ee10.jndi
 {
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.util;
     requires transitive java.naming;
-    requires transitive org.eclipse.jetty.server;
 
-    // Only required if using DataSourceCloser.
-    requires static java.sql;
-    // requires static org.eclipse.jetty.security;
+    // Only required if using MailSessionReference.
+    requires static jakarta.mail;
 
-    exports org.eclipse.jetty.jndi;
-    exports org.eclipse.jetty.jndi.java;
-    exports org.eclipse.jetty.jndi.local;
+    exports org.eclipse.jetty.ee10.jndi.factories;
 }

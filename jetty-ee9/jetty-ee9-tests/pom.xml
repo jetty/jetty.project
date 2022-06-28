@@ -16,18 +16,18 @@
   </properties>
 
   <modules>
-    <module>test-bad-websocket-webapp</module>
-    <module>test-cdi</module>
-    <module>test-http2-webapp</module>
-    <module>test-http-client-transport</module>
-    <module>test-integration</module>
-    <module>test-jmx</module>
-    <module>test-jndi</module>
-    <module>test-loginservice</module>
-    <module>test-quickstart</module>
-    <module>test-websocket-client-provided-webapp</module>
-    <module>test-websocket-client-webapp</module>
-    <module>test-websocket-webapp</module>
+          <!-- <module>test-bad-websocket-webapp</module> -->
+          <!-- <module>test-cdi</module> -->
+          <!-- <module>test-http2-webapp</module> -->
+          <!-- <module>test-http-client-transport</module> -->
+          <!-- <module>test-integration</module> -->
+          <!-- <module>test-jmx</module> -->
+      <module>test-jndi</module>
+          <!-- <module>test-loginservice</module> -->
+          <!-- <module>test-quickstart</module> -->
+          <!-- <module>test-websocket-client-provided-webapp</module> -->
+          <!-- <module>test-websocket-client-webapp</module> -->
+          <!-- <module>test-websocket-webapp</module> -->
   </modules>
 
   <build>
