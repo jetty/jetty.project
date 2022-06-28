@@ -55,7 +55,7 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
      */
     protected AbstractByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {
-        _factor = factor <= 0 ? 1024 : factor;
+        _factor = factor <= 0 ? 4096 : factor;
         _maxCapacity = maxCapacity > 0 ? maxCapacity : 64 * _factor;
         _maxBucketSize = maxBucketSize;
         _maxHeapMemory = memorySize(maxHeapMemory);

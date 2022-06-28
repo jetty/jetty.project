@@ -79,7 +79,13 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
      */
     public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {
-        super(minCapacity, 1, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
+        super(minCapacity, -1, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
+    }
+
+    @Override
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        return new LogarithmicRetainablePool(0, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
     }
 
     @Override
@@ -118,6 +124,36 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
             // Acquire a buffer but never return it to the pool.
             bucket.acquire();
             bucket.resetUpdateTime();
+        }
+    }
+
+    /**
+     * A variant of the {@link ArrayRetainableByteBufferPool} that
+     * uses buckets of buffers that increase in size by a power of
+     * 2 (eg 1k, 2k, 4k, 8k, etc.).
+     */
+    public static class LogarithmicRetainablePool extends ArrayRetainableByteBufferPool
+    {
+        public LogarithmicRetainablePool()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public LogarithmicRetainablePool(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public LogarithmicRetainablePool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity,
+                -1,
+                maxCapacity,
+                maxBucketSize,
+                maxHeapMemory,
+                maxDirectMemory,
+                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
+                i -> 1 << i);
         }
     }
 }

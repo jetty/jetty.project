@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -390,5 +393,33 @@ public class ArrayRetainableByteBufferPoolTest
         buffer.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
         assertThat(buffer.release(), is(true));
         assertThat(buffer.getBuffer().order(), Matchers.is(ByteOrder.BIG_ENDIAN));
+    }
+
+    @Test
+    void testLogarithmic()
+    {
+        LogarithmicArrayByteBufferPool pool = new LogarithmicArrayByteBufferPool();
+        ByteBuffer buffer5 = pool.acquire(5, false);
+        pool.release(buffer5);
+        ByteBuffer buffer6 = pool.acquire(6, false);
+        assertThat(buffer6, sameInstance(buffer5));
+        pool.release(buffer6);
+        ByteBuffer buffer9 = pool.acquire(9, false);
+        assertThat(buffer9, not(sameInstance(buffer5)));
+        pool.release(buffer9);
+
+        RetainableByteBufferPool retainablePool = pool.asRetainableByteBufferPool();
+
+        RetainableByteBuffer retain5 = retainablePool.acquire(5, false);
+        retain5.release();
+        RetainableByteBuffer retain6 = retainablePool.acquire(6, false);
+        System.err.println(pool.dump());
+        assertThat(retain6, sameInstance(retain5));
+        retain6.release();
+        RetainableByteBuffer retain9 = retainablePool.acquire(9, false);
+        assertThat(retain9, not(sameInstance(retain5)));
+        retain9.release();
+
+        System.err.println(pool.dump());
     }
 }

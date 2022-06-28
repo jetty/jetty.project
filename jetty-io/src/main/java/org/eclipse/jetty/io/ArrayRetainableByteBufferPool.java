@@ -113,7 +113,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         if (maxCapacity <= 0)
             maxCapacity = 64 * 1024;
 
-        int f = factor <= 0 ? 1024 : factor;
+        int f = factor <= 0 ? 4096 : factor;
         if ((maxCapacity % f) != 0 || f >= maxCapacity)
             throw new IllegalArgumentException(String.format("The capacity factor(%d) must be a divisor of maxCapacity(%d)", f, maxCapacity));
 
