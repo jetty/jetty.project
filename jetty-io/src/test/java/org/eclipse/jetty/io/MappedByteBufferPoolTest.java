@@ -138,7 +138,7 @@ public class MappedByteBufferPoolTest
     {
         int factor = 1024;
         int maxMemory = 11 * factor;
-        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, null, -1, maxMemory);
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, -1, maxMemory);
         ConcurrentMap<Integer, Bucket> buckets = bufferPool.bucketsFor(true);
 
         // Create the buckets - the oldest is the larger.

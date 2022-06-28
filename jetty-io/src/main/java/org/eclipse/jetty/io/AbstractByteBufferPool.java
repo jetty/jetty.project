@@ -50,23 +50,35 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
      * @param maxBucketSize the maximum ByteBuffer queue length
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
-     * @param retainedHeapMemory the max heap memory in bytes, -1 for no retained memory or 0 to use default heuristic
-     * @param retainedDirectMemory the max direct memory in bytes, -1 for no retained memory or 0 to use default heuristic
+     * @param retainedHeapMemory the max heap memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
      */
     protected AbstractByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {
         _factor = factor <= 0 ? 1024 : factor;
         _maxCapacity = maxCapacity > 0 ? maxCapacity : 64 * _factor;
         _maxBucketSize = maxBucketSize;
-        _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
-        _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxHeapMemory = memorySize(maxHeapMemory);
+        _maxDirectMemory = memorySize(maxDirectMemory);
+        _retainableByteBufferPool = (retainedHeapMemory == -2 && retainedDirectMemory == -2)
+            ? RetainableByteBufferPool.from(this)
+            : newRetainableByteBufferPool(factor, maxCapacity, maxBucketSize, retainedSize(retainedHeapMemory), retainedSize(retainedDirectMemory));
+    }
 
-        if (retainedHeapMemory < 0 && retainedDirectMemory < 0)
-            _retainableByteBufferPool = RetainableByteBufferPool.from(this);
-        else
-            _retainableByteBufferPool = newRetainableByteBufferPool(factor, maxCapacity, maxBucketSize,
-                (retainedHeapMemory != 0) ? retainedHeapMemory : Runtime.getRuntime().maxMemory() / 4,
-                (retainedDirectMemory != 0) ? retainedDirectMemory : Runtime.getRuntime().maxMemory() / 4);
+    private static long retainedSize(long size)
+    {
+        if (size == -2)
+            return 0;
+        return memorySize(size);
+    }
+
+    private static long memorySize(long size)
+    {
+        if (size < 0)
+            return -1;
+        if (size == 0)
+            return Runtime.getRuntime().maxMemory() / 4;
+        return size;
     }
 
     protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)

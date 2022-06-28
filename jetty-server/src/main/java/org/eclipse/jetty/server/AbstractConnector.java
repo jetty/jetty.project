@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -185,11 +186,27 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             scheduler = _server.getBean(Scheduler.class);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
         addBean(_scheduler);
-        if (pool == null)
-            pool = _server.getBean(ByteBufferPool.class);
 
-        // TODO improve this
-        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool(-1, -1, -1, -1, -1, -1, 0, 0);
+        synchronized (server)
+        {
+            if (pool == null)
+            {
+                // Look for (and cache) a common pool on the server
+                pool = server.getBean(ByteBufferPool.class);
+                if (pool == null)
+                {
+                    pool = new LogarithmicArrayByteBufferPool();
+                    server.addBean(pool, true);
+                }
+                addBean(pool, false);
+            }
+            else
+            {
+                addBean(pool, true);
+            }
+        }
+
+        _byteBufferPool = pool;
         addBean(_byteBufferPool, pool == null);
 
         addEventListener(new Container.Listener()

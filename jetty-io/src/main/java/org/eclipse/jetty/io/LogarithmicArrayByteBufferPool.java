@@ -63,7 +63,7 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
      */
     public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
-        this(minCapacity, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory, -1, -1);
+        this(minCapacity, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory, maxHeapMemory, maxDirectMemory);
     }
 
     /**
@@ -74,8 +74,8 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
      * @param maxQueueLength the maximum ByteBuffer queue length
      * @param maxHeapMemory the max heap memory in bytes
      * @param maxDirectMemory the max direct memory in bytes
-     * @param retainedHeapMemory the max heap memory in bytes, -1 for no retained memory or 0 to use default heuristic
-     * @param retainedDirectMemory the max direct memory in bytes, -1 for no retained memory or 0 to use default heuristic
+     * @param retainedHeapMemory the max heap memory in bytes, -1 for unlimited retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -1 for unlimited retained memory or 0 to use default heuristic
      */
     public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {

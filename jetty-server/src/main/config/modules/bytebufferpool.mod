@@ -1,5 +1,6 @@
 [description]
 Configures the ByteBufferPool used by ServerConnectors.
+Use module "bytebufferpool-logarithmic" for a more space efficient pool.
 
 [tags]
 bytebufferpool
