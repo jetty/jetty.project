@@ -253,7 +253,6 @@
    <!-- TODO -->
    <!-- eliminating dependencies of jetty-home that are being pulled in when in reactor
         for the jetty build itself.  This can cause accidental cyclic references. -->
-<!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
@@ -261,104 +260,15 @@
       <type>zip</type>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-conscrypt-server</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-openjdk8-server</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-server</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-cdi</artifactId>
+          <artifactId>jetty-ee9-home</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.gcloud</groupId>
-          <artifactId>jetty-gcloud-session-manager</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-hazelcast</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-jaas</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-jaspi</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.memcached</groupId>
-          <artifactId>jetty-memcached-sessions</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-openid</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.fcgi</groupId>
-          <artifactId>fcgi-server</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-start</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-nosql</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-unixsocket</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-infinispan</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.http2</groupId>
-          <artifactId>http2-server</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-infinispan-embedded</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-infinispan-embedded-query</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-infinispan-remote</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-infinispan-remote-query</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.mail.glassfish</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm-tree</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm-analysis</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.jboss.logging</groupId>
-          <artifactId>jboss-logging</artifactId>
+          <groupId>org.eclipse.jetty.ee10</groupId>
+          <artifactId>jetty-ee10-home</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
--->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
