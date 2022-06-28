@@ -110,13 +110,13 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     {
         if (minCapacity <= 0)
             minCapacity = 0;
+        factor = factor <= 0 ? AbstractByteBufferPool.DEFAULT_FACTOR : factor;
         if (maxCapacity <= 0)
-            maxCapacity = 64 * 1024;
+            maxCapacity = AbstractByteBufferPool.DEFAULT_MAX_CAPACITY_BY_FACTOR * factor;
+        if ((maxCapacity % factor) != 0 || factor >= maxCapacity)
+            throw new IllegalArgumentException(String.format("The capacity factor(%d) must be a divisor of maxCapacity(%d)", factor, maxCapacity));
 
-        int f = factor <= 0 ? 4096 : factor;
-        if ((maxCapacity % f) != 0 || f >= maxCapacity)
-            throw new IllegalArgumentException(String.format("The capacity factor(%d) must be a divisor of maxCapacity(%d)", f, maxCapacity));
-
+        int f = factor;
         if (bucketIndexFor == null)
             bucketIndexFor = c -> (c - 1) / f;
         if (bucketCapacity == null)
@@ -136,8 +136,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         _maxCapacity = maxCapacity;
         _direct = directArray;
         _indirect = indirectArray;
-        _maxHeapMemory = (maxHeapMemory != 0L) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
-        _maxDirectMemory = (maxDirectMemory != 0L) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxHeapMemory = AbstractByteBufferPool.retainedSize(maxHeapMemory);
+        _maxDirectMemory = AbstractByteBufferPool.retainedSize(maxDirectMemory);
         _bucketIndexFor = bucketIndexFor;
     }
 

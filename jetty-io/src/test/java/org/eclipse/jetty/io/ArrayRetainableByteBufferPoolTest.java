@@ -241,7 +241,7 @@ public class ArrayRetainableByteBufferPoolTest
         pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(2048L));
+        assertThat(pool.getDirectMemory(), is(2L * AbstractByteBufferPool.DEFAULT_FACTOR));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
 
@@ -285,16 +285,16 @@ public class ArrayRetainableByteBufferPoolTest
         {
             RetainableByteBuffer buf1 = pool.acquire(10, true);
             assertThat(buf1, is(notNullValue()));
-            assertThat(buf1.capacity(), is(1024));
+            assertThat(buf1.capacity(), is(AbstractByteBufferPool.DEFAULT_FACTOR));
             RetainableByteBuffer buf2 = pool.acquire(10, true);
             assertThat(buf2, is(notNullValue()));
-            assertThat(buf2.capacity(), is(1024));
+            assertThat(buf2.capacity(), is(AbstractByteBufferPool.DEFAULT_FACTOR));
             buf1.release();
             buf2.release();
 
             RetainableByteBuffer buf3 = pool.acquire(16384 + 1, true);
             assertThat(buf3, is(notNullValue()));
-            assertThat(buf3.capacity(), is(16384 + 1024));
+            assertThat(buf3.capacity(), is(16384 + AbstractByteBufferPool.DEFAULT_FACTOR));
             buf3.release();
 
             RetainableByteBuffer buf4 = pool.acquire(32768, true);
@@ -310,7 +310,7 @@ public class ArrayRetainableByteBufferPoolTest
 
         assertThat(pool.getDirectByteBufferCount(), is(4L));
         assertThat(pool.getHeapByteBufferCount(), is(1L));
-        assertThat(pool.getDirectMemory(), is(1024 + 1024 + 16384 + 1024 + 32768L));
+        assertThat(pool.getDirectMemory(), is(AbstractByteBufferPool.DEFAULT_FACTOR * 3L + 16384 + 32768L));
         assertThat(pool.getHeapMemory(), is(32768L));
 
         pool.clear();

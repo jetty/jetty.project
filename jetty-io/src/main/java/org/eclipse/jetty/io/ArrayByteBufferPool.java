@@ -58,6 +58,18 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     }
 
     /**
+     * Creates a new ArrayByteBufferPool with a default configuration.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
+     * @param retainable True if {@link #asRetainableByteBufferPool()} return a real implementation.
+     */
+    public ArrayByteBufferPool(boolean retainable)
+    {
+        this(-1, -1, -1, -1, -1, -1,
+            retainable ? -1 : -2,
+            retainable ? -1 : -2);
+    }
+
+    /**
      * Creates a new ArrayByteBufferPool with the given configuration.
      * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
@@ -67,7 +79,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity)
     {
-        this(minCapacity, factor, maxCapacity, -1, 0, 0);
+        this(minCapacity, factor, maxCapacity, -1, -1, -1);
     }
 
     /**
@@ -81,7 +93,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
     {
-        this(minCapacity, factor, maxCapacity, maxQueueLength, 0, 0);
+        this(minCapacity, factor, maxCapacity, maxQueueLength, -1, -1);
     }
 
     /**

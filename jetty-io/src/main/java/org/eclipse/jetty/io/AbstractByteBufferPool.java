@@ -34,6 +34,8 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject
 abstract class AbstractByteBufferPool implements ByteBufferPool
 {
+    public static final Integer DEFAULT_FACTOR = 4096;
+    public static final Integer DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
     private final int _factor;
     private final int _maxCapacity;
     private final int _maxBucketSize;
@@ -55,8 +57,8 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
      */
     protected AbstractByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
     {
-        _factor = factor <= 0 ? 4096 : factor;
-        _maxCapacity = maxCapacity > 0 ? maxCapacity : 64 * _factor;
+        _factor = factor <= 0 ? DEFAULT_FACTOR : factor;
+        _maxCapacity = maxCapacity > 0 ? maxCapacity : DEFAULT_MAX_CAPACITY_BY_FACTOR * _factor;
         _maxBucketSize = maxBucketSize;
         _maxHeapMemory = memorySize(maxHeapMemory);
         _maxDirectMemory = memorySize(maxDirectMemory);
@@ -65,14 +67,14 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
             : newRetainableByteBufferPool(factor, maxCapacity, maxBucketSize, retainedSize(retainedHeapMemory), retainedSize(retainedDirectMemory));
     }
 
-    private static long retainedSize(long size)
+    static long retainedSize(long size)
     {
         if (size == -2)
             return 0;
         return memorySize(size);
     }
 
-    private static long memorySize(long size)
+    static long memorySize(long size)
     {
         if (size < 0)
             return -1;
