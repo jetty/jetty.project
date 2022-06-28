@@ -88,7 +88,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                         completeExceptionally(error.getCause());
                         return;
                     }
-                    parse(chunk.getByteBuffer(), chunk.isLast());
+                    parse(chunk);
                     chunk.release();
                     if (chunk.isLast())
                         return;
@@ -98,16 +98,16 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         return this;
     }
 
-    public void parse(ByteBuffer buffer, boolean last)
+    public void parse(Content.Chunk chunk)
     {
         if (listener.isFailed())
             return;
-        length += buffer.remaining();
+        length += chunk.getByteBuffer().remaining();
         long max = getMaxLength();
         if (max > 0 && length > max)
             listener.onFailure(new IllegalStateException("max length exceeded: %d".formatted(max)));
         else
-            parser.parse(buffer, last);
+            parser.parse(chunk);
     }
 
     /**
@@ -306,8 +306,9 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         private volatile SeekableByteChannel fileChannel;
 
         @Override
-        public void onPartContent(ByteBuffer buffer, boolean last)
+        public void onPartContent(Content.Chunk chunk)
         {
+            ByteBuffer buffer = chunk.getByteBuffer();
             String fileName = getFileName();
             if (fileName != null || isUseFilesForPartsWithoutFileName())
             {
@@ -329,20 +330,20 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                         if (ensureFileChannel())
                         {
                             // Write existing memory chunks.
-                            for (ByteBuffer chunk : getContent())
+                            for (Content.Chunk c : getContent())
                             {
-                                if (!write(chunk))
+                                if (!write(c.getByteBuffer()))
                                     return;
                             }
                         }
                         write(buffer);
-                        if (last)
+                        if (chunk.isLast())
                             close();
                         return;
                     }
                 }
             }
-            super.onPartContent(buffer, last);
+            super.onPartContent(chunk);
         }
 
         private boolean write(ByteBuffer buffer)

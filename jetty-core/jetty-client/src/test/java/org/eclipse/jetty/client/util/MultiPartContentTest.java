@@ -13,24 +13,45 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.eclipse.jetty.toolchain.test.StackUtils.supply;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class MultiPartContentTest extends AbstractHttpClientServerTest
@@ -58,8 +79,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
         assertEquals(200, response.getStatus());
     }
-    // TODO: these tests don't work yet because of the Chunk retainability problem.
-/*
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testSimpleField(Scenario scenario) throws Exception
@@ -100,18 +120,17 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
+                MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
-                String contentType = part.getContentType();
+                String contentType = part.getHttpFields().get(HttpHeader.CONTENT_TYPE);
                 assertNotNull(contentType);
                 int equal = contentType.lastIndexOf('=');
                 Charset charset = Charset.forName(contentType.substring(equal + 1));
                 assertEquals(encoding, charset);
-                assertEquals(value, IO.toString(part.getInputStream(), charset));
+                assertEquals(value, Content.Source.asString(part.getContent(), charset));
             }
         });
 
@@ -119,7 +138,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding.name());
         BytesRequestContent content = new BytesRequestContent(value.getBytes(encoding));
-        multiPart.addFieldPart(name, content, fields);
+        multiPart.addPart(new MultiPart.ContentSourcePart(name, "file", fields, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -132,6 +151,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Disabled("TODO")
     public void testFieldDeferred(Scenario scenario) throws Exception
     {
         String name = "field";
@@ -139,20 +159,19 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
+                MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
-                assertEquals("text/plain", part.getContentType());
-                assertArrayEquals(data, IO.readBytes(part.getInputStream()));
+                assertEquals("text/plain", part.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContent()).array());
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         AsyncRequestContent content = new AsyncRequestContent("text/plain");
-        multiPart.addFieldPart(name, content, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart(name, "file", null, content));
         multiPart.close();
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
@@ -170,7 +189,9 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         Thread.sleep(1000);
 
         // Provide the content.
-        content.offer(ByteBuffer.wrap(data));
+        FutureCallback fc = new FutureCallback();
+        content.write(ByteBuffer.wrap(data), fc);
+        fc.get();
         content.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
@@ -188,16 +209,15 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
+                MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
-                assertEquals(contentType, part.getContentType());
-                assertEquals(fileName, part.getSubmittedFileName());
-                assertEquals(data.length, part.getSize());
-                assertArrayEquals(data, IO.readBytes(part.getInputStream()));
+                assertEquals(contentType, part.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(fileName, part.getFileName());
+                assertEquals(data.length, part.getContent().getLength());
+                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContent()).array());
             }
         });
 
@@ -214,7 +234,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         });
         HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, contentType);
-        multiPart.addFilePart(name, fileName, content, fields);
+        multiPart.addPart(new MultiPart.ContentSourcePart(name, fileName, fields, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -228,6 +248,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Disabled("TODO")
     public void testFileFromPath(Scenario scenario) throws Exception
     {
         // Prepare a file to upload.
@@ -245,24 +266,22 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                Collection<Part> parts = request.getParts();
                 assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
+                MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
-                assertEquals(contentType, part.getContentType());
-                assertEquals(tmpPath.getFileName().toString(), part.getSubmittedFileName());
-                assertEquals(Files.size(tmpPath), part.getSize());
-                assertEquals(data, IO.toString(part.getInputStream(), encoding));
+                assertEquals(contentType, part.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(tmpPath.getFileName().toString(), part.getFileName());
+                assertEquals(Files.size(tmpPath), part.getContent().getLength());
+                assertEquals(data, Content.Source.asString(part.getContent(), encoding));
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        PathRequestContent content = new PathRequestContent(contentType, tmpPath);
-        content.setByteBufferPool(client.getByteBufferPool());
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool().asRetainableByteBufferPool());
         content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
-        multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart(name, tmpPath.getFileName().toString(), null, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -277,6 +296,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Disabled("TODO")
     public void testFieldWithFile(Scenario scenario) throws Exception
     {
         // Prepare a file to upload.
@@ -299,37 +319,36 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                List<Part> parts = new ArrayList<>(request.getParts());
                 assertEquals(2, parts.size());
-                Part fieldPart = parts.get(0);
-                Part filePart = parts.get(1);
+                MultiPart.Part fieldPart = parts.get(0);
+                MultiPart.Part filePart = parts.get(1);
                 if (!field.equals(fieldPart.getName()))
                 {
-                    Part swap = filePart;
+                    MultiPart.Part swap = filePart;
                     filePart = fieldPart;
                     fieldPart = swap;
                 }
 
                 assertEquals(field, fieldPart.getName());
-                assertEquals(contentType, fieldPart.getContentType());
-                assertEquals(value, IO.toString(fieldPart.getInputStream(), encoding));
-                assertEquals(headerValue, fieldPart.getHeader(headerName));
+                assertEquals(contentType, fieldPart.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(value, Content.Source.asString(fieldPart.getContent(), encoding));
+                assertEquals(headerValue, fieldPart.getHttpFields().get(headerName));
 
                 assertEquals(fileField, filePart.getName());
-                assertEquals("application/octet-stream", filePart.getContentType());
-                assertEquals(tmpPath.getFileName().toString(), filePart.getSubmittedFileName());
-                assertEquals(Files.size(tmpPath), filePart.getSize());
-                assertArrayEquals(data, IO.readBytes(filePart.getInputStream()));
+                assertEquals("application/octet-stream", filePart.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(tmpPath.getFileName().toString(), filePart.getFileName());
+                assertEquals(Files.size(tmpPath), filePart.getContent().getLength());
+                assertArrayEquals(data, Content.Source.asByteBuffer(filePart.getContent()).array());
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         HttpFields.Mutable fields = HttpFields.build();
         fields.put(headerName, headerValue);
-        multiPart.addFieldPart(field, new StringRequestContent(value, encoding), fields);
-        multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathRequestContent(tmpPath), null);
+        multiPart.addPart(new MultiPart.ByteBufferPart(field, "file", fields, ByteBuffer.wrap(value.getBytes(encoding))));
+        multiPart.addPart(new MultiPart.PathPart(fileField, tmpPath.getFileName().toString(), null, tmpPath));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -344,6 +363,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Disabled("TODO")
     public void testFieldDeferredAndFileDeferred(Scenario scenario) throws Exception
     {
         String value = "text";
@@ -353,33 +373,32 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void process(MultiParts.Parts parts) throws Exception
             {
-                List<Part> parts = new ArrayList<>(request.getParts());
                 assertEquals(2, parts.size());
-                Part fieldPart = parts.get(0);
-                Part filePart = parts.get(1);
+                MultiPart.Part fieldPart = parts.get(0);
+                MultiPart.Part filePart = parts.get(1);
                 if (!"field".equals(fieldPart.getName()))
                 {
-                    Part swap = filePart;
+                    MultiPart.Part swap = filePart;
                     filePart = fieldPart;
                     fieldPart = swap;
                 }
 
-                assertEquals(value, IO.toString(fieldPart.getInputStream(), encoding));
+                assertEquals(value, Content.Source.asString(fieldPart.getContent(), encoding));
 
                 assertEquals("file", filePart.getName());
-                assertEquals("application/octet-stream", filePart.getContentType());
-                assertEquals("fileName", filePart.getSubmittedFileName());
-                assertArrayEquals(fileData, IO.readBytes(filePart.getInputStream()));
+                assertEquals("application/octet-stream", filePart.getHttpFields().get(HttpHeader.CONTENT_TYPE));
+                assertEquals("fileName", filePart.getFileName());
+                assertArrayEquals(fileData, Content.Source.asByteBuffer(filePart.getContent()).array());
             }
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         AsyncRequestContent fieldContent = new AsyncRequestContent();
-        multiPart.addFieldPart("field", fieldContent, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart("field", "file", null, fieldContent));
         AsyncRequestContent fileContent = new AsyncRequestContent();
-        multiPart.addFilePart("file", "fileName", fileContent, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart("file", "fileName", null, fileContent));
         multiPart.close();
 
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -398,17 +417,20 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         Thread.sleep(1000);
 
         // Provide the content, in reversed part order.
-        fileContent.offer(ByteBuffer.wrap(fileData));
+        FutureCallback fc = new FutureCallback();
+        fileContent.write(ByteBuffer.wrap(fileData), fc);
+        fc.get();
         fileContent.close();
 
         Thread.sleep(1000);
 
-        fieldContent.offer(encoding.encode(value));
+        fc = new FutureCallback();
+        fieldContent.write(encoding.encode(value), fc);
+        fc.get();
         fieldContent.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
-*/
 
     private abstract static class AbstractMultiPartHandler extends Handler.Processor
     {

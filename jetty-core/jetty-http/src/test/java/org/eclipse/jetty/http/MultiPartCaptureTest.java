@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -114,8 +113,7 @@ public class MultiPartCaptureTest
 
         TestPartsListener listener = new TestPartsListener(expectations);
         MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
-        byte[] bytes = Files.readAllBytes(rawPath);
-        parser.parse(ByteBuffer.wrap(bytes), true);
+        parser.parse(Content.Chunk.from(Files.readAllBytes(rawPath), true));
         listener.assertParts();
     }
 
@@ -233,6 +231,8 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
+                // TODO: is rewind() needed only for this test?
+//                assertThat(part.getContent().rewind(), is(true));
                 try (InputStream partInputStream = Content.Source.asInputStream(part.getContent());
                      DigestOutputStream digester = new DigestOutputStream(IO.getNullStream(), digest))
                 {

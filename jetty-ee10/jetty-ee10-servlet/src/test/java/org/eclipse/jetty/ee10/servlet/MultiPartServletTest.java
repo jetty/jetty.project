@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -238,8 +238,7 @@ public class MultiPartServletTest
         MultiParts multiParts = new MultiParts(boundary);
 
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        ByteBuffer byteBuffer = ByteBuffer.wrap(IO.readBytes(inputStream));
-        multiParts.parse(byteBuffer, true);
+        multiParts.parse(Content.Chunk.from(IO.readBytes(inputStream), true));
         MultiParts.Parts parts = multiParts.join();
 
         assertThat(parts.size(), is(1));

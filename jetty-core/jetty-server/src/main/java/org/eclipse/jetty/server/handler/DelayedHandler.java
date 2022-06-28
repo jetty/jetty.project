@@ -226,7 +226,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                         _multiParts.completeExceptionally(error.getCause());
                         return;
                     }
-                    _multiParts.parse(chunk.getByteBuffer(), chunk.isLast());
+                    _multiParts.parse(chunk);
                     chunk.release();
                     if (chunk.isLast())
                         return;

@@ -85,10 +85,10 @@ public class ServletMultiParts
             int read = input.read(buffer);
             if (read < 0)
             {
-                multiParts.parse(BufferUtil.EMPTY_BUFFER, true);
+                multiParts.parse(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
                 break;
             }
-            multiParts.parse(ByteBuffer.wrap(buffer, 0, read), false);
+            multiParts.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
         }
 
         return new Parts(multiParts);

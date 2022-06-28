@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -36,8 +37,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,7 +115,6 @@ public class MultiPartHandlerTest
     }
 
     @Test
-    @Disabled("Re-enable when Chunk has a retain semantic, as now it fails for buffer corruption.")
     public void testDelayedUntilMultiPart() throws Exception
     {
         DelayedHandler.UntilMultiPart delayedHandler = new DelayedHandler.UntilMultiPart();
@@ -243,7 +243,7 @@ public class MultiPartHandlerTest
     }
 
     @Test
-    public void testAsyncMultiPartResponse() throws Exception
+    public void testAsyncMultiPartResponse(@TempDir Path tempDir) throws Exception
     {
         start(new Handler.Processor()
         {
@@ -302,7 +302,9 @@ public class MultiPartHandlerTest
             String boundary = MultiParts.extractBoundary(value);
             assertNotNull(boundary);
 
-            MultiParts multiParts = new MultiParts(boundary).parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
+            MultiParts multiParts = new MultiParts(boundary);
+            multiParts.setFileDirectory(tempDir);
+            multiParts.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
             MultiParts.Parts parts = multiParts.join();
 
             assertEquals(2, parts.size());

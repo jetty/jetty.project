@@ -81,7 +81,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(str), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
         multiParts.handle((parts, failure) ->
         {
@@ -110,7 +110,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(str), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
         multiParts.whenComplete((parts, failure) ->
         {
@@ -135,7 +135,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(str), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
         multiParts.whenComplete((parts, failure) ->
         {
@@ -182,7 +182,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(str), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
         assertThat(parts.size(), is(4));
@@ -216,7 +216,7 @@ public class MultiPartsTest
     public void testNoBody() throws Exception
     {
         MultiParts multiParts = new MultiParts("boundary");
-        multiParts.parse(ByteBuffer.allocate(0), true);
+        multiParts.parse(Content.Chunk.from(ByteBuffer.allocate(0), true));
 
         multiParts.handle((parts, failure) ->
         {
@@ -231,7 +231,7 @@ public class MultiPartsTest
     {
         MultiParts multiParts = new MultiParts("boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         multiParts.handle((parts, failure) ->
         {
@@ -268,7 +268,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -304,7 +304,7 @@ public class MultiPartsTest
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -329,7 +329,7 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
         assertThat(parts.size(), is(1));
@@ -358,7 +358,7 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         multiParts.handle((parts, failure) ->
         {
@@ -383,7 +383,7 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         multiParts.handle((parts, failure) ->
         {
@@ -414,14 +414,14 @@ public class MultiPartsTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
         assertEquals(2, parts.size());
 
         MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ByteBufferPart.class));
+        assertThat(part1, instanceOf(MultiPart.ChunkPart.class));
         assertEquals(chunk, Content.Source.asString(part1.getContent()));
 
         MultiPart.Part part2 = parts.get(1);
@@ -452,14 +452,14 @@ public class MultiPartsTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
         assertEquals(2, parts.size());
 
         MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ByteBufferPart.class));
+        assertThat(part1, instanceOf(MultiPart.ChunkPart.class));
         Path newPath1 = _tmpDir.resolve("file1.2.txt");
         part1.writeTo(newPath1);
         assertTrue(Files.exists(newPath1));
@@ -489,7 +489,7 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
@@ -522,14 +522,14 @@ public class MultiPartsTest
             --AaB03x--\r
             """;
         // Parse only part of the content.
-        multiParts.parse(UTF_8.encode(body), false);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), false));
         assertEquals(1, multiParts.getParts().size());
 
         // Abort MultiParts.
         multiParts.completeExceptionally(new IOException());
 
         // Parse the rest of the content.
-        multiParts.parse(UTF_8.encode(terminator), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
 
         // Try to get the parts, it should fail.
         assertThrows(ExecutionException.class, () -> multiParts.get(5, TimeUnit.SECONDS));
@@ -551,12 +551,12 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         multiParts.handle((parts, failure) ->
         {
             assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("max header length exceeded"));
+            assertThat(failure.getMessage(), containsStringIgnoringCase("headers max length exceeded: 32"));
             return null;
         }).get(5, TimeUnit.SECONDS);
     }
@@ -591,11 +591,11 @@ public class MultiPartsTest
             \r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body1), false);
-        multiParts.parse(isoCedilla, false);
-        multiParts.parse(UTF_8.encode(body2), false);
-        multiParts.parse(utfCedilla, false);
-        multiParts.parse(UTF_8.encode(terminator), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body1), false));
+        multiParts.parse(Content.Chunk.from(isoCedilla, false));
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body2), false));
+        multiParts.parse(Content.Chunk.from(utfCedilla, false));
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -626,7 +626,7 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(contents), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -650,7 +650,7 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(contents), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -674,7 +674,7 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(contents), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -698,7 +698,7 @@ public class MultiPartsTest
             sssaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(body), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 
@@ -729,7 +729,7 @@ public class MultiPartsTest
             AAAAA\r
             --AaB03x--\r
             """;
-        multiParts.parse(UTF_8.encode(sameNames), true);
+        multiParts.parse(Content.Chunk.from(UTF_8.encode(sameNames), true));
 
         MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
 

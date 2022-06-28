@@ -436,6 +436,17 @@ public class Content
             return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
         }
 
+        public static Chunk from(Chunk chunk, boolean last)
+        {
+            chunk.retain();
+            return from(chunk.getByteBuffer().slice(), last, chunk);
+        }
+
+        public static Chunk from(byte[] buffer, boolean last)
+        {
+            return from(ByteBuffer.wrap(buffer), last);
+        }
+
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
          * <p>The returned Chunk must be {@link #release() released}.</p>
@@ -623,6 +634,11 @@ public class Content
         default boolean isTerminal()
         {
             return this instanceof Error || isLast() && !hasRemaining();
+        }
+
+        default Chunk slice(boolean last)
+        {
+            return Chunk.from(this, last);
         }
 
         /**

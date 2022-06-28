@@ -32,6 +32,7 @@ import java.util.Queue;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.io.content.ChunkContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -177,6 +178,40 @@ public class MultiPart
         public Content.Source getContent()
         {
             return new ByteBufferContentSource(content);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
+                getClass().getSimpleName(),
+                hashCode(),
+                getName(),
+                getFileName(),
+                length
+            );
+        }
+    }
+
+    /**
+     * <p>A {@link Part} that holds its content in retainable memory.</p>
+     */
+    public static class ChunkPart extends Part
+    {
+        private final List<Content.Chunk> content;
+        private final long length;
+
+        public ChunkPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
+        {
+            super(name, fileName, fields);
+            this.content = content;
+            this.length = content.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
+        }
+
+        @Override
+        public Content.Source getContent()
+        {
+            return new ChunkContentSource(content);
         }
 
         @Override
@@ -512,7 +547,7 @@ public class MultiPart
                         yield chunk;
                     if (chunk.isLast())
                     {
-                        chunk = Content.Chunk.from(chunk.getByteBuffer(), false);
+                        chunk = chunk.slice(false);
                         state = State.MIDDLE;
                     }
                     yield chunk;
@@ -658,9 +693,10 @@ public class MultiPart
             fieldValue = null;
         }
 
-        // TODO: pass in Chunk instead of buffer+last AND add a retain() API to Chunk!
-        public void parse(ByteBuffer buffer, boolean last)
+        public void parse(Content.Chunk chunk)
         {
+            ByteBuffer buffer = chunk.getByteBuffer();
+            boolean last = chunk.isLast();
             try
             {
                 while (buffer.hasRemaining())
@@ -724,14 +760,14 @@ public class MultiPart
                         }
                         case CONTENT_START ->
                         {
-                            if (parseContent(buffer))
+                            if (parseContent(chunk))
                                 state = State.BOUNDARY;
                             else
                                 state = State.CONTENT;
                         }
                         case CONTENT ->
                         {
-                            if (parseContent(buffer))
+                            if (parseContent(chunk))
                                 state = State.BOUNDARY;
                         }
                         case EPILOGUE ->
@@ -975,8 +1011,10 @@ public class MultiPart
                 throw new IllegalStateException("headers max length exceeded: %d".formatted(max));
         }
 
-        private boolean parseContent(ByteBuffer buffer)
+        private boolean parseContent(Content.Chunk chunk)
         {
+            ByteBuffer buffer = chunk.getByteBuffer();
+
             if (partialBoundaryMatch > 0)
             {
                 int boundaryMatch = boundaryFinder.startsWith(buffer, partialBoundaryMatch);
@@ -987,7 +1025,7 @@ public class MultiPart
                         // The boundary was fully matched.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
-                        notifyPartContent(BufferUtil.EMPTY_BUFFER, true);
+                        notifyPartContent(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
                         notifyPartEnd();
                         return true;
                     }
@@ -1014,11 +1052,11 @@ public class MultiPart
                     if (crContent)
                     {
                         crContent = false;
-                        notifyPartContent(CR.slice(), false);
+                        notifyPartContent(Content.Chunk.from(CR.slice(), false));
                     }
                     ByteBuffer content = ByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
                     partialBoundaryMatch = 0;
-                    notifyPartContent(content, false);
+                    notifyPartContent(Content.Chunk.from(content, false));
                     return false;
                 }
             }
@@ -1032,10 +1070,10 @@ public class MultiPart
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                     --sliceLimit;
                 buffer.limit(sliceLimit);
-                ByteBuffer content = buffer.slice();
+                Content.Chunk content = chunk.slice(true);
                 buffer.limit(limit);
                 buffer.position(buffer.position() + boundaryOffset + boundaryFinder.getLength());
-                notifyPartContent(content, true);
+                notifyPartContent(content);
                 notifyPartEnd();
                 return true;
             }
@@ -1053,11 +1091,11 @@ public class MultiPart
                     --sliceLimit;
                 }
                 buffer.limit(sliceLimit);
-                ByteBuffer content = buffer.slice();
+                Content.Chunk content = chunk.slice(false);
                 buffer.limit(limit);
                 buffer.position(limit);
                 if (content.hasRemaining())
-                    notifyPartContent(content, false);
+                    notifyPartContent(content);
                 return false;
             }
 
@@ -1065,7 +1103,7 @@ public class MultiPart
             if (crContent)
             {
                 crContent = false;
-                notifyPartContent(CR.slice(), false);
+                notifyPartContent(Content.Chunk.from(CR.slice(), false));
             }
             int limit = buffer.limit();
             int sliceLimit = limit;
@@ -1075,11 +1113,11 @@ public class MultiPart
                 --sliceLimit;
             }
             buffer.limit(sliceLimit);
-            ByteBuffer content = buffer.slice();
+            Content.Chunk content = chunk.slice(false);
             buffer.limit(limit);
             buffer.position(limit);
             if (content.hasRemaining())
-                notifyPartContent(content, false);
+                notifyPartContent(content);
             return false;
         }
 
@@ -1122,11 +1160,11 @@ public class MultiPart
             }
         }
 
-        private void notifyPartContent(ByteBuffer buffer, boolean last)
+        private void notifyPartContent(Content.Chunk chunk)
         {
             try
             {
-                listener.onPartContent(buffer, last);
+                listener.onPartContent(chunk);
             }
             catch (Throwable x)
             {
@@ -1206,10 +1244,9 @@ public class MultiPart
             /**
              * <p>Callback method invoked when a part content chunk has been parsed.</p>
              *
-             * @param buffer the part content chunk
-             * @param last whether the part content chunk is the last for that part
+             * @param chunk the part content chunk, must be released after use
              */
-            default void onPartContent(ByteBuffer buffer, boolean last)
+            default void onPartContent(Content.Chunk chunk)
             {
             }
 
@@ -1254,7 +1291,7 @@ public class MultiPart
         private static final Logger LOG = LoggerFactory.getLogger(AbstractPartsListener.class);
 
         private final HttpFields.Mutable fields = HttpFields.build();
-        private final List<ByteBuffer> content = new ArrayList<>();
+        private final List<Content.Chunk> content = new ArrayList<>();
         private String name;
         private String fileName;
 
@@ -1268,7 +1305,7 @@ public class MultiPart
             return fileName;
         }
 
-        public List<ByteBuffer> getContent()
+        public List<Content.Chunk> getContent()
         {
             return content;
         }
@@ -1328,11 +1365,11 @@ public class MultiPart
         }
 
         @Override
-        public void onPartContent(ByteBuffer buffer, boolean last)
+        public void onPartContent(Content.Chunk chunk)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("part content last={} {}", last, BufferUtil.toDetailString(buffer));
-            content.add(buffer);
+                LOG.debug("part content last={} {}", chunk.isLast(), BufferUtil.toDetailString(chunk.getByteBuffer()));
+            content.add(chunk);
         }
 
         @Override
@@ -1354,7 +1391,7 @@ public class MultiPart
 
         protected Part newPart(String name, String fileName, HttpFields headers)
         {
-            return new ByteBufferPart(name, fileName, headers, List.copyOf(content));
+            return new ChunkPart(name, fileName, headers, List.copyOf(content));
         }
 
         private void notifyPart(Part part)
