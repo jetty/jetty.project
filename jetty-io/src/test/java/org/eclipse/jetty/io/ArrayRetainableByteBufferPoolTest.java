@@ -419,7 +419,5 @@ public class ArrayRetainableByteBufferPoolTest
         RetainableByteBuffer retain9 = retainablePool.acquire(9, false);
         assertThat(retain9, not(sameInstance(retain5)));
         retain9.release();
-
-        System.err.println(pool.dump());
     }
 }
