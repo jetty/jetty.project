@@ -369,11 +369,6 @@
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
-        <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-api</artifactId>
         <version>${jakarta.websocket.api.version}</version>
       </dependency>
