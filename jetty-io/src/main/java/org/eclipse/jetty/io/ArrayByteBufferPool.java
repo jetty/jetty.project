@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A ByteBuffer pool where ByteBuffers are held in queues that are held in array elements.</p>
- * <p>Given a capacity {@code factor} of 1024, the first array element holds a queue of ByteBuffers
- * each of capacity 1024, the second array element holds a queue of ByteBuffers each of capacity
- * 2048, and so on.</p>
+ * <p>Given a capacity {@code factor} of 4096, the first array element holds a bucket of ByteBuffers
+ * each of capacity 4096, the second array element holds a bucket of ByteBuffers each of capacity
+ * 8192, and so on.</p>
  * <p>The {@code maxHeapMemory} and {@code maxDirectMemory} default heuristic is to use {@link Runtime#maxMemory()}
  * divided by 4.</p>
  */

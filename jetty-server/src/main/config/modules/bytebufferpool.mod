@@ -20,7 +20,7 @@ etc/jetty-bytebufferpool.xml
 ## Bucket capacity factor.
 ## ByteBuffers are allocated out of buckets that have
 ## a capacity that is multiple of this factor.
-#jetty.byteBufferPool.factor=1024
+#jetty.byteBufferPool.factor=4096
 
 ## Maximum size for each bucket (-1 for unbounded).
 #jetty.byteBufferPool.maxBucketSize=-1
