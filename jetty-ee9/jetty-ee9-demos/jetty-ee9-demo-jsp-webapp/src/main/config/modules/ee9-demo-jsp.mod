@@ -14,4 +14,5 @@ jstl
 ee9-deploy
 
 [files]
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-jsp-webapp/${jetty.version}/war|webapps-ee9/ee9-demo-jsp.war
+basehome:modules/demo.d/ee9-demo-jsp.properties|webapps/ee9-demo-jsp.properties
+maven://org.eclipse.jetty.ee9.demos/ee9-demo-jsp-webapp/${jetty.version}/war|webapps/ee9-demo-jsp.war

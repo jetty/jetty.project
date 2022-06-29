@@ -20,5 +20,6 @@ ee9-demo-realm
 ee9-demo-mock-resources
 
 [files]
-basehome:modules/demo.d/ee9-demo-spec.xml|webapps-ee9/ee9-demo-spec.xml
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-spec-webapp/${jetty.version}/war|webapps-ee9/ee9-demo-spec.war
+basehome:modules/demo.d/ee9-demo-spec.xml|webapps/ee9-demo-spec.xml
+basehome:modules/demo.d/ee9-demo-spec.properties|webapps/ee9-demo-spec.properties
+maven://org.eclipse.jetty.ee9.demos/ee9-demo-spec-webapp/${jetty.version}/war|webapps/ee9-demo-spec.war

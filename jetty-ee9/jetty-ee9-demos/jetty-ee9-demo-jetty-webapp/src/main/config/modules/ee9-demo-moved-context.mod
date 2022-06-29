@@ -13,5 +13,5 @@ demo
 ee9-deploy
 
 [files]
-basehome:modules/demo.d/ee9-demo-moved-context.xml|webapps-ee9/ee9-demo-moved-context.xml
+basehome:modules/demo.d/ee9-demo-moved-context.xml|webapps/ee9-demo-moved-context.xml
 

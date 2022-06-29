@@ -378,7 +378,7 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
 
             Object context = contextHandlerClass.getDeclaredConstructor().newInstance();
-
+            properties.put(Deployable.WAR, file.getCanonicalPath());
             return initializeContextHandler(context, file, properties);
         }
         finally

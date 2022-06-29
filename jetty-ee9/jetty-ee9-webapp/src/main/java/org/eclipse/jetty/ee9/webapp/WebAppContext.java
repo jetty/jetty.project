@@ -246,6 +246,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             String value = properties.get(property);
             switch (property)
             {
+                case Deployable.WAR -> setWar(value);
                 case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
