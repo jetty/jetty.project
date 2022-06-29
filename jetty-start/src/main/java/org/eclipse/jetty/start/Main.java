@@ -326,22 +326,22 @@ public class Main
         modules.registerAll();
 
         // 4) Active Module Resolution
-        List<String> enabledModules = args.getEnabledModules();
-        List<String> sortedEnabledModules = modules.getSortedNames(enabledModules);
-        List<String> unknownModules = new ArrayList<>(enabledModules);
-        unknownModules.removeAll(sortedEnabledModules);
+        List<String> selectedModules = args.getEnabledModules();
+        List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
+        List<String> unknownModules = new ArrayList<>(selectedModules);
+        unknownModules.removeAll(sortedSelectedModules);
         if (unknownModules.size() >= 1)
         {
             throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module%s=[%s] List available with --list-modules",
                 unknownModules.size() > 1 ? 's' : "",
                 String.join(", ", unknownModules));
         }
-        for (String enabledModule : sortedEnabledModules)
+        for (String selectedModule : sortedSelectedModules)
         {
-            for (String source : args.getSources(enabledModule))
+            for (String source : args.getSources(selectedModule))
             {
                 String shortForm = baseHome.toShortForm(source);
-                modules.enable(enabledModule, shortForm);
+                modules.enable(selectedModule, shortForm);
             }
         }
 
