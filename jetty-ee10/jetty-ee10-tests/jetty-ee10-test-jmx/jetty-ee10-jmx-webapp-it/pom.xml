@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>test-jmx</artifactId>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10-test-jmx</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jmx-webapp-it</artifactId>
+  <artifactId>jetty-ee10-jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
-  <name>EE9 :: Jetty Test :: JMX :: WebApp Integration Tests</name>
+  <name>EE10 :: Jetty Test :: JMX :: WebApp Integration Tests</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -17,16 +17,16 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jmx-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jmx-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>runtime</scope>
@@ -50,7 +50,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>jmx-webapp</includeArtifactIds>
+              <includeArtifactIds>jetty-ee10-jmx-webapp</includeArtifactIds>
               <includeScope>runtime</includeScope>
               <includeTypes>war</includeTypes>
               <overWriteSnapshots>true</overWriteSnapshots>

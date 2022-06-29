@@ -6,7 +6,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-integration</artifactId>
+  <artifactId>jetty-ee10-test-integration</artifactId>
   <packaging>jar</packaging>
   <name>EE10 :: Jetty Test :: Integrations</name>
   <properties>

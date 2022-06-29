@@ -6,7 +6,7 @@
     <artifactId>jetty-ee10-tests</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-loginservice</artifactId>
+  <artifactId>jetty-ee10-test-loginservice</artifactId>
   <name>EE10 :: Jetty Test :: Login Service</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.loginservice</bundle-symbolic-name>

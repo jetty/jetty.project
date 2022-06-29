@@ -6,7 +6,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-quickstart</artifactId>
+  <artifactId>jetty-ee9-test-quickstart</artifactId>
   <name>EE9 :: Jetty Test :: Jetty Quick Start</name>
   <description>Jetty Quick Start Test</description>
   <properties>
