@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import jakarta.websocket.CloseReason;
@@ -37,7 +35,7 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
@@ -190,13 +188,11 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     {
         try
         {
-            FutureCallback b = new FutureCallback();
-            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
-            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), Callback.NOOP);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.trace("IGNORED", e);
+            LOG.trace("IGNORED", t);
         }
     }
 

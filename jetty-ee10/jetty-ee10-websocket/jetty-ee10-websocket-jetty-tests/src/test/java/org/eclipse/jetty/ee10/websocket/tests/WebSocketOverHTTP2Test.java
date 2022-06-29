@@ -18,6 +18,7 @@ import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.api.StatusCode;
 import org.eclipse.jetty.ee10.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
@@ -70,6 +72,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -83,6 +86,7 @@ public class WebSocketOverHTTP2Test
     private ServerConnector connector;
     private ServerConnector tlsConnector;
     private WebSocketClient wsClient;
+    private ServletContextHandler context;
 
     private void startServer() throws Exception
     {
@@ -115,7 +119,7 @@ public class WebSocketOverHTTP2Test
         tlsConnector = new ServerConnector(server, 1, 1, ssl, alpn, h1s, h2s);
         server.addConnector(tlsConnector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        context = new ServletContextHandler(server, "/");
         context.addServlet(new ServletHolder(servlet), "/ws/*");
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
@@ -338,6 +342,41 @@ public class WebSocketOverHTTP2Test
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(ClosedChannelException.class));
+    }
+
+    @Test
+    public void testServerTimeout() throws Exception
+    {
+        startServer();
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        EchoSocket serverEndpoint = new EchoSocket();
+        container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
+
+        // Set up idle timeouts.
+        long timeout = 1000;
+        container.setIdleTimeout(Duration.ofMillis(timeout));
+        wsClient.setIdleTimeout(Duration.ZERO);
+
+        // Setup a websocket connection.
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
+        Session session = wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+        session.getRemote().sendString("hello world");
+        String received = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(received, equalTo("hello world"));
+
+        // Wait for timeout on server.
+        assertTrue(serverEndpoint.closeLatch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertThat(serverEndpoint.closeCode, equalTo(StatusCode.SHUTDOWN));
+        assertThat(serverEndpoint.closeReason, containsStringIgnoringCase("timeout"));
+        assertNotNull(serverEndpoint.error);
+
+        // Wait for timeout on client.
+        assertTrue(clientEndpoint.closeLatch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertThat(clientEndpoint.closeCode, equalTo(StatusCode.SHUTDOWN));
+        assertThat(clientEndpoint.closeReason, containsStringIgnoringCase("timeout"));
+        assertNull(clientEndpoint.error);
     }
 
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet

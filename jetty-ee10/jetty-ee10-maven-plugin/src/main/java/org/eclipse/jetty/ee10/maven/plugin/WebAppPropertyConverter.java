@@ -102,11 +102,11 @@ public class WebAppPropertyConverter
         props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isPersistTempDirectory()));
 
         //send over the calculated resource bases that includes unpacked overlays
-        Resource baseResource = webApp.getBaseResource();
+        Resource baseResource = webApp.getResourceBase();
         if (baseResource instanceof ResourceCollection)
-            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
+            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getResourceBase()).getResources()));
         else if (baseResource instanceof Resource)
-            props.put(BASE_DIRS, webApp.getBaseResource().toString());
+            props.put(BASE_DIRS, webApp.getResourceBase().toString());
         
         //if there is a war file, use that
         if (webApp.getWar() != null)
@@ -224,8 +224,7 @@ public class WebAppPropertyConverter
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setWar(null);
-            //TODO: needs WebAppContext.setResourceBase sorted out
-            //webApp.setBaseResource(bases);
+            webApp.setBaseResource(bases);
         }
 
         str = webAppProperties.getProperty(WAR_FILE);

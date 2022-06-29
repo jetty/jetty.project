@@ -787,9 +787,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            Path warPath = getResourceBase().getPath();
-            if (warPath != null)
-                _war = warPath.toUri().toASCIIString();
+            if (getResourceBase() != null)
+            {
+                Path warPath = getResourceBase().getPath();
+                if (warPath != null)
+                    _war = warPath.toUri().toASCIIString();
+            }
         }
         return _war;
     }

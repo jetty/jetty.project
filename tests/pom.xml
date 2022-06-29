@@ -45,13 +45,16 @@
     </pluginManagement>
   </build>
   <modules>
+    <module>jetty-ee9-test-maven-plugin</module>
+    <module>jetty-ee10-test-maven-plugin</module>
     <!-- TODO -->
     <!-- module>jetty-jmh</module -->
     <!-- module>test-webapps</module -->
     <!-- module>test-distribution</module -->
     <!-- module>test-jpms</module -->
   </modules>
-  <dependencyManagement>
+  <!-- TODO cannot rely on ee9 at top level -->
+  <!-- <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
@@ -61,5 +64,5 @@
         <scope>import</scope>
       </dependency>
     </dependencies>
-  </dependencyManagement>
+  </dependencyManagement> -->
 </project>

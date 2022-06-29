@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-distro-mojo-it</groupId>
+    <artifactId>jetty-simple-project</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>jetty-simple-webapp</artifactId>
+  <packaging>war</packaging>
+
+  <name>EE10 :: Jetty :: Simple :: Webapp</name>
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-start-war-distro-port.txt</jetty.port.file>
+    <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
+    <jetty.deployMode>HOME</jetty.deployMode>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.its.jetty-start-war-distro-mojo-it</groupId>
+      <artifactId>jetty-simple-base</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-ee10-test-maven-plugin</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <failOnMissingWebXml>false</failOnMissingWebXml>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>IntegrationTest*.java</include>
+          </includes>
+          <systemPropertyVariables>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <pingServlet>true</pingServlet>
+            <helloServlet>true</helloServlet>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
+          </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty.tests:jetty-ee10-test-maven-plugin</dependency>
+          </dependenciesToScan>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>start-war</goal>
+            </goals>
+            <configuration>
+              <stopPort>@jetty.stopPort@</stopPort>
+              <stopKey>@jetty.stopKey@</stopKey>
+              <webApp>
+                  <!-- starts the assembled webapp by default -->
+              </webApp>
+              <jettyBase>${basedir}/src/base</jettyBase>
+              <javaPath>${java.home}/bin/java</javaPath>
+              <jettyProperties>
+                <jetty.server.dumpAfterStart>true</jetty.server.dumpAfterStart>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                <jetty.http.port>0</jetty.http.port>
+              </jettyProperties>
+              <modules>ee10-apache-jsp,ee10-glassfish-jstl,ee10-testmod</modules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

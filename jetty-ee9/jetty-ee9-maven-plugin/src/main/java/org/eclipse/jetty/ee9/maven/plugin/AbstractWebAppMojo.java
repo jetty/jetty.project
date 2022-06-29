@@ -46,6 +46,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.jetty.ee9.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;

@@ -25,28 +25,32 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.jetty.ee10.maven.plugin.OverlayManager;
 import org.eclipse.jetty.ee10.maven.plugin.WarPluginInfo;
 
 /**
  * MavenProjectHelper
- * 
- * A class to facilitate interacting with the build time maven environment.
  *
+ * A class to facilitate interacting with the build time maven environment.
  */
 public class MavenProjectHelper
 {
     private MavenProject project;
-    private ArtifactResolver artifactResolver;
+    private RepositorySystem repositorySystem;
     private List<ArtifactRepository> remoteRepositories;
     private MavenSession session;
     private final Map<String, MavenProject> artifactToReactorProjectMap;
@@ -54,22 +58,22 @@ public class MavenProjectHelper
      * maven-war-plugin reference
      */
     private WarPluginInfo warPluginInfo;
-    
+
     /**
      * Helper for wrangling war overlays
      */
     private OverlayManager overlayManager;
-    
+
     /**
      * @param project the project being built
-     * @param artifactResolver a resolve for artifacts
+     * @param repositorySystem a resolve for artifacts
      * @param remoteRepositories repositories from which to resolve artifacts
      * @param session the current maven build session
      */
-    public MavenProjectHelper(MavenProject project, ArtifactResolver artifactResolver, List<ArtifactRepository> remoteRepositories, MavenSession session)
+    public MavenProjectHelper(MavenProject project, RepositorySystem repositorySystem, List<ArtifactRepository> remoteRepositories, MavenSession session)
     {
         this.project = project;
-        this.artifactResolver = artifactResolver;
+        this.repositorySystem = repositorySystem;
         this.remoteRepositories = remoteRepositories;
         this.session = session;
         //work out which dependent projects are in the reactor
@@ -80,12 +84,12 @@ public class MavenProjectHelper
         warPluginInfo = new WarPluginInfo(project);
         overlayManager = new OverlayManager(warPluginInfo);
     }
-    
+
     public MavenProject getProject()
     {
         return this.project;
     }
-    
+
     public WarPluginInfo getWarPluginInfo()
     {
         return warPluginInfo;
@@ -95,7 +99,7 @@ public class MavenProjectHelper
     {
         return overlayManager;
     }
-    
+
     /**
      * Gets the maven project represented by the artifact iff it is in
      * the reactor.
@@ -135,42 +139,33 @@ public class MavenProjectHelper
         }
         return path;
     }
-    
+
     /**
      * Given the coordinates for an artifact, resolve the artifact from the
      * remote repositories.
-     * 
+     *
      * @param groupId the groupId of the artifact to resolve
      * @param artifactId the artifactId of the artifact to resolve
      * @param version the version of the artifact to resolve
      * @param type the type of the artifact to resolve
      * @return a File representing the location of the artifact or null if not resolved
-     * @throws ArtifactResolverException
      */
     public File resolveArtifact(String groupId, String artifactId, String version, String type)
-        throws ArtifactResolverException
+        throws ArtifactResolutionException
     {
-        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
-        coordinate.setGroupId(groupId);
-        coordinate.setArtifactId(artifactId);
-        coordinate.setVersion(version);
-        coordinate.setExtension(type);
+        ArtifactRequest request = new ArtifactRequest();
+        request.setRepositories(RepositoryUtils.toRepos(remoteRepositories));
+        request.setArtifact(new DefaultArtifact(groupId, artifactId, "", type, version));
+        ArtifactResult result = repositorySystem.resolveArtifact(session.getRepositorySession(), request);
 
-        ProjectBuildingRequest buildingRequest =
-                new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-
-        buildingRequest.setRemoteRepositories(remoteRepositories);
-
-        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
-
-        if (a != null)
-            return a.getFile();
+        if (result.isResolved())
+            return result.getArtifact().getFile();
         return null;
     }
-    
+
     /**
      * Recursively find projects in the reactor for all dependencies of the given project.
-     * 
+     *
      * @param project the project for which to find dependencies that are in the reactor
      * @param visitedProjects the set of projects already seen
      * @return unified set of all related projects in the reactor

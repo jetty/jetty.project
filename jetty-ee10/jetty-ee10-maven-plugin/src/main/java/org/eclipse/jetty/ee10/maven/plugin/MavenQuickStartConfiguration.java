@@ -46,7 +46,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
 
             //Iterate over all of the resource bases and ignore any that were original bases, just
             //deleting the overlays
-            Resource res = context.getBaseResource();
+            Resource res = context.getResourceBase();
             if (res instanceof ResourceCollection)
             {
                 for (Resource r : ((ResourceCollection)res).getResources())
