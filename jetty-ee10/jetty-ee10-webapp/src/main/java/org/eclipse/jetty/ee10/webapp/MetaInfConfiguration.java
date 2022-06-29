@@ -36,7 +36,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -186,13 +188,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
     {
+        String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}={}", CONTAINER_JAR_PATTERN, pattern);
+        if (StringUtil.isBlank(pattern))
+            return; // TODO review if this short cut will allow later code simplifications
+
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
-        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, (String)context.getAttribute(CONTAINER_JAR_PATTERN));
+        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, pattern);
         List<URI> containerUris = getAllContainerJars(context);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Matching container urls {}", containerUris);
+            LOG.debug("All container urls {}", containerUris);
         containerPathNameMatcher.match(containerUris);
 
         // When running on jvm 9 or above, we we won't be able to look at the application
@@ -264,9 +272,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         //Apply filter to WEB-INF/lib jars
-        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, (String)context.getAttribute(WEBINF_JAR_PATTERN));
+        String pattern = (String)context.getAttribute(WEBINF_JAR_PATTERN);
+        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, pattern);
 
         List<Resource> jars = findJars(context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("webapp {}={} jars {}", WEBINF_JAR_PATTERN, pattern, jars);
 
         //Convert to uris for matching
         if (jars != null)
@@ -284,23 +295,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
-        if (context.getClassLoader() != null)
+        ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
+        while (loader != null)
         {
-            ClassLoader loader = context.getClassLoader().getParent();
-            while (loader != null)
+            if (loader instanceof URLClassLoader)
             {
-                if (loader instanceof URLClassLoader)
+                URL[] urls = ((URLClassLoader)loader).getURLs();
+                if (urls != null)
                 {
-                    URL[] urls = ((URLClassLoader)loader).getURLs();
-                    if (urls != null)
-                        for (URL url : urls)
-                        {
-                            uris.add(new URI(url.toString().replaceAll(" ", "%20")));
-                        }
+                    for (URL url : urls)
+                        uris.add(new URI(url.toString().replaceAll(" ", "%20")));
                 }
-                loader = loader.getParent();
             }
+            loader = loader.getParent();
         }
+
         return uris;
     }
 

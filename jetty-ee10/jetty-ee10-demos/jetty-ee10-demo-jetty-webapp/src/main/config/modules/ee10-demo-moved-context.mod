@@ -10,5 +10,5 @@ demo
 ee10-deploy
 
 [files]
-basehome:modules/demo.d/ee10-demo-moved-context.xml|webapps-ee10/ee10-demo-moved-context.xml
+basehome:modules/demo.d/ee10-demo-moved-context.xml|webapps/ee10-demo-moved-context.xml
 

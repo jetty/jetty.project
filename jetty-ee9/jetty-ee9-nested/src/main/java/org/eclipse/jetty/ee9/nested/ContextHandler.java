@@ -198,7 +198,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected APIContext _apiContext;
     private final Map<String, String> _initParams;
-    private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
@@ -1065,19 +1064,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _coreContextHandler.setClassLoader(classLoader);
     }
 
-    /**
-     * Set the default context path.
-     * A default context path may be overriden by a default-context-path element
-     * in a web.xml
-     *
-     * @param contextPath The _contextPath to set.
-     */
-    public void setDefaultContextPath(String contextPath)
-    {
-        setContextPath(contextPath);
-        _contextPathDefault = true;
-    }
-
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -1096,14 +1082,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public String getDefaultResponseCharacterEncoding()
     {
         return _defaultResponseCharacterEncoding;
-    }
-
-    /**
-     * @return True if the current contextPath is from default settings
-     */
-    public boolean isContextPathDefault()
-    {
-        return _contextPathDefault;
     }
 
     /**
@@ -1133,7 +1111,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _coreContextHandler.setContextPath(contextPath);
         _contextPathEncoded = URIUtil.encodePath(contextPath);
-        _contextPathDefault = false;
 
         // update context mappings
         if (getServer() != null && getServer().isRunning())
