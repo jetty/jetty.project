@@ -421,6 +421,7 @@ public class HugeResourceTest
             try (InputStream input = resource.openStream())
             {
                 resp.setContentType("application/octet-stream");
+                resp.flushBuffer();
                 IO.copy(input, output);
             }
         }
