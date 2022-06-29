@@ -930,14 +930,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
-            Dumpable.named("environment", ENVIRONMENT.getName()),
+            Dumpable.named("environment", ContextHandler.ENVIRONMENT.getName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, getAttributes().asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().asAttributeMap().entrySet()),
-            new DumpableCollection("Environment attributes " + name, ENVIRONMENT.asAttributeMap().entrySet()),
+            new DumpableCollection("Environment attributes " + name, ContextHandler.ENVIRONMENT.asAttributeMap().entrySet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
