@@ -52,7 +52,7 @@
     <module>jetty-ee10-jaas</module>
     <module>jetty-ee10-jaspi</module>
     <module>jetty-ee10-jspc-maven-plugin</module>
-    <!-- TODO <module>jetty-ee10-maven-plugin</module>-->
+    <module>jetty-ee10-maven-plugin</module>
     <module>jetty-ee10-openid</module>
     <!-- TODO -->
     <!-- module>jetty-ee10-osgi</module -->
@@ -361,11 +361,6 @@
         <groupId>jakarta.xml.ws</groupId>
         <artifactId>jakarta.xml.ws-api</artifactId>
         <version>${jakarta.xml.ws.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.websocket</groupId>
-        <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>

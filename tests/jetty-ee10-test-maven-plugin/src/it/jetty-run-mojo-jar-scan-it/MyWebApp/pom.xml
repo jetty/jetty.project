@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee10.its.jetty-run-mojo-jar-scan-it</groupId>
+    <artifactId>jetty-jar-scan</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>jetty-jar-scan-webapp</artifactId>
+  <packaging>jar</packaging>
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-run-mojo.txt</jetty.port.file>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.its.jetty-run-mojo-jar-scan-it</groupId>
+      <artifactId>jetty-jar-scan-library</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <systemProperties>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              </systemProperties>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
+              <contextXml>${basedir}/src/config/context.xml</contextXml>
+              <useTestScope>true</useTestScope>
+              <supportedPackagings>
+                <supportedPackaging>jar</supportedPackaging>
+              </supportedPackagings>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+  </build>
+</project>

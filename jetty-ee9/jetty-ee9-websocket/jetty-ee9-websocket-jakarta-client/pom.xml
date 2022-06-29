@@ -4,6 +4,7 @@
     <groupId>org.eclipse.jetty.ee9.websocket</groupId>
     <artifactId>jetty-ee9-websocket</artifactId>
     <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -63,7 +64,7 @@
           <instructions>
             <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.ee9.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional

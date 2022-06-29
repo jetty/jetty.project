@@ -34,15 +34,13 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
-import org.eclipse.jetty.ee9.maven.plugin.OverlayManager;
-import org.eclipse.jetty.ee9.maven.plugin.WarPluginInfo;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.jetty.maven.plugin.OverlayManager;
-import org.eclipse.jetty.maven.plugin.WarPluginInfo;
+import org.eclipse.jetty.ee9.maven.plugin.OverlayManager;
+import org.eclipse.jetty.ee9.maven.plugin.WarPluginInfo;
 
 /**
  * MavenProjectHelper

@@ -228,8 +228,7 @@ public class MavenWebAppContext extends WebAppContext
                 resources.add(r);
             }
         }
-        //TODO: needs WebAppContext.setResourceBase sorted out
-        //setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
+        setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
 
     public List<File> getWebInfLib()
