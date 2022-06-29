@@ -18,7 +18,7 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
           <instructions>
-            <Bundle-SymbolicName>org.eclipse.jetty.demos.demo-mock-resources</Bundle-SymbolicName>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee10.demos.demo-mock-resources</Bundle-SymbolicName>
             <Bundle-Description>Mock resources used for testing</Bundle-Description>
             <Export-Package>
                   org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
