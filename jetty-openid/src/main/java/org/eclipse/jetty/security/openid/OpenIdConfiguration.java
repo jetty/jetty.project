@@ -49,6 +49,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String authMethod;
     private String authEndpoint;
     private String tokenEndpoint;
+    private String endSessionEndpoint;
     private boolean authenticateNewUsers = false;
 
     /**
@@ -74,9 +75,26 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
                                String clientId, String clientSecret, HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "client_secret_post", httpClient);
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, "client_secret_post", httpClient);
     }
-
+    
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
+     * @param httpClient The {@link HttpClient} instance to use.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     */
+    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint, String endSesseionEndpoint,
+                               HttpClient httpClient, String clientId, String clientSecret)
+    {
+        this(issuer, authorizationEndpoint, tokenEndpoint, endSesseionEndpoint, clientId, clientSecret, "client_secret_post", 
+             httpClient);
+    }
+    
     /**
      * Create an OpenID configuration for a specific OIDC provider.
      * @param issuer The URL of the OpenID provider.
@@ -95,10 +113,34 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authMethod") String authMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authMethod, httpClient);
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param httpClient The {@link HttpClient} instance to use.
+     */
+    public OpenIdConfiguration(@Name("issuer") String issuer,
+                               @Name("authorizationEndpoint") String authorizationEndpoint,
+                               @Name("tokenEndpoint") String tokenEndpoint,
+                               @Name("endSessionEndpoint") String endSessionEndpoint,
+                               @Name("clientId") String clientId,
+                               @Name("clientSecret") String clientSecret,
+                               @Name("authMethod") String authMethod,
+                               @Name("httpClient") HttpClient httpClient)
+    {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authEndpoint = authorizationEndpoint;
+        this.endSessionEndpoint = endSessionEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
         this.authMethod = authMethod;
@@ -130,6 +172,10 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
         if (tokenEndpoint == null)
             throw new IllegalArgumentException("token_endpoint");
+        
+        endSessionEndpoint = (String)discoveryDocument.get("end_session_endpoint");
+        if (endSessionEndpoint == null)
+            throw new IllegalArgumentException("end_session_endpoint");
 
         if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
             LOG.warn("The issuer in the metadata is not correct.");
@@ -197,6 +243,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public String getTokenEndpoint()
     {
         return tokenEndpoint;
+    }
+    
+    public String getEndSessionEndpoint() 
+    {
+        return endSessionEndpoint;
     }
 
     public String getAuthMethod()
