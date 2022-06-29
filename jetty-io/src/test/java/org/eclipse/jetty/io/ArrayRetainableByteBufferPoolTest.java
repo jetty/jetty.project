@@ -396,7 +396,7 @@ public class ArrayRetainableByteBufferPoolTest
     }
 
     @Test
-    void testLogarithmic()
+    public void testLogarithmic()
     {
         LogarithmicArrayByteBufferPool pool = new LogarithmicArrayByteBufferPool();
         ByteBuffer buffer5 = pool.acquire(5, false);
@@ -413,7 +413,6 @@ public class ArrayRetainableByteBufferPoolTest
         RetainableByteBuffer retain5 = retainablePool.acquire(5, false);
         retain5.release();
         RetainableByteBuffer retain6 = retainablePool.acquire(6, false);
-        System.err.println(pool.dump());
         assertThat(retain6, sameInstance(retain5));
         retain6.release();
         RetainableByteBuffer retain9 = retainablePool.acquire(9, false);
