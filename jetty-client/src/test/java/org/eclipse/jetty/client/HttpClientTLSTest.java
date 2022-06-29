@@ -708,6 +708,54 @@ public class HttpClientTLSTest
         assertEquals(0, clientBytes.get());
     }
 
+    protected class TestRetained extends ArrayRetainableByteBufferPool
+    {
+        private final ByteBufferPool _pool;
+
+        public TestRetained(ByteBufferPool pool, int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            super(0, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+            _pool = pool;
+        }
+
+        @Override
+        protected ByteBuffer allocate(int capacity)
+        {
+            System.err.println("allocate " + capacity);
+            new Throwable().printStackTrace();
+            return _pool.acquire(capacity, false);
+        }
+
+        @Override
+        protected ByteBuffer allocateDirect(int capacity)
+        {
+            System.err.println("allocateDirect " + capacity);
+            new Throwable().printStackTrace();
+            return _pool.acquire(capacity, true);
+        }
+
+        @Override
+        protected void removed(RetainableByteBuffer retainedBuffer)
+        {
+            _pool.release(retainedBuffer.getBuffer());
+        }
+
+        @Override
+        public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+        {
+            return super.poolFor(capacity, direct);
+        }
+    }
+
+    private class TestByteBufferPool extends ArrayByteBufferPool
+    {
+        @Override
+        protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            return new TestRetained(this, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        }
+    }
+
     @Test
     public void testEncryptedInputBufferRepooling() throws Exception
     {
@@ -715,15 +763,10 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        var retainableByteBufferPool = new ArrayRetainableByteBufferPool()
-        {
-            @Override
-            public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
-            {
-                return super.poolFor(capacity, direct);
-            }
-        };
-        server.addBean(retainableByteBufferPool);
+
+        ArrayByteBufferPool byteBufferPool = new TestByteBufferPool();
+        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
+        server.addBean(byteBufferPool);
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
@@ -765,9 +808,12 @@ public class HttpClientTLSTest
 
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
-        Pool<RetainableByteBuffer> bucket = retainableByteBufferPool.poolFor(16 * 1024 + 1, ssl.isDirectBuffersForEncryption());
+        Pool<RetainableByteBuffer> bucket = ((TestRetained)retainableByteBufferPool).poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
+
+        long count = ssl.isDirectBuffersForDecryption() ? byteBufferPool.getDirectByteBufferCount() : byteBufferPool.getHeapByteBufferCount();
+        assertEquals(1, count);
     }
 
     @Test
@@ -834,6 +880,7 @@ public class HttpClientTLSTest
 
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
+        byteBufferPool.asRetainableByteBufferPool().clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
     }
 
@@ -916,6 +963,7 @@ public class HttpClientTLSTest
 
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
+        byteBufferPool.asRetainableByteBufferPool().clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
     }
 
@@ -998,6 +1046,7 @@ public class HttpClientTLSTest
 
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
+        byteBufferPool.asRetainableByteBufferPool().clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
     }
 

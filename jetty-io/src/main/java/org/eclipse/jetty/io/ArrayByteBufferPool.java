@@ -244,7 +244,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         return bucket * getCapacityFactor();
     }
 
-    private Bucket bucketFor(int capacity, boolean direct)
+    protected Bucket bucketFor(int capacity, boolean direct)
     {
         if (capacity < _minCapacity)
             return null;
@@ -327,7 +327,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     protected class Retained extends ArrayRetainableByteBufferPool
     {
-        Retained(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        public Retained(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
         {
             super(0, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
         }

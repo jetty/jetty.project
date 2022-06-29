@@ -30,6 +30,8 @@ public interface RetainableByteBufferPool
      */
     RetainableByteBuffer acquire(int size, boolean direct);
 
+    void clear();
+
     static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
     {
         return new RetainableByteBufferPool()
@@ -46,6 +48,11 @@ public interface RetainableByteBufferPool
             private void release(RetainableByteBuffer retainedBuffer)
             {
                 byteBufferPool.release(retainedBuffer.getBuffer());
+            }
+
+            @Override
+            public void clear()
+            {
             }
 
             @Override
