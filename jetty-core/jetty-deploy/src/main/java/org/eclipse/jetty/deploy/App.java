@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
@@ -140,7 +141,7 @@ public class App
      */
     public String getEnvironmentName()
     {
-        String name = getProperties().get("environment");
+        String name = getProperties().get(Deployable.ENVIRONMENT);
         return name == null ? _manager.getDefaultEnvironmentName() : name;
     }
 

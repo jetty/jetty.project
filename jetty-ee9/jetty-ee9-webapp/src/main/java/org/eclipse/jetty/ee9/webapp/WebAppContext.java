@@ -256,7 +256,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
                 case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
                 case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
-                case Deployable.DEFAULT_DESCRIPTOR -> setDefaultsDescriptor(value);
+                case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor(value);
                 case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
                 case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
                 default ->

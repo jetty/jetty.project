@@ -64,13 +64,13 @@ import org.slf4j.LoggerFactory;
  * {@link #getEnvironmentName()} will be deployed.
  * </p>
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
- * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".  The properties will be initialized
- * with:<ul>
+ * properties for the webapp file such as "jetty.webapp" and directory as "jetty.webapps".
+ * The properties will be initialized with:<ul>
  *     <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
  *     <li>The properties set on this provider via {@link #getProperties()}</li>
  * </ul>
  */
-@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
+@ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
 public class ContextProvider extends ScanningAppProvider
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ContextProvider.class);
@@ -143,75 +143,75 @@ public class ContextProvider extends ScanningAppProvider
 
     /**
      * Get the extractWars.
-     * This is equivalent to the <code>jetty.deploy.extractWars</code> property.
+     * This is equivalent to getting the {@link Deployable#EXTRACT_WARS} property.
      *
      * @return the extractWars
      */
     @ManagedAttribute("extract war files")
     public boolean isExtractWars()
     {
-        return Boolean.parseBoolean(_properties.get("jetty.deploy.extractWars"));
+        return Boolean.parseBoolean(_properties.get(Deployable.EXTRACT_WARS));
     }
 
     /**
      * Set the extractWars.
-     * This is equivalent to the <code>jetty.deploy.extractWars</code> property.
+     * This is equivalent to setting the {@link Deployable#EXTRACT_WARS} property.
      *
      * @param extractWars the extractWars to set
      */
     public void setExtractWars(boolean extractWars)
     {
-        _properties.put("jetty.deploy.extractWars", Boolean.toString(extractWars));
+        _properties.put(Deployable.EXTRACT_WARS, Boolean.toString(extractWars));
     }
 
     /**
      * Get the parentLoaderPriority.
-     * This is equivalent to the <code>jetty.deploy.parentLoaderPriority</code> property.
+     * This is equivalent to getting the {@link Deployable#PARENT_LOADER_PRIORITY} property.
      *
      * @return the parentLoaderPriority
      */
     @ManagedAttribute("parent classloader has priority")
     public boolean isParentLoaderPriority()
     {
-        return Boolean.parseBoolean(_properties.get("jetty.deploy.parentLoaderPriority"));
+        return Boolean.parseBoolean(_properties.get(Deployable.PARENT_LOADER_PRIORITY));
     }
 
     /**
      * Set the parentLoaderPriority.
-     * This is equivalent to the <code>jetty.deploy.parentLoaderPriority</code> property.
+     * This is equivalent to setting the {@link Deployable#PARENT_LOADER_PRIORITY} property.
      *
      * @param parentLoaderPriority the parentLoaderPriority to set
      */
     public void setParentLoaderPriority(boolean parentLoaderPriority)
     {
-        _properties.put("jetty.deploy.parentLoaderPriority", Boolean.toString(parentLoaderPriority));
+        _properties.put(Deployable.PARENT_LOADER_PRIORITY, Boolean.toString(parentLoaderPriority));
     }
 
     /**
      * Get the defaultsDescriptor.
-     * This is equivalent to the <code>jetty.deploy.defaultsDescriptor</code> property.
+     * This is equivalent to getting the {@link Deployable#DEFAULTS_DESCRIPTOR} property.
      *
      * @return the defaultsDescriptor
      */
     @ManagedAttribute("default descriptor for webapps")
     public String getDefaultsDescriptor()
     {
-        return _properties.get("jetty.deploy.defaultsDescriptor");
+        return _properties.get(Deployable.DEFAULTS_DESCRIPTOR);
     }
 
     /**
      * Set the defaultsDescriptor.
-     * This is equivalent to the <code>jetty.deploy.defaultsDescriptor</code> property.
+     * This is equivalent to setting the {@link Deployable#DEFAULTS_DESCRIPTOR} property.
      *
      * @param defaultsDescriptor the defaultsDescriptor to set
      */
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
-        _properties.put("jetty.deploy.defaultsDescriptor", defaultsDescriptor);
+        _properties.put(Deployable.DEFAULTS_DESCRIPTOR, defaultsDescriptor);
     }
 
     /**
-     * This is equivalent to the <code>jetty.deploy.configurationClasses</code> property.
+     * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
      * @param configurations The configuration class names as a comma separated list
      */
     public void setConfigurationClasses(String configurations)
@@ -220,65 +220,65 @@ public class ContextProvider extends ScanningAppProvider
     }
 
     /**
-     * This is equivalent to the <code>jetty.deploy.configurationClasses</code> property.
+     * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _properties.put("jetty.deploy.configurationClasses", (configurations == null)
+        _properties.put(Deployable.CONFIGURATION_CLASSES, (configurations == null)
             ? null
             : String.join(",", configurations));
     }
 
     /**
      *
-     * This is equivalent to the <code>jetty.deploy.configurationClasses</code> property.
+     * This is equivalent to getting the {@link Deployable#CONFIGURATION_CLASSES} property.
      * @return The configuration class names.
      */
     @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
-        String cc = _properties.get("jetty.deploy.configurationClasses");
+        String cc = _properties.get(Deployable.CONFIGURATION_CLASSES);
         return cc == null ? new String[0] : cc.split(",");
     }
 
     /**
      * Set the temporary directory for deployment.
      * <p>
-     * This is equivalent to the <code>jetty.deploy.tempDir</code> property.
+     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
      * If not set, then the <code>java.io.tmpdir</code> System Property is used.
      *
      * @param directory the new work directory
      */
     public void setTempDir(String directory)
     {
-        _properties.put("jetty.deploy.tempDir", directory);
+        _properties.put(Deployable.BASE_TEMP_DIR, directory);
     }
 
     /**
      * Set the temporary directory for deployment.
      * <p>
-     * This is equivalent to the <code>jetty.deploy.tempDir</code> property.
+     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
      * If not set, then the <code>java.io.tmpdir</code> System Property is used.
      *
      * @param directory the new work directory
      */
     public void setTempDir(File directory)
     {
-        _properties.put("jetty.deploy.tempDir", directory.getAbsolutePath());
+        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
     }
 
     /**
      * Get the temporary directory for deployment.
      * <p>
-     * This is equivalent to the <code>jetty.deploy.tempDir</code> property.
+     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
      *
      * @return the user supplied work directory (null if user has not set Temp Directory yet)
      */
     @ManagedAttribute("temp directory for use, null if no user set temp directory")
     public File getTempDir()
     {
-        String tmpDir = _properties.get("jetty.deploy.tempDir");
+        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
         return tmpDir == null ? null : new File(tmpDir);
     }
 
