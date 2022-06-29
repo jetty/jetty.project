@@ -3,10 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>test-jmx</artifactId>
+    <artifactId>jetty-ee9-test-jmx</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jmx-webapp</artifactId>
+  <artifactId>jetty-ee9-jmx-webapp</artifactId>
   <packaging>war</packaging>
   <name>EE9 :: Jetty Test :: JMX :: WebApp</name>
   <properties>
@@ -34,7 +34,7 @@
     </dependency>
   </dependencies>
   <build>
-    <finalName>jmx-webapp</finalName>
+    <finalName>jetty-ee9-jmx-webapp</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
