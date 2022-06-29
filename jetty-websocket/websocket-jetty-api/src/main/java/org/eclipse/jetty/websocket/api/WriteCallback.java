@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.api;
  */
 public interface WriteCallback
 {
-    WriteCallback NOOP = new Adaptor();
+    WriteCallback NOOP = new WriteCallback()
+    {
+    };
 
     /**
      * <p>
@@ -44,6 +46,7 @@ public interface WriteCallback
     {
     }
 
+    @Deprecated
     class Adaptor implements WriteCallback
     {
         @Override
