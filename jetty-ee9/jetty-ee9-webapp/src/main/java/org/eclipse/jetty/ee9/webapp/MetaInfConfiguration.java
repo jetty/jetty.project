@@ -36,6 +36,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -289,7 +290,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
-        ClassLoader loader = context.getServer().getClass().getClassLoader();
+        ClassLoader loader = Server.class.getClassLoader();
         while (loader != null)
         {
             if (loader instanceof URLClassLoader)
