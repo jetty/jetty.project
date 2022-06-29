@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -304,7 +303,6 @@ public class JettyWebSocketFilterTest
         assertThat(socket.textMessages.poll(), is("hElLo wOrLd"));
     }
 
-    @Disabled
     @Test
     public void testDefaultWebSocketUpgradeFilterOrdering() throws Exception
     {
@@ -339,7 +337,6 @@ public class JettyWebSocketFilterTest
         assertThat(socket.textMessages.poll(), is(defaultIdleTimeout));
     }
 
-    @Disabled
     @Test
     public void testWebSocketUpgradeFilterOrdering() throws Exception
     {

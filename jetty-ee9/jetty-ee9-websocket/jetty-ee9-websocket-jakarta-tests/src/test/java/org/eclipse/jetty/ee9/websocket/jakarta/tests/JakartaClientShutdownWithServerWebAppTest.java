@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -107,7 +105,6 @@ public class JakartaClientShutdownWithServerWebAppTest
         return app;
     }
 
-    @Disabled
     @Test
     public void websocketProvidedByServer() throws Exception
     {
@@ -148,7 +145,6 @@ public class JakartaClientShutdownWithServerWebAppTest
         assertThat(server.getContainedBeans(WebSocketContainer.class).size(), is(0));
     }
 
-    @Disabled
     @Test
     public void websocketProvidedByWebApp() throws Exception
     {
@@ -181,8 +177,7 @@ public class JakartaClientShutdownWithServerWebAppTest
 
         // Collect the toString result of the ShutdownContainers from the dump.
         List<String> results = Arrays.stream(server.getServer().dump().split("\n"))
-            .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName()))
-            .collect(Collectors.toList());
+            .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName())).toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
         assertThat(results.size(), is(3));

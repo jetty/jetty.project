@@ -171,7 +171,7 @@ public class QuickStartGenerator
             else
                 webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
 
-            webApp.start(); //just enough to generate the quickstart
+            webApp.getCoreContextHandler().start(); //just enough to generate the quickstart
 
             //save config of the webapp BEFORE we stop
             if (webAppPropsFile != null)
@@ -179,7 +179,7 @@ public class QuickStartGenerator
         }
         finally
         {
-            webApp.stop();        
+            webApp.getCoreContextHandler().stop();        
             if (tpool != null)
                 tpool.stop();
         }

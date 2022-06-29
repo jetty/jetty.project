@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -177,7 +176,6 @@ public class JettyClientClassLoaderTest
         return app;
     }
 
-    @Disabled
     @Test
     public void websocketProvidedByServer() throws Exception
     {
@@ -214,7 +212,6 @@ public class JettyClientClassLoaderTest
      * This reproduces some classloading issue with MethodHandles in JDK14-110, This has been fixed in JDK16.
      * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      */
-    @Disabled
     @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
     @Test
     public void websocketProvidedByWebApp() throws Exception

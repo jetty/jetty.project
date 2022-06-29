@@ -77,7 +77,7 @@ public class TestQuickStart
         fooHolder.setName("foo");
         quickstart.getServletHandler().addServlet(fooHolder);
         ListenerHolder lholder = new ListenerHolder();
-        lholder.setClassName("org.eclipse.jetty.quickstart.FooContextListener");
+        lholder.setClassName("org.eclipse.jetty.ee9.quickstart.FooContextListener");
         quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
         server.setDryRun(true);
@@ -89,7 +89,7 @@ public class TestQuickStart
         WebAppContext webapp = new WebAppContext();
         webapp.setResourceBase(testDir.getAbsolutePath());
         webapp.addConfiguration(new QuickStartConfiguration());
-        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.quickstart.");
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         //add in the servlet
         webapp.getServletHandler().addServlet(fooHolder);
@@ -104,7 +104,7 @@ public class TestQuickStart
         //verify that FooServlet is now mapped to / and not the DefaultServlet
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getServletHolder();
         assertNotNull(sh);
-        assertThat(sh.getClassName(), Matchers.equalTo("org.eclipse.jetty.quickstart.FooServlet"));
+        assertThat(sh.getClassName(), Matchers.equalTo("org.eclipse.jetty.ee9.quickstart.FooServlet"));
     }
 
     @Test
@@ -139,7 +139,7 @@ public class TestQuickStart
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.quickstart.");
         server.setHandler(webapp);
 
         server.setDryRun(false);
@@ -180,7 +180,7 @@ public class TestQuickStart
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.quickstart.");
         server.setHandler(webapp);
 
         server.setDryRun(false);
@@ -255,7 +255,7 @@ public class TestQuickStart
         //a freshly applied context xml
         quickstart = new WebAppContext();
         //need visibility of FooServlet, FooFilter, FooContextListener when we quickstart
-        quickstart.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
+        quickstart.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.quickstart.");
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setWar(testDir.toURI().toURL().toExternalForm());
         quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
@@ -273,16 +273,16 @@ public class TestQuickStart
         ServletHolder[] servlets = quickstart.getServletHandler().getServlets();
         assertNotNull(servlets);
         assertEquals(1,
-            Arrays.stream(servlets).filter(s -> "org.eclipse.jetty.quickstart.FooServlet".equals(s.getClassName())).count());
+            Arrays.stream(servlets).filter(s -> "org.eclipse.jetty.ee9.quickstart.FooServlet".equals(s.getClassName())).count());
         
         FilterHolder[] filters = quickstart.getServletHandler().getFilters();
         assertNotNull(filters);
         assertEquals(1,
-            Arrays.stream(filters).filter(f -> "org.eclipse.jetty.quickstart.FooFilter".equals(f.getClassName())).count());
+            Arrays.stream(filters).filter(f -> "org.eclipse.jetty.ee9.quickstart.FooFilter".equals(f.getClassName())).count());
         
         ListenerHolder[] listeners = quickstart.getServletHandler().getListeners();
         assertNotNull(listeners);
         assertEquals(1,
-            Arrays.stream(listeners).filter(l -> "org.eclipse.jetty.quickstart.FooContextListener".equals(l.getClassName())).count());
+            Arrays.stream(listeners).filter(l -> "org.eclipse.jetty.ee9.quickstart.FooContextListener".equals(l.getClassName())).count());
     }
 }

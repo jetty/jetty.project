@@ -38,8 +38,8 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
         addDependents("org.eclipse.jetty.ee9.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.ee9.websocket.api.");
-        protectAndExpose("org.eclipse.jetty.websocket.server.");
-        protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
+        protectAndExpose("org.eclipse.jetty.ee9.websocket.server.");
+        protectAndExpose("org.eclipse.jetty.ee9.websocket.servlet."); // For WebSocketUpgradeFilter
         hide("org.eclipse.jetty.server.internal.");
         hide("org.eclipse.jetty.server.config.");
     }
