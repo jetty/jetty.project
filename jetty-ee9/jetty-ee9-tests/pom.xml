@@ -16,18 +16,19 @@
   </properties>
 
   <modules>
-    <module>jetty-ee9-test-bad-websocket-webapp</module>
-    <module>jetty-ee9-test-cdi</module>
-    <module>jetty-ee9-test-http2-webapp</module>
-    <module>jetty-ee9-test-http-client-transport</module>
-    <module>jetty-ee9-test-integration</module>
-    <module>jetty-ee9-test-jmx</module>
-    <module>jetty-ee9-test-jndi</module>
-    <module>jetty-ee9-test-loginservice</module>
-    <module>jetty-ee9-test-quickstart</module>
-    <module>jetty-ee9-test-websocket-client-provided-webapp</module>
-    <module>jetty-ee9-test-websocket-client-webapp</module>
-    <module>jetty-ee9-test-websocket-webapp</module>
+      <!-- <module>jetty-ee9-test-bad-websocket-webapp</module> -->
+      <!-- <module>jetty-ee9-test-cdi</module> -->
+      <!-- <module>jetty-ee9-test-http2-webapp</module> -->
+      <!-- <module>jetty-ee9-test-http-client-transport</module> -->
+      <!-- <module>jetty-ee9-test-integration</module> -->
+      <!-- <module>jetty-ee9-test-jmx</module> -->
+      <!-- <module>jetty-ee9-test-jndi</module> -->
+      <!-- <module>jetty-ee9-test-loginservice</module> -->
+      <module>jetty-ee9-test-maven-plugin</module>
+      <!-- <module>jetty-ee9-test-quickstart</module> -->
+      <!-- <module>jetty-ee9-test-websocket-client-provided-webapp</module> -->
+      <!-- <module>jetty-ee9-test-websocket-client-webapp</module> -->
+      <!-- <module>jetty-ee9-test-websocket-webapp</module> -->
   </modules>
 
   <build>

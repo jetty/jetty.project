@@ -24,6 +24,7 @@
     <module>jetty-ee10-test-jmx</module>
 <!-- TODO   <module>jetty-ee10-test-jndi</module>-->
 <!-- TODO   <module>jetty-ee10-test-loginservice</module>-->
+    <module>jetty-ee10-test-maven-plugin</module>
 <!-- TODO   <module>jetty-ee10-test-quickstart</module>-->
     <module>jetty-ee10-test-websocket-client-provided-webapp</module>
     <module>jetty-ee10-test-websocket-client-webapp</module>

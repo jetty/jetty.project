@@ -51,7 +51,8 @@
     <!-- module>test-distribution</module -->
     <!-- module>test-jpms</module -->
   </modules>
-  <dependencyManagement>
+  <!-- TODO cannot rely on ee9 at top level -->
+  <!-- <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
@@ -61,5 +62,5 @@
         <scope>import</scope>
       </dependency>
     </dependencies>
-  </dependencyManagement>
+  </dependencyManagement> -->
 </project>
