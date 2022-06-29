@@ -15,4 +15,4 @@ ee9-deploy
 
 [files]
 basehome:modules/demo.d/ee9-demo-proxy.properties|webapps/ee9-demo-proxy.properties
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-proxy-webapp/${jetty.version}/war|webapps/ee9-demo-proxy.war
+maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-proxy-webapp/${jetty.version}/war|webapps/ee9-demo-proxy.war

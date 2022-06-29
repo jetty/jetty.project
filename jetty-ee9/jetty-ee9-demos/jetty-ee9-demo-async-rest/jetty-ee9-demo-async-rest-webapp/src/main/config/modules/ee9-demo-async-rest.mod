@@ -15,4 +15,4 @@ ee9-deploy
 
 [files]
 basehome:modules/demo.d/ee9-demo-async-rest.properties|webapps/ee9-demo-async-rest.properties
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-async-rest-webapp/${jetty.version}/war|webapps/ee9-demo-async-rest.war
+maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-async-rest-webapp/${jetty.version}/war|webapps/ee9-demo-async-rest.war

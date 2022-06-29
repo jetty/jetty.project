@@ -23,7 +23,7 @@ basehome:modules/demo.d/ee9-demo-jaas.xml|webapps/ee9-demo-jaas.xml
 basehome:modules/demo.d/ee9-demo-jaas.properties|webapps/ee9-demo-jaas.properties
 basehome:modules/demo.d/ee9-demo-login.conf|etc/ee9-demo-login.conf
 basehome:modules/demo.d/ee9-demo-login.properties|etc/ee9-demo-login.properties
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-jaas-webapp/${jetty.version}/war|webapps/ee9-demo-jaas.war
+maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-jaas-webapp/${jetty.version}/war|webapps/ee9-demo-jaas.war
 
 [ini]
 # Enable security via jaas, and configure it
