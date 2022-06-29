@@ -116,35 +116,33 @@ public class OpenIdConfiguration extends ContainerLifeCycle
 
         if (authEndpoint == null || tokenEndpoint == null)
         {
-            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer, httpClient);
-
-            authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
-            if (authEndpoint == null)
-                throw new IllegalArgumentException("authorization_endpoint");
-
-            tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
-            if (tokenEndpoint == null)
-                throw new IllegalArgumentException("token_endpoint");
-
-            if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
-                LOG.warn("The issuer in the metadata is not correct.");
+            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata();
+            processMetadata(discoveryDocument);
         }
     }
 
-    private static HttpClient newHttpClient()
+    protected void processMetadata(Map<String, Object> discoveryDocument)
     {
-        ClientConnector connector = new ClientConnector();
-        connector.setSslContextFactory(new SslContextFactory.Client(false));
-        return new HttpClient(new HttpClientTransportOverHTTP(connector));
+        authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
+        if (authEndpoint == null)
+            throw new IllegalArgumentException("authorization_endpoint");
+
+        tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
+        if (tokenEndpoint == null)
+            throw new IllegalArgumentException("token_endpoint");
+
+        if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
+            LOG.warn("The issuer in the metadata is not correct.");
     }
 
-    private static Map<String, Object> fetchOpenIdConnectMetadata(String provider, HttpClient httpClient)
+    protected Map<String, Object> fetchOpenIdConnectMetadata()
     {
+        String provider = issuer;
+        if (provider.endsWith("/"))
+            provider = provider.substring(0, provider.length() - 1);
+
         try
         {
-            if (provider.endsWith("/"))
-                provider = provider.substring(0, provider.length() - 1);
-
             Map<String, Object> result;
             String responseBody = httpClient.GET(provider + CONFIG_PATH).getContentAsString();
             Object parsedResult = new JSON().fromJSON(responseBody);
@@ -225,6 +223,13 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public void setAuthenticateNewUsers(boolean authenticateNewUsers)
     {
         this.authenticateNewUsers = authenticateNewUsers;
+    }
+
+    private static HttpClient newHttpClient()
+    {
+        ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(new SslContextFactory.Client(false));
+        return new HttpClient(new HttpClientTransportOverHTTP(connector));
     }
 
     @Override
