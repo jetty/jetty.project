@@ -290,7 +290,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
-        ClassLoader loader = Server.class.getClassLoader();
+        ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
         while (loader != null)
         {
             if (loader instanceof URLClassLoader)

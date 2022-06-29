@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -244,6 +245,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         for (String property : properties.keySet())
         {
             String value = properties.get(property);
+            if (LOG.isDebugEnabled())
+                LOG.debug("init {}: {}", property, value);
             switch (property)
             {
                 case Deployable.WAR -> setWar(value);
@@ -256,7 +259,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 case Deployable.DEFAULT_DESCRIPTOR -> setDefaultsDescriptor(value);
                 case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
                 case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
-                default -> LOG.debug("unknown property {}={}", property, value);
+                default ->
+                {
+                    if (LOG.isDebugEnabled() && StringUtil.isNotBlank(value))
+                        LOG.debug("unknown property {}={}", property, value);
+                }
             }
         }
         _defaultContextPath = true;

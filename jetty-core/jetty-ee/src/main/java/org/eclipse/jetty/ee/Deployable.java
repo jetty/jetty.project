@@ -42,13 +42,13 @@ public interface Deployable
     String WAR = "jetty.deploy.war";
     String BASE_TEMP_DIR = "jetty.deploy.tempDir";
     String CONFIGURATION_CLASSES = "jetty.deploy.configurationClasses";
-    String CONTAINER_SCAN_JARS = "jetty.deploy.containerIncludeJarPattern";
+    String CONTAINER_SCAN_JARS = "jetty.deploy.containerScanJarPattern";
     String DEFAULT_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
     String EXTRACT_WARS = "jetty.deploy.extractWars";
     String PARENT_LOADER_PRIORITY = "jetty.deploy.parentLoaderPriority";
     String SCI_EXCLUSION_PATTERN = "jetty.deploy.servletContainerInitializerExclusionPattern";
     String SCI_ORDER = "jetty.deploy.servletContainerInitializerOrder";
-    String WEBINF_SCAN_JARS = "jetty.deploy.webInfIncludeJarPattern";
+    String WEBINF_SCAN_JARS = "jetty.deploy.webInfScanJarPattern";
 
     void initializeDefaults(Map<String, String> properties);
 }

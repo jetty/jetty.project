@@ -189,6 +189,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
     {
         String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}={}", CONTAINER_JAR_PATTERN, pattern);
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
@@ -198,7 +200,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         List<URI> containerUris = getAllContainerJars(context);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Matching container urls {}", containerUris);
+            LOG.debug("All container urls {}", containerUris);
         containerPathNameMatcher.match(containerUris);
 
         // When running on jvm 9 or above, we we won't be able to look at the application
@@ -270,9 +272,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         //Apply filter to WEB-INF/lib jars
-        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, (String)context.getAttribute(WEBINF_JAR_PATTERN));
+        String pattern = (String)context.getAttribute(WEBINF_JAR_PATTERN);
+        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, pattern);
 
         List<Resource> jars = findJars(context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("webapp {}={} jars {}", WEBINF_JAR_PATTERN, pattern, jars);
 
         //Convert to uris for matching
         if (jars != null)
@@ -290,7 +295,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
-        ClassLoader loader = Server.class.getClassLoader();
+        ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
         while (loader != null)
         {
             if (loader instanceof URLClassLoader)
