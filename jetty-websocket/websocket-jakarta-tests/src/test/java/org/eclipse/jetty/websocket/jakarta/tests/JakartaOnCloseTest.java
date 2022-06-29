@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.jakarta.tests;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -72,7 +73,8 @@ public class JakartaOnCloseTest
         public void onClose(CloseReason reason)
         {
             super.onClose(reason);
-            onClose.accept(session);
+            if (onClose != null)
+                onClose.accept(session);
         }
     }
 
@@ -224,5 +226,37 @@ public class JakartaOnCloseTest
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error, instanceOf(RuntimeException.class));
         assertThat(clientEndpoint.error.getMessage(), containsString("trigger onError from client onClose"));
+    }
+
+    @Test
+    public void testCloseFromCallback() throws Exception
+    {
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
+        client.connectToServer(clientEndpoint, uri);
+
+        OnCloseEndpoint serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+
+        CountDownLatch closeSent = new CountDownLatch(1);
+        clientEndpoint.session.getAsyncRemote().sendText("GOODBYE", sendResult ->
+        {
+            try
+            {
+                clientEndpoint.session.close();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            finally
+            {
+                closeSent.countDown();
+            }
+        });
+
+        assertTrue(closeSent.await(5, TimeUnit.SECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.NORMAL_CLOSURE));
     }
 }
