@@ -29,6 +29,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -325,7 +326,17 @@ public class Main
         modules.registerAll();
 
         // 4) Active Module Resolution
-        for (String enabledModule : modules.getSortedNames(args.getEnabledModules()))
+        List<String> enabledModules = args.getEnabledModules();
+        List<String> sortedEnabledModules = modules.getSortedNames(enabledModules);
+        List<String> unknownModules = new ArrayList<>(enabledModules);
+        unknownModules.removeAll(sortedEnabledModules);
+        if (unknownModules.size() >= 1)
+        {
+            throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module%s=[%s] List available with --list-modules",
+                unknownModules.size() > 1 ? 's' : "",
+                String.join(", ", unknownModules));
+        }
+        for (String enabledModule : sortedEnabledModules)
         {
             for (String source : args.getSources(enabledModule))
             {
@@ -470,8 +481,7 @@ public class Main
             CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
 
-            List<String> execModules = args.getEnabledModules().stream()
-                .map(name -> args.getAllModules().get(name))
+            List<String> execModules = args.getValidEnabledModulesStream()
                 // Keep only the forking modules.
                 .filter(module -> !module.getJvmArgs().isEmpty())
                 .map(Module::getName)
