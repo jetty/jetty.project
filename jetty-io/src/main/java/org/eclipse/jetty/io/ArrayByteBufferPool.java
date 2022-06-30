@@ -79,7 +79,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity)
     {
-        this(minCapacity, factor, maxCapacity, -1, -1, -1);
+        this(minCapacity, factor, maxCapacity, -1, 0, 0);
     }
 
     /**
@@ -93,7 +93,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
     {
-        this(minCapacity, factor, maxCapacity, maxQueueLength, -1, -1);
+        this(minCapacity, factor, maxCapacity, maxQueueLength, 0, 0);
     }
 
     /**

@@ -34,8 +34,8 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject
 abstract class AbstractByteBufferPool implements ByteBufferPool
 {
-    public static final Integer DEFAULT_FACTOR = 4096;
-    public static final Integer DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
+    public static final int DEFAULT_FACTOR = 4096;
+    public static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
     private final int _factor;
     private final int _maxCapacity;
     private final int _maxBucketSize;
