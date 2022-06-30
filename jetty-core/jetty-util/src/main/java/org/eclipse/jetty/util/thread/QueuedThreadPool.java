@@ -243,9 +243,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             // Fill the job queue with noop jobs to wakeup idle threads.
             for (int i = 0; i < threads; ++i)
-            {
-                jobs.offer(NOOP);
-            }
+                if (!jobs.offer(NOOP))
+                    break;
 
             // try to let jobs complete naturally for half our stop time
             joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
@@ -255,6 +254,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // interrupt remaining threads
             for (Thread thread : _threads)
             {
+                if (thread == Thread.currentThread())
+                    continue;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Interrupting {}", thread);
                 thread.interrupt();
@@ -264,24 +265,21 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
 
             Thread.yield();
-            if (LOG.isDebugEnabled())
+
+            for (Thread unstopped : _threads)
             {
-                for (Thread unstopped : _threads)
+                if (unstopped == Thread.currentThread())
+                    continue;
+                String stack = "";
+                if (LOG.isDebugEnabled())
                 {
                     StringBuilder dmp = new StringBuilder();
                     for (StackTraceElement element : unstopped.getStackTrace())
-                    {
                         dmp.append(System.lineSeparator()).append("\tat ").append(element);
-                    }
-                    LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
+                    stack = dmp.toString();
                 }
-            }
-            else
-            {
-                for (Thread unstopped : _threads)
-                {
-                    LOG.warn("{} Couldn't stop {}", this, unstopped);
-                }
+
+                LOG.warn("Couldn't stop {}{}", unstopped, stack);
             }
         }
 
@@ -315,13 +313,32 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private void joinThreads(long stopByNanos) throws InterruptedException
     {
-        for (Thread thread : _threads)
+        loop : while (true)
         {
-            long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Waiting for {} for {}", thread, canWait);
-            if (canWait > 0)
-                thread.join(canWait);
+            for (Thread thread : _threads)
+            {
+                // Don't join ourselves
+                if (thread == Thread.currentThread())
+                    continue;
+
+                long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Waiting for {} for {}", thread, canWait);
+                if (canWait <= 0)
+                    return;
+
+                try
+                {
+                    thread.join(canWait);
+                }
+                catch (InterruptedException e)
+                {
+                    // Don't stop waiting for a join if interrupted
+                    continue loop;
+                }
+            }
+
+            return;
         }
     }
 
