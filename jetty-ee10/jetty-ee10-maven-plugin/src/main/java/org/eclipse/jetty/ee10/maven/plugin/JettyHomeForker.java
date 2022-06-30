@@ -36,7 +36,7 @@ import java.util.Map;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -350,7 +350,7 @@ public class JettyHomeForker extends AbstractForker
         modulesPath = Files.createDirectories(targetBasePath.resolve("modules"));
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
-        webappPath = Files.createDirectories(targetBasePath.resolve("webapps-ee10"));
+        webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
         mavenLibPath = Files.createDirectories(libPath.resolve("maven-ee10"));
 
         //copy in the jetty-maven-plugin jar
@@ -411,8 +411,11 @@ public class JettyHomeForker extends AbstractForker
 
         if (jettyHome == null)
         {
-            JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyHomeZip));
-            res.copyTo(baseDir);
+            try (PoolingPathResource.Mount mount = Resource.newJarResource(jettyHomeZip.toPath()))
+            {
+                Resource res = mount.newResource();
+                res.copyTo(baseDir.toPath());
+            }
             //zip will unpack to target/jetty-home-<VERSION>
             jettyHome = new File(baseDir, "jetty-home-" + version);
         }

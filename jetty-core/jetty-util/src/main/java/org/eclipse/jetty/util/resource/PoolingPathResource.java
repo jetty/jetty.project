@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,17 +61,24 @@ public class PoolingPathResource extends PathResource
 
         try (AutoLock ignore = POOL_LOCK.lock())
         {
+            FileSystem fileSystem;
             try
             {
-                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
-                retain(fileSystem, uri);
+                fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
-                FileSystem fileSystem = Paths.get(uri).getFileSystem();
-                retain(fileSystem, uri);
+                fileSystem = Paths.get(uri).getFileSystem();
             }
-            return new Mount(uri);
+            return retain(fileSystem, uri).mount;
+        }
+    }
+
+    public static Collection<Mount> mounts()
+    {
+        try (AutoLock ignore = POOL_LOCK.lock())
+        {
+            return POOL.values().stream().map(m -> m.mount).toList();
         }
     }
 
@@ -116,7 +124,7 @@ public class PoolingPathResource extends PathResource
         }
     }
 
-    private static void retain(FileSystem fileSystem, URI uri)
+    private static Metadata retain(FileSystem fileSystem, URI uri)
     {
         assert POOL_LOCK.isHeldByCurrentThread();
 
@@ -132,6 +140,7 @@ public class PoolingPathResource extends PathResource
             int count = metadata.counter.incrementAndGet();
             LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
         }
+        return metadata;
     }
 
     private static void release(FileSystem fileSystem)
@@ -160,48 +169,43 @@ public class PoolingPathResource extends PathResource
         private final FileTime lastModifiedTime;
         private final long size;
         private final Path path;
+        private final Mount mount;
 
         private Metadata(URI uri)
         {
-            this.counter = new AtomicInteger(1);
-            Path path = uriToPath(uri);
+            URI unjarifiedUri = unjarify(uri);
+            Path path = Paths.get(unjarifiedUri).toAbsolutePath();
 
             long size = -1L;
             FileTime lastModifiedTime = null;
-            if (path != null)
+            try
             {
-                try
-                {
-                    size = Files.size(path);
-                    lastModifiedTime = Files.getLastModifiedTime(path);
-                }
-                catch (IOException ioe)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
-                }
+                size = Files.size(path);
+                lastModifiedTime = Files.getLastModifiedTime(path);
             }
-            else
+            catch (IOException ioe)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Filesystem at {} is not backed by a file", uri);
+                    LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
             }
+            this.counter = new AtomicInteger(1);
             this.path = path;
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
+            this.mount = new Mount(unjarifiedUri);
         }
 
-        private static Path uriToPath(URI uri)
+        private static URI unjarify(URI uri)
         {
             String scheme = uri.getScheme();
             if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
-                return null;
+                return uri;
 
             String spec = uri.getRawSchemeSpecificPart();
             int sep = spec.indexOf("!/");
             if (sep != -1)
                 spec = spec.substring(0, sep);
-            return Paths.get(URI.create(spec)).toAbsolutePath();
+            return URI.create(spec);
         }
     }
 
@@ -212,6 +216,11 @@ public class PoolingPathResource extends PathResource
         private Mount(URI uri)
         {
             this.uri = uri;
+        }
+
+        public Resource newResource() throws IOException
+        {
+            return Resource.newResource(uri);
         }
 
         @Override
@@ -226,6 +235,12 @@ public class PoolingPathResource extends PathResource
             {
                 // The FS has already been released by a sweep.
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + " uri=" + uri;
         }
     }
 }

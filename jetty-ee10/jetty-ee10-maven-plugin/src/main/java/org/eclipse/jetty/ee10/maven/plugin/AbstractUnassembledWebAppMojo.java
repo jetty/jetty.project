@@ -166,7 +166,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
             {
-                Resource r = Resource.newResource(webXml);
+                Resource r = Resource.newResource(webXml.toPath());
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -176,7 +176,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
             if (webApp.getDescriptor() == null && webApp.getResourceBase() != null)
             {
-                Resource r = webApp.getResourceBase().addPath("WEB-INF/web.xml");
+                Resource r = webApp.getResourceBase().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());

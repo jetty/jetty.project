@@ -11,16 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
-
-import java.util.Map;
-
-/**
- * ConfigurationManager
- *
- * Type for allow injection of property values for replacement in jetty xml files during deployment.
- */
-public interface ConfigurationManager
+module org.eclipse.jetty.ee
 {
-    public Map<String, String> getProperties();
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.io;
+
+    // Only required if using JMX.
+    requires static org.eclipse.jetty.jmx;
+
+    exports org.eclipse.jetty.ee;
 }

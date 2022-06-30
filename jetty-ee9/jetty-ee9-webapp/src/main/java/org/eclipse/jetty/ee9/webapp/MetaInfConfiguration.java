@@ -42,9 +42,10 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
+import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -193,9 +194,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
     {
+        String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        if (StringUtil.isBlank(pattern))
+            return; // TODO review if this short cut will allow later code simplifications
+
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
-        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, (String)context.getAttribute(CONTAINER_JAR_PATTERN));
+        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, pattern);
         List<URI> containerUris = getAllContainerJars(context);
 
         if (LOG.isDebugEnabled())
@@ -291,22 +296,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
-        if (context.getClassLoader() != null)
+        ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
+        while (loader != null)
         {
-            ClassLoader loader = context.getClassLoader().getParent();
-            while (loader != null)
+            if (loader instanceof URLClassLoader)
             {
-                if (loader instanceof URLClassLoader)
+                URL[] urls = ((URLClassLoader)loader).getURLs();
+                if (urls != null)
                 {
-                    URL[] urls = ((URLClassLoader)loader).getURLs();
-                    if (urls != null)
-                        for (URL url : urls)
-                        {
-                            uris.add(new URI(url.toString().replaceAll(" ", "%20")));
-                        }
+                    for (URL url : urls)
+                        uris.add(new URI(url.toString().replaceAll(" ", "%20")));
                 }
-                loader = loader.getParent();
             }
+            loader = loader.getParent();
         }
         return uris;
     }
@@ -469,7 +471,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource(uriJarPrefix(uri, "!/META-INF/resources"));
+                PoolingPathResource.Mount mount = Resource.newJarResource(uriJarPrefix(uri, "!/META-INF/resources"));
+                resourcesDir = mount.newResource();
             }
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
@@ -696,8 +699,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     {
         HashSet<URL> tlds = new HashSet<URL>();
 
-        String jarUri = uriJarPrefix(uri, "!/");
-        URL url = new URL(jarUri);
+        URI jarUri = uriJarPrefix(uri, "!/");
+        URL url = jarUri.toURL();
         JarURLConnection jarConn = (JarURLConnection)url.openConnection();
         jarConn.setUseCaches(Resource.getDefaultUseCaches());
         JarFile jarFile = jarConn.getJarFile();
@@ -863,16 +866,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .collect(Collectors.toList());
     }
 
-    private String uriJarPrefix(URI uri, String suffix)
+    private URI uriJarPrefix(URI uri, String suffix)
     {
         String uriString = uri.toString();
         if (uriString.startsWith("jar:"))
         {
-            return uriString + suffix;
+            return URI.create(uriString + suffix);
         }
         else
         {
-            return "jar:" + uriString + suffix;
+            return URI.create("jar:" + uriString + suffix);
         }
     }
 

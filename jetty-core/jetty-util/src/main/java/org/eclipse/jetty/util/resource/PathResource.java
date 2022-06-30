@@ -212,7 +212,7 @@ public class PathResource extends Resource
         }
         catch (FileSystemNotFoundException e)
         {
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException("Unable to build resource from: " + uri, e);
         }
         catch (Exception e)
         {

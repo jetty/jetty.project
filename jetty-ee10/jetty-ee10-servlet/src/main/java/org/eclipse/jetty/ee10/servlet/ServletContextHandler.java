@@ -199,7 +199,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final ServletContextApi _servletContext;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final Map<String, String> _initParams = new HashMap<>();
-    private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
@@ -656,19 +655,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             .toArray(String[]::new);
     }
 
-    /**
-     * Set the default context path.
-     * A default context path may be overriden by a default-context-path element
-     * in a web.xml
-     *
-     * @param contextPath The _contextPath to set.
-     */
-    public void setDefaultContextPath(String contextPath)
-    {
-        setContextPath(contextPath);
-        _contextPathDefault = true;
-    }
-
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -687,14 +673,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public String getDefaultResponseCharacterEncoding()
     {
         return _defaultResponseCharacterEncoding;
-    }
-
-    /**
-     * @return True if the current contextPath is from default settings
-     */
-    public boolean isContextPathDefault()
-    {
-        return _contextPathDefault;
     }
 
     /**
@@ -725,7 +703,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         super.setContextPath(contextPath);
         _contextPathEncoded = URIUtil.encodePath(contextPath);
-        _contextPathDefault = false;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {

@@ -12,4 +12,5 @@ webapp
 ee9-deploy
 
 [files]
-maven://org.eclipse.jetty.ee9.demos/ee9-demo-simple-webapp/${jetty.version}/war|webapps-ee9/ee9-demo-simple.war
+basehome:modules/demo.d/ee9-demo-simple.properties|webapps/ee9-demo-simple.properties
+maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-simple-webapp/${jetty.version}/war|webapps/ee9-demo-simple.war

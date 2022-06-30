@@ -19,10 +19,10 @@ ee10-annotations
 ext
 
 [files]
-basehome:modules/demo.d/ee10-demo-jaas.xml|webapps-ee10/ee10-demo-jaas.xml
+basehome:modules/demo.d/ee10-demo-jaas.xml|webapps/ee10-demo-jaas.xml
 basehome:modules/demo.d/ee10-demo-login.conf|etc/ee10-demo-login.conf
 basehome:modules/demo.d/ee10-demo-login.properties|etc/ee10-demo-login.properties
-maven://org.eclipse.jetty.ee10.demos/ee10-demo-jaas-webapp/${jetty.version}/war|webapps-ee10/ee10-demo-jaas.war
+maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-jaas-webapp/${jetty.version}/war|webapps/ee10-demo-jaas.war
 
 [ini]
 # Enable security via jaas, and configure it

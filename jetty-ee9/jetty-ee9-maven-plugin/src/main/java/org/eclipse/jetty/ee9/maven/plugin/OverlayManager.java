@@ -15,13 +15,13 @@ package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
+import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
@@ -97,7 +97,8 @@ public class OverlayManager
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
+                PoolingPathResource.Mount mount = Resource.newJarResource(a.getFile().toPath());
+                SelectiveJarResource r = new SelectiveJarResource(mount.newResource());
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -110,7 +111,8 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/")));
+                PoolingPathResource.Mount mount = Resource.newJarResource(a.getFile().toPath());
+                Overlay overlay = new Overlay(null, mount.newResource());
                 overlays.add(overlay);
             }
         }

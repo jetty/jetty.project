@@ -204,8 +204,8 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("-Xmx1g");
 
         // Arbitrary Libs
-        Path extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar").toPath().toRealPath();
-        Path extraDir = MavenTestingUtils.getTestResourceDir("extra-resources").toPath().toRealPath();
+        Path extraJar = MavenTestingUtils.getTestResourcePathFile("extra-libs/example.jar").toRealPath();
+        Path extraDir = MavenTestingUtils.getTestResourcePathDir("extra-resources").toRealPath();
 
         assertThat("Extra Jar exists: " + extraJar, Files.exists(extraJar), is(true));
         assertThat("Extra Dir exists: " + extraDir, Files.exists(extraDir), is(true));

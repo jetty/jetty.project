@@ -25,35 +25,14 @@ import java.util.Locale;
 public class FileID
 {
     /**
-     * Is the path a Web Archive?
-     *
-     * @param path the path to test.
-     * @return True if a .war or .jar or exploded web directory
-     * @see FileID#isWebArchiveFile(File)
-     */
-    public static boolean isWebArchive(File path)
-    {
-        if (path.isFile())
-        {
-            String name = path.getName().toLowerCase(Locale.ENGLISH);
-            return (name.endsWith(".war") || name.endsWith(".jar"));
-        }
-
-        File webInf = new File(path, "WEB-INF");
-        File webXml = new File(webInf, "web.xml");
-        return webXml.exists() && webXml.isFile();
-    }
-
-    /**
      * Is the path a Web Archive File (not directory)
      *
-     * @param path the path to test.
+     * @param file the path to test.
      * @return True if a .war or .jar file.
-     * @see FileID#isWebArchive(File)
      */
-    public static boolean isWebArchiveFile(File path)
+    public static boolean isWebArchiveFile(File file)
     {
-        return isWebArchiveFile(path.toPath());
+        return isWebArchiveFile(file.toPath());
     }
 
     public static boolean isWebArchiveFile(Path path)
@@ -77,5 +56,17 @@ public class FileID
 
         String name = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
         return name.endsWith(".xml");
+    }
+
+    /**
+     * Remove any 3 character suffix (e.g. ".war") from a path
+     * @param path The string path
+     * @return The path without the suffix or the original path
+     */
+    public static String getDot3Basename(String path)
+    {
+        if (path == null || path.length() <= 4 || path.charAt(path.length() - 4) != '.')
+            return path;
+        return path.substring(0, path.length() - 4);
     }
 }
