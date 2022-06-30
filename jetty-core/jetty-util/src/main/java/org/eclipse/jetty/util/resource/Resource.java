@@ -490,6 +490,7 @@ public abstract class Resource implements ResourceFactory
         URI resolvedUri;
         if (uri.isOpaque())
         {
+            // TODO create a subclass with an optimized implementation of this.
             // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
             // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
             // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
