@@ -481,7 +481,7 @@ public class Main
             CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
 
-            List<String> execModules = args.getValidEnabledModulesStream()
+            List<String> execModules = args.getAllModules().getEnabled().stream()
                 // Keep only the forking modules.
                 .filter(module -> !module.getJvmArgs().isEmpty())
                 .map(Module::getName)

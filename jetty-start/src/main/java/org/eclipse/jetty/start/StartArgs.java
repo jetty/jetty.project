@@ -31,14 +31,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.start.Props.Prop;
@@ -655,18 +653,6 @@ public class StartArgs
     public List<String> getEnabledModules()
     {
         return this.modules;
-    }
-
-    /**
-     * Get the Stream of {@link Module} instances that have been enabled successfully.
-     * Filtering out any that are invalid (such as modules that were not, or cannot be enabled).
-     * @return the stream of {@link Module} instances
-     */
-    public Stream<Module> getValidEnabledModulesStream()
-    {
-        return this.modules.stream()
-            .map(name -> getAllModules().get(name))
-            .filter(Objects::nonNull);
     }
 
     public List<FileArg> getFiles()
