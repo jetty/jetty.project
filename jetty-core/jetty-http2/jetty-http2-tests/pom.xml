@@ -23,6 +23,7 @@
           <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>
           <excludeSpecs>
             <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
+            <excludeSpec>8.1.2.6. Malformed Requests and Responses</excludeSpec>
           </excludeSpecs>
         </configuration>
         <executions>
