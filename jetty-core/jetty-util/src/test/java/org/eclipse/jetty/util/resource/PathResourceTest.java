@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 public class PathResourceTest
@@ -85,7 +86,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testNonDefaultFileSystemGetFile() throws URISyntaxException, IOException
+    public void testNonDefaultFileSystemGetPath() throws URISyntaxException, IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
@@ -99,9 +100,9 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = (PathResource)Resource.newResource(manifestPath);
+            Resource resource = Resource.newResource(manifestPath);
             Path path = resource.getPath();
-            assertThat("File should be null for non-default FileSystem", path, is(nullValue()));
+            assertThat("Path should not be null even for non-default FileSystem", path, notNullValue());
         }
     }
 

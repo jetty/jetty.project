@@ -302,7 +302,7 @@ public class PathResource extends Resource
     @Override
     public boolean isContainedIn(Resource r)
     {
-        return r instanceof PathResource pr && path.startsWith(pr.getPath());
+        return uri.toString().startsWith(r.getURI().toString());
     }
 
     @Override

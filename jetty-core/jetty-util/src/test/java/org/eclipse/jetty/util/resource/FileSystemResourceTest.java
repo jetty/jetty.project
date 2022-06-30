@@ -49,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -57,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
@@ -152,9 +154,16 @@ public class FileSystemResourceTest
     @EnabledOnOs({LINUX, MAC})
     public void testBogusFilenameUnix()
     {
-        // A windows path is invalid under unix
-        assertThrows(IllegalArgumentException.class,
-            () -> Resource.newResource(new URI("file://Z:/:")));
+        try
+        {
+            // A windows path is invalid under unix
+            Resource.newResource(URI.create("file://Z:/:"));
+            fail("expected IOException");
+        }
+        catch (IOException e)
+        {
+            assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        }
     }
 
     @Test
@@ -815,8 +824,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo' bar");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo' bar"));
     }
 
     @Test
@@ -837,8 +845,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo` bar");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo` bar"));
     }
 
     @Test
@@ -859,8 +866,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo[1]");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo[1]"));
     }
 
     @Test
@@ -881,8 +887,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo.{bar}.txt");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo.{bar}.txt"));
     }
 
     @Test
@@ -903,8 +908,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo^3.txt");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo^3.txt"));
     }
 
     @Test
@@ -925,8 +929,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        Resource res = base.resolve("foo|bar.txt");
-        assertThat("Alias: " + res, res.getAlias(), nullValue());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo|bar.txt"));
     }
 
     /**
@@ -1019,9 +1022,10 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1045,9 +1049,10 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1070,7 +1075,8 @@ public class FileSystemResourceTest
             assertThat("Exists: " + basePath, base.exists(), is(true));
             assertThat("Alias: " + basePath, base, hasNoAlias());
 
-            Resource r = base.resolve("aa\\/foo.txt");
+            Resource r = base.resolve("aa%5C/foo.txt");
+            assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
 
             if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
@@ -1086,9 +1092,10 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1127,9 +1134,10 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1156,9 +1164,10 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("Exists: " + r, r.exists(), is(true));
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1180,16 +1189,15 @@ public class FileSystemResourceTest
             assertThat("Alias: " + basePath, base, hasNoAlias());
 
             Resource r = base.resolve("//foo.txt");
-            assertThat("getURI()", r.getURI().toASCIIString(), containsString("//foo.txt"));
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("/foo.txt"));
 
-            assertThat("isAlias()", r.isAlias(), is(true));
-            assertThat("getAlias()", r.getAlias(), notNullValue());
-            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
-            assertThat("Exists: " + r, r.exists(), is(true));
+            assertThat("isAlias()", r.isAlias(), is(false));
+            assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1213,16 +1221,15 @@ public class FileSystemResourceTest
             assertThat("Alias: " + basePath, base, hasNoAlias());
 
             Resource r = base.resolve("aa//foo.txt");
-            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa//foo.txt"));
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa/foo.txt"));
 
-            assertThat("isAlias()", r.isAlias(), is(true));
-            assertThat("getAlias()", r.getAlias(), notNullValue());
-            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
-            assertThat("Exists: " + r, r.exists(), is(true));
+            assertThat("isAlias()", r.isAlias(), is(false));
+            assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (InvalidPathException e)
+        catch (IOException e)
         {
             // Exception is acceptable
+            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 

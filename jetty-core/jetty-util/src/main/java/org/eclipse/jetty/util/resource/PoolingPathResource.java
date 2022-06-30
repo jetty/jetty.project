@@ -52,6 +52,12 @@ public class PoolingPathResource extends PathResource
         super(uri, true);
     }
 
+    @Override
+    public boolean isContainedIn(Resource r)
+    {
+        return r.getURI().equals(containerUri(getURI()));
+    }
+
     public static Mount mount(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
@@ -122,6 +128,19 @@ public class PoolingPathResource extends PathResource
                     LOG.debug("Cannot read last access time or size of file {} backing filesystem {}", metadata.path, fileSystem);
             }
         }
+    }
+
+    private static URI containerUri(URI uri)
+    {
+        String scheme = uri.getScheme();
+        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
+            return null;
+
+        String spec = uri.getRawSchemeSpecificPart();
+        int sep = spec.indexOf("!/");
+        if (sep != -1)
+            spec = spec.substring(0, sep);
+        return URI.create(spec);
     }
 
     private static Metadata retain(FileSystem fileSystem, URI uri)
@@ -204,15 +223,8 @@ public class PoolingPathResource extends PathResource
 
         private static Path uriToPath(URI uri)
         {
-            String scheme = uri.getScheme();
-            if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
-                return null;
-
-            String spec = uri.getRawSchemeSpecificPart();
-            int sep = spec.indexOf("!/");
-            if (sep != -1)
-                spec = spec.substring(0, sep);
-            return Paths.get(URI.create(spec)).toAbsolutePath();
+            URI rawUri = containerUri(uri);
+            return rawUri == null ? null : Paths.get(rawUri).toAbsolutePath();
         }
     }
 

@@ -63,12 +63,12 @@ public class ResourceAliasTest
         Resource baseResource = Resource.newResource(baseDir);
         assertTrue(baseResource.exists(), "baseResource exists");
 
-        Resource fooResource = baseResource.resolve("%foo");
+        Resource fooResource = baseResource.resolve("%25foo");
         assertTrue(fooResource.exists(), "fooResource exists");
         assertTrue(fooResource.isDirectory(), "fooResource isDir");
         assertFalse(fooResource.isAlias(), "fooResource isAlias");
 
-        Resource barResource = fooResource.resolve("bar%");
+        Resource barResource = fooResource.resolve("bar%25");
         assertTrue(barResource.exists(), "barResource exists");
         assertTrue(barResource.isDirectory(), "barResource isDir");
         assertFalse(barResource.isAlias(), "barResource isAlias");
