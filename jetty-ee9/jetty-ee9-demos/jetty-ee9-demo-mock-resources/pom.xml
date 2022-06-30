@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.demos.ee9-demo-mock-resources</Bundle-SymbolicName>
+                <Bundle-SymbolicName>org.eclipse.jetty.ee9.demos.ee9-demo-mock-resources</Bundle-SymbolicName>
                 <Bundle-Description>Mock resources used for testing</Bundle-Description>
                 <Export-Package>
                   org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"

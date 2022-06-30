@@ -38,10 +38,10 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletContextApi;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
@@ -50,8 +50,8 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -75,7 +75,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @ManagedObject("Web Application ContextHandler")
-public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
+public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
@@ -121,6 +121,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _logUrlOnStart = false;
     private boolean _parentLoaderPriority = Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
+    private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
 
@@ -226,6 +227,55 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
             setParent(parent);
+    }
+
+    @Override
+    public void initializeDefaults(Map<String, String> properties)
+    {
+        for (String property : properties.keySet())
+        {
+            String value = properties.get(property);
+            if (LOG.isDebugEnabled())
+                LOG.debug("init {}: {}", property, value);
+
+            switch (property)
+            {
+                case Deployable.WAR -> setWar(value);
+                case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
+                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
+                case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
+                case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
+                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
+                case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
+                case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor(value);
+                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
+                case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
+                default ->
+                {
+                    if (LOG.isDebugEnabled() && StringUtil.isNotBlank(value))
+                        LOG.debug("unknown property {}={}", property, value);
+                }
+            }
+        }
+        _defaultContextPath = true;
+    }
+
+    public boolean isContextPathDefault()
+    {
+        return _defaultContextPath;
+    }
+
+    @Override
+    public void setContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = false;
+    }
+
+    public void setDefaultContextPath(String contextPath)
+    {
+        super.setContextPath(contextPath);
+        _defaultContextPath = true;
     }
 
     /**
@@ -737,9 +787,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            Path warPath = getResourceBase().getPath();
-            if (warPath != null)
-                _war = warPath.toUri().toASCIIString();
+            if (getResourceBase() != null)
+            {
+                Path warPath = getResourceBase().getPath();
+                if (warPath != null)
+                    _war = warPath.toUri().toASCIIString();
+            }
         }
         return _war;
     }

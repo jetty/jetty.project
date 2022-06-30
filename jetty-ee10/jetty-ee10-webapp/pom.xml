@@ -102,5 +102,9 @@
       <artifactId>jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-ee</artifactId>
+    </dependency>
   </dependencies>
 </project>

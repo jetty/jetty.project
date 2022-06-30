@@ -26,6 +26,8 @@ import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.slf4j.Logger;
@@ -53,19 +55,25 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public void close()
     {
-        remoteEndpoint.close(StatusCode.NORMAL, null);
+        coreSession.close(StatusCode.NORMAL, null, Callback.NOOP);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        remoteEndpoint.close(closeStatus.getCode(), closeStatus.getPhrase());
+        coreSession.close(closeStatus.getCode(), closeStatus.getPhrase(), Callback.NOOP);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        remoteEndpoint.close(statusCode, reason);
+        coreSession.close(statusCode, reason, Callback.NOOP);
+    }
+
+    @Override
+    public void close(int statusCode, String reason, WriteCallback callback)
+    {
+        coreSession.close(statusCode, reason, Callback.from(callback::writeSuccess, callback::writeFailed));
     }
 
     @Override

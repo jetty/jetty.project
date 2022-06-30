@@ -48,7 +48,7 @@
             <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
             <Bundle-Name>Jetty OSGi Test WebApp Fragment</Bundle-Name>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-            <Fragment-Host>org.eclipse.jetty.demos.spec.webapp</Fragment-Host>
+            <Fragment-Host>org.eclipse.jetty.ee10.demos.spec.webapp</Fragment-Host>
             <Jetty-WarFragmentResourcePath>/</Jetty-WarFragmentResourcePath>
           </instructions>
         </configuration>

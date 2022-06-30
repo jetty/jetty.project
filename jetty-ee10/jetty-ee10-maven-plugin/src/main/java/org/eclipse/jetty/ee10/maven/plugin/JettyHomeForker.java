@@ -207,7 +207,7 @@ public class JettyHomeForker extends AbstractForker
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
-        tmp.append("server,http,webapp,deploy");
+        tmp.append("server,http,ee10-webapp,ee10-deploy");
         if (modules != null)
         {
             for (String m : modules)
@@ -219,7 +219,7 @@ public class JettyHomeForker extends AbstractForker
 
         if (libExtJarFiles != null && !libExtJarFiles.isEmpty() && tmp.indexOf("ext") < 0)
             tmp.append(",ext");
-        tmp.append(",maven");
+        tmp.append(",ee10-maven");
         cmd.add(tmp.toString());
  
         //put any other jetty options onto the command line
@@ -351,12 +351,12 @@ public class JettyHomeForker extends AbstractForker
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
         webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
-        mavenLibPath = Files.createDirectories(libPath.resolve("maven"));
+        mavenLibPath = Files.createDirectories(libPath.resolve("maven-ee10"));
 
         //copy in the jetty-maven-plugin jar
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
         if (thisJar == null)
-            throw new IllegalStateException("Can't find jar for jetty-maven-plugin");
+            throw new IllegalStateException("Can't find jar for jetty-ee10-maven-plugin");
 
         try (InputStream jarStream = thisJar.toURL().openStream();
              FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("plugin.jar").toFile()))
@@ -365,22 +365,22 @@ public class JettyHomeForker extends AbstractForker
         }
 
         //copy in the maven.xml webapp file
-        try (InputStream mavenXmlStream = getClass().getClassLoader().getResourceAsStream("maven.xml");
-             FileOutputStream fileStream = new FileOutputStream(webappPath.resolve("maven.xml").toFile()))
+        try (InputStream mavenXmlStream = getClass().getClassLoader().getResourceAsStream("maven-ee10.xml");
+             FileOutputStream fileStream = new FileOutputStream(webappPath.resolve("maven-ee10.xml").toFile()))
         {
             IO.copy(mavenXmlStream, fileStream);
         }
 
         //copy in the maven.mod file
-        try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream("maven.mod");
-             FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve("maven.mod").toFile()))
+        try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream("ee10-maven.mod");
+             FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve("ee10-maven.mod").toFile()))
         {
             IO.copy(mavenModStream, fileStream);
         }
 
         //copy in the jetty-maven.xml file
-        try (InputStream jettyMavenStream = getClass().getClassLoader().getResourceAsStream("jetty-maven.xml");
-             FileOutputStream fileStream = new FileOutputStream(etcPath.resolve("jetty-maven.xml").toFile()))
+        try (InputStream jettyMavenStream = getClass().getClassLoader().getResourceAsStream("jetty-ee10-maven.xml");
+             FileOutputStream fileStream = new FileOutputStream(etcPath.resolve("jetty-ee10-maven.xml").toFile()))
         {
             IO.copy(jettyMavenStream, fileStream);
         }

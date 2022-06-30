@@ -40,4 +40,10 @@ public interface AppProvider extends LifeCycle
      * @throws Exception if unable to create context
      */
     ContextHandler createContextHandler(App app) throws Exception;
+
+    /**
+     *
+     * @return The name of the {@link org.eclipse.jetty.util.component.Environment} this provider is for.
+     */
+    String getEnvironmentName();
 }

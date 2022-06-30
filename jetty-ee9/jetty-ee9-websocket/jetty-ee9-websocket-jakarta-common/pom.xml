@@ -24,7 +24,7 @@
           <instructions>
             <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.websocket.jakarta.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.ee9.websocket.jakarta.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
           </instructions>
         </configuration>

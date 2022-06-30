@@ -19,7 +19,7 @@
   <New id="context" class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
     <Set name="contextPath">/hello</Set>
     <Call name="addServlet">
-      <Arg>org.eclipse.jetty.demos.HelloServlet</Arg>
+      <Arg>org.eclipse.jetty.ee9.demos.HelloServlet</Arg>
       <Arg>/</Arg>
     </Call>
   </New>

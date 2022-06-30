@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-http-client-transport</artifactId>
+  <artifactId>jetty-ee10-test-http-client-transport</artifactId>
   <packaging>jar</packaging>
   <name>EE10 :: Jetty Test :: HTTP Client Transports</name>
 

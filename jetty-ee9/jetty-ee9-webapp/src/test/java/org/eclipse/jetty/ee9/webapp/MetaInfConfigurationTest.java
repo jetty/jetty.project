@@ -20,7 +20,6 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,12 +130,11 @@ public class MetaInfConfigurationTest
      * @throws Exception if the test fails
      */
     @Test
-    @Disabled // TODO
     public void testFindAndFilterContainerPathsJDK9() throws Exception
     {
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
+        context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*servlet-api-[^/]*\\.jar$|.*/foo-bar-janb.jar");
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
@@ -145,7 +143,7 @@ public class MetaInfConfigurationTest
         for (Resource r : containerResources)
         {
             String s = r.toString();
-            assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("jetty-util"));
+            assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("servlet-api"));
         }
     }
 }

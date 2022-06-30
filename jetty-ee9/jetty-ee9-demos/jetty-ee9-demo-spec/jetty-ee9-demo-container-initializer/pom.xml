@@ -20,7 +20,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-SymbolicName>org.eclipse.jetty.demos.ee9-demo-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee9.demos.ee9-demo-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
             <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>

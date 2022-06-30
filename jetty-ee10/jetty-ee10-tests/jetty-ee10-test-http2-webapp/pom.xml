@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-http2-webapp</artifactId>
+  <artifactId>jetty-ee10-test-http2-webapp</artifactId>
   <name>Test :: Jetty HTTP2 Webapp</name>
   <packaging>war</packaging>
 
