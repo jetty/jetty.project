@@ -180,8 +180,8 @@ public class ResourceCollectionTest
             Resource.newResource("src/test/resources/org/eclipse/jetty/util/resource/two/"),
             Resource.newResource("src/test/resources/org/eclipse/jetty/util/resource/three/"));
 
-        assertThat(Arrays.asList(rc1.list()), contains("1.txt", "2.txt", "3.txt", "dir/"));
-        assertThat(Arrays.asList(rc1.resolve("dir").list()), contains("1.txt", "2.txt", "3.txt"));
+        assertThat(rc1.list(), contains("1.txt", "2.txt", "3.txt", "dir/"));
+        assertThat(rc1.resolve("dir").list(), contains("1.txt", "2.txt", "3.txt"));
         assertThat(rc1.resolve("unknown").list(), nullValue());
     }
 
