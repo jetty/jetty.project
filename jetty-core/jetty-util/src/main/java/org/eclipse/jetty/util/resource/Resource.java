@@ -86,6 +86,15 @@ public abstract class Resource implements ResourceFactory
         return __defaultUseCaches;
     }
 
+    public static PoolingPathResource.Mount newJarResource(String resource) throws IOException
+    {
+        URI uri = URI.create(resource);
+        // If the URI has no scheme, we consider the string actually was a path.
+        if (uri.getScheme() == null)
+            uri = Paths.get(resource).toUri();
+        return newJarResource(uri);
+    }
+
     public static PoolingPathResource.Mount newJarResource(URI uri) throws IOException
     {
         if (!uri.getScheme().equalsIgnoreCase("jar"))
@@ -98,7 +107,6 @@ public abstract class Resource implements ResourceFactory
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("not an allowed path: " + path);
-
         URI jarUri = URI.create("jar:" + pathUri + "!/");
         return PoolingPathResource.mount(jarUri);
     }
