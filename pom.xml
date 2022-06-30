@@ -1682,9 +1682,30 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-alpn</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-boot-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-boot-warurl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-httpservice</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>quic-client</artifactId>
