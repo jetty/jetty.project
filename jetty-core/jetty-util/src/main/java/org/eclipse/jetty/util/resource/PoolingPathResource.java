@@ -173,39 +173,46 @@ public class PoolingPathResource extends PathResource
 
         private Metadata(URI uri)
         {
-            URI unjarifiedUri = unjarify(uri);
-            Path path = Paths.get(unjarifiedUri).toAbsolutePath();
+            Path path = uriToPath(uri);
 
             long size = -1L;
             FileTime lastModifiedTime = null;
-            try
+            if (path != null)
             {
-                size = Files.size(path);
-                lastModifiedTime = Files.getLastModifiedTime(path);
+                try
+                {
+                    size = Files.size(path);
+                    lastModifiedTime = Files.getLastModifiedTime(path);
+                }
+                catch (IOException ioe)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
+                }
             }
-            catch (IOException ioe)
+            else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
+                    LOG.debug("Filesystem at {} is not backed by a file", uri);
             }
             this.counter = new AtomicInteger(1);
             this.path = path;
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
-            this.mount = new Mount(unjarifiedUri);
+            this.mount = new Mount(uri);
         }
 
-        private static URI unjarify(URI uri)
+        private static Path uriToPath(URI uri)
         {
             String scheme = uri.getScheme();
             if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
-                return uri;
+                return null;
 
             String spec = uri.getRawSchemeSpecificPart();
             int sep = spec.indexOf("!/");
             if (sep != -1)
                 spec = spec.substring(0, sep);
-            return URI.create(spec);
+            return Paths.get(URI.create(spec)).toAbsolutePath();
         }
     }
 
