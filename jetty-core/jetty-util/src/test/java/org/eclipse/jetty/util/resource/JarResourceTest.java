@@ -230,7 +230,7 @@ public class JarResourceTest
         try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
-            Resource anotherDir = resource.resolve("rez/another dir/");
+            Resource anotherDir = resource.resolve("rez/another%20dir/");
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
