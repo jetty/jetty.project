@@ -15,8 +15,11 @@ package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,8 @@ import org.slf4j.LoggerFactory;
 public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
+
+    private Resource.Mount _mount;
 
     public WebXmlConfiguration()
     {
@@ -48,7 +53,22 @@ public class WebXmlConfiguration extends AbstractConfiguration
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
                 if (defaultsDescriptor.startsWith(pkg))
-                    dftResource = Resource.newResource(WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length())));
+                {
+                    URL url = WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length()));
+                    if (url != null)
+                    {
+                        URI resource = url.toURI();
+                        if (resource.getScheme().equalsIgnoreCase("jar"))
+                        {
+                            _mount = Resource.newJarResource(resource);
+                            dftResource = _mount.newResource();
+                        }
+                        else
+                        {
+                            dftResource = Resource.newResource(resource);
+                        }
+                    }
+                }
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
@@ -117,6 +137,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)
                 context.getErrorHandler()).setErrorPages(null);
+
+        IO.close(_mount);
+        _mount = null;
 
         // TODO remove classpaths from classloader
     }
