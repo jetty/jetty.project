@@ -874,7 +874,10 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
-            addParsedClass(shortName, Resource.newResource("jar:" + jar.getURI() + "!/" + entry.getNameInJar()));
+            try (Resource.Mount mount = Resource.newJarResource("jar:" + jar.getURI() + "!/" + entry.getNameInJar()))
+            {
+                addParsedClass(shortName, mount.newResource());
+            }
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning class from jar {}!/{}", jar, entry);
             try (InputStream is = entry.getInputStream())
