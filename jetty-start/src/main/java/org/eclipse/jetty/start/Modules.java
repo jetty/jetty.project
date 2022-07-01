@@ -395,7 +395,6 @@ public class Modules implements Iterable<Module>
                 order.add(name);
             }
         }
-
         return order;
     }
 
