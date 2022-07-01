@@ -34,7 +34,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.3</checkstyle.version>
+    <checkstyle.version>10.3.1</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
