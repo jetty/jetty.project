@@ -21,7 +21,6 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +39,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (PoolingPathResource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
             sjr.setCaseSensitive(false);
@@ -65,7 +64,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (PoolingPathResource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
             sjr.setCaseSensitive(false);
@@ -90,7 +89,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (PoolingPathResource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
             sjr.setCaseSensitive(false);

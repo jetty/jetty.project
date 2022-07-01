@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,7 +87,7 @@ public abstract class Resource implements ResourceFactory
         return __defaultUseCaches;
     }
 
-    public static PoolingPathResource.Mount newJarResource(String resource) throws IOException
+    public static Resource.Mount newJarResource(String resource) throws IOException
     {
         URI uri = URI.create(resource);
         // If the URI has no scheme, we consider the string actually was a path.
@@ -95,14 +96,14 @@ public abstract class Resource implements ResourceFactory
         return newJarResource(uri);
     }
 
-    public static PoolingPathResource.Mount newJarResource(URI uri) throws IOException
+    public static Resource.Mount newJarResource(URI uri) throws IOException
     {
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
         return PoolingPathResource.mount(uri);
     }
 
-    public static PoolingPathResource.Mount newJarResource(Path path) throws IOException
+    public static Resource.Mount newJarResource(Path path) throws IOException
     {
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
@@ -1075,5 +1076,10 @@ public abstract class Resource implements ResourceFactory
         }
 
         return returnedResources;
+    }
+
+    public interface Mount extends Closeable
+    {
+        Resource newResource() throws IOException;
     }
 }

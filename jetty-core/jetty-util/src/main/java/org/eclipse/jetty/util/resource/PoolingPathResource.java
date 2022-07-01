@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -58,7 +57,13 @@ public class PoolingPathResource extends PathResource
         return r.getURI().equals(containerUri(getURI()));
     }
 
-    public static Mount mount(URI uri) throws IOException
+    public Path getContainerPath()
+    {
+        URI uri = containerUri(getURI());
+        return uri == null ? null : Path.of(uri);
+    }
+
+    public static PoolingMount mount(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
@@ -80,7 +85,7 @@ public class PoolingPathResource extends PathResource
         }
     }
 
-    public static Collection<Mount> mounts()
+    public static Collection<PoolingMount> mounts()
     {
         try (AutoLock ignore = POOL_LOCK.lock())
         {
@@ -188,7 +193,7 @@ public class PoolingPathResource extends PathResource
         private final FileTime lastModifiedTime;
         private final long size;
         private final Path path;
-        private final Mount mount;
+        private final PoolingMount mount;
 
         private Metadata(URI uri)
         {
@@ -218,7 +223,7 @@ public class PoolingPathResource extends PathResource
             this.path = path;
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
-            this.mount = new Mount(uri);
+            this.mount = new PoolingMount(uri);
         }
 
         private static Path uriToPath(URI uri)
@@ -228,15 +233,16 @@ public class PoolingPathResource extends PathResource
         }
     }
 
-    public static class Mount implements Closeable
+    public static class PoolingMount implements Resource.Mount
     {
         private final URI uri;
 
-        private Mount(URI uri)
+        private PoolingMount(URI uri)
         {
             this.uri = uri;
         }
 
+        @Override
         public Resource newResource() throws IOException
         {
             return Resource.newResource(uri);

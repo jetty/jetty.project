@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
-import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
@@ -96,7 +95,7 @@ public class OverlayManager
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                PoolingPathResource.Mount mount = Resource.newJarResource(a.getFile().toPath());
+                Resource.Mount mount = Resource.newJarResource(a.getFile().toPath());
                 SelectiveJarResource r = new SelectiveJarResource(mount.newResource());
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
@@ -110,7 +109,7 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                PoolingPathResource.Mount mount = Resource.newJarResource(a.getFile().toPath());
+                Resource.Mount mount = Resource.newJarResource(a.getFile().toPath());
                 Overlay overlay = new Overlay(null, mount.newResource());
                 overlays.add(overlay);
             }

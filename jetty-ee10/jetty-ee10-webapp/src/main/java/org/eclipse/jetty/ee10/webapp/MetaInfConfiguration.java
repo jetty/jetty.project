@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
-import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -476,7 +475,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                PoolingPathResource.Mount mount = Resource.newJarResource(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.newJarResource(uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.newResource();
             }
 

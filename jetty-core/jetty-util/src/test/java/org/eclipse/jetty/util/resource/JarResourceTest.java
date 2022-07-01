@@ -54,7 +54,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
 
@@ -96,7 +96,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             Collection<Resource> deep = r.getAllResources();
@@ -112,7 +112,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             Resource container = Resource.newResource(testZip);
@@ -136,7 +136,7 @@ public class JarResourceTest
         URI uri = URI.create(s);
 
         try (ZipFile zf = new ZipFile(testZip.toFile());
-             PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+             Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
@@ -153,7 +153,7 @@ public class JarResourceTest
 
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt";
         URI uri = URI.create(s);
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             assertTrue(r.exists());
@@ -167,7 +167,7 @@ public class JarResourceTest
         String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
         URI uri = URI.create(s);
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/");
@@ -199,7 +199,7 @@ public class JarResourceTest
         String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
         URI uri = URI.create(s);
 
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/oddities/");
@@ -227,7 +227,7 @@ public class JarResourceTest
         String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
         URI uri = URI.create(s);
 
-        try (PoolingPathResource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount mount = PoolingPathResource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource anotherDir = resource.resolve("rez/another%20dir/");

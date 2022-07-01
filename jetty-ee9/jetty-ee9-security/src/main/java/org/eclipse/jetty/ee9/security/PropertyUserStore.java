@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -99,7 +98,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             }
             catch (IllegalArgumentException e)
             {
-                try (PoolingPathResource.Mount mount = Resource.newJarResource(config))
+                try (Resource.Mount mount = Resource.newJarResource(config))
                 {
                     Resource configResource = mount.newResource();
                     _configPath = extractPackedFile(configResource);
