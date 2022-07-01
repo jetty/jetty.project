@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.PoolingPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
+    private Resource.Mount _mount;
 
     public WebInfConfiguration()
     {
@@ -90,6 +92,9 @@ public class WebInfConfiguration extends AbstractConfiguration
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
+
+        IO.close(_mount);
+        _mount = null;
 
         //reset the base resource back to what it was before we did any unpacking of resources
         //TODO there is something wrong with the config of the resource base as this should never be null
@@ -218,7 +223,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
 
-        //Create a name for the webapp     
+        //Create a name for the webapp
         String temp = getCanonicalNameForWebAppTmpDir(context);
         File tmpDir = null;
         if (context.isPersistTempDirectory())
@@ -311,18 +316,16 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                // TODO
-//                Resource jarWebApp = JarResource.newJarResource(webApp);
-//                if (jarWebApp.exists() && jarWebApp.isDirectory())
-//                    webApp = jarWebApp;
+                _mount = Resource.newJarResource(webApp.getPath());
+                webApp = _mount.newResource();
             }
 
             // If we should extract or the URL is still not usable
             if (webApp.exists() && (
-                (context.isCopyWebDir() && webApp.getPath() != null && webApp.isDirectory()) ||
-                    (context.isExtractWAR() && webApp.getPath() != null && !webApp.isDirectory()) ||
+                (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
+                    (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !webApp.isDirectory())
+                    !originalWarResource.isDirectory())
             )
             {
                 // Look for sibling directory.
@@ -343,7 +346,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (extractedWebAppDir == null)
                 {
                     // Then extract it if necessary to the temporary location
-                    extractedWebAppDir = new File(context.getTempDirectory(), "webapp").toPath();
+                    extractedWebAppDir = context.getTempDirectory().toPath().resolve("webapp");
                     context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
                 }
 
@@ -367,9 +370,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                         Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                        // TODO
-//                        Resource jarWebApp = JarResource.newJarResource(webApp);
-//                        jarWebApp.copyTo(extractedWebAppDir);
+                        try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
+                        {
+                            Resource jarWebApp = mount.newResource();
+                            jarWebApp.copyTo(extractedWebAppDir);
+                        }
                         extractionLock.delete();
                     }
                     else
@@ -383,9 +388,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                             Files.createDirectory(extractedWebAppDir);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                            // TODO
-//                            Resource jarWebApp = JarResource.newJarResource(webApp);
-//                            jarWebApp.copyTo(extractedWebAppDir);
+                            try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
+                            {
+                                Resource jarWebApp = mount.newResource();
+                                jarWebApp.copyTo(extractedWebAppDir);
+                            }
                             extractionLock.delete();
                         }
                     }
@@ -562,11 +569,11 @@ public class WebInfConfiguration extends AbstractConfiguration
     {
         // Use File System and File interface if present
         Path resourceFile = resource.getPath();
-        // TODO
-//        if ((resourceFile != null) && (resource instanceof JarFileResource))
-//        {
-//            resourceFile = ((JarFileResource)resource).getJarFile();
-//        }
+
+        if ((resourceFile != null) && (resource instanceof PoolingPathResource))
+        {
+            resourceFile = ((PoolingPathResource)resource).getContainerPath();
+        }
 
         if (resourceFile != null)
         {
