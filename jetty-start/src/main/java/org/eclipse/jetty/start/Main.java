@@ -188,7 +188,7 @@ public class Main
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
     {
-        if (args.getEnabledModules().isEmpty())
+        if (args.getSelectedModules().isEmpty())
         {
             if (Files.exists(getBaseHome().getBasePath("start.jar")))
                 StartLog.error("Do not start with ${jetty.base} == ${jetty.home}!");
@@ -326,7 +326,7 @@ public class Main
         modules.registerAll();
 
         // 4) Active Module Resolution
-        List<String> selectedModules = args.getEnabledModules();
+        List<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
         List<String> unknownModules = new ArrayList<>(selectedModules);
         unknownModules.removeAll(sortedSelectedModules);
