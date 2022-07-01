@@ -186,7 +186,7 @@
 <!--    <module>documentation</module>-->
     <module>jetty-core</module>
     <module>jetty-integrations</module>
-<!--    <module>jetty-ee8</module>-->
+    <module>jetty-ee8</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
     <module>jetty-home</module>
