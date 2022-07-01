@@ -107,7 +107,7 @@
     <mariadb.version>3.0.5</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.resolver.version>1.8.1</maven.resolver.version>
-    <maven.version>3.8.4</maven.version>
+    <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
