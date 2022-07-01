@@ -77,7 +77,7 @@
     <logback.version>1.2.11</logback.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven.resolver.version>1.8.0</maven.resolver.version>
-    <maven.version>3.8.4</maven.version>
+    <maven.version>3.8.6</maven.version>
     <mongodb.version>2.14.3</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
     <osgi.core.version>6.0.0</osgi.core.version>
