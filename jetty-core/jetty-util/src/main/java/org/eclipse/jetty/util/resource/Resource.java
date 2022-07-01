@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -209,6 +210,21 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newSystemResource(String resource) throws IOException
     {
+        return newSystemResource(resource, null);
+    }
+
+    /**
+     * Construct a system resource from a string.
+     * The resource is tried as classloader resource before being
+     * treated as a normal resource.
+     *
+     * @param resource Resource as string representation
+     * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
+     * @return The new Resource
+     * @throws IOException Problem accessing resource.
+     */
+    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer) throws IOException
+    {
         URL url = null;
         // Try to format as a URL?
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -250,7 +266,21 @@ public abstract class Resource implements ResourceFactory
         if (url == null)
             return null;
 
-        return newResource(url);
+        try
+        {
+            URI uri = url.toURI();
+            if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
+            {
+                Mount mount = newJarResource(uri);
+                mountConsumer.accept(mount);
+                return mount.newResource();
+            }
+            return newResource(uri);
+        }
+        catch (IOException | URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
     }
 
     /**

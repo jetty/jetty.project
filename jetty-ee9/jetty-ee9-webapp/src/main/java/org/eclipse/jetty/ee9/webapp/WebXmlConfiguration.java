@@ -48,7 +48,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
+            Resource dftResource = Resource.newSystemResource(defaultsDescriptor, mount -> _mount = mount);
             if (dftResource == null)
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
