@@ -140,7 +140,7 @@
 
     <jsr250-api.version>1.0</jsr250-api.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <maria.version>3.0.5</maria.version>
+    <maria.version>3.0.6</maria.version>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
     <mongo.docker.version>3.2.20</mongo.docker.version>
