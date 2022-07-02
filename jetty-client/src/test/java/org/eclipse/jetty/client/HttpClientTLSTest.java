@@ -22,9 +22,9 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -721,16 +721,12 @@ public class HttpClientTLSTest
         @Override
         protected ByteBuffer allocate(int capacity)
         {
-            System.err.println("allocate " + capacity);
-            new Throwable().printStackTrace();
             return _pool.acquire(capacity, false);
         }
 
         @Override
         protected ByteBuffer allocateDirect(int capacity)
         {
-            System.err.println("allocateDirect " + capacity);
-            new Throwable().printStackTrace();
             return _pool.acquire(capacity, true);
         }
 
@@ -823,7 +819,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
@@ -892,7 +888,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
@@ -975,7 +971,7 @@ public class HttpClientTLSTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        List<ByteBuffer> leakedBuffers = new ArrayList<>();
+        List<ByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ArrayByteBufferPool byteBufferPool = new ArrayByteBufferPool()
         {
             @Override
