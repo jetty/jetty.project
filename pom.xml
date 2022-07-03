@@ -57,7 +57,7 @@
     <jackson.core.version>2.13.3</jackson.core.version>
     <jackson.databind.version>2.13.3</jackson.databind.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.1.0</jakarta.annotation.api.version>
+    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
