@@ -16,7 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.io.ByteBufferPool.Bucket;
+import org.eclipse.jetty.io.AbstractByteBufferPool.Bucket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
@@ -138,7 +138,7 @@ public class MappedByteBufferPoolTest
     {
         int factor = 1024;
         int maxMemory = 11 * factor;
-        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, null, -1, maxMemory);
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, -1, maxMemory);
         ConcurrentMap<Integer, Bucket> buckets = bufferPool.bucketsFor(true);
 
         // Create the buckets - the oldest is the larger.
