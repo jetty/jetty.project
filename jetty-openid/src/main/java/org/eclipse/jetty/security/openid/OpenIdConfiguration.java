@@ -126,6 +126,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
 
     /**
      * Process the OpenID Connect metadata discovered by {@link #fetchOpenIdConnectMetadata()}.
+     * By default, only the {@link #AUTHORIZATION_ENDPOINT} and {@link #TOKEN_ENDPOINT} claims are extracted.
+     * @see <a href="https://openid.net/specs/openid-connect-discovery-1_0.html">OpenID Connect Discovery 1.0</a>
      */
     protected void processMetadata(Map<String, Object> discoveryDocument)
     {
