@@ -69,43 +69,73 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
      * Creates a new MappedByteBufferPool with the given configuration.
      *
      * @param factor the capacity factor
-     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param maxBucketSize the maximum ByteBuffer bucket size
      */
-    public MappedByteBufferPool(int factor, int maxQueueLength)
+    public MappedByteBufferPool(int factor, int maxBucketSize)
     {
-        this(factor, maxQueueLength, null);
+        this(factor, maxBucketSize, null);
     }
 
     /**
      * Creates a new MappedByteBufferPool with the given configuration.
      *
      * @param factor the capacity factor
-     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param maxBucketSize the maximum ByteBuffer bucket size
      * @param newBucket the function that creates a Bucket
      */
-    public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket)
+    private MappedByteBufferPool(int factor, int maxBucketSize, Function<Integer, Bucket> newBucket)
     {
-        this(factor, maxQueueLength, newBucket, 0, 0);
+        this(factor, maxBucketSize, newBucket, 0, 0, 0, 0);
     }
 
     /**
      * Creates a new MappedByteBufferPool with the given configuration.
      *
      * @param factor the capacity factor
-     * @param maxQueueLength the maximum ByteBuffer queue length
-     * @param newBucket the function that creates a Bucket
+     * @param maxBucketSize the maximum ByteBuffer bucket size
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
      */
-    public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory)
+    public MappedByteBufferPool(int factor, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        super(factor, maxQueueLength, maxHeapMemory, maxDirectMemory);
+        this(factor, maxBucketSize, null, maxHeapMemory, maxDirectMemory, maxHeapMemory, maxDirectMemory);
+    }
+
+    /**
+     * Creates a new MappedByteBufferPool with the given configuration.
+     *
+     * @param factor the capacity factor
+     * @param maxBucketSize the maximum ByteBuffer bucket size
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param retainedHeapMemory the max heap memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
+     */
+    public MappedByteBufferPool(int factor, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        this(factor, maxBucketSize, null, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
+    }
+    
+    /**
+     * Creates a new MappedByteBufferPool with the given configuration.
+     *
+     * @param factor the capacity factor
+     * @param maxBucketSize the maximum ByteBuffer bucket size
+     * @param newBucket the function that creates a Bucket
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param retainedHeapMemory the max heap memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
+     * @param retainedDirectMemory the max direct memory in bytes, -2 for no retained memory, -1 for unlimited retained memory or 0 to use default heuristic
+     */
+    private MappedByteBufferPool(int factor, int maxBucketSize, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        super(factor, 0, maxBucketSize, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
         _newBucket = newBucket;
     }
 
     private Bucket newBucket(int key, boolean direct)
     {
-        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(capacityFor(key), getMaxQueueLength(), updateMemory(direct));
+        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(capacityFor(key), getMaxBucketSize(), updateMemory(direct));
     }
 
     @Override
@@ -269,7 +299,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
     {
         return String.format("%s@%x{maxQueueLength=%s, factor=%s}",
             this.getClass().getSimpleName(), hashCode(),
-            getMaxQueueLength(),
+            getMaxBucketSize(),
             getCapacityFactor());
     }
 }

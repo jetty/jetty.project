@@ -59,6 +59,13 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     }
 
     @Override
+    public RetainableByteBufferPool asRetainableByteBufferPool()
+    {
+        // the retainable pool is just a client of the normal pool, so no special handling required.
+        return delegate.asRetainableByteBufferPool();
+    }
+
+    @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
         ByteBuffer buffer = delegate.acquire(size, direct);
