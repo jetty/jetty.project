@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -25,14 +25,14 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoggedOutAuthentication;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoggedOutAuthentication;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,8 +120,11 @@ public class DeferredAuthentication implements Authentication.Deferred
         if (security != null)
         {
             security.logout(null);
-            _authenticator.logout(request);
-            return new LoggedOutAuthentication(_authenticator);
+            if (_authenticator instanceof LoginAuthenticator)
+            {
+                ((LoginAuthenticator)_authenticator).logout(request);
+                return new LoggedOutAuthentication((LoginAuthenticator)_authenticator);
+            }
         }
 
         return Authentication.UNAUTHENTICATED;
