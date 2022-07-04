@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -238,7 +241,7 @@ public class ArrayRetainableByteBufferPoolTest
         pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(2048L));
+        assertThat(pool.getDirectMemory(), is(2L * AbstractByteBufferPool.DEFAULT_FACTOR));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
 
@@ -282,16 +285,16 @@ public class ArrayRetainableByteBufferPoolTest
         {
             RetainableByteBuffer buf1 = pool.acquire(10, true);
             assertThat(buf1, is(notNullValue()));
-            assertThat(buf1.capacity(), is(1024));
+            assertThat(buf1.capacity(), is(AbstractByteBufferPool.DEFAULT_FACTOR));
             RetainableByteBuffer buf2 = pool.acquire(10, true);
             assertThat(buf2, is(notNullValue()));
-            assertThat(buf2.capacity(), is(1024));
+            assertThat(buf2.capacity(), is(AbstractByteBufferPool.DEFAULT_FACTOR));
             buf1.release();
             buf2.release();
 
             RetainableByteBuffer buf3 = pool.acquire(16384 + 1, true);
             assertThat(buf3, is(notNullValue()));
-            assertThat(buf3.capacity(), is(16384 + 1024));
+            assertThat(buf3.capacity(), is(16384 + AbstractByteBufferPool.DEFAULT_FACTOR));
             buf3.release();
 
             RetainableByteBuffer buf4 = pool.acquire(32768, true);
@@ -307,7 +310,7 @@ public class ArrayRetainableByteBufferPoolTest
 
         assertThat(pool.getDirectByteBufferCount(), is(4L));
         assertThat(pool.getHeapByteBufferCount(), is(1L));
-        assertThat(pool.getDirectMemory(), is(1024 + 1024 + 16384 + 1024 + 32768L));
+        assertThat(pool.getDirectMemory(), is(AbstractByteBufferPool.DEFAULT_FACTOR * 3L + 16384 + 32768L));
         assertThat(pool.getHeapMemory(), is(32768L));
 
         pool.clear();
@@ -390,5 +393,30 @@ public class ArrayRetainableByteBufferPoolTest
         buffer.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
         assertThat(buffer.release(), is(true));
         assertThat(buffer.getBuffer().order(), Matchers.is(ByteOrder.BIG_ENDIAN));
+    }
+
+    @Test
+    public void testLogarithmic()
+    {
+        LogarithmicArrayByteBufferPool pool = new LogarithmicArrayByteBufferPool();
+        ByteBuffer buffer5 = pool.acquire(5, false);
+        pool.release(buffer5);
+        ByteBuffer buffer6 = pool.acquire(6, false);
+        assertThat(buffer6, sameInstance(buffer5));
+        pool.release(buffer6);
+        ByteBuffer buffer9 = pool.acquire(9, false);
+        assertThat(buffer9, not(sameInstance(buffer5)));
+        pool.release(buffer9);
+
+        RetainableByteBufferPool retainablePool = pool.asRetainableByteBufferPool();
+
+        RetainableByteBuffer retain5 = retainablePool.acquire(5, false);
+        retain5.release();
+        RetainableByteBuffer retain6 = retainablePool.acquire(6, false);
+        assertThat(retain6, sameInstance(retain5));
+        retain6.release();
+        RetainableByteBuffer retain9 = retainablePool.acquire(9, false);
+        assertThat(retain9, not(sameInstance(retain5)));
+        retain9.release();
     }
 }

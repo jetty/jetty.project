@@ -462,7 +462,29 @@ public class StartArgs
         return allModules;
     }
 
-    public Set<String> getEnabledModules()
+    /**
+     * @deprecated use {@link #getSelectedModules()} instead
+     */
+    @Deprecated
+    public List<String> getEnabledModules()
+    {
+        return getSelectedModules();
+    }
+
+    /**
+     * <p>
+     * The list of selected Modules to enable based on configuration
+     * obtained from {@code start.d/*.ini}, {@code start.ini}, and command line.
+     * </p>
+     *
+     * <p>
+     *     For full list of enabled modules, use {@link Modules#getEnabled()}
+     * </p>
+     *
+     * @return the list of selected modules (by name) that the configuration has.
+     * @see Modules#getEnabled()
+     */
+    public List<String> getSelectedModules()
     {
         return this.modules;
     }
@@ -1176,11 +1198,11 @@ public class StartArgs
             return environment;
         }
 
-        // Enable a module
+        // Select a module to eventually be enabled
         if (arg.startsWith("--module="))
         {
             List<String> moduleNames = Props.getValues(arg);
-            enableModules(source, moduleNames);
+            selectModules(source, moduleNames);
             Module module = getAllModules().get(moduleNames.get(moduleNames.size() - 1));
             String envName = module.getEnvironment();
             return envName == null ? coreEnvironment : getEnvironment(envName);
@@ -1334,7 +1356,7 @@ public class StartArgs
         setProperty(environment, key, value, source);
     }
 
-    private void enableModules(String source, List<String> moduleNames)
+    private void selectModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
         {

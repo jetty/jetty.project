@@ -32,10 +32,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -185,12 +184,26 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             scheduler = _server.getBean(Scheduler.class);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
         addBean(_scheduler);
-        if (pool == null)
-            pool = _server.getBean(ByteBufferPool.class);
-        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
-        addBean(_byteBufferPool);
-        RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool.ExponentialPool() : retainableByteBufferPool, retainableByteBufferPool == null);
+
+        synchronized (server)
+        {
+            if (pool == null)
+            {
+                // Look for (and cache) a common pool on the server
+                pool = server.getBean(ByteBufferPool.class);
+                if (pool == null)
+                {
+                    pool = new LogarithmicArrayByteBufferPool();
+                    server.addBean(pool, true);
+                }
+                addBean(pool, false);
+            }
+            else
+            {
+                addBean(pool, true);
+            }
+        }
+        _byteBufferPool = pool;
 
         for (ConnectionFactory factory : factories)
         {
