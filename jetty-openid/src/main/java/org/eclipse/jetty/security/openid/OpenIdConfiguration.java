@@ -40,6 +40,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(OpenIdConfiguration.class);
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
+    private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
+    private static final String TOKEN_ENDPOINT = "token_endpoint";
+    private static final String ISSUER = "issuer";
 
     private final HttpClient httpClient;
     private final String issuer;
@@ -121,20 +124,27 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         }
     }
 
+    /**
+     * Process the OpenID Connect metadata discovered by {@link #fetchOpenIdConnectMetadata()}.
+     */
     protected void processMetadata(Map<String, Object> discoveryDocument)
     {
-        authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
+        authEndpoint = (String)discoveryDocument.get(AUTHORIZATION_ENDPOINT);
         if (authEndpoint == null)
-            throw new IllegalArgumentException("authorization_endpoint");
+            throw new IllegalArgumentException(AUTHORIZATION_ENDPOINT);
 
-        tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
+        tokenEndpoint = (String)discoveryDocument.get(TOKEN_ENDPOINT);
         if (tokenEndpoint == null)
-            throw new IllegalArgumentException("token_endpoint");
+            throw new IllegalArgumentException(TOKEN_ENDPOINT);
 
-        if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
+        if (!Objects.equals(discoveryDocument.get(ISSUER), issuer))
             LOG.warn("The issuer in the metadata is not correct.");
     }
 
+    /**
+     * Obtain the JSON metadata from OpenID Connect Discovery Configuration Endpoint.
+     * @return a set of Claims about the OpenID Provider's configuration in JSON format.
+     */
     protected Map<String, Object> fetchOpenIdConnectMetadata()
     {
         String provider = issuer;
