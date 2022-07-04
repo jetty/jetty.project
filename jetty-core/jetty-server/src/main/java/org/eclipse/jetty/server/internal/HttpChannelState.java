@@ -662,16 +662,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 failure = x;
             }
+
             if (failure != null)
-            {
-                try (AutoLock ignored = _lock.lock())
-                {
-                    if (request._httpChannel != null && !request._httpChannel._completed)
-                        request._callback.failed(failure);
-                    else if (LOG.isDebugEnabled())
-                        LOG.debug("Process failed", failure);
-                }
-            }
+                _request._callback.ensureCompleted(failure);
 
             HttpStream stream;
             boolean completeStream;
@@ -1373,6 +1366,8 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _request._lock.lock())
             {
                 request = _request;
+
+                // Be forgiving of applications that report a failure that is already known by treating as a noop.
                 if (request._httpChannel != null && request._httpChannel._error != null && TypeUtil.isAssociated(request._httpChannel._error.getCause(), failure))
                     return;
                 lockedOnComplete();
@@ -1434,6 +1429,25 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 _completedBy = new Throwable(Thread.currentThread().getName());
             httpChannelState._completed = true;
+        }
+
+        public void ensureCompleted(Throwable failure)
+        {
+            HttpChannelState httpChannel = _request._httpChannel;
+            if (httpChannel != null)
+            {
+                try (AutoLock ignored = httpChannel._lock.lock())
+                {
+                    if (!httpChannel._completed)
+                    {
+                        failed(failure);
+                        return;
+                    }
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Process failed", failure);
         }
 
         @Override
