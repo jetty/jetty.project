@@ -339,7 +339,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return null;
 
             // If we have no space
-            if (entries.size() >= maxEntries)
+            if (maxEntries > 0 && entries.size() >= maxEntries)
                 return null;
 
             Entry entry = newEntry();

@@ -45,7 +45,7 @@
     </Arg>
     <Arg>mail/Session</Arg>
     <Arg>
-      <New class="org.eclipse.jetty.jndi.factories.MailSessionReference">
+      <New class="org.eclipse.jetty.ee10.jndi.factories.MailSessionReference">
         <Set name="user">CHANGE-ME</Set>
         <Set name="password">CHANGE-ME</Set>
         <Set name="properties">

@@ -102,3 +102,4 @@ public interface Frame
 
     boolean isRsv3();
 }
+

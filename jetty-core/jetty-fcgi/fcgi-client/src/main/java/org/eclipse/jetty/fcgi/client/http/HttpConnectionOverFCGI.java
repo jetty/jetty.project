@@ -79,7 +79,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
         HttpClient client = destination.getHttpClient();
-        this.networkByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, client.getByteBufferPool());
+        this.networkByteBufferPool = client.getByteBufferPool().asRetainableByteBufferPool();
     }
 
     public HttpDestination getHttpDestination()

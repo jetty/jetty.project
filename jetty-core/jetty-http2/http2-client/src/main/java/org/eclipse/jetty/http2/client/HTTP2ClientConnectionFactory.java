@@ -69,7 +69,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, byteBufferPool);
+        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, retainableByteBufferPool, executor, endPoint,
             parser, session, client.getInputBufferSize(), promise, listener);

@@ -57,7 +57,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
     {
         super(endPoint, executor);
-        this.buffers = RetainableByteBufferPool.findOrAdapt(null, byteBufferPool);
+        this.buffers = byteBufferPool.asRetainableByteBufferPool();
         this.parser = parser;
         parser.init(MessageListener::new);
     }
