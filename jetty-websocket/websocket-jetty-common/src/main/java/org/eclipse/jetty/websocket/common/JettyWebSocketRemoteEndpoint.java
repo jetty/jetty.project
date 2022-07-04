@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -46,37 +45,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.batchMode = batchMode;
-    }
-
-    /**
-     * Initiate close of the Remote with no status code (no payload)
-     *
-     * @since 10.0
-     */
-    public void close()
-    {
-        close(StatusCode.NO_CODE, null);
-    }
-
-    /**
-     * Initiate close of the Remote with specified status code and optional reason phrase
-     *
-     * @param statusCode the status code (must be valid and can be sent)
-     * @param reason optional reason code
-     * @since 10.0
-     */
-    public void close(int statusCode, String reason)
-    {
-        try
-        {
-            FutureCallback b = new FutureCallback();
-            coreSession.close(statusCode, reason, b);
-            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
     }
 
     @Override
