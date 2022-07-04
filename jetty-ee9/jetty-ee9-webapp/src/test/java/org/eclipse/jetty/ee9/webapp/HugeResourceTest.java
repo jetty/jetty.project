@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileStore;
@@ -42,7 +41,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Handler;
@@ -54,6 +53,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -69,7 +69,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-@Disabled //TODO
 @Tag("large-disk-resource")
 public class HugeResourceTest
 {
@@ -102,7 +101,7 @@ public class HugeResourceTest
 
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
         makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
-        makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
+        // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
@@ -117,7 +116,7 @@ public class HugeResourceTest
 
         ret.add(Arguments.of("test-1g.dat", GB));
         ret.add(Arguments.of("test-4g.dat", 4 * GB));
-        ret.add(Arguments.of("test-10g.dat", 10 * GB));
+        // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
     }
@@ -187,10 +186,9 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(staticBase);
+        context.setBaseResource(new PathResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
-        context.addServlet(ChunkedServlet.class, "/chunked/*");
 
         String location = multipartTempDir.toString();
         long maxFileSize = Long.MAX_VALUE;
@@ -201,7 +199,7 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
         server.start();
     }
 
@@ -226,7 +224,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testDownloadStatic(String filename, long expectedSize) throws Exception
+    public void testDownload(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
@@ -253,33 +251,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testDownloadChunked(String filename, long expectedSize) throws Exception
-    {
-        URI destUri = server.getURI().resolve("/chunked/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.GET);
-        request.send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
-        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
-
-        try (ByteCountingOutputStream out = new ByteCountingOutputStream();
-             InputStream in = responseListener.getInputStream())
-        {
-            IO.copy(in, out);
-            assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("staticFiles")
-    public void testHeadStatic(String filename, long expectedSize) throws Exception
+    public void testHead(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
@@ -300,30 +272,6 @@ public class HugeResourceTest
         String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
         long contentLengthLong = Long.parseLong(contentLength);
         assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
-    }
-
-    @ParameterizedTest
-    @MethodSource("staticFiles")
-    public void testHeadChunked(String filename, long expectedSize) throws Exception
-    {
-        URI destUri = server.getURI().resolve("/chunked/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.HEAD);
-        request.send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        try (InputStream in = responseListener.getInputStream())
-        {
-            assertThat(in.read(), is(-1));
-        }
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
-        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
     }
 
     @ParameterizedTest
@@ -345,6 +293,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
+    @Disabled // TODO
     public void testUploadMultipart(String filename, long expectedSize) throws Exception
     {
         MultiPartRequestContent multipart = new MultiPartRequestContent();
@@ -409,22 +358,6 @@ public class HugeResourceTest
             resp.setContentType("text/plain");
             resp.setCharacterEncoding("utf-8");
             resp.getWriter().printf("bytes-received=%d%n", byteCounting.getCount());
-        }
-    }
-
-    public static class ChunkedServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
-        {
-            URL resource = req.getServletContext().getResource(req.getPathInfo());
-            OutputStream output = resp.getOutputStream();
-            try (InputStream input = resource.openStream())
-            {
-                resp.setContentType("application/octet-stream");
-                resp.flushBuffer();
-                IO.copy(input, output);
-            }
         }
     }
 
