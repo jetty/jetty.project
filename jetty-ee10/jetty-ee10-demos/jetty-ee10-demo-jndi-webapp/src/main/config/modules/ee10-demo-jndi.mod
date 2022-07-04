@@ -15,6 +15,7 @@ ee10-deploy
 ext
 jdbc
 ee10-plus
+ee10-jndi
 ee10-demo-mock-resources
 
 [files]
