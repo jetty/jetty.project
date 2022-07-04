@@ -161,14 +161,14 @@ public abstract class Resource implements ResourceFactory
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
 
-        // If the scheme is allowed by PathResource, we can build a non-pooling PathResource.
+        // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
         if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
             return new PathResource(uri);
 
-        // Otherwise build a PoolingPathResource.
+        // Otherwise build a MountedPathResource.
         try
         {
-            return new PoolingPathResource(uri);
+            return new MountedPathResource(uri);
         }
         catch (NoSuchFileException nsfe)
         {

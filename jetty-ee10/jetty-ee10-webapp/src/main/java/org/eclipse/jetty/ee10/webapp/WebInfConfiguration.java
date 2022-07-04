@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.PoolingPathResource;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -570,9 +570,9 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Use File System and File interface if present
         Path resourceFile = resource.getPath();
 
-        if ((resourceFile != null) && (resource instanceof PoolingPathResource))
+        if ((resourceFile != null) && (resource instanceof MountedPathResource))
         {
-            resourceFile = ((PoolingPathResource)resource).getContainerPath();
+            resourceFile = ((MountedPathResource)resource).getContainerPath();
         }
 
         if (resourceFile != null)

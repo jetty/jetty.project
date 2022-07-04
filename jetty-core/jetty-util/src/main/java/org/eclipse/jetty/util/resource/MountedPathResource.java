@@ -22,9 +22,9 @@ import java.nio.file.Path;
  * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
  * must use this class, for instance the one handling the `jar` scheme.
  */
-public class PoolingPathResource extends PathResource
+public class MountedPathResource extends PathResource
 {
-    PoolingPathResource(URI uri) throws IOException
+    MountedPathResource(URI uri) throws IOException
     {
         super(uri, true);
     }

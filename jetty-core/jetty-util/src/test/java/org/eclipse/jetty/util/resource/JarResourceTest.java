@@ -110,7 +110,7 @@ public class JarResourceTest
             Resource r = Resource.newResource(uri);
             Resource container = Resource.newResource(testZip);
 
-            assertThat(r, instanceOf(PoolingPathResource.class));
+            assertThat(r, instanceOf(MountedPathResource.class));
 
             assertTrue(r.isContainedIn(container));
 
