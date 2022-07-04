@@ -34,32 +34,41 @@ public interface RetainableByteBufferPool
 
     static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
     {
-        return new RetainableByteBufferPool()
+        return new NotRetainedByteBufferPool(byteBufferPool);
+    }
+
+    class NotRetainedByteBufferPool implements RetainableByteBufferPool
+    {
+        private final ByteBufferPool _byteBufferPool;
+
+        public NotRetainedByteBufferPool(ByteBufferPool byteBufferPool)
         {
-            @Override
-            public RetainableByteBuffer acquire(int size, boolean direct)
-            {
-                ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-                RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, this::release);
-                retainableByteBuffer.acquire();
-                return retainableByteBuffer;
-            }
+            _byteBufferPool = byteBufferPool;
+        }
 
-            private void release(RetainableByteBuffer retainedBuffer)
-            {
-                byteBufferPool.release(retainedBuffer.getBuffer());
-            }
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            ByteBuffer byteBuffer = _byteBufferPool.acquire(size, direct);
+            RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, this::release);
+            retainableByteBuffer.acquire();
+            return retainableByteBuffer;
+        }
 
-            @Override
-            public void clear()
-            {
-            }
+        private void release(RetainableByteBuffer retainedBuffer)
+        {
+            _byteBufferPool.release(retainedBuffer.getBuffer());
+        }
 
-            @Override
-            public String toString()
-            {
-                return String.format("NonRetainableByteBufferPool@%x{%s}", hashCode(), byteBufferPool.toString());
-            }
-        };
+        @Override
+        public void clear()
+        {
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("NonRetainableByteBufferPool@%x{%s}", hashCode(), _byteBufferPool.toString());
+        }
     }
 }
