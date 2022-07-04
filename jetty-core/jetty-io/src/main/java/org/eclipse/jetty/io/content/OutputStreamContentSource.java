@@ -21,6 +21,14 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 
+/**
+ * A {@link Content.Source} backed backed by an {@link OutputStream}.
+ * <p>
+ * Any bytes written to the {@link OutputStream} returned by {@link #getOutputStream()}
+ * is converted to a {@link Content.Chunk} and returned from {@link #read()}. If
+ * necessary, any {@link Runnable} passed to {@link #demand(Runnable)} is invoked.
+ * @see AsyncContent
+ */
 public class OutputStreamContentSource implements Content.Source
 {
     private final AsyncContent async = new AsyncContent();

@@ -16,16 +16,28 @@ package org.eclipse.jetty.io.content;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
+/**
+ * A {@link Content.Source} that is backed by an {@link InputStream}.
+ * <p>
+ * Data is read from the {@link InputStream} into a buffer that is optionally acquired
+ * from a {@link ByteBufferPool}, and converted to a {@link Content.Chunk} that is
+ * returned from {@link #read()}.
+ * </p>
+ *
+ */
 public class InputStreamContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final InputStream inputStream;
+    private final ByteBufferPool bufferPool;
     private int bufferSize = 4096;
     private Runnable demandCallback;
     private Content.Chunk.Error errorChunk;
@@ -33,7 +45,13 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream)
     {
+        this(inputStream, null);
+    }
+
+    public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
+    {
         this.inputStream = inputStream;
+        this.bufferPool = bufferPool == null ? new NullByteBufferPool() : bufferPool;
     }
 
     public int getBufferSize()
@@ -59,8 +77,8 @@ public class InputStreamContentSource implements Content.Source
 
         try
         {
-            byte[] buffer = new byte[getBufferSize()];
-            int read = inputStream.read(buffer);
+            ByteBuffer buffer = bufferPool.acquire(getBufferSize(), false);
+            int read = inputStream.read(buffer.array());
             if (read < 0)
             {
                 close();
@@ -68,8 +86,8 @@ public class InputStreamContentSource implements Content.Source
             }
             else
             {
-                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, read);
-                return Content.Chunk.from(byteBuffer, false);
+                buffer.position(read);
+                return Content.Chunk.from(buffer, false, bufferPool::release);
             }
         }
         catch (Throwable x)

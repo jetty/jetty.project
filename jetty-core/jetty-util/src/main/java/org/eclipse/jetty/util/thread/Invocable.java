@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import org.eclipse.jetty.util.Callback;
+
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -29,6 +31,8 @@ package org.eclipse.jetty.util.thread;
  */
 public interface Invocable
 {
+    Runnable NOOP = () -> {};
+
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**

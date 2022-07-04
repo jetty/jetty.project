@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
@@ -446,7 +447,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return from(byteBuffer, last, null);
+            return new ByteBufferChunk(byteBuffer, last, null);
         }
 
         /**
@@ -460,6 +461,20 @@ public class Content
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
             return new ByteBufferChunk(byteBuffer, last, releaser);
+        }
+
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
+         * @return a new Chunk
+         */
+        static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
+        {
+            // TODO make this non capturing
+            return new ByteBufferChunk(byteBuffer, last, () -> releaser.accept(byteBuffer));
         }
 
         /**

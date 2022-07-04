@@ -21,6 +21,13 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.IO;
 
+/**
+ * An {@link InputStream} that is backed by a {@link Content.Source}.
+ * <p>
+ * The read methods are implemented by calling {@link Content.Source#read()}.
+ * Any {@link Content.Chunk}s read are released once all their content
+ * has been read.
+ */
 public class ContentSourceInputStream extends InputStream
 {
     private final Blocking.Shared blocking = new Blocking.Shared();

@@ -143,7 +143,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, () -> release(byteBuffer));
+        return Content.Chunk.from(byteBuffer, last, this::release);
     }
 
     @Override

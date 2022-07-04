@@ -23,6 +23,12 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
+/**
+ * A {@link Content.Source} backed by one or more {@link ByteBuffer}s.
+ * <p>
+ * The buffers passed in the constructor are made available as {@link Content.Chunk}s
+ * via {@link #read()}. Any calls to {@link #demand(Runnable)} are immediately satisfied.
+ */
 public class ByteBufferContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
