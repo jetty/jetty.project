@@ -1195,7 +1195,7 @@ public class StartArgs
             List<String> moduleNames = Props.getValues(arg);
             selectModules(source, moduleNames);
             Module module = getAllModules().get(moduleNames.get(moduleNames.size() - 1));
-            String envName = module.getEnvironment();
+            String envName = module == null ? null : module.getEnvironment();
             return envName == null ? coreEnvironment : getEnvironment(envName);
         }
 
