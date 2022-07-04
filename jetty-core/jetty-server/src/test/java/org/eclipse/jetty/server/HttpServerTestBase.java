@@ -37,9 +37,11 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
@@ -63,6 +65,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -1767,12 +1770,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        ArrayRetainableByteBufferPool pool = _connector.getBean(ArrayRetainableByteBufferPool.class);
-        long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-        contents.forEach(Content.Chunk::release);
-        long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-        assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
-        assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
+        ByteBufferPool bbp = _connector.getBean(ByteBufferPool.class);
+        RetainableByteBufferPool rbbp = bbp.asRetainableByteBufferPool();
+        if (rbbp instanceof ArrayRetainableByteBufferPool pool)
+        {
+            long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            contents.forEach(Content.Chunk::release);
+            long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
+            assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
+        }
+        else
+        {
+            assertThat(rbbp, instanceOf(ArrayRetainableByteBufferPool.class));
+        }
     }
 
     public static class TestHandler extends EchoHandler
