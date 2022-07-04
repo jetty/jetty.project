@@ -463,15 +463,6 @@ public class StartArgs
     }
 
     /**
-     * @deprecated use {@link #getSelectedModules()} instead
-     */
-    @Deprecated
-    public List<String> getEnabledModules()
-    {
-        return getSelectedModules();
-    }
-
-    /**
      * <p>
      * The list of selected Modules to enable based on configuration
      * obtained from {@code start.d/*.ini}, {@code start.ini}, and command line.
@@ -484,7 +475,7 @@ public class StartArgs
      * @return the list of selected modules (by name) that the configuration has.
      * @see Modules#getEnabled()
      */
-    public List<String> getSelectedModules()
+    public Set<String> getSelectedModules()
     {
         return this.modules;
     }

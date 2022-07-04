@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
@@ -335,7 +336,7 @@ public class Main
             base.source);
 
         // 4) Active Module Resolution
-        List<String> selectedModules = args.getSelectedModules();
+        Set<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
         List<String> unknownModules = new ArrayList<>(selectedModules);
         unknownModules.removeAll(sortedSelectedModules);
