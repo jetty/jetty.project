@@ -26,7 +26,7 @@ public interface RetainableByteBufferPool
      * Acquires a memory buffer from the pool.
      * @param size The size of the buffer. The returned buffer will have at least this capacity.
      * @param direct true if a direct memory buffer is needed, false otherwise.
-     * @return a memory buffer.
+     * @return a memory buffer with position and size set to 0.
      */
     RetainableByteBuffer acquire(int size, boolean direct);
 
