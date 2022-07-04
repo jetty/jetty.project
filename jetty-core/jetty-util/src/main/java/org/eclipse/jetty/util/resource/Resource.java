@@ -101,7 +101,7 @@ public abstract class Resource implements ResourceFactory
     {
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
-        return PoolingPathResource.mount(uri);
+        return FileSystemPool.INSTANCE.mount(uri);
     }
 
     public static Resource.Mount newJarResource(Path path) throws IOException
@@ -110,7 +110,7 @@ public abstract class Resource implements ResourceFactory
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("not an allowed path: " + path);
         URI jarUri = URI.create("jar:" + pathUri + "!/");
-        return PoolingPathResource.mount(jarUri);
+        return FileSystemPool.INSTANCE.mount(jarUri);
     }
 
     /**

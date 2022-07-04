@@ -13,18 +13,12 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -54,7 +48,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource r = Resource.newResource(uri);
 
@@ -96,7 +90,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource r = Resource.newResource(uri);
             Collection<Resource> deep = r.getAllResources();
@@ -110,9 +104,8 @@ public class JarResourceTest
         throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        URI uri = URI.create(s);
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource r = Resource.newResource(uri);
             Resource container = Resource.newResource(testZip);
@@ -131,12 +124,9 @@ public class JarResourceTest
         throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers";
-        URI uri = URI.create(s);
-
+        URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers");
         try (ZipFile zf = new ZipFile(testZip.toFile());
-             Resource.Mount mount = PoolingPathResource.mount(uri))
+             Resource.Mount ignore = Resource.newJarResource(uri))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
@@ -150,10 +140,8 @@ public class JarResourceTest
         throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt";
-        URI uri = URI.create(s);
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt");
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource r = Resource.newResource(uri);
             assertTrue(r.exists());
@@ -164,10 +152,8 @@ public class JarResourceTest
     public void testJarFileResourceList() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
-
-        URI uri = URI.create(s);
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/");
@@ -196,10 +182,8 @@ public class JarResourceTest
     public void testJarFileResourceListPreEncodedEntries() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
-        URI uri = URI.create(s);
-
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/oddities/");
@@ -224,10 +208,8 @@ public class JarResourceTest
     public void testJarFileResourceListDirWithSpace() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        String s = "jar:" + testJar.toUri().toASCIIString() + "!/";
-        URI uri = URI.create(s);
-
-        try (Resource.Mount mount = PoolingPathResource.mount(uri))
+        URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
+        try (Resource.Mount ignore = Resource.newJarResource(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource anotherDir = resource.resolve("rez/another%20dir/");
@@ -241,27 +223,6 @@ public class JarResourceTest
                 "..\\a different file.txt",
                 };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
-        }
-    }
-
-    private List<Path> listFiles(Path dir) throws IOException
-    {
-        try (Stream<Path> s = Files.list(dir))
-        {
-            return s.collect(Collectors.toList());
-        }
-    }
-
-    private List<Path> listFiles(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException
-    {
-        List<Path> results = new ArrayList<>();
-        try (DirectoryStream<Path> filteredDirStream = Files.newDirectoryStream(dir, filter))
-        {
-            for (Path path : filteredDirStream)
-            {
-                results.add(path);
-            }
-            return results;
         }
     }
 }
