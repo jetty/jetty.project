@@ -295,7 +295,10 @@ public class ContextProvider extends ScanningAppProvider
         }
         else
         {
-            throw new IllegalStateException("No ContextHandler for " + context);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not a context {}", context);
+            
+            return null;
         }
 
         assert contextHandler != null;

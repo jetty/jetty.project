@@ -82,7 +82,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
         Connector connector = connectionMetaData.getConnector();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, byteBufferPool);
+        RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
         return newWebSocketConnection(connectionMetaData.getConnection().getEndPoint(), connector.getExecutor(), connector.getScheduler(), byteBufferPool, retainableByteBufferPool, coreSession);
     }
 

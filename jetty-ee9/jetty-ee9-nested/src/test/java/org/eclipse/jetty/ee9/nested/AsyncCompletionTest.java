@@ -227,46 +227,39 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
-            // wait for OWP to execute (proves we do not block in write APIs)
-            boolean completeCalled = handler.waitForOWPExit();
-
             while (true)
             {
-                // wait for threads to return to base level (proves we are really async)
+                PendingCallback delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
+                Boolean owpExit = handler.pollForOWPExit();
+                if (owpExit == null)
+                {
+                    // handle any callback written so far
+                    while (delay != null)
+                    {
+                        delay.proceed();
+                        delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
+                    }
+                    continue;
+                }
+
+                // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are async.
                 long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
-                while (_threadPool.getBusyThreads() != base)
+                while (delay != null && _threadPool.getBusyThreads() > base)
                 {
                     if (System.nanoTime() > end)
                         throw new TimeoutException();
                     Thread.sleep(POLL);
                 }
 
-                if (completeCalled)
-                    break;
-
-                // We are now asynchronously waiting!
-                assertThat(__transportComplete.get(), is(false));
-
-                // If we are not complete, we must be waiting for one or more writes to complete
-                while (true)
+                // handle any callback written so far
+                while (delay != null)
                 {
-                    PendingCallback delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
-                    if (delay != null)
-                    {
-                        delay.proceed();
-                        continue;
-                    }
-                    // No delay callback found, have we finished OWP again?
-                    Boolean c = handler.pollForOWPExit();
-
-                    if (c == null)
-                        // No we haven't, so look for another delay callback
-                        continue;
-
-                    // We have a OWP result, so let's handle it.
-                    completeCalled = c;
-                    break;
+                    delay.proceed();
+                    delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
                 }
+
+                if (owpExit)
+                    break;
             }
 
             // Wait for full completion

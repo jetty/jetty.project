@@ -136,7 +136,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         _configuration = configuration;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, _bufferPool);
+        _retainableByteBufferPool = _bufferPool.asRetainableByteBufferPool();
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();

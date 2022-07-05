@@ -64,7 +64,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
 
-        this.retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(httpClient, httpClient.getByteBufferPool());
+        this.retainableByteBufferPool = httpClient.getByteBufferPool().asRetainableByteBufferPool();
     }
 
     @Override

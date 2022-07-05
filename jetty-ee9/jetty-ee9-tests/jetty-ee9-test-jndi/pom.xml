@@ -17,8 +17,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-jndi</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

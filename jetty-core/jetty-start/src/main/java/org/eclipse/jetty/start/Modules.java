@@ -390,7 +390,10 @@ public class Modules implements Iterable<Module>
 
     public List<String> getSortedNames(Set<String> enabledModules)
     {
-        return getSortedAll().stream().map(Module::getName).filter(enabledModules::contains).collect(Collectors.toList());
+        return getSortedAll().stream()
+            .map(Module::getName)
+            .filter(enabledModules::contains)
+            .collect(Collectors.toList());
     }
 
     /**

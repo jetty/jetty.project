@@ -120,11 +120,8 @@ public class DeferredAuthentication implements Authentication.Deferred
         if (security != null)
         {
             security.logout(null);
-            if (_authenticator instanceof LoginAuthenticator)
-            {
-                ((LoginAuthenticator)_authenticator).logout(request);
-                return new LoggedOutAuthentication((LoginAuthenticator)_authenticator);
-            }
+            _authenticator.logout(request);
+            return new LoggedOutAuthentication(_authenticator);
         }
 
         return Authentication.UNAUTHENTICATED;

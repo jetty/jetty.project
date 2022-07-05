@@ -15,8 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.component.Container;
-
 /**
  * <p>A {@link RetainableByteBuffer} pool.</p>
  * <p>Acquired buffers <b>must</b> be released by calling {@link RetainableByteBuffer#release()} otherwise the memory they hold will
@@ -32,27 +30,45 @@ public interface RetainableByteBufferPool
      */
     RetainableByteBuffer acquire(int size, boolean direct);
 
-    /**
-     * Finds a {@link RetainableByteBufferPool} implementation in the given container, or wrap the given
-     * {@link ByteBufferPool} with an adapter.
-     * @param container the container to search for an existing memory pool.
-     * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
-     * @return the {@link RetainableByteBufferPool} found or the wrapped one.
-     */
-    static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
+    void clear();
+
+    static RetainableByteBufferPool from(ByteBufferPool byteBufferPool)
     {
-        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
+        return new NotRetainedByteBufferPool(byteBufferPool);
+    }
+
+    class NotRetainedByteBufferPool implements RetainableByteBufferPool
+    {
+        private final ByteBufferPool _byteBufferPool;
+
+        public NotRetainedByteBufferPool(ByteBufferPool byteBufferPool)
         {
-            // Wrap the ByteBufferPool instance.
-            retainableByteBufferPool = (size, direct) ->
-            {
-                ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-                RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
-                retainableByteBuffer.acquire();
-                return retainableByteBuffer;
-            };
+            _byteBufferPool = byteBufferPool;
         }
-        return retainableByteBufferPool;
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            ByteBuffer byteBuffer = _byteBufferPool.acquire(size, direct);
+            RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, this::release);
+            retainableByteBuffer.acquire();
+            return retainableByteBuffer;
+        }
+
+        private void release(RetainableByteBuffer retainedBuffer)
+        {
+            _byteBufferPool.release(retainedBuffer.getBuffer());
+        }
+
+        @Override
+        public void clear()
+        {
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("NonRetainableByteBufferPool@%x{%s}", hashCode(), _byteBufferPool.toString());
+        }
     }
 }
