@@ -96,7 +96,7 @@ public class OverlayManager
             {
                 matchedWarArtifacts.add(a);
                 Resource.Mount mount = Resource.newJarResource(a.getFile().toPath());
-                SelectiveJarResource r = new SelectiveJarResource(mount.newResource());
+                SelectiveJarResource r = new SelectiveJarResource(mount.root());
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -110,7 +110,7 @@ public class OverlayManager
             if (!matchedWarArtifacts.contains(a))
             {
                 Resource.Mount mount = Resource.newJarResource(a.getFile().toPath());
-                Overlay overlay = new Overlay(null, mount.newResource());
+                Overlay overlay = new Overlay(null, mount.root());
                 overlays.add(overlay);
             }
         }

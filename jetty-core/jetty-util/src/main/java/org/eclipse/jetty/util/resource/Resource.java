@@ -273,7 +273,7 @@ public abstract class Resource implements ResourceFactory
             {
                 Mount mount = newJarResource(uri);
                 mountConsumer.accept(mount);
-                return mount.newResource();
+                return mount.root();
             }
             return newResource(uri);
         }
@@ -1110,6 +1110,6 @@ public abstract class Resource implements ResourceFactory
 
     public interface Mount extends Closeable
     {
-        Resource newResource() throws IOException;
+        Resource root() throws IOException;
     }
 }

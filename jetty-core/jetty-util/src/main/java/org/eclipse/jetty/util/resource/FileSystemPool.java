@@ -69,6 +69,19 @@ public class FileSystemPool
             retain(fileSystem, uri, mount);
             return mount;
         }
+        catch (Exception e)
+        {
+            try
+            {
+                Path path = Paths.get(uri);
+                IO.close(path.getFileSystem());
+            }
+            catch (Exception e2)
+            {
+                // ignore
+            }
+            throw e;
+        }
     }
 
     public void release(URI uri)
@@ -228,15 +241,17 @@ public class FileSystemPool
     private static class Mount implements Resource.Mount
     {
         private final URI uri;
+        private final Resource root;
 
-        private Mount(URI uri)
+        private Mount(URI uri) throws IOException
         {
             this.uri = uri;
+            this.root = Resource.newResource(uri);
         }
 
-        public Resource newResource() throws IOException
+        public Resource root()
         {
-            return Resource.newResource(uri);
+            return root;
         }
 
         public URI getUri()

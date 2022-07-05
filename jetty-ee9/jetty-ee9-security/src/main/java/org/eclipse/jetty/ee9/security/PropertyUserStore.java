@@ -100,7 +100,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             {
                 try (Resource.Mount mount = Resource.newJarResource(config))
                 {
-                    Resource configResource = mount.newResource();
+                    Resource configResource = mount.root();
                     _configPath = extractPackedFile(configResource);
                 }
             }

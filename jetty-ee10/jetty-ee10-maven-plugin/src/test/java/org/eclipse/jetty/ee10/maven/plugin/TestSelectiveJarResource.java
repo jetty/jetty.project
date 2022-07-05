@@ -41,7 +41,7 @@ public class TestSelectiveJarResource
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
         try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> includes = new ArrayList<>();
             includes.add("**/*.html");
@@ -66,7 +66,7 @@ public class TestSelectiveJarResource
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
         try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/*");
@@ -91,7 +91,7 @@ public class TestSelectiveJarResource
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
         try (Resource.Mount mount = Resource.newJarResource(testJar))
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.newResource());
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/deep/*");

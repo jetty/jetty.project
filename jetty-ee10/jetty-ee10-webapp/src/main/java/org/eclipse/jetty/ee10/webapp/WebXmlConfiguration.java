@@ -61,7 +61,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                         if (resource.getScheme().equalsIgnoreCase("jar"))
                         {
                             _mount = Resource.newJarResource(resource);
-                            dftResource = _mount.newResource();
+                            dftResource = _mount.root();
                         }
                         else
                         {

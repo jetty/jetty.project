@@ -65,7 +65,7 @@ public class TestMetaData
         nonFragResource = Resource.newResource(nonFragFile.toPath());
         assertTrue(nonFragFile.exists());
         mount = Resource.newJarResource("jar:" + fragFile.toURI().toString() + "!/META-INF/web-fragment.xml");
-        webfragxml = mount.newResource();
+        webfragxml = mount.root();
         containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
         webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
         wac = new WebAppContext();

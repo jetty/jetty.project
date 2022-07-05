@@ -79,7 +79,7 @@ public class DefaultHandler extends Handler.Processor
                 if (uri.getScheme().equalsIgnoreCase("jar"))
                 {
                     mount = Resource.newJarResource(uri);
-                    r = mount.newResource();
+                    r = mount.root();
                 }
                 else
                 {

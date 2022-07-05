@@ -476,7 +476,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 //Resource represents a packed jar
                 URI uri = target.getURI();
                 Resource.Mount mount = Resource.newJarResource(uriJarPrefix(uri, "!/META-INF/resources"));
-                resourcesDir = mount.newResource();
+                resourcesDir = mount.root();
             }
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())

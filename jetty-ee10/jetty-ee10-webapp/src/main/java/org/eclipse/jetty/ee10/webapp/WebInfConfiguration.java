@@ -317,7 +317,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             {
                 // No - then lets see if it can be turned into a jar URL.
                 _mount = Resource.newJarResource(webApp.getPath());
-                webApp = _mount.newResource();
+                webApp = _mount.root();
             }
 
             // If we should extract or the URL is still not usable
@@ -372,7 +372,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                         try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
                         {
-                            Resource jarWebApp = mount.newResource();
+                            Resource jarWebApp = mount.root();
                             jarWebApp.copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
@@ -390,7 +390,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
                             {
-                                Resource jarWebApp = mount.newResource();
+                                Resource jarWebApp = mount.root();
                                 jarWebApp.copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
