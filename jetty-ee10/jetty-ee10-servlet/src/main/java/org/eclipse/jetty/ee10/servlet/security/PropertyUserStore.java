@@ -96,7 +96,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
                     throw new IllegalArgumentException(config);
                 _configPath = configPath;
             }
-            catch (IllegalArgumentException e)
+            catch (IllegalStateException e)
             {
                 try (Resource.Mount mount = Resource.newJarResource(config))
                 {
