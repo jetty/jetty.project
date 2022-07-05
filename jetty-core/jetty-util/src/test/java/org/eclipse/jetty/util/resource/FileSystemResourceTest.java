@@ -137,7 +137,7 @@ public class FileSystemResourceTest
     @Test
     public void testNotFileURI()
     {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalStateException.class,
             () -> Resource.newResource(new URI("https://www.eclipse.org/jetty/")));
     }
 
