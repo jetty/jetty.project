@@ -23,18 +23,18 @@ jetty-11.0.10 - 16 June 2022
    precompressed formats with defaults
  + 7891 Better Servlet PathMappings for Regex
  + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
- + 7935 Review HTTP/2 error handling
+ + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
  + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
  + 7977 UpgradeHttpServletRequest.setAttribute &
    UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
  + 7994 Ability to construct a detached client Request
- + 8014 Review HttpRequest URI construction
+ + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
  + 8057 Support Http Response 103 (Early Hints)
  + 8067 Wall time usage in DoSFilter RateTracker results in false positive
    alert
  + 8088 Add option to configure exitVm on ShutdownMonitor from System
    properties
- + 8161 Improve SSLConnection buffers handling
+ + 8161 Improve SSLConnection buffers handling (Resolves CVE-2022-2191)
 
 jetty-11.0.9 - 30 March 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
@@ -158,18 +158,18 @@ jetty-10.0.10 - 16 June 2022
    precompressed formats with defaults
  + 7891 Better Servlet PathMappings for Regex
  + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
- + 7935 Review HTTP/2 error handling
+ + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
  + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
  + 7977 UpgradeHttpServletRequest.setAttribute &
    UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
  + 7994 Ability to construct a detached client Request
- + 8014 Review HttpRequest URI construction
+ + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
  + 8057 Support Http Response 103 (Early Hints)
  + 8067 Wall time usage in DoSFilter RateTracker results in false positive
    alert
  + 8088 Add option to configure exitVm on ShutdownMonitor from System
    properties
- + 8161 Improve SSLConnection buffers handling
+ + 8161 Improve SSLConnection buffers handling (Resolves CVE-2022-2191)
 
 jetty-10.0.9 - 30 March 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
