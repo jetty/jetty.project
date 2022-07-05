@@ -113,7 +113,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public Resource resolve(String subPath) throws IOException
+    public Resource resolve(String subUriPath) throws IOException
     {
         return this;
     }

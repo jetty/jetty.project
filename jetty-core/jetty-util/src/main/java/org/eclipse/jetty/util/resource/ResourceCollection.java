@@ -223,7 +223,7 @@ public class ResourceCollection extends Resource
 
     /**
      * Add a path to the resource collection.
-     * @param subPath The path segment to add
+     * @param subUriPath The path segment to add
      * @return The resulting resource(s) :
      * <ul>
      *   <li>is a file that exists in at least one of the collection, then the first one found is returned</li>
@@ -234,16 +234,16 @@ public class ResourceCollection extends Resource
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
-    public Resource resolve(String subPath) throws IOException
+    public Resource resolve(String subUriPath) throws IOException
     {
         assertResourcesSet();
 
-        if (subPath == null)
+        if (subUriPath == null)
         {
             throw new MalformedURLException("null path");
         }
 
-        if (subPath.length() == 0 || URIUtil.SLASH.equals(subPath))
+        if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))
         {
             return this;
         }
@@ -254,7 +254,7 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
-            addedResource = res.resolve(subPath);
+            addedResource = res.resolve(subUriPath);
             if (!addedResource.exists())
                 continue;
             if (!addedResource.isDirectory())

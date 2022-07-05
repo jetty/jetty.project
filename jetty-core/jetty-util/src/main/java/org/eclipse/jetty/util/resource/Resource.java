@@ -507,23 +507,23 @@ public abstract class Resource implements ResourceFactory
         return null;
     }
 
-    public Resource resolve(String subPath) throws IOException
+    public Resource resolve(String subUriPath) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subPath) == null)
-            throw new MalformedURLException(subPath);
+        if (URIUtil.canonicalPath(subUriPath) == null)
+            throw new MalformedURLException(subUriPath);
 
-        if (URIUtil.SLASH.equals(subPath))
+        if (URIUtil.SLASH.equals(subUriPath))
             return this;
 
         // Sub-paths are always resolved under the given URI,
         // we compensate for input sub-paths like "/subdir"
         // where default resolve behavior would be to treat
         // that like an absolute path.
-        while (subPath.startsWith(URIUtil.SLASH))
-            subPath = subPath.substring(1);
+        while (subUriPath.startsWith(URIUtil.SLASH))
+            subUriPath = subUriPath.substring(1);
 
         URI uri = getURI();
         URI resolvedUri;
@@ -541,14 +541,14 @@ public abstract class Resource implements ResourceFactory
             if (!subUri.getPath().endsWith(URIUtil.SLASH))
                 subUri = URI.create(subUri + URIUtil.SLASH);
 
-            URI subUriResolved = subUri.resolve(subPath);
+            URI subUriResolved = subUri.resolve(subUriPath);
             resolvedUri = URI.create(scheme + ":" + subUriResolved);
         }
         else
         {
             if (!uri.getPath().endsWith(URIUtil.SLASH))
                 uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uri.resolve(subPath);
+            resolvedUri = uri.resolve(subUriPath);
         }
         return newResource(resolvedUri);
     }

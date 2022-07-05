@@ -405,31 +405,31 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      * HttpContext.getResource but derived servlets may provide
      * their own mapping.
      *
-     * @param pathInContext The path to find a resource for.
+     * @param subUriPath The path to find a resource for.
      * @return The resource to serve.
      */
     @Override
-    public Resource resolve(String pathInContext)
+    public Resource resolve(String subUriPath)
     {
         // TODO thought bubble
         if (!_contextHandler.isCanonicalEncodingURIs())
-            pathInContext = URIUtil.encodePath(pathInContext);
+            subUriPath = URIUtil.encodePath(subUriPath);
 
         Resource r = null;
         if (_relativeResourceBase != null)
-            pathInContext = URIUtil.addPaths(_relativeResourceBase, pathInContext);
+            subUriPath = URIUtil.addPaths(_relativeResourceBase, subUriPath);
 
         try
         {
             if (_resourceBase != null)
             {
-                r = _resourceBase.resolve(pathInContext);
-                if (!_contextHandler.checkAlias(pathInContext, r))
+                r = _resourceBase.resolve(subUriPath);
+                if (!_contextHandler.checkAlias(subUriPath, r))
                     r = null;
             }
             else if (_servletContext instanceof ContextHandler.APIContext)
             {
-                r = _contextHandler.getResource(pathInContext);
+                r = _contextHandler.getResource(subUriPath);
             }
             else
             {
@@ -437,14 +437,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Resource {}={}", pathInContext, r);
+                LOG.debug("Resource {}={}", subUriPath, r);
         }
         catch (IOException e)
         {
             LOG.trace("IGNORED", e);
         }
 
-        if ((r == null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))
+        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
             r = _stylesheet;
 
         return r;
