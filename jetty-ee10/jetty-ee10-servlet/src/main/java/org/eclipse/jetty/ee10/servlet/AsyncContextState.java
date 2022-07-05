@@ -64,10 +64,9 @@ public class AsyncContextState implements AsyncContext
     @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
     {
-        // TODO: Use ServletContextHandler createInstance use DecoratedObjectFactory.
         try
         {
-            return clazz.getDeclaredConstructor().newInstance();
+            return state().getContextHandler().getContext().getServletContext().createInstance(clazz);
         }
         catch (Exception e)
         {
