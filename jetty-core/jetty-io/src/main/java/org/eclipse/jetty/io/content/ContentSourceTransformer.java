@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.Content;
  * <p>
  * The {@link #demand(Runnable)} conversation is passed directly to the wrapped {@link Content.Source}, which means
  * that transformations that may fully consume bytes read can result in a null return from {@link Content.Source#read()}
- * even after a callback to the demand {@link Runnable}.
+ * even after a callback to the demand {@link Runnable} (as per spurious invocation in {@link Content.Source#demand(Runnable)}.
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {
@@ -133,7 +133,7 @@ public abstract class ContentSourceTransformer implements Content.Source
      * <li>the <code>rawChunk</code>. This is typically done for {@link Content.Chunk.Error}s,
      *     when {@link Content.Chunk#isLast()} is true, or if no transformation is required.</li>
      * <li>a new (or predefined) {@link Content.Chunk} derived from the <code>rawChunk</code>. The transform is
-     *     responsible for calling {@link Content.Chunk#release()} on the <code>rawChink</code>, either during the call
+     *     responsible for calling {@link Content.Chunk#release()} on the <code>rawChunk</code>, either during the call
      *     to {@link Content.Source#read()} or subsequently.</li>
      * <li>null if the <code>rawChunk</code> is fully consumed and/or requires additional chunks to be transformed.</li>
      * </ul>

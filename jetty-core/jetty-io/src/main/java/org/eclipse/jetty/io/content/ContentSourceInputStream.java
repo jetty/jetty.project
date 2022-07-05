@@ -96,10 +96,14 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public void close()
     {
-        if (chunk != null)
+        if (chunk == null)
+            chunk = Content.Chunk.EOF;
+        else
+        {
+            if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
+                return;
             chunk.release();
-        if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
-            return;
-        chunk = Content.Chunk.EOF;
+            chunk = Content.Chunk.from(new IOException("closed before EOF"));
+        }
     }
 }

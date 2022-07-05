@@ -28,7 +28,8 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  * <p>
  * Data is read from the {@link InputStream} into a buffer that is optionally acquired
  * from a {@link ByteBufferPool}, and converted to a {@link Content.Chunk} that is
- * returned from {@link #read()}.
+ * returned from {@link #read()}.   If no {@link ByteBufferPool} is provided, then
+ * a {@link NullByteBufferPool} is used.
  * </p>
  *
  */
@@ -51,7 +52,7 @@ public class InputStreamContentSource implements Content.Source
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
         this.inputStream = inputStream;
-        this.bufferPool = bufferPool == null ? new NullByteBufferPool() : bufferPool;
+        this.bufferPool = bufferPool == null ? ByteBufferPool.NULL_POOL : bufferPool;
     }
 
     public int getBufferSize()

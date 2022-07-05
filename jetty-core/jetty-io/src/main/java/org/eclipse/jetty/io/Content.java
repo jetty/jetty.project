@@ -447,7 +447,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return new ByteBufferChunk(byteBuffer, last, null);
+            return new ByteBufferChunk(byteBuffer, last);
         }
 
         /**
@@ -460,7 +460,9 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return new ByteBufferChunk(byteBuffer, last, releaser);
+            return releaser == null
+                ? new ByteBufferChunk(byteBuffer, last)
+                : new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, releaser);
         }
 
         /**
@@ -473,8 +475,9 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
         {
-            // TODO make this non capturing
-            return new ByteBufferChunk(byteBuffer, last, () -> releaser.accept(byteBuffer));
+            return releaser == null
+                ? new ByteBufferChunk(byteBuffer, last)
+                : new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, releaser);
         }
 
         /**

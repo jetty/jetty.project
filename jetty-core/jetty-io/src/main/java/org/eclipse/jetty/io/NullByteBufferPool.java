@@ -21,6 +21,9 @@ public class NullByteBufferPool implements ByteBufferPool
 {
     private final RetainableByteBufferPool _retainableByteBufferPool = RetainableByteBufferPool.from(this);
 
+    public NullByteBufferPool()
+    {}
+
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {

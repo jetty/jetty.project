@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 
 /**
- * A {@link Content.Source} backed backed by an {@link OutputStream}.
+ * A {@link Content.Source} backed by an {@link OutputStream}.
  * <p>
  * Any bytes written to the {@link OutputStream} returned by {@link #getOutputStream()}
  * is converted to a {@link Content.Chunk} and returned from {@link #read()}. If

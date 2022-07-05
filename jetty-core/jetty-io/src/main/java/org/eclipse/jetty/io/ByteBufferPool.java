@@ -27,6 +27,8 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public interface ByteBufferPool
 {
+    ByteBufferPool NULL_POOL = new NullByteBufferPool();
+
     /**
      * <p>Requests a {@link ByteBuffer} of the given size.</p>
      * <p>The returned buffer may have a bigger capacity than the size being
