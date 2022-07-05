@@ -40,7 +40,7 @@ public class FileSystemPool
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
-    private final Map<FileSystem, Bucket> pool = new HashMap<>();
+    private final Map<URI, Bucket> pool = new HashMap<>();
     private final AutoLock poolLock = new AutoLock();
 
     private FileSystemPool()
@@ -54,9 +54,9 @@ public class FileSystemPool
         if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
+        FileSystem fileSystem = null;
         try (AutoLock ignore = poolLock.lock())
         {
-            FileSystem fileSystem;
             try
             {
                 fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
@@ -66,20 +66,12 @@ public class FileSystemPool
                 fileSystem = Paths.get(uri).getFileSystem();
             }
             Mount mount = new Mount(uri);
-            retain(fileSystem, uri, mount);
+            retain(uri, fileSystem, mount);
             return mount;
         }
         catch (Exception e)
         {
-            try
-            {
-                Path path = Paths.get(uri);
-                IO.close(path.getFileSystem());
-            }
-            catch (Exception e2)
-            {
-                // ignore
-            }
+            IO.close(fileSystem);
             throw e;
         }
     }
@@ -88,21 +80,19 @@ public class FileSystemPool
     {
         try (AutoLock ignore = poolLock.lock())
         {
-            FileSystem fileSystem = Paths.get(uri).getFileSystem();
-
-            Bucket bucket = pool.get(fileSystem);
+            Bucket bucket = pool.get(uri);
             int count = bucket.counter.decrementAndGet();
             if (count == 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Ref counter reached 0, closing pooled FS {}", fileSystem);
-                IO.close(fileSystem);
-                pool.remove(fileSystem);
+                    LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
+                IO.close(bucket.fileSystem);
+                pool.remove(uri);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decremented ref counter to {} for FS {}", count, fileSystem);
+                    LOG.debug("Decremented ref counter to {} for FS {}", count, bucket);
             }
         }
         catch (FileSystemNotFoundException fsnfe)
@@ -121,21 +111,22 @@ public class FileSystemPool
 
     public void sweep()
     {
-        Set<Map.Entry<FileSystem, Bucket>> entries;
+        Set<Map.Entry<URI, Bucket>> entries;
         try (AutoLock ignore = poolLock.lock())
         {
             entries = pool.entrySet();
         }
 
-        for (Map.Entry<FileSystem, Bucket> entry : entries)
+        for (Map.Entry<URI, Bucket> entry : entries)
         {
-            FileSystem fileSystem = entry.getKey();
+            URI uri = entry.getKey();
             Bucket bucket = entry.getValue();
+            FileSystem fileSystem = bucket.fileSystem;
 
             if (bucket.path == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Filesystem {} not backed by a file", fileSystem);
+                    LOG.debug("Filesystem {} not backed by a file", bucket);
                 return;
             }
 
@@ -149,8 +140,8 @@ public class FileSystemPool
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("File {} backing filesystem {} has been removed or changed, closing it", bucket.path, fileSystem);
-                    pool.remove(fileSystem);
                     IO.close(fileSystem);
+                    pool.remove(uri);
                 }
             }
             catch (IOException e)
@@ -161,16 +152,16 @@ public class FileSystemPool
         }
     }
 
-    private void retain(FileSystem fileSystem, URI uri, Resource.Mount mount)
+    private void retain(URI uri, FileSystem fileSystem, Resource.Mount mount)
     {
         assert poolLock.isHeldByCurrentThread();
 
-        Bucket bucket = pool.get(fileSystem);
+        Bucket bucket = pool.get(uri);
         if (bucket == null)
         {
             LOG.debug("Pooling new FS {}", fileSystem);
-            bucket = new Bucket(uri, mount);
-            pool.put(fileSystem, bucket);
+            bucket = new Bucket(uri, fileSystem, mount);
+            pool.put(uri, bucket);
         }
         else
         {
@@ -195,12 +186,13 @@ public class FileSystemPool
     private static class Bucket
     {
         private final AtomicInteger counter;
+        private final FileSystem fileSystem;
         private final FileTime lastModifiedTime;
         private final long size;
         private final Path path;
         private final Resource.Mount mount;
 
-        private Bucket(URI uri, Resource.Mount mount)
+        private Bucket(URI uri, FileSystem fileSystem, Resource.Mount mount)
         {
             Path path = uriToPath(uri);
 
@@ -225,6 +217,7 @@ public class FileSystemPool
                     LOG.debug("Filesystem at {} is not backed by a file", uri);
             }
             this.counter = new AtomicInteger(1);
+            this.fileSystem = fileSystem;
             this.path = path;
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
@@ -235,6 +228,12 @@ public class FileSystemPool
         {
             URI rawUri = containerUri(uri);
             return rawUri == null ? null : Paths.get(rawUri).toAbsolutePath();
+        }
+
+        @Override
+        public String toString()
+        {
+            return fileSystem.toString();
         }
     }
 

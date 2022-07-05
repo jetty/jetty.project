@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -34,6 +37,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -81,6 +85,43 @@ public class JarResourceTest
             entries = new HashSet<>(e.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
         }
+    }
+
+    @Test
+    public void testJarFileUnMounted() throws Exception
+    {
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
+        URI uri = URI.create(s);
+        Resource.Mount mount = Resource.newJarResource(uri);
+        Resource resource = Resource.newResource(uri);
+        assertTrue(resource.exists());
+        mount.close();
+        assertThrows(ClosedFileSystemException.class, resource::exists);
+    }
+
+    @Test
+    public void testJarFileDeleted(@TempDir Path tempDir) throws Exception
+    {
+        Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
+        URI uri = URI.create(s);
+        Resource.Mount mount = Resource.newJarResource(uri);
+        Resource resource = mount.root();
+        assertTrue(resource.exists());
+        Files.delete(testZip);
+        assertThrows(IllegalStateException.class, () -> resource.resolve("alphabet"));
+        mount.close();
+        assertThrows(ClosedFileSystemException.class, resource::exists);
+    }
+
+    @Test
+    public void testJarFileNotMounted()
+    {
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
+        assertThrows(IllegalStateException.class, () -> Resource.newResource(uri));
     }
 
     @Test
