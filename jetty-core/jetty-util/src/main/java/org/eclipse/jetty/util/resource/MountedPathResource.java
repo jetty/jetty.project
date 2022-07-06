@@ -24,20 +24,22 @@ import java.nio.file.Path;
  */
 public class MountedPathResource extends PathResource
 {
+    private final URI containerUri;
+
     MountedPathResource(URI uri) throws IOException
     {
         super(uri, true);
+        containerUri = FileSystemPool.containerUri(getURI());
     }
 
     @Override
     public boolean isContainedIn(Resource r)
     {
-        return r.getURI().equals(FileSystemPool.containerUri(getURI()));
+        return r.getURI().equals(containerUri);
     }
 
     public Path getContainerPath()
     {
-        URI uri = FileSystemPool.containerUri(getURI());
-        return uri == null ? null : Path.of(uri);
+        return containerUri == null ? null : Path.of(containerUri);
     }
 }
