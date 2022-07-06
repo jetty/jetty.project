@@ -41,7 +41,7 @@ public class AsyncContentSourceTest
         {
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
-            assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
+            assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
             async.write(Content.Chunk.from(UTF_8.encode("one"), false), Callback.NOOP);
 
@@ -59,7 +59,7 @@ public class AsyncContentSourceTest
 
         CountDownLatch latch = new CountDownLatch(1);
         async.demand(latch::countDown);
-        assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
+        assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
         async.close();
 
@@ -82,7 +82,7 @@ public class AsyncContentSourceTest
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
-            assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
+            assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
             async.fail(new CancellationException());
 
@@ -106,7 +106,7 @@ public class AsyncContentSourceTest
         {
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
-            assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
+            assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
             Throwable error = new Throwable("test");
             AtomicReference<Throwable> callback = new AtomicReference<>();

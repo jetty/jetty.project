@@ -99,16 +99,21 @@ public class ContentSourceInputStream extends InputStream
         if (chunk == null)
             chunk = content.read();
 
-        if (chunk != null && chunk.isLast())
-        {
-            if (!chunk.isTerminal())
-                chunk.release();
+        // If we have already reached a real EOF or an error, close is a noop.
+        if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
             return;
-        }
 
+        // If we have a chunk here, then it needs to be released
         if (chunk != null)
+        {
             chunk.release();
 
+            // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
+            if (chunk.isLast())
+                return;
+        }
+
+        // This is an abnormal close before EOF
         Throwable closed = new IOException("closed before EOF");
         chunk = Content.Chunk.from(closed);
         content.fail(closed);

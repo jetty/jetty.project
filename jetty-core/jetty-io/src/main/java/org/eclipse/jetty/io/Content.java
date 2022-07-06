@@ -595,7 +595,7 @@ public class Content
         /**
          * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
          * <p>A terminal chunk is either an {@link Error error chunk},
-         * or a Chunk that {@link #isLast() is last} and has no remaining
+         * or a Chunk that {@link #isLast()} is true and has no remaining
          * bytes.</p>
          *
          * @return whether this Chunk is a terminal chunk

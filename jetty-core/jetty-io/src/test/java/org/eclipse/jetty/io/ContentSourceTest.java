@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -47,6 +48,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,14 +67,20 @@ public class ContentSourceTest
             asyncSource.write(Content.Chunk.from(UTF_8.encode("two"), false), Callback.NOOP);
         }
 
-        Content.Source byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
+        ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
 
-        Content.Source.Transformer transformerSource = new Content.Source.Transformer(byteBufferSource)
+        Content.Source.Transformer transformerSource = new Content.Source.Transformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
         {
             @Override
             protected Content.Chunk transform(Content.Chunk rawChunk)
             {
                 return rawChunk;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "transformerSource@%x".formatted(hashCode());
             }
         };
 
@@ -83,7 +91,10 @@ public class ContentSourceTest
         PathContentSource pathSource = new PathContentSource(path);
         pathSource.setBufferSize(3);
 
-        InputStreamContentSource inputSource = new InputStreamContentSource(new ContentSourceInputStream(byteBufferSource));
+        InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
+
+        InputStreamContentSource inputSource2 =
+            new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
         // TODO
 //        OutputStreamContentSource outputSource = new OutputStreamContentSource();
@@ -93,7 +104,44 @@ public class ContentSourceTest
 //            stream.write("two".getBytes(UTF_8));
 //        }
 
-        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource/*, outputSource*/);
+        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2/*, outputSource*/);
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testRead(Content.Source source) throws Exception
+    {
+        StringBuilder builder = new StringBuilder();
+        CountDownLatch eof = new CountDownLatch(1);
+        source.demand(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = source.read();
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        break;
+                    }
+
+                    if (chunk.hasRemaining())
+                        builder.append(BufferUtil.toString(chunk.getByteBuffer()));
+                    chunk.release();
+
+                    if (chunk.isLast())
+                    {
+                        eof.countDown();
+                        break;
+                    }
+                }
+            }
+        });
+
+        assertTrue(eof.await(10, TimeUnit.SECONDS));
+        assertThat(builder.toString(), is("onetwo"));
     }
 
     @ParameterizedTest

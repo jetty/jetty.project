@@ -79,7 +79,7 @@ public class InputStreamContentSource implements Content.Source
         try
         {
             ByteBuffer buffer = bufferPool.acquire(getBufferSize(), false);
-            int read = inputStream.read(buffer.array());
+            int read = inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
             if (read < 0)
             {
                 close();
@@ -87,7 +87,7 @@ public class InputStreamContentSource implements Content.Source
             }
             else
             {
-                buffer.position(read);
+                buffer.limit(read);
                 return Content.Chunk.from(buffer, false, bufferPool::release);
             }
         }
