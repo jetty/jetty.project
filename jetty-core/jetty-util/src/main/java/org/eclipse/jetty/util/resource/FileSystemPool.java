@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +58,9 @@ public class FileSystemPool
         {
             try
             {
-                fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                Map<String, String> env = new HashMap<>();
+                env.put("releaseVersion", "runtime");
+                fileSystem = FileSystems.newFileSystem(uri, env);
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
