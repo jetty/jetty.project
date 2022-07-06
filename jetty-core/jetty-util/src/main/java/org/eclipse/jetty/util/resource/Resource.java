@@ -140,12 +140,15 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(String resource) throws IOException
     {
-        URI uri = URI.create(resource);
-
-        // If the URI has no scheme, we consider the string actually was a path.
-        if (uri.getScheme() == null)
-            return newResource(Paths.get(resource).toUri());
-
+        URI uri;
+        try
+        {
+            uri = Paths.get(resource).toUri();
+        }
+        catch (Exception e)
+        {
+            uri = URI.create(resource);
+        }
         return newResource(uri);
     }
 

@@ -344,6 +344,19 @@ public class ResourceTest
     }
 
     @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testWindowsResourceFromString() throws Exception
+    {
+        // Check strings that look like URIs but actually are paths.
+        Resource ra = Resource.newResource("C:\\foo\\bar");
+        Resource rb = Resource.newResource("C:/foo/bar");
+        Resource rc = Resource.newResource("C:///foo/bar");
+
+        assertEquals(rb, ra);
+        assertEquals(rb, rc);
+    }
+
+    @Test
     @Disabled("does isAlias still make sense?")
     public void testClimbAboveBase() throws Exception
     {
