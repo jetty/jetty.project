@@ -181,6 +181,7 @@ public abstract class Resource implements ResourceFactory
         }
         catch (NoSuchFileException nsfe)
         {
+            // TODO is that still a valid codepath? can't we get rid of BadResource?
             // The filesystem cannot be created for that URI (e.g.: non-existent jar file).
             return new BadResource(uri, nsfe.toString());
         }

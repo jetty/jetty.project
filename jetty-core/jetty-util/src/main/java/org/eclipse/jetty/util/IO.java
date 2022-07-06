@@ -402,6 +402,13 @@ public class IO
         {
             Files.walkFileTree(path, new SimpleFileVisitor<>()
             {
+//                TODO skip symlink?
+//                @Override
+//                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+//                {
+//                    return attrs.isSymbolicLink() ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
+//                }
+
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
                 {
