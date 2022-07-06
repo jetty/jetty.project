@@ -97,13 +97,20 @@ public class ContentSourceInputStream extends InputStream
     public void close()
     {
         if (chunk == null)
-            chunk = Content.Chunk.EOF;
-        else
+            chunk = content.read();
+
+        if (chunk != null && chunk.isLast())
         {
-            if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
-                return;
-            chunk.release();
-            chunk = Content.Chunk.from(new IOException("closed before EOF"));
+            if (!chunk.isTerminal())
+                chunk.release();
+            return;
         }
+
+        if (chunk != null)
+            chunk.release();
+
+        Throwable closed = new IOException("closed before EOF");
+        chunk = Content.Chunk.from(closed);
+        content.fail(closed);
     }
 }
