@@ -280,7 +280,7 @@ public class ResourceTest
         if (data.dir)
         {
             Resource r = data.resource.resolve("foo%25/b%20r");
-            assertThat(r.getPath().toString(), Matchers.endsWith("foo%/b r"));
+            assertThat(r.getPath().toString(), Matchers.anyOf(Matchers.endsWith("foo%/b r"), Matchers.endsWith("foo%\\b r")));
             assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
         }
     }
@@ -341,6 +341,17 @@ public class ResourceTest
         Resource rb = Resource.newResource(b);
 
         assertEquals(rb, ra);
+    }
+
+    @Test
+    public void testResourceExtraSlashStripping() throws Exception
+    {
+        Resource ra = Resource.newResource("file:/a/b/c");
+        Resource rb = ra.resolve("///");
+        Resource rc = ra.resolve("///d/e///f");
+
+        assertEquals(ra, rb);
+        assertEquals(rc.getURI().toString(), "file:/a/b/c/d/e/f");
     }
 
     @Test
