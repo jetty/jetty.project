@@ -141,6 +141,48 @@ public class ContextHandlerTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
+    @Test
+    public void testSetAvailable() throws Exception
+    {
+        HelloHandler helloHandler = new HelloHandler();
+        _contextHandler.setHandler(helloHandler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+
+        MockHttpStream stream = new MockHttpStream(channel);
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.onRequest(request).run();
+
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+
+        _contextHandler.setAvailable(false);
+
+        stream = new MockHttpStream(channel);
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.onRequest(request).run();
+
+        assertThat(stream.getResponse().getStatus(), equalTo(503));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("Service Unavailable"));
+
+        _contextHandler.setAvailable(true);
+
+        stream = new MockHttpStream(channel);
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.onRequest(request).run();
+
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+
+
+    }
+
     private void assertInContext(Request request)
     {
         try
