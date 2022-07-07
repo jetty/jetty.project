@@ -503,4 +503,11 @@ public class MavenWebAppContext extends WebAppContext
             LOG.warn("Problem initializing cdi", e);
         }
     }
+
+    // need to be overridden to avoid Maven reflection issues with super class and override method
+    public void setExtraClasspath(String extraClasspath) throws IOException
+    {
+        super.setExtraClasspath(extraClasspath);
+    }
+
 }
