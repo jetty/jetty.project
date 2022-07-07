@@ -70,7 +70,7 @@ public class AnnotationParser
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
-    protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
+    protected Map<String, String> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private final int _asmVersion;
 
@@ -556,9 +556,9 @@ public class AnnotationParser
      * @param classname the name of the class
      * @param location the fully qualified location of the class
      */
-    public void addParsedClass(String classname, Resource location)
+    public void addParsedClass(String classname, String location)
     {
-        Resource existing = _parsedClassNames.putIfAbsent(classname, location);
+        String existing = _parsedClassNames.putIfAbsent(classname, location);
         if (existing != null)
             LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
@@ -580,7 +580,7 @@ public class AnnotationParser
         if (resource != null)
         {
             Resource r = Resource.newResource(resource);
-            addParsedClass(className, r);
+            addParsedClass(className, r.toString());
             try (InputStream is = r.getInputStream())
             {
                 scanClass(handlers, null, is);
@@ -606,7 +606,7 @@ public class AnnotationParser
             if (resource != null)
             {
                 Resource r = Resource.newResource(resource);
-                addParsedClass(clazz.getName(), r);
+                addParsedClass(clazz.getName(), r.toString());
                 try (InputStream is = r.getInputStream())
                 {
                     scanClass(handlers, null, is);
@@ -655,7 +655,7 @@ public class AnnotationParser
                 if (resource != null)
                 {
                     Resource r = Resource.newResource(resource);
-                    addParsedClass(className, r);
+                    addParsedClass(className, r.toString());
                     try (InputStream is = r.getInputStream())
                     {
                         scanClass(handlers, null, is);
@@ -789,7 +789,7 @@ public class AnnotationParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Scanning class {}", r);
-                        addParsedClass(str, r);
+                        addParsedClass(str, r.toString());
                         try (InputStream is = r.getInputStream())
                         {
                             scanClass(handlers, Resource.newResource(path.getParent()), is);
@@ -874,12 +874,10 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
-            try (Resource.Mount mount = Resource.newJarResource("jar:" + jar.getURI() + "!/" + entry.getNameInJar()))
-            {
-                addParsedClass(shortName, mount.root());
-            }
+            String location = Resource.toJarPath(jar.toString(), entry.getNameInJar());
+            addParsedClass(shortName, location);
             if (LOG.isDebugEnabled())
-                LOG.debug("Scanning class from jar {}!/{}", jar, entry);
+                LOG.debug("Scanning class from jar {}", location);
             try (InputStream is = entry.getInputStream())
             {
                 scanClass(handlers, jar, is);

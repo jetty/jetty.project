@@ -60,7 +60,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                         URI resource = url.toURI();
                         if (resource.getScheme().equalsIgnoreCase("jar"))
                         {
-                            _mount = Resource.newJarResource(resource);
+                            _mount = Resource.mount(resource);
                             dftResource = _mount.root();
                         }
                         else
