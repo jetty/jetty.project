@@ -96,23 +96,26 @@ public abstract class Resource implements ResourceFactory
         return __defaultUseCaches;
     }
 
-    public static Resource.Mount newJarResource(String resource) throws IOException
-    {
-        URI uri = URI.create(resource);
-        // If the URI has no scheme, we consider the string actually was a path.
-        if (uri.getScheme() == null)
-            uri = Paths.get(resource).toUri();
-        return newJarResource(uri);
-    }
-
-    public static Resource.Mount newJarResource(URI uri) throws IOException
+    /**
+     * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
+     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from the mounted resource.
+     * @throws IOException If the uri could not be mounted.
+     */
+    public static Resource.Mount mount(URI uri) throws IOException
     {
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
         return FileSystemPool.INSTANCE.mount(uri);
     }
 
-    public static Resource.Mount newJarResource(Path path) throws IOException
+    /**
+     * @param path The path to a jar file to be mounted (e.g. "file:/tmp/some.jar")
+     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from the mounted resource.
+     * @throws IOException If the path could not be mounted
+     */
+    public static Resource.Mount mountJar(Path path) throws IOException
     {
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
@@ -282,7 +285,7 @@ public abstract class Resource implements ResourceFactory
             URI uri = url.toURI();
             if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
             {
-                Mount mount = newJarResource(uri);
+                Mount mount = mount(uri);
                 mountConsumer.accept(mount);
                 return mount.root();
             }

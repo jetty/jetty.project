@@ -39,7 +39,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
@@ -64,7 +64,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
@@ -89,7 +89,7 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.newJarResource(testJar))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
             SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);

@@ -222,7 +222,7 @@ public class ResourceTest
         cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
         String urlRef = cases.uriRef.toASCIIString();
-        TO_CLOSE.add(Resource.newJarResource(URI.create("jar:" + urlRef + "TestData/test.zip!/")));
+        TO_CLOSE.add(Resource.mount(URI.create("jar:" + urlRef + "TestData/test.zip!/")));
         Scenario zdata = new Scenario("jar:" + urlRef + "TestData/test.zip!/", EXISTS, DIR);
         cases.addCase(zdata);
 

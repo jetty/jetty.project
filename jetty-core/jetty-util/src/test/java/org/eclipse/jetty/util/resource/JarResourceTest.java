@@ -52,7 +52,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
 
@@ -93,7 +93,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        Resource.Mount mount = Resource.newJarResource(uri);
+        Resource.Mount mount = Resource.mount(uri);
         Resource resource = Resource.newResource(uri);
         assertTrue(resource.exists());
         mount.close();
@@ -107,7 +107,7 @@ public class JarResourceTest
         Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        Resource.Mount mount = Resource.newJarResource(uri);
+        Resource.Mount mount = Resource.mount(uri);
         Resource resource = mount.root();
         assertTrue(resource.exists());
         Files.delete(testZip);
@@ -131,7 +131,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             Collection<Resource> deep = r.getAllResources();
@@ -146,7 +146,7 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             Resource container = Resource.newResource(testZip);
@@ -167,7 +167,7 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers");
         try (ZipFile zf = new ZipFile(testZip.toFile());
-             Resource.Mount ignore = Resource.newJarResource(uri))
+             Resource.Mount ignore = Resource.mount(uri))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
@@ -182,7 +182,7 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt");
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource r = Resource.newResource(uri);
             assertTrue(r.exists());
@@ -194,7 +194,7 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/");
@@ -224,7 +224,7 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource rez = resource.resolve("rez/oddities/");
@@ -250,7 +250,7 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.newJarResource(uri))
+        try (Resource.Mount ignore = Resource.mount(uri))
         {
             Resource resource = Resource.newResource(uri);
             Resource anotherDir = resource.resolve("rez/another%20dir/");

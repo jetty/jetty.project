@@ -314,7 +314,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                _mount = Resource.newJarResource(webApp.getPath());
+                _mount = Resource.mountJar(webApp.getPath());
                 webApp = _mount.root();
             }
 
@@ -368,7 +368,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                        try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
+                        try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
                         {
                             Resource jarWebApp = mount.root();
                             jarWebApp.copyTo(extractedWebAppDir);
@@ -386,7 +386,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             Files.createDirectory(extractedWebAppDir);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                            try (Resource.Mount mount = Resource.newJarResource(webApp.getPath()))
+                            try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
                             {
                                 Resource jarWebApp = mount.root();
                                 jarWebApp.copyTo(extractedWebAppDir);
