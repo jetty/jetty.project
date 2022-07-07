@@ -49,20 +49,7 @@
     <module>jetty-ee10-test-maven-plugin</module>
     <!-- TODO -->
     <!-- module>jetty-jmh</module -->
-    <!-- module>test-webapps</module -->
-    <!-- module>test-distribution</module -->
+    <module>test-distribution</module>
     <!-- module>test-jpms</module -->
   </modules>
-  <!-- TODO cannot rely on ee9 at top level -->
-  <!-- <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement> -->
 </project>

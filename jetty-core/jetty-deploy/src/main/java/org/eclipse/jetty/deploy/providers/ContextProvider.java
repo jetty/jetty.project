@@ -74,6 +74,8 @@ import org.slf4j.LoggerFactory;
 public class ContextProvider extends ScanningAppProvider
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ContextProvider.class);
+    
+    public static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private final Map<String, String> _properties = new HashMap<>();
 
@@ -308,6 +310,16 @@ public class ContextProvider extends ScanningAppProvider
 
         if (file.isDirectory())
             contextHandler.setBaseResource(Resource.newResource(file));
+
+        //TODO think of better way of doing this
+        //pass through properties as attributes directly
+        for (Map.Entry<String, String> prop : properties.entrySet())
+        {
+            String key = prop.getKey();
+            String value = prop.getValue();
+            if (key.startsWith(ATTRIBUTE_PREFIX))
+                contextHandler.setAttribute(key.substring(ATTRIBUTE_PREFIX.length()), value);
+        }
 
         if (context instanceof Deployable deployable)
             deployable.initializeDefaults(properties);

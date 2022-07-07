@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty;
+package org.eclipse.jetty.ee9;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;

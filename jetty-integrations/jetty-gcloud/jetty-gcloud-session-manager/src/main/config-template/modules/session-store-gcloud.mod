@@ -12,8 +12,6 @@ session-store
 
 [depends]
 gcloud-datastore
-annotations
-webapp
 sessions
 
 [files]

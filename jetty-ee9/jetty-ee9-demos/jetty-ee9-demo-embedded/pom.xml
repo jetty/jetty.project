@@ -50,15 +50,15 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
@@ -117,7 +117,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
