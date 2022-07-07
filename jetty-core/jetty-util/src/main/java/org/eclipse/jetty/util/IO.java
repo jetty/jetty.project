@@ -37,7 +37,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.util.component.FileDestroyable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -402,13 +401,6 @@ public class IO
         {
             Files.walkFileTree(path, new SimpleFileVisitor<>()
             {
-//                TODO skip symlink?
-//                @Override
-//                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-//                {
-//                    return attrs.isSymbolicLink() ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
-//                }
-
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
                 {
