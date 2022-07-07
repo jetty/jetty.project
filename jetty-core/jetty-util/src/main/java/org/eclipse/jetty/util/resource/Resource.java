@@ -47,6 +47,7 @@ import java.util.StringTokenizer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -69,6 +70,13 @@ public abstract class Resource implements ResourceFactory
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+
+    private static Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("file:")
+        .with("jrt:")
+        .with("jar:")
+        .build();
 
     public static boolean __defaultUseCaches = true;
 
@@ -140,21 +148,14 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(String resource) throws IOException
     {
-        URI uri;
-        try
-        {
-            uri = URI.create(resource);
+        if (StringUtil.isBlank(resource))
+            return null;
 
-            // If the URI has no scheme we consider the string actually is a path,
-            // if the scheme is 1 character long, we consider it's a Windows drive letter.
-            if (uri.getScheme() == null || uri.getScheme().length() == 1)
-                uri = Paths.get(resource).toUri();
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // If the URI cannot be parsed we consider the string actually is a path.
-            uri = Paths.get(resource).toUri();
-        }
+        // Only try URI for string for known schemes, otherwise assume it is a Path
+        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
+            ? URI.create(resource)
+            : Paths.get(resource).toUri();
+
         return newResource(uri);
     }
 
