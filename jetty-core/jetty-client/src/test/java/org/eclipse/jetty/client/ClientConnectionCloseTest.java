@@ -29,7 +29,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -145,7 +145,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             {
                 Content.Source.consumeAll(request);
 
-                try (Blocking.Callback block = Blocking.callback())
+                try (Blocker.Callback block = Blocker.callback())
                 {
                     Content.Sink.write(response, false, "Hello", block);
                     block.block();

@@ -26,7 +26,7 @@ import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
@@ -103,7 +103,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, HttpStatus.FORBIDDEN_403, message);
             callback.block();
@@ -139,7 +139,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void sendError(int statusCode, String message) throws IOException
     {
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, statusCode, message);
             callback.block();

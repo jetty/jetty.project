@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * </pre>
- * @deprecated Use {@link Blocking.Shared#callback()}
+ * @deprecated Use {@link org.eclipse.jetty.util.Blocker.Shared#callback()}
  */
 @Deprecated
 public class SharedBlockingCallback

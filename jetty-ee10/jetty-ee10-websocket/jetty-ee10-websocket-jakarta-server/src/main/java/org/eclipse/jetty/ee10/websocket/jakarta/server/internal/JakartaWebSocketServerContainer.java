@@ -36,7 +36,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketSe
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -301,7 +301,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         if (baseRequest == null)
             throw new IllegalStateException();
 
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, defaultCustomizer);
             callback.block();

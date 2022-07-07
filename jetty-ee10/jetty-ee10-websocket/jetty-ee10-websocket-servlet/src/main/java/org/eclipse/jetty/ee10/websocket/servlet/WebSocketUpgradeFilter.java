@@ -32,7 +32,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -160,7 +160,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             throw new IllegalStateException("Base Request not available");
 
         // provide a null default customizer the customizer will be on the negotiator in the mapping
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
             {

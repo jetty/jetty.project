@@ -47,7 +47,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -464,7 +464,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();
@@ -1138,7 +1138,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             for (int i = 0; i < times.length; i++)
             {
                 long start = System.currentTimeMillis();
-                try (Blocking.Callback blocker = Blocking.callback())
+                try (Blocker.Callback blocker = Blocker.callback())
                 {
                     response.write(false, BufferUtil.toBuffer(buf), blocker);
                     blocker.block();
@@ -1351,7 +1351,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.getHeaders().put("test", "value");
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-            try (Blocking.Callback blocker = Blocking.callback())
+            try (Blocker.Callback blocker = Blocker.callback())
             {
                 response.write(false, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"), blocker);
                 blocker.block();
@@ -1705,7 +1705,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (chunk == null)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();

@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FuturePromise;
@@ -398,7 +398,7 @@ public class GracefulStopTest
             Fields fields = Request.extractQueryParameters(request);
             if ("true".equals(fields.getValue("commit")))
             {
-                try (Blocking.Callback block = Blocking.callback())
+                try (Blocker.Callback block = Blocker.callback())
                 {
                     response.write(false, null, block);
                     block.block();
@@ -411,7 +411,7 @@ public class GracefulStopTest
             try
             {
                 long contentLength = request.getLength();
-                Blocking.Shared blocking = new Blocking.Shared();
+                Blocker.Shared blocking = new Blocker.Shared();
                 if (contentLength > 0)
                 {
                     while (true)
@@ -419,7 +419,7 @@ public class GracefulStopTest
                         Content.Chunk chunk = request.read();
                         if (chunk == null)
                         {
-                            try (Blocking.Runnable block = blocking.runnable())
+                            try (Blocker.Runnable block = blocking.runnable())
                             {
                                 request.demand(block);
                                 block.block();
@@ -433,7 +433,7 @@ public class GracefulStopTest
                     }
                 }
 
-                try (Blocking.Callback block = blocking.callback())
+                try (Blocker.Callback block = blocking.callback())
                 {
                     Content.Sink.write(response, true, "read [%d/%d]".formatted(c, contentLength), block);
                     block.block();

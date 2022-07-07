@@ -16,12 +16,12 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 
 public class EmptyServerHandler extends Handler.Processor
 {
-    protected Blocking.Shared _blocking = new Blocking.Shared();
+    protected Blocker.Shared _blocking = new Blocker.Shared();
 
     public EmptyServerHandler()
     {

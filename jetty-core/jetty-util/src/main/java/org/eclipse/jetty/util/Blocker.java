@@ -69,9 +69,9 @@ import org.slf4j.LoggerFactory;
  *     }
  * </pre>
  */
-public class Blocking
+public class Blocker
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Blocking.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Blocker.class);
 
     private static final Throwable ACQUIRED = new Throwable()
     {

@@ -30,7 +30,7 @@ import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeReq
 import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -183,7 +183,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     {
         // provide a null default customizer the customizer will be on the negotiator in the mapping
         HttpChannel channel = (HttpChannel)req.getAttribute(HttpChannel.class.getName());
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             if (mapping.upgrade(channel.getCoreRequest(), channel.getCoreResponse(), callback, null))
             {

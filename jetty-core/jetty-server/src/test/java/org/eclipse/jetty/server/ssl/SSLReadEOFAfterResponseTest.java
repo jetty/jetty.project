@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
@@ -72,7 +72,7 @@ public class SSLReadEOFAfterResponseTest
                     Content.Chunk c = request.read();
                     if (c == null)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();
@@ -90,7 +90,7 @@ public class SSLReadEOFAfterResponseTest
 
                 // Second: write the response.
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
-                try (Blocking.Callback blocker = Blocking.callback())
+                try (Blocker.Callback blocker = Blocker.callback())
                 {
                     response.write(true, BufferUtil.toBuffer(bytes), blocker);
                     blocker.block();

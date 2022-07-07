@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -71,7 +71,7 @@ public class WebSocketEchoTest
         CoreSession coreSession = _client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
 
         // Send "hello world" text frame.
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT, "hello world"), callback, false);
             callback.block();

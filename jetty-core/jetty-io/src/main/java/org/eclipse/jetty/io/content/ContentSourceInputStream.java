@@ -18,7 +18,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.IO;
  */
 public class ContentSourceInputStream extends InputStream
 {
-    private final Blocking.Shared blocking = new Blocking.Shared();
+    private final Blocker.Shared blocking = new Blocker.Shared();
     private final byte[] oneByte = new byte[1];
     private final Content.Source content;
     private Content.Chunk chunk;
@@ -75,7 +75,7 @@ public class ContentSourceInputStream extends InputStream
 
             if (chunk == null)
             {
-                try (Blocking.Runnable callback = blocking.runnable())
+                try (Blocker.Runnable callback = blocking.runnable())
                 {
                     content.demand(callback);
                     callback.block();
