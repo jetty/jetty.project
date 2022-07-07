@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -47,7 +46,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerConnectionCloseClientClosesAfterExchange(Scenario scenario) throws Exception
     {
         byte[] data = new byte[128 * 1024];
-        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
+        start(scenario, new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -138,7 +137,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerPartialResponseClientIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
-        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
+        start(scenario, new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -199,7 +198,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testClientConnectionCloseServerNoConnectionCloseClientCloses(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
+        start(scenario, new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

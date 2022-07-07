@@ -160,7 +160,7 @@
               <war>src/main/webapp</war>
               <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
               <contextPath>/test-spec</contextPath>
-              <containerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
+              <containerIncludeJarPattern>.*/jakarta.servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
               <configurationDiscovered>true</configurationDiscovered>
               <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
             </webApp>

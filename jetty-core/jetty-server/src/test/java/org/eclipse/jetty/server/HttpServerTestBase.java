@@ -52,7 +52,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -452,7 +451,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        startServer(new Handler.Processor(Invocable.InvocationType.BLOCKING)
+        startServer(new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -1115,13 +1114,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Processor
+    protected static class BigBlockHandler extends Handler.Processor.Blocking
     {
         byte[] buf = new byte[128 * 1024];
 
         private BigBlockHandler()
         {
-            super(InvocationType.BLOCKING);
             for (int i = 0; i < buf.length; i++)
             {
                 buf[i] = (byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i % 63));
@@ -1335,14 +1333,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Processor
+    public static class CommittedErrorHandler extends Handler.Processor.Blocking
     {
         public EndPoint _endp;
-
-        public CommittedErrorHandler()
-        {
-            super(InvocationType.BLOCKING);
-        }
 
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

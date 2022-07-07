@@ -189,13 +189,8 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Processor
+    protected static class DataHandler extends Handler.Processor.Blocking
     {
-        public DataHandler()
-        {
-            super(InvocationType.BLOCKING);
-        }
-
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {

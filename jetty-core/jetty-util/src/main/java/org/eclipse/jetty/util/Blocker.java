@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Non shared Runnable</h2>
  * <pre>
- *     try(Blocking.Runnable onAction = Blocking.runnable())
+ *     try(Blocker.Runnable onAction = Blocker.runnable())
  *     {
  *         someMethod(onAction);
  *         onAction.block();

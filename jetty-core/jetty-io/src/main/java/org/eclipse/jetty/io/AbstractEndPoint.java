@@ -113,8 +113,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                             // then we do the close for them
                             if (_state.get() == State.CLOSED)
                                 doOnClose(null);
-                            else
-                                throw new IllegalStateException();
                         }
                     }
                     return;
@@ -170,8 +168,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                             // then we do the close for them
                             if (_state.get() == State.CLOSED)
                                 doOnClose(null);
-                            else
-                                throw new IllegalStateException();
                         }
                     }
                     return;
@@ -273,29 +269,21 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public boolean isOutputShutdown()
     {
-        switch (_state.get())
+        return switch (_state.get())
         {
-            case CLOSED:
-            case OSHUT:
-            case OSHUTTING:
-                return true;
-            default:
-                return false;
-        }
+            case CLOSED, OSHUT, OSHUTTING -> true;
+            default -> false;
+        };
     }
 
     @Override
     public boolean isInputShutdown()
     {
-        switch (_state.get())
+        return switch (_state.get())
         {
-            case CLOSED:
-            case ISHUT:
-            case ISHUTTING:
-                return true;
-            default:
-                return false;
-        }
+            case CLOSED, ISHUT, ISHUTTING -> true;
+            default -> false;
+        };
     }
 
     @Override

@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +59,7 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
+        server.setHandler(new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

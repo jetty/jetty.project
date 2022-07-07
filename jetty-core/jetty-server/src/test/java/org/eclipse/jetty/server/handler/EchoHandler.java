@@ -28,10 +28,6 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class EchoHandler extends Handler.Processor.NonBlocking
 {
-    public EchoHandler()
-    {
-    }
-
     @Override
     public void process(Request request, Response response, Callback callback)
     {

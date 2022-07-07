@@ -19,14 +19,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Processor
+public class EmptyServerHandler extends Handler.Processor.Blocking
 {
     protected Blocker.Shared _blocking = new Blocker.Shared();
-
-    public EmptyServerHandler()
-    {
-        super(InvocationType.BLOCKING);
-    }
 
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception

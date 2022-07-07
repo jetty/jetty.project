@@ -1005,13 +1005,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
             RetainableByteBuffer retainable = _retainableByteBuffer;
-            // TODO avoid capturing lambda
-            stream._chunk = Content.Chunk.from(buffer, false, () ->
-            {
-                retainable.release();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), retainable, this);
-            });
+
+            stream._chunk = (LOG.isDebugEnabled())
+                ? Content.Chunk.from(buffer, false, () ->
+                {
+                    retainable.release();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), retainable, this);
+                })
+                : Content.Chunk.from(buffer, false, retainable::release);
+
             return true;
         }
 

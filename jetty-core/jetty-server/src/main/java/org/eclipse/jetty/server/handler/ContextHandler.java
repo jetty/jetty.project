@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -89,6 +90,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
+
+    public enum Availability
+    {
+        STOPPED,        // stopped and can't be made unavailable nor shutdown
+        STARTING,       // starting inside of doStart. It may go to any of the next states.
+        AVAILABLE,      // running normally
+        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
+        SHUTDOWN,       // graceful shutdown
+    }
+
+    private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public ContextHandler()
     {
@@ -446,8 +458,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     public boolean isAvailable()
     {
-        // TODO
-        return isStarted();
+        return _availability.get() == Availability.AVAILABLE && isStarted();
     }
 
     /**
@@ -457,7 +468,47 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     public void setAvailable(boolean available)
     {
-        // TODO
+        // Only supported state transitions are:
+        //   UNAVAILABLE --true---> AVAILABLE
+        //   STARTING -----false--> UNAVAILABLE
+        //   AVAILABLE ----false--> UNAVAILABLE
+        if (available)
+        {
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case AVAILABLE:
+                        break;
+                    case UNAVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        throw new IllegalStateException(availability.toString());
+                }
+                break;
+            }
+        }
+        else
+        {
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case STARTING:
+                    case AVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+        }
     }
 
     @Override
@@ -466,8 +517,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
-        // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
-        _context.call(super::doStart, null);
+        _availability.set(Availability.STARTING);
+        try
+        {
+            _context.call(super::doStart, null);
+            _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
+            LOG.info("Started {}", this);
+        }
+        finally
+        {
+            _availability.compareAndSet(Availability.STARTING, Availability.UNAVAILABLE);
+        }
     }
 
     @Override
