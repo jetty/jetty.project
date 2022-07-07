@@ -246,31 +246,7 @@ public class ContentSourceTest
     @MethodSource("all")
     public void testReadLastDemandInvokesDemandCallback(Content.Source source) throws Exception
     {
-        CountDownLatch consumed = new CountDownLatch(1);
-        Runnable consumeAll = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
-                    {
-                        source.demand(this);
-                        break;
-                    }
-                    if (chunk.isLast())
-                    {
-                        consumed.countDown();
-                        break;
-                    }
-                }
-            }
-        };
-
-        source.demand(consumeAll);
-        assertTrue(consumed.await(10, TimeUnit.SECONDS));
+        Content.Source.consumeAll(source);
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
