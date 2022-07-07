@@ -351,7 +351,14 @@ public class ResourceTest
         Resource rc = ra.resolve("///d/e///f");
 
         assertEquals(ra, rb);
-        assertEquals(rc.getURI().toString(), "file:/a/b/c/d/e/f");
+        assertEquals(rc.getURI().getPath(), "/a/b/c/d/e/f");
+
+        Resource rd = Resource.newResource("file:///a/b/c");
+        Resource re = rd.resolve("///");
+        Resource rf = rd.resolve("///d/e///f");
+
+        assertEquals(rd, re);
+        assertEquals(rf.getURI().getPath(), "/a/b/c/d/e/f");
     }
 
     @Test

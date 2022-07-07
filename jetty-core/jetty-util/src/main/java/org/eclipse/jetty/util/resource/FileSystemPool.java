@@ -35,6 +35,9 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO figure out if this should be a LifeCycle or not, how many instances of this class can reside in a JVM, who can call sweep and when.
+ */
 public class FileSystemPool
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
