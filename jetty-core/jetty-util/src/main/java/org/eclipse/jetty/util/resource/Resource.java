@@ -26,7 +26,6 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -194,12 +193,6 @@ public abstract class Resource implements ResourceFactory
         try
         {
             return new MountedPathResource(uri);
-        }
-        catch (NoSuchFileException nsfe)
-        {
-            // TODO is that still a valid codepath? can't we get rid of BadResource?
-            // The filesystem cannot be created for that URI (e.g.: non-existent jar file).
-            return new BadResource(uri, nsfe.toString());
         }
         catch (ProviderNotFoundException ex)
         {
