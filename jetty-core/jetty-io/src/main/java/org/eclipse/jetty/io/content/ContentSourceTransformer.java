@@ -18,15 +18,16 @@ import java.util.Objects;
 import org.eclipse.jetty.io.Content;
 
 /**
- * An abstract transformer of {@link Content.Chunk}s from a {@link Content.Source} as a {@link Content.Source}.
  * <p>
  * This abstract {@link Content.Source} wraps another {@link Content.Source} and implementors need only to provide
  * the {@link #transform(Content.Chunk)} method, which is used to transform {@link Content.Chunk} read from the
  * wrapped source.
+ * </p>
  * <p>
  * The {@link #demand(Runnable)} conversation is passed directly to the wrapped {@link Content.Source}, which means
  * that transformations that may fully consume bytes read can result in a null return from {@link Content.Source#read()}
  * even after a callback to the demand {@link Runnable} (as per spurious invocation in {@link Content.Source#demand(Runnable)}.
+ * </p>
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {

@@ -22,11 +22,11 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
 /**
- * An {@link InputStream} that is backed by a {@link Content.Source}.
- * <p>
+ * <p>An {@link InputStream} that is backed by a {@link Content.Source}.
  * The read methods are implemented by calling {@link Content.Source#read()}.
  * Any {@link Content.Chunk}s read are released once all their content
  * has been read.
+ * </p>
  */
 public class ContentSourceInputStream extends InputStream
 {

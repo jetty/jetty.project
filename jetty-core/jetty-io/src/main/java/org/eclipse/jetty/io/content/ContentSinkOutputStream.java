@@ -23,12 +23,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 
 /**
- * An {@link OutputStream} backed by a {@link Content.Sink}.
- * <p>
+ * <p>An {@link OutputStream} backed by a {@link Content.Sink}.
  * Any content written to this {@link OutputStream} is written
  * to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)}
  * with a callback that blocks the caller until it is succeeded or
- * failed.
+ * failed.</p>
  */
 public class ContentSinkOutputStream extends OutputStream
 {

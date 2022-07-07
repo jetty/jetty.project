@@ -20,12 +20,11 @@ import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * Wrap a {@link Content.Source} as a {@link Flow.Publisher}.
- * <p>
+ * <p>Wraps a {@link Content.Source} as a {@link Flow.Publisher}.
  * When content is requested via {@link Flow.Subscription#request(long)}, it is
  * read from the passed {@link Content.Source} and passed to {@link Flow.Subscriber#onNext(Object)}.
  * If no content is available, then the {@link Content.Source#demand(Runnable)} method is used to
- * ultimately call {@link Flow.Subscriber#onNext(Object)} once content is available.
+ * ultimately call {@link Flow.Subscriber#onNext(Object)} once content is available.</p>
  */
 public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 {
