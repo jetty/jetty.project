@@ -1,5 +1,11 @@
 #!groovy
 
+/**
+ * IMPORTANT: Changes here need to be reflected in 2 other files as well.
+ *    pom.xml
+ *    build/scripts/ci.sh
+ */
+
 pipeline {
   agent {
     node { label 'linux' }
@@ -49,7 +55,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
                 }
               }
@@ -62,7 +67,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
@@ -75,7 +79,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
@@ -88,7 +91,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f jetty-ee8", "maven3")
                 }
               }
@@ -101,7 +103,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f jetty-home", "maven3")
                 }
               }
@@ -114,7 +115,6 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean -T4", "maven3")
                   mavenBuild("jdk17", "clean install -f tests", "maven3")
                 }
               }
