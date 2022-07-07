@@ -551,16 +551,28 @@ public abstract class Resource implements ResourceFactory
             if (!subUri.getPath().endsWith(URIUtil.SLASH))
                 subUri = URI.create(subUri + URIUtil.SLASH);
 
-            URI subUriResolved = subUri.resolve(subUriPath);
+            URI subUriResolved = uriResolve(subUri, subUriPath);
             resolvedUri = URI.create(scheme + ":" + subUriResolved);
         }
         else
         {
             if (!uri.getPath().endsWith(URIUtil.SLASH))
                 uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uri.resolve(subUriPath);
+            resolvedUri = uriResolve(uri, subUriPath);
         }
         return newResource(resolvedUri);
+    }
+
+    private static URI uriResolve(URI uri, String subUriPath) throws IOException
+    {
+        try
+        {
+            return uri.resolve(subUriPath);
+        }
+        catch (IllegalArgumentException iae)
+        {
+            throw new IOException(iae);
+        }
     }
 
     /**

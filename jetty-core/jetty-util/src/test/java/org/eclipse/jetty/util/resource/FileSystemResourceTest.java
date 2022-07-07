@@ -824,7 +824,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo' bar"));
+        assertThrows(IOException.class, () -> base.resolve("foo' bar"));
     }
 
     @Test
@@ -845,7 +845,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo` bar"));
+        assertThrows(IOException.class, () -> base.resolve("foo` bar"));
     }
 
     @Test
@@ -866,7 +866,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo[1]"));
+        assertThrows(IOException.class, () -> base.resolve("foo[1]"));
     }
 
     @Test
@@ -887,7 +887,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo.{bar}.txt"));
+        assertThrows(IOException.class, () -> base.resolve("foo.{bar}.txt"));
     }
 
     @Test
@@ -908,7 +908,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo^3.txt"));
+        assertThrows(IOException.class, () -> base.resolve("foo^3.txt"));
     }
 
     @Test
@@ -929,7 +929,7 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo|bar.txt"));
+        assertThrows(IOException.class, () -> base.resolve("foo|bar.txt"));
     }
 
     /**
