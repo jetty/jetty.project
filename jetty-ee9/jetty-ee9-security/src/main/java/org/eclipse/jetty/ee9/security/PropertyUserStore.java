@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,21 +89,20 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
         try
         {
-            try
+            if (config.toLowerCase().startsWith("jar:"))
             {
-                Resource configResource = Resource.newResource(config);
-                Path configPath = configResource.getPath();
-                if (configPath == null)
-                    throw new IllegalArgumentException(config);
-                _configPath = configPath;
-            }
-            catch (IllegalStateException e)
-            {
-                try (Resource.Mount mount = Resource.mount(config))
+                try (Resource.Mount mount = Resource.mount(URI.create(config)))
                 {
                     Resource configResource = mount.root();
                     _configPath = extractPackedFile(configResource);
                 }
+            }
+            else
+            {
+                Path configPath = Resource.newResource(config).getPath();
+                if (configPath == null)
+                    throw new IllegalArgumentException(config);
+                _configPath = configPath;
             }
         }
         catch (Exception e)

@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
 
@@ -151,8 +152,7 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(String resource) throws IOException
     {
-        if (StringUtil.isBlank(resource))
-            return null;
+        Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
         URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
