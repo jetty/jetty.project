@@ -18,17 +18,25 @@
 
   <modules>
     <module>jetty-ee10-test-bad-websocket-webapp</module>
-<!-- TODO   <module>jetty-ee10-test-cdi</module>-->
+    <module>jetty-ee10-test-cdi</module>
 <!-- TODO   <module>jetty-ee10-test-http2-webapp</module>-->
 <!-- TODO   <module>jetty-ee10-test-http-client-transport</module>-->
 <!-- TODO   <module>jetty-ee10-test-integration</module>-->
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
-<!-- TODO   <module>jetty-ee10-test-loginservice</module>-->
-<!-- TODO   <module>jetty-ee10-test-quickstart</module>-->
+    <module>jetty-ee10-test-loginservice</module>
+    <module>jetty-ee10-test-quickstart</module>
     <module>jetty-ee10-test-websocket-client-provided-webapp</module>
     <module>jetty-ee10-test-websocket-client-webapp</module>
     <module>jetty-ee10-test-websocket-webapp</module>
+    <module>jetty-ee10-test-cdi-common-webapp</module>
+    <module>jetty-ee10-test-felix-webapp</module>
+    <module>jetty-ee10-test-openid-webapp</module>
+    <module>jetty-ee10-test-owb-cdi-webapp</module>
+    <module>jetty-ee10-test-simple-session-webapp</module>
+    <module>jetty-ee10-test-webapp-rfc2616</module>
+    <module>jetty-ee10-test-weld-cdi-webapp</module>
+    <module>jetty-ee10-test-badinit-webapp</module>
   </modules>
 
   <build>

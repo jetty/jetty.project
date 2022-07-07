@@ -1,0 +1,20 @@
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+		 http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+  <display-name>Intentionally Bad Init</display-name>
+
+  <servlet>
+    <servlet-name>BadInit</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee10.test.BadServletInit</servlet-class>
+    <load-on-startup>0</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>BadInit</servlet-name>
+    <url-pattern>/bad/*</url-pattern>
+  </servlet-mapping>
+
+</web-app>
