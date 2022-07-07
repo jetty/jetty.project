@@ -41,7 +41,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -150,7 +150,7 @@ public class ConnectionPoolTest
                         if (contentLength > 0)
                         {
                             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
-                            try (Blocking.Callback callback = _blocking.callback())
+                            try (Blocker.Callback callback = _blocking.callback())
                             {
                                 response.write(true, BufferUtil.allocate((int)contentLength), callback);
                                 callback.block();
@@ -167,7 +167,7 @@ public class ConnectionPoolTest
                             Content.Chunk chunk = request.read();
                             if (chunk == null)
                             {
-                                try (Blocking.Runnable block = _blocking.runnable())
+                                try (Blocker.Runnable block = _blocking.runnable())
                                 {
                                     request.demand(block);
                                     block.block();
@@ -179,7 +179,7 @@ public class ConnectionPoolTest
 
                             if (chunk.hasRemaining())
                             {
-                                try (Blocking.Callback callback = _blocking.callback())
+                                try (Blocker.Callback callback = _blocking.callback())
                                 {
                                     response.write(true, chunk.getByteBuffer(), callback);
                                     callback.block();

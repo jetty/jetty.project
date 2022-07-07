@@ -37,7 +37,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.hamcrest.Matchers;
@@ -699,7 +699,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 response.setStatus(200);
                 // Echo content back
-                try (Blocking.Callback callback = Blocking.callback())
+                try (Blocker.Callback callback = Blocker.callback())
                 {
                     Flow.Publisher<Content.Chunk> publisher = Content.Source.asPublisher(request);
                     Flow.Subscriber<Content.Chunk> subscriber = Content.Sink.asSubscriber(response, callback);

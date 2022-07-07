@@ -18,12 +18,12 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
 public class ContentSinkOutputStream extends OutputStream
 {
-    private final Blocking.Shared _blocking = new Blocking.Shared();
+    private final Blocker.Shared _blocking = new Blocker.Shared();
     private final Content.Sink sink;
 
     public ContentSinkOutputStream(Content.Sink sink)
@@ -40,7 +40,7 @@ public class ContentSinkOutputStream extends OutputStream
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-        try (Blocking.Callback callback = _blocking.callback())
+        try (Blocker.Callback callback = _blocking.callback())
         {
             sink.write(false, ByteBuffer.wrap(b, off, len), callback);
             callback.block();
@@ -54,7 +54,7 @@ public class ContentSinkOutputStream extends OutputStream
     @Override
     public void flush() throws IOException
     {
-        try (Blocking.Callback callback = _blocking.callback())
+        try (Blocker.Callback callback = _blocking.callback())
         {
             sink.write(false, null, callback);
             callback.block();
@@ -68,7 +68,7 @@ public class ContentSinkOutputStream extends OutputStream
     @Override
     public void close() throws IOException
     {
-        try (Blocking.Callback callback = _blocking.callback())
+        try (Blocker.Callback callback = _blocking.callback())
         {
             sink.write(true, null, callback);
             callback.block();

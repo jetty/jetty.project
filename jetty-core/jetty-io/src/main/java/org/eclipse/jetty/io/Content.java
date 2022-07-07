@@ -32,7 +32,7 @@ import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -389,7 +389,7 @@ public class Content
          */
         static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
         {
-            try (Blocking.Callback callback = Blocking.callback())
+            try (Blocker.Callback callback = Blocker.callback())
             {
                 sink.write(last, byteBuffer, callback);
                 callback.block();

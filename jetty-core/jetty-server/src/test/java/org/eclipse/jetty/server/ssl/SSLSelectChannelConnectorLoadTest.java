@@ -326,13 +326,8 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class TestHandler extends Handler.Processor
+    private static class TestHandler extends Handler.Processor.Blocking
     {
-        public TestHandler()
-        {
-            super(InvocationType.BLOCKING);
-        }
-
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {

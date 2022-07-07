@@ -47,12 +47,11 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -452,7 +451,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        startServer(new Handler.Processor(Invocable.InvocationType.BLOCKING)
+        startServer(new Handler.Processor.Blocking()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -464,7 +463,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();
@@ -1115,13 +1114,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Processor
+    protected static class BigBlockHandler extends Handler.Processor.Blocking
     {
         byte[] buf = new byte[128 * 1024];
 
         private BigBlockHandler()
         {
-            super(InvocationType.BLOCKING);
             for (int i = 0; i < buf.length; i++)
             {
                 buf[i] = (byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i % 63));
@@ -1138,7 +1136,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             for (int i = 0; i < times.length; i++)
             {
                 long start = System.currentTimeMillis();
-                try (Blocking.Callback blocker = Blocking.callback())
+                try (Blocker.Callback blocker = Blocker.callback())
                 {
                     response.write(false, BufferUtil.toBuffer(buf), blocker);
                     blocker.block();
@@ -1335,14 +1333,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Processor
+    public static class CommittedErrorHandler extends Handler.Processor.Blocking
     {
         public EndPoint _endp;
-
-        public CommittedErrorHandler()
-        {
-            super(InvocationType.BLOCKING);
-        }
 
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
@@ -1351,7 +1344,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.getHeaders().put("test", "value");
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-            try (Blocking.Callback blocker = Blocking.callback())
+            try (Blocker.Callback blocker = Blocker.callback())
             {
                 response.write(false, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"), blocker);
                 blocker.block();
@@ -1705,7 +1698,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (chunk == null)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();
