@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Shared Runnable</h2>
  * <pre>
- *     Blocking.SharedRunnable shared = new Blocking.Shared();
+ *     Blocker.SharedRunnable shared = new Blocker.Shared();
  *     // ...
- *     try(Blocking.Runnable onAction = shared.runnable())
+ *     try(Blocker.Runnable onAction = shared.runnable())
  *     {
  *         someMethod(onAction);
  *         onAction.block();
@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Non shared Callback</h2>
  * <pre>
- *     try(Blocking.Callback callback = Blocking.callback())
+ *     try(Blocker.Callback callback = Blocker.callback())
  *     {
  *         someMethod(callback);
  *         callback.block();
@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Shared Callback</h2>
  * <pre>
- *     Blocking.Shared blocker = new Blocking.Shared();
+ *     Blocker.Shared blocker = new Blocker.Shared();
  *     // ...
- *     try(Blocking.Callback callback = blocker.callback())
+ *     try(Blocker.Callback callback = blocker.callback())
  *     {
  *         someMethod(callback);
  *         callback.block();
