@@ -121,8 +121,18 @@ public abstract class Resource implements ResourceFactory
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("not an allowed path: " + path);
-        URI jarUri = URI.create("jar:" + pathUri + "!/");
+        URI jarUri = URI.create(toJarRoot(pathUri.toString()));
         return FileSystemPool.INSTANCE.mount(jarUri);
+    }
+
+    public static String toJarRoot(String jarFile)
+    {
+        return "jar:" + jarFile + "!/";
+    }
+
+    public static String toJarPath(String jarFile, String pathInJar)
+    {
+        return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
     }
 
     /**
