@@ -114,7 +114,7 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r) throws MalformedURLException
+    public boolean isContainedIn(Resource r) throws IOException
     {
         return _delegate.isContainedIn(r);
     }

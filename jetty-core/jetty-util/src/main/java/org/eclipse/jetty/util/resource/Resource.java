@@ -17,7 +17,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -72,13 +71,14 @@ public abstract class Resource implements ResourceFactory
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
-    private static Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+    private static final Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
         .caseSensitive(false)
         .with("file:")
         .with("jrt:")
         .with("jar:")
         .build();
 
+    // TODO remove
     public static boolean __defaultUseCaches = true;
 
     /**
@@ -86,12 +86,14 @@ public abstract class Resource implements ResourceFactory
      * Subsequent URLConnections will use this default.
      *
      * @param useCaches true to enable URL connection caches, false otherwise.
+     * TODO remove
      */
     public static void setDefaultUseCaches(boolean useCaches)
     {
         __defaultUseCaches = useCaches;
     }
 
+    // TODO remove
     public static boolean getDefaultUseCaches()
     {
         return __defaultUseCaches;
@@ -158,7 +160,7 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource A URL or filename.
      * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem accessing URI
      */
     public static Resource newResource(String resource) throws IOException
     {
@@ -177,7 +179,7 @@ public abstract class Resource implements ResourceFactory
      *
      * @param uri A URI.
      * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem accessing URI
      */
     public static Resource newResource(URI uri) throws IOException
     {
@@ -328,14 +330,33 @@ public abstract class Resource implements ResourceFactory
         return newResource(url);
     }
 
-    public static boolean isContainedIn(Resource r, Resource containingResource) throws MalformedURLException
+    /**
+     * Return true if the Resource r is contained in the Resource containingResource, either because
+     * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
+     * @param r the contained resource
+     * @param containingResource the containing resource
+     * @return true if the Resource is contained, false otherwise
+     * @throws IOException Problem accessing resource
+     */
+    public static boolean isContainedIn(Resource r, Resource containingResource) throws IOException
     {
         return r.isContainedIn(containingResource);
     }
 
+    /**
+     * Return the Path corresponding to this resource.
+     * @return the path.
+     */
     public abstract Path getPath();
 
-    public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
+    /**
+     * Return true if this resource is contained in the Resource r, either because
+     * r is a folder or a jar file or any form of resource capable of containing other resources.
+     * @param r the containing resource
+     * @return true if this Resource is contained, false otherwise
+     * @throws IOException Problem accessing resource
+     */
+    public abstract boolean isContainedIn(Resource r) throws IOException;
 
     /**
      * Return true if the passed Resource represents the same resource as the Resource.
@@ -531,13 +552,16 @@ public abstract class Resource implements ResourceFactory
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Resource resolve(String subUriPath) throws IOException
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
         if (URIUtil.canonicalPath(subUriPath) == null)
-            throw new MalformedURLException(subUriPath);
+            throw new IOException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))
             return this;
@@ -1144,8 +1168,21 @@ public abstract class Resource implements ResourceFactory
         return returnedResources;
     }
 
+    /**
+     * Certain {@link Resource}s (e.g.: JAR files) require mounting before they can be used. This class is the representation
+     * of such mount allowing the use of more {@link Resource}s.
+     * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
+     * be released.
+     * @see #mount(URI)
+     * @see #mountJar(Path)
+     */
     public interface Mount extends Closeable
     {
+        /**
+         * Return the root {@link Resource} made available by this mount.
+         * @return the resource.
+         * @throws IOException Problem accessing resource
+         */
         Resource root() throws IOException;
     }
 }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.maven.plugin;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -112,7 +111,7 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r) throws MalformedURLException
+    public boolean isContainedIn(Resource r) throws IOException
     {
         return _delegate.isContainedIn(r);
     }
