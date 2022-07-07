@@ -224,6 +224,38 @@ public class Content
             new ContentSourceConsumer(source, callback).run();
         }
 
+        /** Get the next chunk, blocking if necessary
+         * @param source The source to get the next chunk from
+         * @return A non null chunk
+         */
+        static Chunk nextChunk(Source source)
+        {
+            Chunk chunk = source.read();
+            if (chunk != null)
+                return chunk;
+            FuturePromise<Chunk> next = new FuturePromise<>();
+            Runnable getNext = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Chunk chunk = source.read();
+                    if (chunk == null)
+                        source.demand(this);
+                    next.succeeded(chunk);
+                }
+            };
+            source.demand(getNext);
+            try
+            {
+                return next.get();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
         /**
          * <p>Reads, blocking if necessary, the given content source, until either an error
          * or EOF, and discards the content.</p>
