@@ -100,14 +100,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         //Get the mode
         Object o = context.getAttribute(MODE);
-        Mode mode;
-        if (o instanceof Mode)
-            mode = (Mode)o;
-        else
-            mode = Mode.valueOf((String)o);
-
-        if (mode != null)
-            _mode = mode;
+        _mode = (o instanceof Mode m) 
+            ? m 
+            : (o instanceof String s) ? Mode.valueOf(s) : _mode;
 
         _quickStart = false;
 
