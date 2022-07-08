@@ -182,16 +182,18 @@
   </pluginRepositories>
 
   <modules>
+    <!-- CAUTION: Any changes to this list will need to be represented
+         in the Jenkinsfile and build/scripts/ci.sh as well -->
     <module>build</module>
-<!--    <module>documentation</module>-->
     <module>jetty-core</module>
     <module>jetty-integrations</module>
     <module>jetty-ee8</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
     <module>jetty-home</module>
-<!--    <module>jetty-p2</module>-->
     <module>tests</module>
+    <!-- <module>jetty-p2</module> -->
+    <!-- <module>documentation</module> -->
   </modules>
 
   <build>

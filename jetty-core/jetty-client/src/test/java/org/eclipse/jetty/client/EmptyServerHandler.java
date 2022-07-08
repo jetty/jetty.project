@@ -16,17 +16,12 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Processor
+public class EmptyServerHandler extends Handler.Processor.Blocking
 {
-    protected Blocking.Shared _blocking = new Blocking.Shared();
-
-    public EmptyServerHandler()
-    {
-        super(InvocationType.BLOCKING);
-    }
+    protected Blocker.Shared _blocking = new Blocker.Shared();
 
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception

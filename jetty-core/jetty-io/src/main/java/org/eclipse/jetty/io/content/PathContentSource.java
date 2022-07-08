@@ -29,6 +29,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
+/**
+ * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}</p>
+ */
 public class PathContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
@@ -143,7 +146,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, () -> release(byteBuffer));
+        return Content.Chunk.from(byteBuffer, last, this::release);
     }
 
     @Override

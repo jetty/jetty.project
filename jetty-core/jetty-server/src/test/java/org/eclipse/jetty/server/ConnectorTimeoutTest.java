@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.BeforeEach;
@@ -730,11 +730,11 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             response.setStatus(200);
 
-            Blocking.Shared blocker = new Blocking.Shared();
+            Blocker.Shared blocker = new Blocker.Shared();
 
             for (int i = 0; i < 20; i++)
             {
-                try (Blocking.Callback block = blocker.callback())
+                try (Blocker.Callback block = blocker.callback())
                 {
                     Thread.sleep(50);
                     Content.Sink.write(response, false, "Hello World\r\n", block);

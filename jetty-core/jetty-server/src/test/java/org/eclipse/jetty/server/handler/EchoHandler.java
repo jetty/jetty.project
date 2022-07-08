@@ -26,13 +26,8 @@ import org.eclipse.jetty.util.StringUtil;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class EchoHandler extends Handler.Processor
+public class EchoHandler extends Handler.Processor.NonBlocking
 {
-    public EchoHandler()
-    {
-        super(InvocationType.NON_BLOCKING);
-    }
-
     @Override
     public void process(Request request, Response response, Callback callback)
     {

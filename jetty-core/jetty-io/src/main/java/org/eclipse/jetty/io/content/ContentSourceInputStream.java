@@ -18,12 +18,19 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
+/**
+ * <p>An {@link InputStream} that is backed by a {@link Content.Source}.
+ * The read methods are implemented by calling {@link Content.Source#read()}.
+ * Any {@link Content.Chunk}s read are released once all their content
+ * has been read.
+ * </p>
+ */
 public class ContentSourceInputStream extends InputStream
 {
-    private final Blocking.Shared blocking = new Blocking.Shared();
+    private final Blocker.Shared blocking = new Blocker.Shared();
     private final byte[] oneByte = new byte[1];
     private final Content.Source content;
     private Content.Chunk chunk;
@@ -68,7 +75,7 @@ public class ContentSourceInputStream extends InputStream
 
             if (chunk == null)
             {
-                try (Blocking.Runnable callback = blocking.runnable())
+                try (Blocker.Runnable callback = blocking.runnable())
                 {
                     content.demand(callback);
                     callback.block();
@@ -89,10 +96,23 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public void close()
     {
-        if (chunk != null)
-            chunk.release();
+        // If we have already reached a real EOF or an error, close is a noop.
         if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
             return;
-        chunk = Content.Chunk.EOF;
+
+        // If we have a chunk here, then it needs to be released
+        if (chunk != null)
+        {
+            chunk.release();
+
+            // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
+            if (chunk.isLast())
+                return;
+        }
+
+        // This is an abnormal close before EOF
+        Throwable closed = new IOException("closed before EOF");
+        chunk = Content.Chunk.from(closed);
+        content.fail(closed);
     }
 }

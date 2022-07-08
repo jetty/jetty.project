@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -77,7 +77,7 @@ public class HostnameVerificationTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                try (Blocking.Callback blocker = Blocking.callback())
+                try (Blocker.Callback blocker = Blocker.callback())
                 {
                     Content.Sink.write(response, true, "foobar", blocker);
                 }

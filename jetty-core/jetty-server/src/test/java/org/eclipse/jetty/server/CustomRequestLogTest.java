@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
@@ -627,7 +627,7 @@ public class CustomRequestLogTest
             }
             else if (request.getHeaders().get("echo") != null)
             {
-                try (Blocking.Callback blocker = Blocking.callback())
+                try (Blocker.Callback blocker = Blocker.callback())
                 {
                     Content.Sink.write(response, false, String.valueOf(request.getHeaders().get("echo")), blocker);
                     blocker.block();
