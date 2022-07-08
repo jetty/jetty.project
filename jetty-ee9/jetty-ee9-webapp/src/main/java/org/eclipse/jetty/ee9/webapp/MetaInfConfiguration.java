@@ -664,14 +664,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<URL>();
+        HashSet<URL> tlds = new HashSet<>();
 
+        final Path rootDir = dir;
         Files.walkFileTree(dir, new SimpleFileVisitor<>()
         {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
             {
-                tlds.addAll(getTlds(dir));
+                if (!Files.isSameFile(rootDir, dir))
+                    tlds.addAll(getTlds(dir));
                 return FileVisitResult.SKIP_SUBTREE;
             }
 
