@@ -29,12 +29,11 @@ public interface ByteBufferPool
 {
     /**
      * <p>Requests a {@link ByteBuffer} of the given size.</p>
-     * <p>The returned buffer may have a bigger capacity than the size being
-     * requested but it will have the limit set to the given size.</p>
+     * <p>The returned buffer may have a bigger capacity than the size being requested.</p>
      *
      * @param size the size of the buffer
      * @param direct whether the buffer must be direct or not
-     * @return the requested buffer
+     * @return a buffer with at least the requested capacity, with position and limit set to 0.
      * @see #release(ByteBuffer)
      */
     ByteBuffer acquire(int size, boolean direct);

@@ -133,6 +133,12 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         _newBucket = newBucket;
     }
 
+    @Override
+    protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+    {
+        return new Retained(factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+    }
+
     private Bucket newBucket(int key, boolean direct)
     {
         return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(capacityFor(key), getMaxBucketSize(), updateMemory(direct));
@@ -301,5 +307,31 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
             this.getClass().getSimpleName(), hashCode(),
             getMaxBucketSize(),
             getCapacityFactor());
+    }
+
+    protected class Retained extends ArrayRetainableByteBufferPool
+    {
+        public Retained(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            super(0, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        }
+
+        @Override
+        protected ByteBuffer allocate(int capacity)
+        {
+            return MappedByteBufferPool.this.acquire(capacity, false);
+        }
+
+        @Override
+        protected ByteBuffer allocateDirect(int capacity)
+        {
+            return MappedByteBufferPool.this.acquire(capacity, true);
+        }
+
+        @Override
+        protected void removed(RetainableByteBuffer retainedBuffer)
+        {
+            MappedByteBufferPool.this.release(retainedBuffer.getBuffer());
+        }
     }
 }

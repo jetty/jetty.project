@@ -206,6 +206,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
         }
         _byteBufferPool = pool;
+        addBean(pool.asRetainableByteBufferPool());
 
         addEventListener(new Container.Listener()
         {
