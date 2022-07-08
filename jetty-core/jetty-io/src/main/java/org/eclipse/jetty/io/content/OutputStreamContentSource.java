@@ -32,14 +32,7 @@ import org.eclipse.jetty.util.IO;
  */
 public class OutputStreamContentSource implements Content.Source
 {
-    private final AsyncContent async = new AsyncContent()
-    {
-        @Override
-        public void fail(Throwable failure)
-        {
-            super.fail(failure);
-        }
-    };
+    private final AsyncContent async = new AsyncContent();
     private final AsyncOutputStream output = new AsyncOutputStream();
 
     public OutputStream getOutputStream()

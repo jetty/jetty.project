@@ -23,7 +23,6 @@ import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +46,7 @@ public class SettingsGenerateParseTest
     {
         SettingsFrame input = new SettingsFrame(settings);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NoopByteBufferPool());
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
         new ControlGenerator(true).generate(lease, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();
