@@ -19,8 +19,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
@@ -446,7 +448,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return from(byteBuffer, last, null);
+            return new ByteBufferChunk(byteBuffer, last);
         }
 
         /**
@@ -459,7 +461,20 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return new ByteBufferChunk(byteBuffer, last, releaser);
+            return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+        }
+
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
+         * @return a new Chunk
+         */
+        static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
+        {
+            return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
         }
 
         /**
@@ -577,7 +592,7 @@ public class Content
         /**
          * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
          * <p>A terminal chunk is either an {@link Error error chunk},
-         * or a Chunk that {@link #isLast() is last} and has no remaining
+         * or a Chunk that {@link #isLast()} is true and has no remaining
          * bytes.</p>
          *
          * @return whether this Chunk is a terminal chunk

@@ -22,7 +22,6 @@ import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +34,7 @@ public class GoAwayGenerateParseTest
     {
         GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
         new ControlGenerator(true).generate(lease, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();

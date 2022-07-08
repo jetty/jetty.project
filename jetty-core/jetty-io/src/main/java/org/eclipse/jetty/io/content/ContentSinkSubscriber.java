@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
+/**
+ * <p>A {@link Flow.Subscriber} that wraps a {@link Content.Sink}.
+ * Content delivered to the {@link #onNext(Content.Chunk)} method is
+ * written to {@link Content.Sink#write(boolean, ByteBuffer, Callback)} and the chunk
+ * is released once the write collback is succeeded or failed.</p>
+ */
 public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
 {
     private final Content.Sink sink;

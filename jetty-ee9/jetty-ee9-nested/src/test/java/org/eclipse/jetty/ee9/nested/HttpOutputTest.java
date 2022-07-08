@@ -31,7 +31,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -71,7 +71,7 @@ public class HttpOutputTest
         _server = new Server();
         _contextHandler = new ContextHandler(_server, "/");
 
-        _server.addBean(new NullByteBufferPool());
+        _server.addBean(new NoopByteBufferPool());
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setRequestHeaderSize(1024);

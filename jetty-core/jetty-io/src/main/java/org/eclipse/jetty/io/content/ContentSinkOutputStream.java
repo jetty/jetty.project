@@ -19,8 +19,16 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 
+/**
+ * <p>An {@link OutputStream} backed by a {@link Content.Sink}.
+ * Any content written to this {@link OutputStream} is written
+ * to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)}
+ * with a callback that blocks the caller until it is succeeded or
+ * failed.</p>
+ */
 public class ContentSinkOutputStream extends OutputStream
 {
     private final Blocker.Shared _blocking = new Blocker.Shared();

@@ -16,17 +16,15 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class MockConnector extends AbstractConnector
 {
-    private static final ByteBufferPool BUFFER_POOL = new NullByteBufferPool();
     private final Server _server;
 
     public MockConnector(Server server)
     {
-        super(server, server.getThreadPool(), server.getBean(Scheduler.class), BUFFER_POOL, 0);
+        super(server, server.getThreadPool(), server.getBean(Scheduler.class), ByteBufferPool.NOOP, 0);
         _server = server;
     }
 

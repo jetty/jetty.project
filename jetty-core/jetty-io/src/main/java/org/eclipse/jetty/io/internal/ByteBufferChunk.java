@@ -16,13 +16,14 @@ package org.eclipse.jetty.io.internal;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ByteBufferChunk implements Content.Chunk
 {
-    public static final ByteBufferChunk EMPTY = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, false, null)
+    public static final ByteBufferChunk EMPTY = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, false)
     {
         @Override
         public String toString()
@@ -30,7 +31,7 @@ public class ByteBufferChunk implements Content.Chunk
             return "%s[EMPTY]".formatted(ByteBufferChunk.class.getSimpleName());
         }
     };
-    public static final ByteBufferChunk EOF = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, true, null)
+    public static final ByteBufferChunk EOF = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, true)
     {
         @Override
         public String toString()
@@ -41,13 +42,11 @@ public class ByteBufferChunk implements Content.Chunk
 
     private final ByteBuffer byteBuffer;
     private final boolean last;
-    private final AtomicReference<Runnable> releaser;
 
-    public ByteBufferChunk(ByteBuffer byteBuffer, boolean last, Runnable releaser)
+    public ByteBufferChunk(ByteBuffer byteBuffer, boolean last)
     {
         this.byteBuffer = Objects.requireNonNull(byteBuffer);
         this.last = last;
-        this.releaser = releaser == null ? null : new AtomicReference<>(releaser);
     }
 
     public ByteBuffer getByteBuffer()
@@ -62,12 +61,6 @@ public class ByteBufferChunk implements Content.Chunk
 
     public void release()
     {
-        if (releaser != null)
-        {
-            Runnable runnable = releaser.getAndSet(null);
-            if (runnable != null)
-                runnable.run();
-        }
     }
 
     @Override
@@ -79,5 +72,41 @@ public class ByteBufferChunk implements Content.Chunk
             isLast(),
             BufferUtil.toDetailString(getByteBuffer())
         );
+    }
+
+    public static class ReleasedByRunnable extends ByteBufferChunk
+    {
+        private final AtomicReference<Runnable> releaser;
+
+        public ReleasedByRunnable(ByteBuffer byteBuffer, boolean last, Runnable releaser)
+        {
+            super(byteBuffer, last);
+            this.releaser = new AtomicReference<>(releaser);
+        }
+
+        public void release()
+        {
+            Runnable runnable = releaser.getAndSet(null);
+            if (runnable != null)
+                runnable.run();
+        }
+    }
+
+    public static class ReleasedByConsumer extends ByteBufferChunk
+    {
+        private final AtomicReference<Consumer<ByteBuffer>> releaser;
+
+        public ReleasedByConsumer(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
+        {
+            super(byteBuffer, last);
+            this.releaser = new AtomicReference<>(releaser);
+        }
+
+        public void release()
+        {
+            Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
+            if (consumer != null)
+                consumer.accept(getByteBuffer());
+        }
     }
 }
