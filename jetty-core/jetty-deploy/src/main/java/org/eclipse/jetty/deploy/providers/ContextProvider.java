@@ -74,8 +74,6 @@ import org.slf4j.LoggerFactory;
 public class ContextProvider extends ScanningAppProvider
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ContextProvider.class);
-    
-    public static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private final Map<String, String> _properties = new HashMap<>();
 
@@ -317,9 +315,13 @@ public class ContextProvider extends ScanningAppProvider
         {
             String key = prop.getKey();
             String value = prop.getValue();
-            if (key.startsWith(ATTRIBUTE_PREFIX))
-                contextHandler.setAttribute(key.substring(ATTRIBUTE_PREFIX.length()), value);
+            if (key.startsWith(Deployable.ATTRIBUTE_PREFIX))
+                contextHandler.setAttribute(key.substring(Deployable.ATTRIBUTE_PREFIX.length()), value);
         }
+
+        String contextPath = properties.get(Deployable.CONTEXT_PATH);
+        if (StringUtil.isNotBlank(contextPath))
+            contextHandler.setContextPath(contextPath);
 
         if (context instanceof Deployable deployable)
             deployable.initializeDefaults(properties);
@@ -384,7 +386,6 @@ public class ContextProvider extends ScanningAppProvider
             }
 
             // Build the web application
-            @SuppressWarnings("unchecked")
             String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
             if (StringUtil.isBlank(contextHandlerClassName))
                 throw new IllegalStateException("No ContextHandler classname for " + app);
