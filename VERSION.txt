@@ -14,8 +14,8 @@ jetty-9.4.47.v20220610 - 10 June 2022
  + 7863 Default servlet drops first accept-encoding header if there is more
    than one.
  + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
- + 7935 Review HTTP/2 error handling
- + 8014 Review HttpRequest URI construction
+ + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
+ + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
  + 8067 Wall time usage in DoSFilter RateTracker results in false positive
    alert
  + 8088 Add option to configure exitVm on ShutdownMonitor from System
