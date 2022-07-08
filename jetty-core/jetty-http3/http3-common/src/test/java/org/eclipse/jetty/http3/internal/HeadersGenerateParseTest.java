@@ -30,7 +30,7 @@ import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +48,7 @@ public class HeadersGenerateParseTest
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
         QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NoopByteBufferPool());
         new MessageGenerator(encoder, 8192, true).generate(lease, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);

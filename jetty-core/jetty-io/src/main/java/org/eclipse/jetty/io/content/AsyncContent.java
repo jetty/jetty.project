@@ -30,9 +30,9 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 /**
  * <p>A {@link Content.Source} that is also a {@link Content.Sink}.
  * Content written to the {@link Content.Sink} is converted to a {@link Content.Chunk}
- * and made available to calls to the {@link #read()} method.  In necessary, any
+ * and made available to calls to the {@link #read()} method.  If necessary, any
  * {@link Runnable} passed to the {@link #demand(Runnable)} method is invoked once
- * content is written to the {@link Content.Sink}.</p?
+ * content is written to the {@link Content.Sink}.</p>
  */
 public class AsyncContent implements Content.Sink, Content.Source, Closeable
 {

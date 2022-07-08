@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.io.content.OutputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -82,7 +80,7 @@ public class ContentSourceTest
             @Override
             public String toString()
             {
-                return "transformerSource@%x".formatted(hashCode());
+                return "Content.Source.Transformer@%x".formatted(hashCode());
             }
         };
 
@@ -98,43 +96,39 @@ public class ContentSourceTest
         InputStreamContentSource inputSource2 =
             new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
-        OutputStreamContentSource outputSource = new OutputStreamContentSource()
-        {
-            final AtomicBoolean _running = new AtomicBoolean();
-            @Override
-            public void demand(Runnable demandCallback)
-            {
-                super.demand(demandCallback);
-                if (_running.compareAndSet(false, true))
-                {
-                    new Thread(() ->
-                    {
-                        try
-                        {
-                            try (OutputStream stream = getOutputStream())
-                            {
-                                Thread.sleep(100);
-                                stream.write("one".getBytes(UTF_8));
-                                Thread.sleep(100);
-                                stream.write("two".getBytes(UTF_8));
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }).start();
-                }
-            }
+        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
+    }
 
+    /** Get the next chunk, blocking if necessary
+     * @param source The source to get the next chunk from
+     * @return A non null chunk
+     */
+    public static Content.Chunk nextChunk(Content.Source source)
+    {
+        Content.Chunk chunk = source.read();
+        if (chunk != null)
+            return chunk;
+        FuturePromise<Content.Chunk> next = new FuturePromise<>();
+        Runnable getNext = new Runnable()
+        {
             @Override
-            public String toString()
+            public void run()
             {
-                return "OutputStreamContentSource@%x".formatted(hashCode());
+                Content.Chunk chunk = source.read();
+                if (chunk == null)
+                    source.demand(this);
+                next.succeeded(chunk);
             }
         };
-
-        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2, outputSource);
+        source.demand(getNext);
+        try
+        {
+            return next.get();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @ParameterizedTest
@@ -232,7 +226,7 @@ public class ContentSourceTest
     @MethodSource("all")
     public void testReadFailReadReturnsError(Content.Source source) throws Exception
     {
-        Content.Chunk chunk = Content.Source.nextChunk(source);
+        Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
 
         source.fail(new CancellationException());
@@ -274,10 +268,10 @@ public class ContentSourceTest
     public void testDemandCallbackThrows(Content.Source source) throws Exception
     {
         // TODO fix for OSCS
-        if (source instanceof OutputStreamContentSource)
-            return;
+//        if (source instanceof OutputStreamContentSource)
+//            return;
 
-        Content.Chunk chunk = Content.Source.nextChunk(source);
+        Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
 
         source.demand(() ->

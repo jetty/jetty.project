@@ -17,12 +17,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
-public class NullByteBufferPool implements ByteBufferPool
+public class NoopByteBufferPool implements ByteBufferPool
 {
     private final RetainableByteBufferPool _retainableByteBufferPool = RetainableByteBufferPool.from(this);
-
-    public NullByteBufferPool()
-    {}
 
     @Override
     public ByteBuffer acquire(int size, boolean direct)

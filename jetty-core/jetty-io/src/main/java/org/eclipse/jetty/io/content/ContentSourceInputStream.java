@@ -96,9 +96,6 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public void close()
     {
-        if (chunk == null)
-            chunk = content.read();
-
         // If we have already reached a real EOF or an error, close is a noop.
         if (chunk == Content.Chunk.EOF || chunk instanceof Content.Chunk.Error)
             return;

@@ -24,7 +24,7 @@ import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,7 @@ public class DataGenerateParseTest
         byteBuffer.get(inputBytes);
         DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NoopByteBufferPool());
         new MessageGenerator(null, 8192, true).generate(lease, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();

@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -222,38 +223,6 @@ public class Content
         static void consumeAll(Source source, Callback callback)
         {
             new ContentSourceConsumer(source, callback).run();
-        }
-
-        /** Get the next chunk, blocking if necessary
-         * @param source The source to get the next chunk from
-         * @return A non null chunk
-         */
-        static Chunk nextChunk(Source source)
-        {
-            Chunk chunk = source.read();
-            if (chunk != null)
-                return chunk;
-            FuturePromise<Chunk> next = new FuturePromise<>();
-            Runnable getNext = new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    Chunk chunk = source.read();
-                    if (chunk == null)
-                        source.demand(this);
-                    next.succeeded(chunk);
-                }
-            };
-            source.demand(getNext);
-            try
-            {
-                return next.get();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
         }
 
         /**
@@ -492,9 +461,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return releaser == null
-                ? new ByteBufferChunk(byteBuffer, last)
-                : new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, releaser);
+            return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
         }
 
         /**
@@ -507,9 +474,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
         {
-            return releaser == null
-                ? new ByteBufferChunk(byteBuffer, last)
-                : new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, releaser);
+            return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
         }
 
         /**

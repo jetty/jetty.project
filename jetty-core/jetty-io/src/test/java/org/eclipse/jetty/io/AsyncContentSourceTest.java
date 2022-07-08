@@ -34,6 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncContentSourceTest
 {
+    // TODO make an OutputStreamContentSource version of this test
+
+    // TODO add a test to actually read some content!
+
     @Test
     public void testOfferInvokesDemandCallback() throws Exception
     {

@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  * Data is read from the {@link InputStream} into a buffer that is optionally acquired
  * from a {@link ByteBufferPool}, and converted to a {@link Content.Chunk} that is
  * returned from {@link #read()}.   If no {@link ByteBufferPool} is provided, then
- * a {@link NullByteBufferPool} is used.
+ * a {@link NoopByteBufferPool} is used.
  * </p>
  */
 public class InputStreamContentSource implements Content.Source
@@ -51,7 +51,7 @@ public class InputStreamContentSource implements Content.Source
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
         this.inputStream = inputStream;
-        this.bufferPool = bufferPool == null ? ByteBufferPool.NULL_POOL : bufferPool;
+        this.bufferPool = bufferPool == null ? ByteBufferPool.NOOP : bufferPool;
     }
 
     public int getBufferSize()
