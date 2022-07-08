@@ -20,10 +20,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-    </dependency>
-    <dependency>
       <groupId>test.jetty-ee10-start-mojo-multi-module-single-war-it</groupId>
       <artifactId>module-impl</artifactId>
     </dependency>
