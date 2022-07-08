@@ -103,7 +103,7 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
-                  mavenBuild("jdk17", "clean install -f jetty-home", "maven3")
+                  mavenBuild("jdk17", "clean install -pl :jetty-home", "maven3")
                 }
               }
             }
