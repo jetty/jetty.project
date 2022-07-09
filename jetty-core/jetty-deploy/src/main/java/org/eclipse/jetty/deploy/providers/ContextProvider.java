@@ -309,6 +309,20 @@ public class ContextProvider extends ScanningAppProvider
         if (file.isDirectory())
             contextHandler.setBaseResource(Resource.newResource(file));
 
+        //TODO think of better way of doing this
+        //pass through properties as attributes directly
+        for (Map.Entry<String, String> prop : properties.entrySet())
+        {
+            String key = prop.getKey();
+            String value = prop.getValue();
+            if (key.startsWith(Deployable.ATTRIBUTE_PREFIX))
+                contextHandler.setAttribute(key.substring(Deployable.ATTRIBUTE_PREFIX.length()), value);
+        }
+
+        String contextPath = properties.get(Deployable.CONTEXT_PATH);
+        if (StringUtil.isNotBlank(contextPath))
+            contextHandler.setContextPath(contextPath);
+
         if (context instanceof Deployable deployable)
             deployable.initializeDefaults(properties);
 
@@ -372,7 +386,6 @@ public class ContextProvider extends ScanningAppProvider
             }
 
             // Build the web application
-            @SuppressWarnings("unchecked")
             String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
             if (StringUtil.isBlank(contextHandlerClassName))
                 throw new IllegalStateException("No ContextHandler classname for " + app);

@@ -99,12 +99,13 @@ public class QuickStartConfiguration extends AbstractConfiguration
         LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, quickStartWebXml.exists());
 
         //Get the mode
-        Mode mode = (Mode)context.getAttribute(MODE);
-        if (mode != null)
-            _mode = mode;
-        
+        Object o = context.getAttribute(MODE);
+        _mode = (o instanceof Mode m) 
+            ? m 
+            : (o instanceof String s) ? Mode.valueOf(s) : _mode;
+
         _quickStart = false;
-        
+
         switch (_mode)
         {
             case GENERATE:

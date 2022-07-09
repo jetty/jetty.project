@@ -6,13 +6,17 @@
     <Set name="contextPath">/.well-known</Set>
     <Set name="handler">
       <New class="org.eclipse.jetty.server.handler.ResourceHandler">
-        <Set name="resourceBase">
-          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-            <Arg><Property name="jetty.base"/></Arg>
-            <Arg><Property name="jetty.wellknown.dir" default=".well-known"/></Arg>
+        <Set name="baseResource">
+          <Call name="get" class="java.nio.file.Paths">
+            <Arg>
+              <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                <Arg><Property name="jetty.base"/></Arg>
+                <Arg><Property name="jetty.wellknown.dir" default=".well-known"/></Arg>
+              </Call>
+            </Arg>
           </Call>
         </Set>
-        <Set name="directoriesListed"><Property name="jetty.wellknown.listDirectories" default="false"/></Set>
+        <Set name="dirAllowed"><Property name="jetty.wellknown.listDirectories" default="false"/></Set>
       </New>
     </Set>
   </New>
