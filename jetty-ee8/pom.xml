@@ -21,6 +21,8 @@
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
+    <!-- see issue #8209 -->
+<!--    <skipTests>true</skipTests>-->
   </properties>
 
   <modules>
@@ -121,13 +123,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- see issue #8209 -->
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-<!--          <skipTests>true</skipTests>-->
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
@@ -156,8 +151,8 @@
           <version>${jakarta.websocket.api.version}</version>
         </dependency>
         <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-javax-common</artifactId>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-annotations</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -192,7 +187,27 @@
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+          <artifactId>jetty-ee8-websocket-javax-common</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+          <artifactId>jetty-ee8-websocket-javax-client</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+          <artifactId>jetty-ee8-websocket-servlet</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
           <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+          <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

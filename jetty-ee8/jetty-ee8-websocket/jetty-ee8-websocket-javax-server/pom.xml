@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-    <artifactId>jetty-ee9-websocket</artifactId>
+    <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+    <artifactId>jetty-ee8-websocket</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: jakarta.websocket :: Server</name>
+  <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+  <name>EE8 :: Jetty :: Websocket :: javax.websocket :: Server</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jakarta.server</bundle-symbolic-name>
+    <ee9.module>jetty-ee8-websocket/jetty-ee8-websocket-jakarta-server</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.javax.server</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-javax-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -64,7 +65,7 @@
             </Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>
-                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=jakarta.websocket.server.ServerEndpointConfig$Configurator
+                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=jakarta.websocket.server.ServerEndpointConfig$Configurator
             </Provide-Capability>
           </instructions>
         </configuration>
