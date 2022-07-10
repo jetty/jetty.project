@@ -11,7 +11,7 @@
   <name>EE8 :: Jetty :: Websocket :: javax.websocket :: Server</name>
 
   <properties>
-    <ee9.module>jetty-ee8-websocket/jetty-ee8-websocket-jakarta-server</ee9.module>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-server</ee9.module>
     <bundle-symbolic-name>${project.groupId}.javax.server</bundle-symbolic-name>
   </properties>
 
