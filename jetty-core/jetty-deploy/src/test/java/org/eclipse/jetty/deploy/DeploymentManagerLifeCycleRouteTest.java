@@ -23,7 +23,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.Test;
 
-public class DeploymentManagerLifeCyclePathTest
+public class DeploymentManagerLifeCycleRouteTest
 {
     @Test
     public void testStateTransitionNewToDeployed() throws Exception
@@ -42,9 +42,8 @@ public class DeploymentManagerLifeCyclePathTest
         depman.start();
 
         // Trigger new App
-        mockProvider.findWebapp("foo-webapp-1.war");
-
-        App app = depman.getAppByOriginId("mock-foo-webapp-1.war");
+        mockProvider.createWebapp("foo-webapp-1.war");
+        App app = depman.getApp("mock-foo-webapp-1.war");
 
         // Request Deploy of App
         depman.requestAppGoal(app, "deployed");
@@ -74,7 +73,7 @@ public class DeploymentManagerLifeCyclePathTest
         depman.start();
 
         // Trigger new App
-        mockProvider.findWebapp("foo-webapp-1.war");
+        mockProvider.createWebapp("foo-webapp-1.war");
 
         // Perform no goal request.
 
@@ -104,9 +103,8 @@ public class DeploymentManagerLifeCyclePathTest
         depman.start();
 
         // Trigger new App
-        mockProvider.findWebapp("foo-webapp-1.war");
-
-        App app = depman.getAppByOriginId("mock-foo-webapp-1.war");
+        App foo = mockProvider.createWebapp("foo-webapp-1.war");
+        App app = depman.getApp(foo.getPath());
 
         // Request Deploy of App
         depman.requestAppGoal(app, "deployed");

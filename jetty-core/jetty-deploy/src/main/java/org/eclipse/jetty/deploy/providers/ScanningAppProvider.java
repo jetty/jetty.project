@@ -15,19 +15,25 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -42,7 +48,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
-    private final Map<String, App> _appMap = new HashMap<>();
+    private final Map<Path, App> _appMap = new HashMap<>();
 
     private DeploymentManager _deploymentManager;
     private FilenameFilter _filenameFilter;
@@ -55,21 +61,21 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
         @Override
-        public void fileAdded(String filename) throws Exception
+        public void pathAdded(Path path) throws Exception
         {
-            ScanningAppProvider.this.fileAdded(filename);
+            ScanningAppProvider.this.pathAdded(path);
         }
 
         @Override
-        public void fileChanged(String filename) throws Exception
+        public void pathChanged(Path path) throws Exception
         {
-            ScanningAppProvider.this.fileChanged(filename);
+            ScanningAppProvider.this.pathChanged(path);
         }
 
         @Override
-        public void fileRemoved(String filename) throws Exception
+        public void pathRemoved(Path path) throws Exception
         {
-            ScanningAppProvider.this.fileRemoved(filename);
+            ScanningAppProvider.this.pathChanged(path);
         }
     };
 
@@ -121,7 +127,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     /**
      * @return The index of currently deployed applications.
      */
-    protected Map<String, App> getDeployedApps()
+    protected Map<Path, App> getDeployedApps()
     {
         return _appMap;
     }
@@ -131,22 +137,57 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      * Isolated in a method so that it is possible to override the default App
      * object for specialized implementations of the AppProvider.
      *
-     * @param filename The file that is the context.xml. It is resolved by
+     * @param path The file that is the context.xml. It is resolved by
      * {@link Resource#newResource(String)}
      * @return The App object for this particular context definition file.
      */
-    protected App createApp(String filename)
+    protected App createApp(Path path)
     {
-        App app = new App(_deploymentManager, this, filename);
+        App app = new App(_deploymentManager, this, path);
 
-        // Only deploy apps for this environment
-        if (app.getEnvironmentName().equals(getEnvironmentName()))
+        String environmentName = app.getEnvironmentName();
+
+        // If the app specifies the environment for this provider, then this deployer will deploy it.
+        if (Objects.equals(environmentName, getEnvironmentName()))
             return app;
 
-        boolean appProvider4env = _deploymentManager.getAppProviders().stream()
-            .map(AppProvider::getEnvironmentName).anyMatch(app.getEnvironmentName()::equals);
-        if (!appProvider4env)
-            LOG.warn("No AppProvider with environment {} for {}", app.getEnvironmentName(), app);
+        // If we are the default provider then we may take further action
+        if (Objects.equals(getEnvironmentName(), _deploymentManager.getDefaultEnvironmentName()))
+        {
+            // if the app specified an environment name, then produce warning if there is no provider for it.
+            if (StringUtil.isNotBlank(environmentName))
+            {
+                boolean appProvider4env = _deploymentManager.getAppProviders().stream()
+                    .map(AppProvider::getEnvironmentName).anyMatch(environmentName::equals);
+                if (!appProvider4env)
+                    LOG.warn("No AppProvider with environment {} for {}", environmentName, app);
+                return null;
+            }
+
+            // There was no environment specified. Should we default it?
+            boolean coreProvider = _deploymentManager.getAppProviders().stream()
+                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
+            String basename = FileID.getBasename(path);
+
+            // If there is no core provider, or the app is an EE web application,
+            if (!coreProvider ||
+                FileID.isWebArchive(path) ||
+                Files.isDirectory(path) && Files.exists(path.resolve("WEB-INF")) ||
+                FileID.isXml(path) && (
+                    Files.exists(path.getParent().resolve(basename + ".war")) ||
+                    Files.exists(path.getParent().resolve(basename + ".WAR")) ||
+                    Files.exists(path.getParent().resolve(basename + "/WEB-INF"))))
+            {
+                // use the default environment
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Defaulting env {} for app {} by {}", getEnvironmentName(), app, this);
+                app.getProperties().put(Deployable.ENVIRONMENT, getEnvironmentName());
+                return app;
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("App {} ignored by {}", app, this);
         return null;
     }
 
@@ -209,39 +250,39 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         return _scanner.exists(path);
     }
 
-    protected void fileAdded(String filename) throws Exception
+    protected void pathAdded(Path path) throws Exception
     {
-        App app = ScanningAppProvider.this.createApp(filename);
+        App app = ScanningAppProvider.this.createApp(path);
         if (LOG.isDebugEnabled())
-            LOG.debug("fileAdded {}: {}", filename, app);
+            LOG.debug("fileAdded {}: {}", path, app);
 
         if (app != null)
         {
-            _appMap.put(filename, app);
+            _appMap.put(path, app);
             _deploymentManager.addApp(app);
         }
     }
 
-    protected void fileChanged(String filename) throws Exception
+    protected void pathChanged(Path path) throws Exception
     {
-        App oldApp = _appMap.remove(filename);
+        App oldApp = _appMap.remove(path);
         if (oldApp != null)
             _deploymentManager.removeApp(oldApp);
-        App app = ScanningAppProvider.this.createApp(filename);
+        App app = ScanningAppProvider.this.createApp(path);
         if (LOG.isDebugEnabled())
-            LOG.debug("fileChanged {}: {}", filename, app);
+            LOG.debug("fileChanged {}: {}", path, app);
         if (app != null)
         {
-            _appMap.put(filename, app);
+            _appMap.put(path, app);
             _deploymentManager.addApp(app);
         }
     }
 
-    protected void fileRemoved(String filename) throws Exception
+    protected void pathRemoved(Path path) throws Exception
     {
-        App app = _appMap.remove(filename);
+        App app = _appMap.remove(path);
         if (LOG.isDebugEnabled())
-            LOG.debug("fileRemoved {}: {}", filename, app);
+            LOG.debug("fileRemoved {}: {}", path, app);
         if (app != null)
             _deploymentManager.removeApp(app);
     }

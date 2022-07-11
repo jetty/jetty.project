@@ -16,12 +16,12 @@ package org.eclipse.jetty.deploy.graph;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Path
+public class Route
 {
     private final List<Edge> _edges = new CopyOnWriteArrayList<Edge>();
     private final List<Node> _nodes = new CopyOnWriteArrayList<Node>();
 
-    public Path()
+    public Route()
     {
     }
 
@@ -39,9 +39,9 @@ public class Path
         _nodes.add(edge.getTo());
     }
 
-    public Path forkPath()
+    public Route forkRoute()
     {
-        Path ep = new Path();
+        Route ep = new Route();
         for (Edge edge : _edges)
         {
             ep.add(edge);
