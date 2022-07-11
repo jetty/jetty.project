@@ -94,7 +94,10 @@ public class QuickStartTest
         //Generate the quickstart xml
         PreconfigureSpecWar.main(new String[]{});
 
-        Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
+        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureSpecWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-spec-preconfigured");
+
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
@@ -102,10 +105,10 @@ public class QuickStartTest
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
-        System.setProperty("jetty.home", "target");
+        System.setProperty("jetty.home", targetDir.toString());
 
-        //war file or dir to start
-        String war = "target/test-spec-preconfigured";
+        // war file or dir to start
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
         Resource contextXml = Resource.newResource("src/test/resources/test-spec.xml");

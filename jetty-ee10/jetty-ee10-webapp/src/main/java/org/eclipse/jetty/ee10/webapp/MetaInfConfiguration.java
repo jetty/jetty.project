@@ -83,7 +83,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     public static final List<String> __allScanTypes = (List<String>)Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
-    
+
     /**
      * ContainerPathNameMatcher
      *
