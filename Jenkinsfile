@@ -11,7 +11,10 @@ pipeline {
     node { label 'linux' }
   }
   // save some io during the build
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options {
+    skipDefaultCheckout()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
   stages {
     stage("Checkout Jetty") {
       steps {
