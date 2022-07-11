@@ -13,7 +13,7 @@
   <properties>
     <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-tests</ee9.module>
     <bundle-symbolic-name>${project.groupId}.javax.tests</bundle-symbolic-name>
-    <!-- FIXME -->
+    <!-- FIXME issue #8278 -->
     <skipTests>true</skipTests>
   </properties>
 
