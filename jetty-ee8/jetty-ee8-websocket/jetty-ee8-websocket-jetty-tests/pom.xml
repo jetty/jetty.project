@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-    <artifactId>jetty-ee9-websocket</artifactId>
+    <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+    <artifactId>jetty-ee8-websocket</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-websocket-jetty-tests</artifactId>
-  <name>EE9 :: Jetty :: Websocket :: org.eclipse.jetty.websocket :: Tests</name>
+  <artifactId>jetty-ee8-websocket-jetty-tests</artifactId>
+  <name>EE8 :: Jetty :: Websocket :: org.eclipse.jetty.websocket :: Tests</name>
 
   <properties>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-tests</ee9.module>
     <bundle-symbolic-name>${project.groupId}.tests</bundle-symbolic-name>
   </properties>
 
@@ -21,18 +22,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
