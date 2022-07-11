@@ -29,6 +29,12 @@ module org.eclipse.jetty.websocket.core.common
 
     // The Jetty & Jakarta API Layers need to access both access some internal utilities which we don't want to expose.
     exports org.eclipse.jetty.websocket.core.internal.util to
+        org.eclipse.jetty.ee8.websocket.jetty.common,
+        org.eclipse.jetty.ee8.websocket.jetty.client,
+        org.eclipse.jetty.ee8.websocket.jetty.server,
+        org.eclipse.jetty.ee8.websocket.jakarta.common,
+        org.eclipse.jetty.ee8.websocket.jakarta.client,
+        org.eclipse.jetty.ee8.websocket.jakarta.server,
         org.eclipse.jetty.ee9.websocket.jetty.common,
         org.eclipse.jetty.ee9.websocket.jetty.client,
         org.eclipse.jetty.ee9.websocket.jetty.server,
@@ -43,6 +49,12 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.ee10.websocket.jakarta.server;
 
     exports org.eclipse.jetty.websocket.core.internal.messages to
+        org.eclipse.jetty.ee8.websocket.jetty.common,
+        org.eclipse.jetty.ee8.websocket.jetty.client,
+        org.eclipse.jetty.ee8.websocket.jetty.server,
+        org.eclipse.jetty.ee8.websocket.jakarta.common,
+        org.eclipse.jetty.ee8.websocket.jakarta.client,
+        org.eclipse.jetty.ee8.websocket.jakarta.server,
         org.eclipse.jetty.ee9.websocket.jetty.common,
         org.eclipse.jetty.ee9.websocket.jetty.client,
         org.eclipse.jetty.ee9.websocket.jetty.server,
