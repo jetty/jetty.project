@@ -189,7 +189,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 for (String i : values)
                 {
                     String entry = normalizer.expand(i);
-                    tlds.add(Resource.toURI(entry));
+                    tlds.add(Resource.toURI(entry).toURL());
                 }
 
                 //empty list signals that tlds were prescanned but none found.
