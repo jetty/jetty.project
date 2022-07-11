@@ -87,45 +87,42 @@ public class ContextProvider extends ScanningAppProvider
             if (dir == null || !dir.canRead())
                 return false;
 
-            String lowerName = name.toLowerCase(Locale.ENGLISH);
-
-            Resource resource = Resource.newResource(new File(dir, name).toPath());
-            if (getMonitoredResources().stream().anyMatch(resource::isSame))
-                return false;
-
-            // ignore hidden files
-            if (lowerName.startsWith("."))
-                return false;
-
-            // ignore property files
-            if (lowerName.endsWith(".properties"))
-                return false;
-
-            // Ignore some directories
-            if (resource.isDirectory())
-            {
-                // is it a nominated config directory
-                if (lowerName.endsWith(".d"))
-                    return false;
-
-                // is it an unpacked directory for an existing war file?
-                if (exists(name + ".war") || exists(name + ".WAR"))
-                    return false;
-
-                // is it a directory for an existing xml file?
-                if (exists(name + ".xml") || exists(name + ".XML"))
-                    return false;
-
-                //is it a sccs dir?
-                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
-            }
-
-            // else is it a war file
-            if (lowerName.endsWith(".war"))
+            // Accept XML files and WARs
+            if (FileID.isXml(name) || FileID.isWebArchive(name))
                 return true;
 
-            // else is it a context XML file
-            return lowerName.endsWith(".xml");
+            Path path = dir.toPath().resolve(name);
+
+            // Ignore any other file that are not directories
+            if (!Files.isDirectory(path))
+                return false;
+
+            // Don't deploy monitored resources
+            if (getMonitoredResources().stream().map(Resource::getPath).anyMatch(path::equals))
+                return false;
+
+            // Ignore hidden directories
+            if (name.startsWith("."))
+                return false;
+
+            String lowerName = name.toLowerCase(Locale.ENGLISH);
+
+            // is it a nominated config directory
+            if (lowerName.endsWith(".d"))
+                return false;
+
+            // ignore source control directories
+            if ("cvs".equals(lowerName) || "cvsroot".equals(lowerName))
+                return false;
+
+            // ignore directories that have sibling war or XML file
+            if (Files.exists(dir.toPath().resolve(name + ".war")) ||
+                Files.exists(dir.toPath().resolve(name + ".WAR")) ||
+                Files.exists(dir.toPath().resolve(name + ".xml")) ||
+                Files.exists(dir.toPath().resolve(name + ".XML")))
+                return false;
+
+            return true;
         }
     }
 
