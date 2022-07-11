@@ -135,6 +135,9 @@ public abstract class AbstractHandshaker implements Handshaker
         if (httpConfig.getSendServerVersion())
             response.getHeaders().put(SERVER_VERSION);
 
+        // We need to also manually set upgrade attribute because stream wrapper succeeded is run after
+        // the decision is made to close the connection.
+        request.setAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
