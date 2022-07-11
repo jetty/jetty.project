@@ -136,6 +136,18 @@ public abstract class Resource implements ResourceFactory
         return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
     }
 
+    public static URI toURI(String resource)
+    {
+        Objects.requireNonNull(resource);
+
+        // Only try URI for string for known schemes, otherwise assume it is a Path
+        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
+            ? URI.create(resource)
+            : Paths.get(resource).toUri();
+
+        return uri;
+    }
+
     /**
      * Construct a resource from a url.
      *
@@ -163,14 +175,7 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(String resource) throws IOException
     {
-        Objects.requireNonNull(resource);
-
-        // Only try URI for string for known schemes, otherwise assume it is a Path
-        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
-            ? URI.create(resource)
-            : Paths.get(resource).toUri();
-
-        return newResource(uri);
+        return newResource(toURI(resource));
     }
 
     /**

@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
@@ -188,38 +186,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 if (o instanceof Collection<?>)
                     tlds.addAll((Collection<?>)o);
 
-                // TODO: this should probably be somewhere else
-                List<Resource.Mount> mountedResources = new ArrayList<>();
-
-                try
+                for (String i : values)
                 {
-                    for (String i : values)
-                    {
-                        Resource r;
-                        String entry = normalizer.expand(i);
-                        if (entry.toLowerCase(Locale.ENGLISH).startsWith("jar:file:"))
-                        {
-                            URI uri = URI.create(entry);
-                            mountedResources.add(Resource.mount(uri));
-                            r = Resource.newResource(uri);
-                        }
-                        else
-                        {
-                            r = Resource.newResource(entry);
-                        }
-
-                        if (r.exists())
-                            tlds.add(r.getURI().toURL());
-                        else
-                            throw new IllegalArgumentException("TLD not found: " + r);
-                    }
-                }
-                finally
-                {
-                    for (Resource.Mount mountedResource : mountedResources)
-                    {
-                        mountedResource.close();
-                    }
+                    String entry = normalizer.expand(i);
+                    tlds.add(Resource.toURI(entry));
                 }
 
                 //empty list signals that tlds were prescanned but none found.
