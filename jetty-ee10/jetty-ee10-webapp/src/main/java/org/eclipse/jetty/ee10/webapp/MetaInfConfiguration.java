@@ -42,6 +42,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -184,18 +185,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     {
         if (_mountedResources != null)
         {
-            _mountedResources.forEach(mount ->
-            {
-                try
-                {
-                    mount.close();
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unable to close resource {}", mount, e);
-                }
-            });
+            _mountedResources.forEach(IO::close);
         }
         super.deconfigure(context);
     }
