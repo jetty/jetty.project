@@ -156,11 +156,11 @@ public class Graph
      * @param nodeNameDest the name of the node to the path destination.
      * @return the path to take
      */
-    public Path getPath(String nodeNameOrigin, String nodeNameDest)
+    public Route getPath(String nodeNameOrigin, String nodeNameDest)
     {
         if (nodeNameOrigin.equals(nodeNameDest))
         {
-            return new Path();
+            return new Route();
         }
 
         Node from = getNodeByName(nodeNameOrigin);
@@ -175,28 +175,28 @@ public class Graph
      * @param to the node to
      * @return the path to take or null if there is no path.
      */
-    public Path getPath(Node from, Node to)
+    public Route getPath(Node from, Node to)
     {
         @SuppressWarnings("ReferenceEquality")
         boolean sameObject = (from == to);
         if (sameObject)
         {
-            return new Path();
+            return new Route();
         }
 
         // Perform a Breadth First Search (BFS) of the tree.
-        Path path = breadthFirst(from, to, new CopyOnWriteArrayList<Path>(), new HashSet<Edge>());
+        Route path = breadthFirst(from, to, new CopyOnWriteArrayList<Route>(), new HashSet<Edge>());
         return path;
     }
 
-    private Path breadthFirst(Node from, Node destination, CopyOnWriteArrayList<Path> paths, Set<Edge> seen)
+    private Route breadthFirst(Node from, Node destination, CopyOnWriteArrayList<Route> paths, Set<Edge> seen)
     {
         // Add next unseen segments to paths.
         boolean edgesAdded = false;
         if (paths.size() == 0)
-            paths.add(new Path());
+            paths.add(new Route());
 
-        for (Path path : paths)
+        for (Route path : paths)
         {
             Set<Edge> next = findEdgesFrom(path.nodes() == 0 ? from : path.lastNode());
             if (next.size() == 0)
@@ -209,19 +209,19 @@ public class Graph
                 if (seen.contains(edge))
                     continue;
                 seen.add(edge);
-                Path nextPath = (++splits == next.size()) ? path : path.forkPath();
+                Route nextRoute = (++splits == next.size()) ? path : path.forkRoute();
                 // Add segment to split'd path
-                nextPath.add(edge);
+                nextRoute.add(edge);
 
                 // Are we there yet?
                 if (destination.equals(edge.getTo()))
-                    return nextPath;
+                    return nextRoute;
 
                 edgesAdded = true;
 
                 // Add to extra paths
-                if (nextPath != path)
-                    paths.add(nextPath);
+                if (nextRoute != path)
+                    paths.add(nextRoute);
             }
         }
 

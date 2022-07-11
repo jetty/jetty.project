@@ -5,7 +5,7 @@
 
   <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
     <Arg>
-      <New class="com.acme.MockUserTransaction"/>
+      <New class="org.example.MockUserTransaction"/>
     </Arg>
   </New>
 
@@ -31,7 +31,7 @@
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
-     <New class="com.acme.MockDataSource">
+     <New class="org.example.MockDataSource">
      </New>
     </Arg>
    </New>

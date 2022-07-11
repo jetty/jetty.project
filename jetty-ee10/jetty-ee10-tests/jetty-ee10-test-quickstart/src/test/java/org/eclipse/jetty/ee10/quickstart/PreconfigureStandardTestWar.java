@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -32,20 +34,21 @@ public class PreconfigureStandardTestWar
 
     public static void main(String[] args) throws Exception
     {
-        String target = "target/test-standard-preconfigured";
-        File file = new File(target);
-        if (file.exists())
-            IO.delete(file);
+        Path outputDir = MavenTestingUtils.getTargetPath("test-standard-preconfigured");
+        if (Files.exists(outputDir))
+            IO.delete(outputDir);
 
-        File realmPropertiesDest = new File("target/test-standard-realm.properties");
-        if (realmPropertiesDest.exists())
-            IO.delete(realmPropertiesDest);
+        Path realmPropertiesDestPath = MavenTestingUtils.getTargetTestingPath("test-standard-realm.properties");
+        if (Files.exists(realmPropertiesDestPath))
+            IO.delete(realmPropertiesDestPath);
 
-        Resource realmPropertiesSrc = Resource.newResource("src/test/resources/realm.properties");
-        realmPropertiesSrc.copyTo(realmPropertiesDest);
+        Path realmPropertiesSrcPath = MavenTestingUtils.getTestResourcePathFile("realm.properties");
+        Resource realmPropertiesSrc = Resource.newResource(realmPropertiesSrcPath);
+
+        realmPropertiesSrc.copyTo(realmPropertiesDestPath);
         System.setProperty("jetty.home", "target");
 
-        PreconfigureQuickStartWar.main("target/test-standard.war", target, "src/test/resources/test.xml");
+        PreconfigureQuickStartWar.main("target/test-standard.war", outputDir.toString(), "src/test/resources/test.xml");
 
         LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
 

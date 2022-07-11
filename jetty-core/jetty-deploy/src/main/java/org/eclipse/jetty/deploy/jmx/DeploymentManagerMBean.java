@@ -79,7 +79,7 @@ public class DeploymentManagerMBean extends ObjectMBean
 
     private String toRef(App app)
     {
-        return String.format("originId=%s,contextPath=%s,appProvider=%s", app.getContextPath(), app.getFilename(), app.getAppProvider().getClass().getName());
+        return String.format("contextPath=%s,path=%s,appProvider=%s", app.getContextPath(), app.getPath(), app.getAppProvider().getClass().getName());
     }
 
     public Collection<ContextHandler> getContexts() throws Exception

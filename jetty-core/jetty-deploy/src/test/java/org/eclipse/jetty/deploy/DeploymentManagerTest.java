@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,7 +53,7 @@ public class DeploymentManagerTest
         depman.start();
 
         // Trigger new App
-        mockProvider.findWebapp("foo-webapp-1.war");
+        mockProvider.createWebapp("foo-webapp-1.war");
 
         // Test app tracking
         Collection<App> apps = depman.getApps();
@@ -60,9 +61,11 @@ public class DeploymentManagerTest
         assertEquals(1, apps.size(), "Expected App Count");
 
         // Test app get
-        App actual = depman.getAppByOriginId("mock-foo-webapp-1.war");
+        App app = apps.stream().findFirst().orElse(null);
+        assertNotNull(app);
+        App actual = depman.getApp(app.getPath());
         assertNotNull(actual, "Should have gotten app (by id)");
-        assertEquals("mock-foo-webapp-1.war", actual.getFilename(), "Should have gotten app (by id)");
+        assertThat(actual.getPath().toString(), endsWith("mock-foo-webapp-1.war"));
     }
 
     @Test

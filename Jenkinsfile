@@ -11,7 +11,10 @@ pipeline {
     node { label 'linux' }
   }
   // save some io during the build
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options {
+    skipDefaultCheckout()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
   stages {
     stage("Checkout Jetty") {
       steps {
@@ -44,6 +47,7 @@ pipeline {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-core", "maven3")
                 }
               }
             }
@@ -56,6 +60,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-integrations", "maven3")
                 }
               }
             }
@@ -68,6 +73,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee10", "maven3")
                 }
               }
             }
@@ -80,6 +86,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee9", "maven3")
                 }
               }
             }
@@ -92,6 +99,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -f jetty-ee8", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee8", "maven3")
                 }
               }
             }
@@ -104,6 +112,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -pl :jetty-home", "maven3")
+                  mavenBuild("jdk17", "clean -pl :jetty-home", "maven3")
                 }
               }
             }
@@ -116,6 +125,7 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   //cleanup all projects
                   mavenBuild("jdk17", "clean install -f tests", "maven3")
+                  mavenBuild("jdk17", "clean -f tests", "maven3")
                 }
               }
             }
