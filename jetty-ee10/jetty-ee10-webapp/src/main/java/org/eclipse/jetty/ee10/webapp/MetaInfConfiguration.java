@@ -83,6 +83,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     public static final List<String> __allScanTypes = (List<String>)Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
 
+
     /**
      * ContainerPathNameMatcher
      *
@@ -156,6 +157,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
+    private List<Resource.Mount> _mountedResources;
+
     public MetaInfConfiguration()
     {
         addDependencies(WebXmlConfiguration.class);
@@ -174,6 +177,27 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesResources(findClassDirs(context));
 
         scanJars(context);
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        if (_mountedResources != null)
+        {
+            _mountedResources.forEach(mount ->
+            {
+                try
+                {
+                    mount.close();
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to close resource {}", mount, e);
+                }
+            });
+        }
+        super.deconfigure(context);
     }
 
     /**
@@ -477,6 +501,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 URI uri = target.getURI();
                 Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
+                if (_mountedResources == null)
+                    _mountedResources = new ArrayList<>();
+                _mountedResources.add(mount);
             }
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
