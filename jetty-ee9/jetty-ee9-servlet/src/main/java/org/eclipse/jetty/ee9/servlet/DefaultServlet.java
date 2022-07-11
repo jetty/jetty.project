@@ -208,12 +208,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (css != null)
             {
+                /* TODO: FIXME: not able to use Stylesheet (yet) See PR #8276
                 _stylesheet = Resource.newResource(css);
                 if (!_stylesheet.exists())
                 {
                     LOG.warn("!{}", css);
                     _stylesheet = null;
                 }
+                 */
             }
             if (_stylesheet == null)
             {

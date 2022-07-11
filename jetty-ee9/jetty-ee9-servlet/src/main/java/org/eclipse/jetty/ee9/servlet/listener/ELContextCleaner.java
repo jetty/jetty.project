@@ -17,11 +17,10 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import org.eclipse.jetty.util.Loader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ELContextCleaner
@@ -34,7 +33,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ELContextCleaner implements ServletContextListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
+    // IMPORTANT: This class cannot have a slf4j Logger
+    // As it will force this requirement on webapps.
+    // private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
 
     @Override
     public void contextInitialized(ServletContextEvent sce)
@@ -55,10 +56,7 @@ public class ELContextCleaner implements ServletContextListener
             field.setAccessible(true);
 
             //Get rid of references
-            purgeEntries(field);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("javax.el.BeanELResolver purged");
+            purgeEntries(sce.getServletContext(), field);
         }
 
         catch (ClassNotFoundException e)
@@ -67,11 +65,11 @@ public class ELContextCleaner implements ServletContextListener
         }
         catch (SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            sce.getServletContext().log("Cannot purge classes from javax.el.BeanELResolver", e);
         }
         catch (NoSuchFieldException e)
         {
-            LOG.debug("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
+            sce.getServletContext().log("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
     }
 
@@ -84,7 +82,8 @@ public class ELContextCleaner implements ServletContextListener
         return beanELResolver.getDeclaredField("properties");
     }
 
-    protected void purgeEntries(Field properties)
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected void purgeEntries(ServletContext context, Field properties)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (properties == null)
@@ -98,18 +97,16 @@ public class ELContextCleaner implements ServletContextListener
         while (itor.hasNext())
         {
             Class<?> clazz = itor.next();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Clazz: {} loaded by {}", clazz, clazz.getClassLoader());
+            context.log(String.format("Clazz: %s loaded by %s", clazz, clazz.getClassLoader()));
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("removed");
+                context.log("removed");
             }
             else
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("not removed: contextclassloader={} clazz's classloader={}", Thread.currentThread().getContextClassLoader(), clazz.getClassLoader());
+                context.log(String.format("not removed: contextClassLoader=%s class's classLoader=%s",
+                    Thread.currentThread().getContextClassLoader(), clazz.getClassLoader()));
             }
         }
     }
