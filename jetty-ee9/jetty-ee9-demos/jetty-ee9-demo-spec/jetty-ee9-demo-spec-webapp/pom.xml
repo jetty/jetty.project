@@ -150,8 +150,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee9</groupId>
+          <artifactId>jetty-ee9-maven-plugin</artifactId>
           <version>${project.version}</version>
           <configuration>
             <scan>10</scan>
@@ -165,7 +165,7 @@
               <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
             </webApp>
             <loginServices>
-              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+              <loginService implementation="org.eclipse.jetty.ee9.security.HashLoginService">
                 <name>Test Realm</name>
                 <config>src/etc/realm.properties</config>
               </loginService>

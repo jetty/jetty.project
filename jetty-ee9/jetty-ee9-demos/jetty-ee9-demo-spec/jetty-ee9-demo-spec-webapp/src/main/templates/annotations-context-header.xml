@@ -8,21 +8,21 @@
 
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
-  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
     <Arg>
       <New class="org.example.MockUserTransaction"/>
     </Arg>
   </New>
 
   <!-- ContextPath set in web.xml -->
-  <Set name="war"><Property name="jetty.webapps"/>/test-spec.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/ee9-demo-spec.war</Set>
   <Set name="configurationDiscovered">true</Set>
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.security.HashLoginService">
+      <New class="org.eclipse.jetty.ee9.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
+        <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/ee9-demo-realm.properties</Set>
       </New>
     </Set>
   </Get>
