@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QuickStartTest
@@ -48,18 +49,23 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
+        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-standard-preconfigured");
+
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
-        System.setProperty("jetty.home", "target");
+        System.setProperty("jetty.home", targetDir.toString());
 
         //war file or dir to start
-        String war = "target/test-standard-preconfigured";
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = Resource.newResource("src/test/resources/test.xml");
+        Path testResourceXml = MavenTestingUtils.getTestResourcePathFile("test.xml");
+        Resource contextXml = Resource.newResource(testResourceXml);
 
         Server server = new Server(0);
 
@@ -103,7 +109,7 @@ public class QuickStartTest
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
         System.setProperty("jetty.home", targetDir.toString());
 
@@ -111,7 +117,8 @@ public class QuickStartTest
         String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = Resource.newResource("src/test/resources/test-spec.xml");
+        Path testResourceSpec = MavenTestingUtils.getTestResourcePathFile("test-spec.xml");
+        Resource contextXml = Resource.newResource(testResourceSpec);
 
         Server server = new Server(0);
 
@@ -150,18 +157,23 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
+        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureJNDIWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-jndi-preconfigured");
+
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
-        System.setProperty("jetty.home", "target");
+        System.setProperty("jetty.home", targetDir.toString());
 
         //war file or dir to start
-        String war = "target/test-jndi-preconfigured";
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = Resource.newResource("src/test/resources/test-jndi.xml");
+        Path testResourceJndi = MavenTestingUtils.getTestResourcePathFile("test-jndi.xml");
+        Resource contextXml = Resource.newResource(testResourceJndi);
 
         Server server = new Server(0);
 

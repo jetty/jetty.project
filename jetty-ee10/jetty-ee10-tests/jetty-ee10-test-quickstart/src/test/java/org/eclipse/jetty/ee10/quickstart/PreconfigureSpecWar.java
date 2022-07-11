@@ -34,7 +34,7 @@ public class PreconfigureSpecWar
         FS.ensureEmpty(workdir);
 
         Path target = workdir.resolve("test-spec-preconfigured");
-        FS.ensureDeleted(target);
+        FS.ensureEmpty(target);
         FS.ensureDirExists(target.resolve("WEB-INF"));
 
         Path realmPropertiesDest = target.resolve("test-spec-realm.properties");
