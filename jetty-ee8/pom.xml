@@ -210,6 +210,11 @@
           <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+          <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
   </dependencyManagement>
 

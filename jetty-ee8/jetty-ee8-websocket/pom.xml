@@ -26,9 +26,9 @@
     <module>jetty-ee8-websocket-javax-server</module>
     <module>jetty-ee8-websocket-jetty-client</module>
     <module>jetty-ee8-websocket-jetty-server</module>
-
+    <module>jetty-ee8-websocket-javax-tests</module>
 <!--    <module>jetty-ee9-websocket-jetty-tests</module>-->
-<!--    <module>jetty-ee9-websocket-jakarta-tests</module>-->
+
 
   </modules>
 
