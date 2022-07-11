@@ -15,7 +15,7 @@
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
     <!-- see issue #8209 -->
-    <!--    <skipTests>true</skipTests>-->
+    <skipTests>true</skipTests>
   </properties>
 
   <build>

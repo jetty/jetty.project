@@ -1,5 +1,9 @@
 [description]
-Enable jakarta.websocket APIs for deployed web applications.
+Enable javax.websocket APIs for deployed web applications.
+
+[environment]
+ee8
+
 
 [tags]
 websocket
