@@ -7,16 +7,16 @@ Enables JASPI authentication for deployed web applications.
 security
 
 [depend]
-security
-auth-config-factory
+ee9-security
+ee9-auth-config-factory
 
 [lib]
-lib/jetty-jaspi-${jetty.version}.jar
+lib/jetty-ee9-jaspi-${jetty.version}.jar
 lib/jaspi/*.jar
 
 [xml]
-etc/jaspi/jaspi-authmoduleconfig.xml
+etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
 
 [files]
-basehome:etc/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi/jaspi-authmoduleconfig.xml
+basehome:etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
 

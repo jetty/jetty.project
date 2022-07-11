@@ -13,13 +13,13 @@ webapp
 [depends]
 ee9-deploy
 jdbc
-jsp
-jstl
+ee9-jsp
+ee9-jstl
 ee9-annotations
 ext
 ee9-servlets
-websocket-jakarta
-websocket-jetty
+ee9-websocket-jakarta
+ee9-websocket-jetty
 ee9-demo-realm
 
 [files]

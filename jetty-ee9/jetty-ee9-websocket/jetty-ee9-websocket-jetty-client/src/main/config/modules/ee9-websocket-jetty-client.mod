@@ -6,16 +6,19 @@ Expose the Jetty WebSocket Client classes to deployed web applications.
 [tags]
 websocket
 
+[environment]
+ee9
+
 [depend]
 client
-annotations
+ee9-annotations
 
 [lib]
-lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-client-${jetty.version}.jar
-lib/websocket/websocket-jetty-api-${jetty.version}.jar
-lib/websocket/websocket-jetty-common-${jetty.version}.jar
-lib/websocket/websocket-jetty-client-${jetty.version}.jar
+lib/ee9-websocket/websocket-core-common-${jetty.version}.jar
+lib/ee9-websocket/websocket-core-client-${jetty.version}.jar
+lib/ee9-websocket/jetty-ee9-websocket-jetty-api-${jetty.version}.jar
+lib/ee9-websocket/jetty-ee9-websocket-jetty-common-${jetty.version}.jar
+lib/ee9-websocket/jetty-ee9-websocket-jetty-client-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

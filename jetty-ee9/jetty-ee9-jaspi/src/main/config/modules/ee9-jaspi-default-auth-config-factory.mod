@@ -6,11 +6,14 @@ Provides a DefaultAuthConfigFactory for jaspi
 [tags]
 security
 
+[environment]
+ee9
+
 [depend]
-security
+ee9-security
 
 [provide]
-auth-config-factory
+ee9-auth-config-factory
 
 [xml]
-etc/jaspi/jaspi-default.xml
+etc/jaspi/jetty-ee9-jaspi-default.xml

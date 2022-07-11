@@ -5,14 +5,17 @@ Enables the Jetty Proxy service.
 Allows the server to act as a non-transparent proxy for browsers.
 
 [depend]
-servlet
+ee9-servlet
 client
 
+[environment]
+ee9
+
 [lib]
-lib/jetty-proxy-${jetty.version}.jar
+lib/jetty-ee9-proxy-${jetty.version}.jar
 
 [xml]
-etc/jetty-proxy.xml
+etc/jetty-ee9-proxy.xml
 
 [ini-template]
 ## Proxy Configuration
