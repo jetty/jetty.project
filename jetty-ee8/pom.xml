@@ -21,8 +21,6 @@
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
-    <!-- see issue #8209 -->
-<!--    <skipTests>true</skipTests>-->
   </properties>
 
   <modules>
