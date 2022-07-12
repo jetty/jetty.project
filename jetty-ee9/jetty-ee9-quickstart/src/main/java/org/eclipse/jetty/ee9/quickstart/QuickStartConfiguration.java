@@ -78,6 +78,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     private Mode _mode = Mode.AUTO;
     private boolean _quickStart;
+    private QuickStartDescriptorProcessor _quickStartDescriptorProcessor;
 
     public QuickStartConfiguration()
     {
@@ -171,7 +172,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
             //add a processor to handle extended web.xml format
-            context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
+            _quickStartDescriptorProcessor = new QuickStartDescriptorProcessor();
+            context.getMetaData().addDescriptorProcessor(_quickStartDescriptorProcessor);
 
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
@@ -197,6 +199,17 @@ public class QuickStartConfiguration extends AbstractConfiguration
         {
             context.removeBean(starter);
             context.removeAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+        }
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        super.deconfigure(context);
+        if (_quickStartDescriptorProcessor != null)
+        {
+            _quickStartDescriptorProcessor.close();
+            _quickStartDescriptorProcessor = null;
         }
     }
 

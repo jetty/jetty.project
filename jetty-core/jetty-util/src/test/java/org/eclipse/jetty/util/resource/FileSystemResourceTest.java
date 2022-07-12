@@ -49,11 +49,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -128,10 +130,16 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonAbsoluteURI()
+    public void testNonAbsoluteURI() throws Exception
     {
-        assertThrows(IllegalArgumentException.class,
-            () -> Resource.newResource(new URI("path/to/resource")));
+        Resource resource = Resource.newResource(new URI("path/to/resource"));
+        assertThat(resource, notNullValue());
+        assertThat(resource.getURI().toString(), startsWith("file:"));
+        assertThat(resource.getURI().toString(), endsWith("/path/to/resource"));
+
+        resource =  Resource.newResource(new URI("/path/to/resource"));
+        assertThat(resource, notNullValue());
+        assertThat(resource.getURI().toString(), is("file:/path/to/resource"));
     }
 
     @Test

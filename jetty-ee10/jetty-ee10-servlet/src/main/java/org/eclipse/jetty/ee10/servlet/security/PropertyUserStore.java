@@ -87,22 +87,20 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             return;
         }
 
-        try
+        URI uri = URI.create(config);
+        try (Resource.Mount mount = Resource.mountIfNeeded(uri))
         {
-            if (config.toLowerCase().startsWith("jar:"))
+            if (mount == null)
             {
-                try (Resource.Mount mount = Resource.mount(URI.create(config)))
-                {
-                    Resource configResource = mount.root();
-                    _configPath = extractPackedFile(configResource);
-                }
-            }
-            else
-            {
-                Path configPath = Resource.newResource(config).getPath();
+                Path configPath = Resource.newResource(uri).getPath();
                 if (configPath == null)
                     throw new IllegalArgumentException(config);
                 _configPath = configPath;
+            }
+            else
+            {
+                Resource configResource = mount.root();
+                _configPath = extractPackedFile(configResource);
             }
         }
         catch (Exception e)

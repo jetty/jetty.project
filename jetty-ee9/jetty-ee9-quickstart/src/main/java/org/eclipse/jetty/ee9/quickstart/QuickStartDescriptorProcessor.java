@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
+import java.io.Closeable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
@@ -42,12 +46,11 @@ import org.eclipse.jetty.xml.XmlParser;
  *
  * Handle  extended elements for quickstart-web.xml
  */
-public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
+public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor implements Closeable
 {
-
     private String _originAttributeName = null;
     // possibly mounted resources that need to be cleaned up eventually
-    private List<Resource.Mount> _mountedResources;
+    private Set<Resource.Mount> _mountedResources;
 
     /**
      *
@@ -75,8 +78,16 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     public void end(WebAppContext context, Descriptor descriptor)
     {
         _originAttributeName = null;
+    }
+
+    @Override
+    public void close()
+    {
         if (_mountedResources != null)
+        {
             _mountedResources.forEach(IO::close);
+            _mountedResources.clear();
+        }
     }
 
     /**
@@ -130,15 +141,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         // extract values
         switch (name)
         {
-            case QuickStartGeneratorConfiguration.ORIGIN:
+            case QuickStartGeneratorConfiguration.ORIGIN ->
             {
                 //value already contains what we need
-                break;
             }
-            case ServletContext.ORDERED_LIBS:
-            case AnnotationConfiguration.CONTAINER_INITIALIZERS:
-            case MetaInfConfiguration.METAINF_TLDS:
-            case MetaInfConfiguration.METAINF_RESOURCES:
+            case ServletContext.ORDERED_LIBS, AnnotationConfiguration.CONTAINER_INITIALIZERS, MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES ->
             {
                 context.removeAttribute(name);
 
@@ -147,23 +154,18 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     values.add(tok.nextToken().trim());
                 }
-
-                break;
             }
-            default:
-                values.add(value);
+            default -> values.add(value);
         }
 
         AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
         // handle values
         switch (name)
         {
-            case QuickStartGeneratorConfiguration.ORIGIN:
-            {
+            case QuickStartGeneratorConfiguration.ORIGIN ->
                 context.setAttribute(QuickStartGeneratorConfiguration.ORIGIN, value);
-                break;
-            }
-            case ServletContext.ORDERED_LIBS:
+
+            case ServletContext.ORDERED_LIBS ->
             {
                 List<Object> libs = new ArrayList<>();
                 Object o = context.getAttribute(ServletContext.ORDERED_LIBS);
@@ -172,21 +174,16 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 libs.addAll(values);
                 if (libs.size() > 0)
                     context.setAttribute(ServletContext.ORDERED_LIBS, libs);
-
-                break;
             }
-
-            case AnnotationConfiguration.CONTAINER_INITIALIZERS:
+            case AnnotationConfiguration.CONTAINER_INITIALIZERS ->
             {
                 for (String s : values)
                 {
                     visitServletContainerInitializerHolder(context, 
                         ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), s));
                 }
-                break;
             }
-
-            case MetaInfConfiguration.METAINF_TLDS:
+            case MetaInfConfiguration.METAINF_TLDS ->
             {
                 List<Object> tlds = new ArrayList<>();
                 Object o = context.getAttribute(MetaInfConfiguration.METAINF_TLDS);
@@ -202,32 +199,31 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 //empty list signals that tlds were prescanned but none found.
                 //a missing METAINF_TLDS attribute means that prescanning was not done.
                 context.setAttribute(MetaInfConfiguration.METAINF_TLDS, tlds);
-                break;
             }
-
-            case MetaInfConfiguration.METAINF_RESOURCES:
+            case MetaInfConfiguration.METAINF_RESOURCES ->
             {
-                for (String i : values)
-                {
-                    URI expandedEntry = Resource.toURI(normalizer.expand(i));
-                    if (expandedEntry.toString().startsWith("jar:file:"))
-                    {
-                        Resource.Mount mount = Resource.mount(expandedEntry);
-                        if (_mountedResources == null)
-                            _mountedResources = new ArrayList<>();
-                        _mountedResources.add(mount);
-                    }
+                List<URI> uris = values.stream()
+                    .map(normalizer::expand)
+                    .map(Resource::toURI)
+                    .toList();
 
-                    Resource r = Resource.newResource(expandedEntry);
+                _mountedResources = uris.stream()
+                    .map(Resource::mountIfNeeded)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+                for (URI uri : uris)
+                {
+                    Resource r = Resource.newResource(uri);
                     if (r.exists())
                         visitMetaInfResource(context, r);
                     else
                         throw new IllegalArgumentException("Resource not found: " + r);
                 }
-                break;
             }
-
-            default:
+            default ->
+            {
+            }
         }
     }
 

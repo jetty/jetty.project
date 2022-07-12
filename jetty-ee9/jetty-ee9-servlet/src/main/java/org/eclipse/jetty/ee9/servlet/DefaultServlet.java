@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -140,6 +142,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
+    private Resource.Mount _stylesheetMount;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
     private String _relativeResourceBase;
@@ -203,19 +206,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
         }
 
-        String css = getInitParameter("stylesheet");
+        String stylesheet = getInitParameter("stylesheet");
         try
         {
-            if (css != null)
+            if (stylesheet != null)
             {
-                /* TODO: FIXME: not able to use Stylesheet (yet) See PR #8276
-                _stylesheet = Resource.newResource(css);
+                URI uri = Resource.toURI(stylesheet);
+                _stylesheetMount = Resource.mountIfNeeded(uri);
+                _stylesheet = Resource.newResource(uri);
                 if (!_stylesheet.exists())
                 {
-                    LOG.warn("!{}", css);
+                    LOG.warn("Stylesheet {} does not exist", stylesheet);
                     _stylesheet = null;
                 }
-                 */
             }
             if (_stylesheet == null)
             {
@@ -225,9 +228,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         catch (Exception e)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn("Unable to use stylesheet: {}", css, e);
+                LOG.warn("Unable to use stylesheet: {}", stylesheet, e);
             else
-                LOG.warn("Unable to use stylesheet: {} - {}", css, e.toString());
+                LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
@@ -494,6 +497,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (_cache != null)
             _cache.flushCache();
         super.destroy();
+        if (_stylesheetMount != null)
+        {
+            IO.close(_stylesheetMount);
+            _stylesheetMount = null;
+        }
     }
 
     @Override
