@@ -34,6 +34,7 @@
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
     <module>jetty-ee8-bom</module>
+    <module>jetty-ee8-home</module>
   </modules>
 
   <build>
@@ -225,5 +226,4 @@
         </dependency>
       </dependencies>
   </dependencyManagement>
-
 </project>
