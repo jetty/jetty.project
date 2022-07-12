@@ -7,25 +7,12 @@
     <Arg><Property name="jetty.quickstart.mode"/></Arg>
   </Call>
 
-  <Ref refid="webappprovider">
-    <Get name="configurationManager">
+  <Ref refid="WebAppProvider">
       <Get name="properties">
-        <Put name="jetty.quickstart.mode"><Property name="jetty.quickstart.mode"/></Put>
-        <Put name="jetty.quickstart.origin"><Property name="jetty.quickstart.origin"/></Put>
-        <Put name="jetty.quickstart.xml"><Property name="jetty.quickstart.xml"/></Put>
+        <Put name="jetty.deploy.attribute.org.eclipse.jetty.quickstart.mode"><Property name="jetty.quickstart.mode"/></Put>
+        <Put name="jetty.deploy.attribute.org.eclipse.jetty.quickstart.origin"><Property name="jetty.quickstart.origin"/></Put>
+        <Put name="jetty.deploy.attribute.org.eclipse.jetty.quickstart.xml"><Property name="jetty.quickstart.xml"/></Put>
       </Get>
-    </Get>
   </Ref>
 
-  <Ref refid="DeploymentManager">
-    <Call name="addLifeCycleBinding">
-      <Arg>
-        <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
-          <Set name="jettyXml">
-            <Property name="jetty.base"/>/etc/jetty-ee10-quickstart-webapp.xml
-          </Set>
-        </New>
-      </Arg>
-    </Call>
-  </Ref>
 </Configure>

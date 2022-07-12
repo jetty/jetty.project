@@ -20,7 +20,7 @@ import java.util.List;
 
 import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.Path;
+import org.eclipse.jetty.deploy.graph.Route;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class AppLifeCycleTest
     {
         Node fromNode = lifecycle.getNodeByName(from);
         Node toNode = lifecycle.getNodeByName(to);
-        Path actual = lifecycle.getPath(fromNode, toNode);
+        Route actual = lifecycle.getPath(fromNode, toNode);
         String msg = "LifeCycle path from " + from + " to " + to;
         assertNotNull(actual, msg + " should never be null");
 

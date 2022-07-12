@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.Path;
+import org.eclipse.jetty.deploy.graph.Route;
 import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -286,16 +287,28 @@ public class DeploymentManager extends ContainerLifeCycle
         super.doStop();
     }
 
-    private AppEntry findAppByOriginId(String originId)
+    private AppEntry findApp(String appId)
     {
-        if (originId == null)
-        {
+        if (appId == null)
             return null;
-        }
 
         for (AppEntry entry : _apps)
         {
-            if (originId.equals(entry.app.getFilename()))
+            Path path = entry.app.getPath();
+            if (appId.equals(path.getName(path.getNameCount() - 1).toString()))
+                return entry;
+        }
+        return null;
+    }
+
+    private AppEntry findApp(Path path)
+    {
+        if (path == null)
+            return null;
+
+        for (AppEntry entry : _apps)
+        {
+            if (path.equals(entry.app.getPath()))
             {
                 return entry;
             }
@@ -303,13 +316,17 @@ public class DeploymentManager extends ContainerLifeCycle
         return null;
     }
 
-    public App getAppByOriginId(String originId)
+    public App getApp(String appId)
     {
-        AppEntry entry = findAppByOriginId(originId);
+        AppEntry entry = findApp(appId);
+        return entry == null ? null : entry.getApp();
+    }
+
+    public App getApp(Path path)
+    {
+        AppEntry entry = findApp(path);
         if (entry == null)
-        {
             return null;
-        }
         return entry.app;
     }
 
@@ -456,7 +473,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void requestAppGoal(App app, String nodeName)
     {
-        AppEntry appentry = findAppByOriginId(app.getFilename());
+        AppEntry appentry = findApp(app.getPath());
         if (appentry == null)
         {
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
@@ -480,7 +497,7 @@ public class DeploymentManager extends ContainerLifeCycle
             throw new IllegalStateException("Node not present in Deployment Manager: " + nodeName);
         }
         // Compute lifecycle steps
-        Path path = _lifecycle.getPath(appentry.lifecyleNode, destinationNode);
+        Route path = _lifecycle.getPath(appentry.lifecyleNode, destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.
@@ -550,7 +567,7 @@ public class DeploymentManager extends ContainerLifeCycle
     @ManagedOperation(value = "request the app to be moved to the specified lifecycle node", impact = "ACTION")
     public void requestAppGoal(@Name("appId") String appId, @Name("nodeName") String nodeName)
     {
-        AppEntry appentry = findAppByOriginId(appId);
+        AppEntry appentry = findApp(appId);
         if (appentry == null)
         {
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);

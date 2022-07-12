@@ -53,7 +53,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -629,7 +629,7 @@ public class ServletContextResponse extends ContextResponse
                     // TODO: should we check whether an Expect: 102 header is present?
                     if (!isCommitted())
                     {
-                        try (Blocking.Callback blocker = Blocking.callback())
+                        try (Blocker.Callback blocker = Blocker.callback())
                         {
                             _response.setStatus(HttpStatus.PROCESSING_102);
                             _response.write(true, null, blocker);
@@ -642,7 +642,7 @@ public class ServletContextResponse extends ContextResponse
                 {
                     if (!isCommitted())
                     {
-                        try (Blocking.Callback blocker = Blocking.callback())
+                        try (Blocker.Callback blocker = Blocker.callback())
                         {
                             _response.setStatus(HttpStatus.EARLY_HINT_103);
                             _response.write(true, null, blocker);

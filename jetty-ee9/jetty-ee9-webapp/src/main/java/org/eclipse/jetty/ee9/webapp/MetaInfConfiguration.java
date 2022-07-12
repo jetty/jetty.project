@@ -42,6 +42,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -156,6 +157,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
+    private List<Resource.Mount> _mountedResources;
+
     public MetaInfConfiguration()
     {
         addDependencies(WebXmlConfiguration.class);
@@ -174,6 +177,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesResources(findClassDirs(context));
 
         scanJars(context);
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        if (_mountedResources != null)
+        {
+            _mountedResources.forEach(IO::close);
+        }
+        super.deconfigure(context);
     }
 
     /**
@@ -472,6 +485,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 URI uri = target.getURI();
                 Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
+                if (_mountedResources == null)
+                    _mountedResources = new ArrayList<>();
+                _mountedResources.add(mount);
             }
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
@@ -664,14 +680,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<URL>();
+        HashSet<URL> tlds = new HashSet<>();
 
+        final Path rootDir = dir;
         Files.walkFileTree(dir, new SimpleFileVisitor<>()
         {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
             {
-                tlds.addAll(getTlds(dir));
+                if (!Files.isSameFile(rootDir, dir))
+                    tlds.addAll(getTlds(dir));
                 return FileVisitResult.SKIP_SUBTREE;
             }
 

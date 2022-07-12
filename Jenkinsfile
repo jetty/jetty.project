@@ -1,43 +1,162 @@
 #!groovy
 
+/**
+ * IMPORTANT: Changes here need to be reflected in 2 other files as well.
+ *    pom.xml
+ *    build/scripts/ci.sh
+ */
+
 pipeline {
   agent {
     node { label 'linux' }
   }
   // save some io during the build
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options {
+    skipDefaultCheckout()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
   stages {
-    stage("Parallel Stage") {
-      parallel {
-        stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
+    stage("Checkout Jetty") {
+      steps {
+        container('jetty-build') {
+          dir("${env.WORKSPACE}/buildy") {
+            checkout scm
+          }
+        }
+      }
+    }
+    stage("Build & Test - JDK17") {
+      stages {
+        stage("Setup") {
           steps {
             container('jetty-build') {
-              timeout( time: 180, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install -Perrorprone -Dmaven.test.failure.ignore=true", "maven3")
-                // Collect up the jacoco execution results (only on main build)
-//                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-//                       exclusionPattern: '' +
-//                               // build tools
-//                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
-//                               ',**/org/eclipse/jetty/jspc/**' +
-//                               // example code / documentation
-//                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
-//                               ',**/org/eclipse/jetty/demo/**' +
-//                               // special environments / late integrations
-//                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
-//                               ',**/org/eclipse/jetty/osgi/**' +
-//                               ',**/org/eclipse/jetty/http/spi/**' +
-//                               // test classes
-//                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
-//                       execPattern: '**/target/jacoco.exec',
-//                       classPattern: '**/target/classes',
-//                       sourcePattern: '**/src/main/java'
-                recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs()]
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  echo "Install org.eclipse.jetty:build-resources"
+                  mavenBuild("jdk17", "clean install -f build", "maven3")
+                  echo "Install org.eclipse.jetty:jetty-project"
+                  mavenBuild("jdk17", "-N clean install", "maven3")
+                }
               }
             }
           }
         }
+        stage("Module : /jetty-core/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-core", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /jetty-integrations/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-integrations", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /jetty-ee10/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee10", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /jetty-ee9/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee9", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /jetty-ee8/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -f jetty-ee8", "maven3")
+                  mavenBuild("jdk17", "clean -f jetty-ee8", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /jetty-home/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -pl :jetty-home", "maven3")
+                  mavenBuild("jdk17", "clean -pl :jetty-home", "maven3")
+                }
+              }
+            }
+          }
+        }
+        stage("Module : /tests/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  //cleanup all projects
+                  mavenBuild("jdk17", "clean install -f tests", "maven3")
+                  mavenBuild("jdk17", "clean -f tests", "maven3")
+                }
+              }
+            }
+          }
+        }
+        /*
+        stage("Module : /jetty-p2/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  mavenBuild("jdk17", "clean install -f jetty-p2", "maven3")
+                }
+              }
+            }
+          }
+        }
+         */
+        /*
+        stage("Module : /documentation/") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  mavenBuild("jdk17", "clean install -f documentation", "maven3")
+                }
+              }
+            }
+          }
+        }
+        */
       }
     }
   }
@@ -60,13 +179,13 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn --no-transfer-progress -Dmaven.test.failure.ignore=true -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
         }
       }
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true, skipPublishingChecks: true
     }
   }
 }

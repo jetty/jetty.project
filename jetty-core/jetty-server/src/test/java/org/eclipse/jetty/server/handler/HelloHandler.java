@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class HelloHandler extends Handler.Processor
+public class HelloHandler extends Handler.Processor.NonBlocking
 {
     private final String _message;
 
@@ -37,7 +37,6 @@ public class HelloHandler extends Handler.Processor
 
     public HelloHandler(String message)
     {
-        super(InvocationType.NON_BLOCKING);
         _message = message;
     }
 

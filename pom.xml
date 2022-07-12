@@ -77,7 +77,7 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.8.0</maven.resolver.version>
+    <maven.resolver.version>1.6.3</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -182,16 +182,18 @@
   </pluginRepositories>
 
   <modules>
+    <!-- CAUTION: Any changes to this list will need to be represented
+         in the Jenkinsfile and build/scripts/ci.sh as well -->
     <module>build</module>
-<!--    <module>documentation</module>-->
     <module>jetty-core</module>
     <module>jetty-integrations</module>
     <module>jetty-ee8</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
     <module>jetty-home</module>
-<!--    <module>jetty-p2</module>-->
     <module>tests</module>
+    <!-- <module>jetty-p2</module> -->
+    <!-- <module>documentation</module> -->
   </modules>
 
   <build>

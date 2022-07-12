@@ -31,13 +31,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockingTest
 {
-    final Blocking.Shared _shared = new Blocking.Shared();
+    final Blocker.Shared _shared = new Blocker.Shared();
 
     @Test
     public void testRunBlock() throws Exception
     {
         long start;
-        try (Blocking.Runnable runnable = Blocking.runnable())
+        try (Blocker.Runnable runnable = Blocker.runnable())
         {
             runnable.run();
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -50,7 +50,7 @@ public class BlockingTest
     public void testBlockRun() throws Exception
     {
         long start;
-        try (Blocking.Runnable runnable = Blocking.runnable())
+        try (Blocker.Runnable runnable = Blocker.runnable())
         {
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -80,10 +80,10 @@ public class BlockingTest
     public void testNoRun() throws Exception
     {
         long start;
-        try (Blocking.Runnable ignored = Blocking.runnable())
+        try (Blocker.Runnable ignored = Blocker.runnable())
         {
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            LoggerFactory.getLogger(Blocking.class).info("expect WARN Blocking.Runnable incomplete");
+            LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Runnable incomplete");
         }
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
     }
@@ -92,7 +92,7 @@ public class BlockingTest
     public void testSucceededBlock() throws Exception
     {
         long start;
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             callback.succeeded();
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -105,7 +105,7 @@ public class BlockingTest
     public void testBlockSucceeded() throws Exception
     {
         long start;
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -138,7 +138,7 @@ public class BlockingTest
         long start = Long.MIN_VALUE;
         try
         {
-            try (Blocking.Callback callback = Blocking.callback())
+            try (Blocker.Callback callback = Blocker.callback())
             {
                 callback.failed(ex);
                 callback.block();
@@ -162,7 +162,7 @@ public class BlockingTest
 
         try
         {
-            try (Blocking.Callback callback = Blocking.callback())
+            try (Blocker.Callback callback = Blocker.callback())
             {
 
                 new Thread(() ->
@@ -197,7 +197,7 @@ public class BlockingTest
     public void testSharedRunBlock() throws Exception
     {
         long start;
-        try (Blocking.Runnable runnable = _shared.runnable())
+        try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -210,7 +210,7 @@ public class BlockingTest
     public void testSharedBlockRun() throws Exception
     {
         long start;
-        try (Blocking.Runnable runnable = _shared.runnable())
+        try (Blocker.Runnable runnable = _shared.runnable())
         {
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -240,15 +240,15 @@ public class BlockingTest
     public void testSharedNoRun() throws Exception
     {
         long start;
-        try (Blocking.Runnable ignored = _shared.runnable())
+        try (Blocker.Runnable ignored = _shared.runnable())
         {
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            LoggerFactory.getLogger(Blocking.class).info("expect WARN Blocking.Shared incomplete");
+            LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Shared incomplete");
         }
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
 
         // check it is still operating.
-        try (Blocking.Runnable runnable = _shared.runnable())
+        try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
             runnable.block();
@@ -259,7 +259,7 @@ public class BlockingTest
     public void testSharedSucceededBlock() throws Exception
     {
         long start;
-        try (Blocking.Callback callback = _shared.callback())
+        try (Blocker.Callback callback = _shared.callback())
         {
             callback.succeeded();
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -272,7 +272,7 @@ public class BlockingTest
     public void testSharedBlockSucceeded() throws Exception
     {
         long start;
-        try (Blocking.Callback callback = _shared.callback())
+        try (Blocker.Callback callback = _shared.callback())
         {
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -305,7 +305,7 @@ public class BlockingTest
         long start = Long.MIN_VALUE;
         try
         {
-            try (Blocking.Callback callback = _shared.callback())
+            try (Blocker.Callback callback = _shared.callback())
             {
                 callback.failed(ex);
                 callback.block();
@@ -329,7 +329,7 @@ public class BlockingTest
 
         try
         {
-            try (Blocking.Callback callback = _shared.callback())
+            try (Blocker.Callback callback = _shared.callback())
             {
 
                 new Thread(() ->
@@ -363,11 +363,11 @@ public class BlockingTest
     @Test
     public void testSharedBlocked() throws Exception
     {
-        Blocking.Callback callback0 = _shared.callback();
+        Blocker.Callback callback0 = _shared.callback();
         CountDownLatch latch0 = new CountDownLatch(2);
         new Thread(() ->
         {
-            try (Blocking.Callback callback = _shared.callback())
+            try (Blocker.Callback callback = _shared.callback())
             {
                 latch0.countDown();
                 callback.succeeded();
@@ -380,7 +380,7 @@ public class BlockingTest
         }).start();
         new Thread(() ->
         {
-            try (Blocking.Runnable runnable = _shared.runnable())
+            try (Blocker.Runnable runnable = _shared.runnable())
             {
                 latch0.countDown();
                 runnable.run();
@@ -404,7 +404,7 @@ public class BlockingTest
     {
         try
         {
-            Blocking.Callback callback = _shared.callback();
+            Blocker.Callback callback = _shared.callback();
             Thread.currentThread().interrupt();
             callback.block();
             fail();

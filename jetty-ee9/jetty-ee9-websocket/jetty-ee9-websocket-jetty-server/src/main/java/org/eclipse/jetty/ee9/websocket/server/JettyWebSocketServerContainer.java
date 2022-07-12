@@ -38,7 +38,7 @@ import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRes
 import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -211,7 +211,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory, customizer);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             boolean upgraded = handshaker.upgradeRequest(negotiator, httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, components, null);
             callback.block();

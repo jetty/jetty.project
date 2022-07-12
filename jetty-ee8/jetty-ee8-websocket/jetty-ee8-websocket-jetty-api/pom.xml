@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+    <artifactId>jetty-ee8-websocket</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
+  <name>EE8 :: Jetty :: Websocket :: org.eclipse.jetty.websocket :: API</name>
+
+  <properties>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-api</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
+  </properties>
+
+</project>

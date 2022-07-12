@@ -29,11 +29,13 @@ package org.eclipse.jetty.util.thread;
  */
 public interface Invocable
 {
+    Runnable NOOP = () -> {};
+
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
      * <p>The behavior of an {@link Invocable} when it is invoked.</p>
-     * <p>Typically, {@link Runnable}s or {@link Callback}s declare their
+     * <p>Typically, {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
      * invocation type; this information is then used by the code that should
      * invoke the {@code Runnable} or {@code Callback} to decide whether to
      * invoke it directly, or submit it to a thread pool to be invoked by

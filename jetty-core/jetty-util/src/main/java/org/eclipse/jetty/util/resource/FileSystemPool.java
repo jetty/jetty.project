@@ -84,6 +84,12 @@ public class FileSystemPool
         try (AutoLock ignore = poolLock.lock())
         {
             Bucket bucket = pool.get(uri);
+            if (bucket == null)
+            {
+                LOG.warn("Unable to release Mount (not in pool): {}", uri);
+                return;
+            }
+
             int count = bucket.counter.decrementAndGet();
             if (count == 0)
             {

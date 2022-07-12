@@ -39,17 +39,18 @@ public interface Deployable
         return 0;
     };
 
-    String ENVIRONMENT = "environment";
-
-    String WAR = "jetty.deploy.war";
+    String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
     String BASE_TEMP_DIR = "jetty.deploy.tempDir";
     String CONFIGURATION_CLASSES = "jetty.deploy.configurationClasses";
     String CONTAINER_SCAN_JARS = "jetty.deploy.containerScanJarPattern";
+    String CONTEXT_PATH = "jetty.deploy.contextPath";
     String DEFAULTS_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
+    String ENVIRONMENT = "environment"; // TODO should this have jetty.deploy.
     String EXTRACT_WARS = "jetty.deploy.extractWars";
     String PARENT_LOADER_PRIORITY = "jetty.deploy.parentLoaderPriority";
     String SCI_EXCLUSION_PATTERN = "jetty.deploy.servletContainerInitializerExclusionPattern";
     String SCI_ORDER = "jetty.deploy.servletContainerInitializerOrder";
+    String WAR = "jetty.deploy.war";
     String WEBINF_SCAN_JARS = "jetty.deploy.webInfScanJarPattern";
 
     void initializeDefaults(Map<String, String> properties);

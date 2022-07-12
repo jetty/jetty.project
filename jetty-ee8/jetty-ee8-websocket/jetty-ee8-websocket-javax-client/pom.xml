@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+    <artifactId>jetty-ee8-websocket</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee8-websocket-javax-client</artifactId>
+  <name>EE8 :: Jetty :: Websocket :: javax.websocket :: Client</name>
+
+  <properties>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-client</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.javax.client</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+      <artifactId>jetty-ee8-websocket-javax-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-core-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-xml</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
+            <Export-Package>
+              org.eclipse.jetty.ee8.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+            </Export-Package>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=jakarta.websocket.ContainerProvider,
+              osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
+            </Provide-Capability>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

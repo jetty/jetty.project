@@ -17,6 +17,18 @@ import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
 
+/**
+ * <p>
+ * This abstract {@link Content.Source} wraps another {@link Content.Source} and implementors need only to provide
+ * the {@link #transform(Content.Chunk)} method, which is used to transform {@link Content.Chunk} read from the
+ * wrapped source.
+ * </p>
+ * <p>
+ * The {@link #demand(Runnable)} conversation is passed directly to the wrapped {@link Content.Source}, which means
+ * that transformations that may fully consume bytes read can result in a null return from {@link Content.Source#read()}
+ * even after a callback to the demand {@link Runnable} (as per spurious invocation in {@link Content.Source#demand(Runnable)}.
+ * </p>
+ */
 public abstract class ContentSourceTransformer implements Content.Source
 {
     private final Content.Source rawSource;
@@ -112,5 +124,22 @@ public abstract class ContentSourceTransformer implements Content.Source
         }
     }
 
+    /**
+     * Content chunk transformation method.
+     * <p>
+     * This method is called during a {@link Content.Source#read()} to transform a raw chunk to a chunk that
+     * will be returned from the read call.  The caller of {@link Content.Source#read()} method is always
+     * responsible for calling {@link Content.Chunk#release()} on the returned chunk, which may be:
+     * <ul>
+     * <li>the <code>rawChunk</code>. This is typically done for {@link Content.Chunk.Error}s,
+     *     when {@link Content.Chunk#isLast()} is true, or if no transformation is required.</li>
+     * <li>a new (or predefined) {@link Content.Chunk} derived from the <code>rawChunk</code>. The transform is
+     *     responsible for calling {@link Content.Chunk#release()} on the <code>rawChunk</code>, either during the call
+     *     to {@link Content.Source#read()} or subsequently.</li>
+     * <li>null if the <code>rawChunk</code> is fully consumed and/or requires additional chunks to be transformed.</li>
+     * </ul>
+     * @param rawChunk A chunk read from the wrapped {@link Content.Source}. It is always non null.
+     * @return The transformed chunk or null.
+     */
     protected abstract Content.Chunk transform(Content.Chunk rawChunk);
 }

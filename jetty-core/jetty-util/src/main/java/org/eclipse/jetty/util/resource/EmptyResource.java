@@ -101,6 +101,12 @@ public class EmptyResource extends Resource
     }
 
     @Override
+    public boolean renameTo(Resource dest) throws SecurityException
+    {
+        return false;
+    }
+
+    @Override
     public List<String> list()
     {
         return null;

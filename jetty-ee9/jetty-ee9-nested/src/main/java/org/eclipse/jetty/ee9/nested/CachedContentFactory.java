@@ -342,7 +342,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             if (_useFileMappedBuffer && resource.getPath() != null && resource.length() < Integer.MAX_VALUE)
                 return BufferUtil.toMappedBuffer(resource.getPath());
         }
-        catch (IOException | IllegalArgumentException e)
+        catch (IOException | IllegalArgumentException | UnsupportedOperationException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to get Mapped Buffer for {}", resource, e);

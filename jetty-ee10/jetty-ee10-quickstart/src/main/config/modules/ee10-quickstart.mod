@@ -16,10 +16,6 @@ lib/jetty-ee10-quickstart-${jetty.version}.jar
 [xml]
 etc/jetty-ee10-quickstart.xml
 
-[files]
-basehome:modules/jetty-quickstart.d/jetty-ee10-quickstart-webapp.xml|etc/jetty-ee10-quickstart-webapp.xml
-
-
 [ini-template]
 
 # Modes are AUTO, GENERATE, QUICKSTART

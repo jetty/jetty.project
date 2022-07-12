@@ -116,7 +116,6 @@
           </execution>
         </executions>
         <configuration>
-          <skipInvocation>false</skipInvocation>
           <addTestClassPath>true</addTestClassPath>
           <ignoreFailures>true</ignoreFailures>
           <setupIncludes>

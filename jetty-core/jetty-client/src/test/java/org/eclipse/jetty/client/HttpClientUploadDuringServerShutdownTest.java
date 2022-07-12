@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +62,7 @@ public class HttpClientUploadDuringServerShutdownTest
                         Content.Chunk chunk = request.read();
                         if (chunk == null)
                         {
-                            try (Blocking.Runnable blocker = _blocking.runnable())
+                            try (Blocker.Runnable blocker = _blocking.runnable())
                             {
                                 request.demand(blocker);
                             }

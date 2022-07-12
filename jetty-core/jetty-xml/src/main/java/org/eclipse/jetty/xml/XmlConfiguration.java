@@ -160,7 +160,7 @@ public class XmlConfiguration
      * @param server The Server object to set
      * @param webapp The webapps Resource
      */
-    public void setJettyStandardIdsAndProperties(Object server, File webapp)
+    public void setJettyStandardIdsAndProperties(Object server, Path webapp)
     {
         try
         {
@@ -177,10 +177,9 @@ public class XmlConfiguration
 
             if (webapp != null)
             {
-                Path webappPath = webapp.toPath().toAbsolutePath();
-                getProperties().put("jetty.webapp", webappPath.toString());
-                getProperties().put("jetty.webapps", webappPath.getParent().toString());
-                getProperties().put("jetty.webapps.uri", normalizeURI(webappPath.getParent().toUri().toString()));
+                getProperties().put("jetty.webapp", webapp.toString());
+                getProperties().put("jetty.webapps", webapp.getParent().toString());
+                getProperties().put("jetty.webapps.uri", normalizeURI(webapp.getParent().toUri().toString()));
             }
         }
         catch (Exception e)

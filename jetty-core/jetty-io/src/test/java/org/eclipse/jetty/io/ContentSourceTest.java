@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -47,6 +48,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,14 +67,20 @@ public class ContentSourceTest
             asyncSource.write(Content.Chunk.from(UTF_8.encode("two"), false), Callback.NOOP);
         }
 
-        Content.Source byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
+        ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
 
-        Content.Source.Transformer transformerSource = new Content.Source.Transformer(byteBufferSource)
+        Content.Source.Transformer transformerSource = new Content.Source.Transformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
         {
             @Override
             protected Content.Chunk transform(Content.Chunk rawChunk)
             {
                 return rawChunk;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Content.Source.Transformer@%x".formatted(hashCode());
             }
         };
 
@@ -83,31 +91,95 @@ public class ContentSourceTest
         PathContentSource pathSource = new PathContentSource(path);
         pathSource.setBufferSize(3);
 
-        InputStreamContentSource inputSource = new InputStreamContentSource(new ContentSourceInputStream(byteBufferSource));
+        InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
 
-        // TODO
-//        OutputStreamContentSource outputSource = new OutputStreamContentSource();
-//        try (OutputStream stream = outputSource.getOutputStream())
-//        {
-//            stream.write("one".getBytes(UTF_8));
-//            stream.write("two".getBytes(UTF_8));
-//        }
+        InputStreamContentSource inputSource2 =
+            new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
-        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource/*, outputSource*/);
+        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
+    }
+
+    /** Get the next chunk, blocking if necessary
+     * @param source The source to get the next chunk from
+     * @return A non null chunk
+     */
+    public static Content.Chunk nextChunk(Content.Source source)
+    {
+        Content.Chunk chunk = source.read();
+        if (chunk != null)
+            return chunk;
+        FuturePromise<Content.Chunk> next = new FuturePromise<>();
+        Runnable getNext = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Content.Chunk chunk = source.read();
+                if (chunk == null)
+                    source.demand(this);
+                next.succeeded(chunk);
+            }
+        };
+        source.demand(getNext);
+        try
+        {
+            return next.get();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testDemandReadDemandDoesNotRecurse(Content.Source source)
+    public void testRead(Content.Source source) throws Exception
     {
-        AtomicBoolean processed = new AtomicBoolean();
+        StringBuilder builder = new StringBuilder();
+        CountDownLatch eof = new CountDownLatch(1);
+        source.demand(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = source.read();
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        break;
+                    }
+
+                    if (chunk.hasRemaining())
+                        builder.append(BufferUtil.toString(chunk.getByteBuffer()));
+                    chunk.release();
+
+                    if (chunk.isLast())
+                    {
+                        eof.countDown();
+                        break;
+                    }
+                }
+            }
+        });
+
+        assertTrue(eof.await(10, TimeUnit.SECONDS));
+        assertThat(builder.toString(), is("onetwo"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testDemandReadDemandDoesNotRecurse(Content.Source source) throws Exception
+    {
+        CountDownLatch processed = new CountDownLatch(1);
         AtomicBoolean recursion = new AtomicBoolean();
         source.demand(new Runnable()
         {
             @Override
             public void run()
             {
-                processed.set(true);
+                processed.countDown();
 
                 assertTrue(recursion.compareAndSet(false, true));
 
@@ -121,21 +193,19 @@ public class ContentSourceTest
                 assertTrue(recursion.compareAndSet(true, false));
             }
         });
-        assertTrue(processed.get());
+        assertTrue(processed.await(10, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testDemandDemandThrows(Content.Source source)
+    public void testDemandDemandThrows(Content.Source source) throws Exception
     {
-        AtomicBoolean processed = new AtomicBoolean();
+        CountDownLatch processed = new CountDownLatch(1);
         source.demand(new Runnable()
         {
             @Override
             public void run()
             {
-                processed.set(true);
-
                 Content.Chunk chunk = source.read();
                 assertNotNull(chunk);
 
@@ -146,16 +216,17 @@ public class ContentSourceTest
                     // Second demand after the first must throw.
                     assertThrows(IllegalStateException.class, () -> source.demand(this));
                 }
+                processed.countDown();
             }
         });
-        assertTrue(processed.get());
+        assertTrue(processed.await(10, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testReadFailReadReturnsError(Content.Source source)
+    public void testReadFailReadReturnsError(Content.Source source) throws Exception
     {
-        Content.Chunk chunk = source.read();
+        Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
 
         source.fail(new CancellationException());
@@ -169,12 +240,7 @@ public class ContentSourceTest
     @MethodSource("all")
     public void testReadLastDemandInvokesDemandCallback(Content.Source source) throws Exception
     {
-        while (true)
-        {
-            Content.Chunk chunk = source.read();
-            if (chunk.isLast())
-                break;
-        }
+        Content.Source.consumeAll(source);
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -199,9 +265,13 @@ public class ContentSourceTest
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testDemandCallbackThrows(Content.Source source)
+    public void testDemandCallbackThrows(Content.Source source) throws Exception
     {
-        Content.Chunk chunk = source.read();
+        // TODO fix for OSCS
+//        if (source instanceof OutputStreamContentSource)
+//            return;
+
+        Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
 
         source.demand(() ->

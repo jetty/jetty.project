@@ -27,6 +27,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
+/**
+ * <p>A {@link Content.Source} that is also a {@link Content.Sink}.
+ * Content written to the {@link Content.Sink} is converted to a {@link Content.Chunk}
+ * and made available to calls to the {@link #read()} method.  If necessary, any
+ * {@link Runnable} passed to the {@link #demand(Runnable)} method is invoked once
+ * content is written to the {@link Content.Sink}.</p>
+ */
 public class AsyncContent implements Content.Sink, Content.Source, Closeable
 {
     private static final int UNDETERMINED_LENGTH = -2;
@@ -65,6 +72,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             {
                 failure = errorChunk.getCause();
             }
+            else if (chunk instanceof Content.Chunk.Error error)
+            {
+                errorChunk = error;
+                failure = errorChunk.getCause();
+                wasEmpty = chunks.isEmpty();
+            }
             else
             {
                 wasEmpty = chunks.isEmpty();
@@ -79,7 +92,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
         if (failure != null)
             callback.failed(failure);
-        else if (wasEmpty)
+        if (wasEmpty)
             invoker.run(this::invokeDemandCallback);
     }
 
@@ -154,8 +167,6 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                     return errorChunk;
                 return null;
             }
-            // TODO if we read an Chunk.Error we should remember it to fulfill the read() contract
-            //  where further reads should return the same error chunk.
             readClosed = current.chunk().isLast();
             if (chunks.isEmpty())
                 l.signal();

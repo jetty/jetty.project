@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -156,7 +156,7 @@ public class HttpServerTestFixture
                 Content.Chunk c = request.read();
                 if (c == null)
                 {
-                    try (Blocking.Runnable blocker = Blocking.runnable())
+                    try (Blocker.Runnable blocker = Blocker.runnable())
                     {
                         request.demand(blocker);
                         blocker.block();
@@ -195,13 +195,8 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Processor
+    protected static class DataHandler extends Handler.Processor.Blocking
     {
-        public DataHandler()
-        {
-            super(InvocationType.BLOCKING);
-        }
-
         @Override
         public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
         {
@@ -232,7 +227,7 @@ public class HttpServerTestFixture
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
                 for (int i = writes; i-- > 0;)
                 {
-                    try (Blocking.Callback blocker = Blocking.callback())
+                    try (Blocker.Callback blocker = Blocker.callback())
                     {
                         response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();
@@ -245,7 +240,7 @@ public class HttpServerTestFixture
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
                 for (int i = writes; i-- > 0;)
                 {
-                    try (Blocking.Callback blocker = Blocking.callback())
+                    try (Blocker.Callback blocker = Blocker.callback())
                     {
                         response.write(i == 0, bytes.slice(), blocker);
                         blocker.block();

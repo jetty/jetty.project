@@ -285,6 +285,12 @@
                   <version>${project.version}</version>
                   <type>zip</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee8</groupId>
+                  <artifactId>jetty-ee8-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
@@ -417,6 +423,7 @@
                     <exclude>jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api</exclude>
                     <exclude>org.glassfish.web:jakarta.servlet.jsp.jstl</exclude>
                     <exclude>org.mortbay.jasper:apache-jsp</exclude>
+                    <exclude>jakarta.transaction:jakarta.transaction-api</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
               </rules>
@@ -429,6 +436,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-bom</artifactId>
@@ -493,6 +507,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
@@ -510,6 +528,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
