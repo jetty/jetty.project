@@ -25,7 +25,6 @@
           <argLine>
             @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee10.proxy=org.eclipse.jetty.logging
           </argLine>
-          <skipTests>true</skipTests>
         </configuration>
       </plugin>
     </plugins>

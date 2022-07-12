@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.Callback;
 
@@ -44,6 +43,6 @@ public class AsyncRequestContent extends AsyncContent implements Request.Content
 
     public void write(ByteBuffer buffer, Callback callback)
     {
-        write(Content.Chunk.from(buffer, false), callback);
+        write(false, buffer, callback);
     }
 }

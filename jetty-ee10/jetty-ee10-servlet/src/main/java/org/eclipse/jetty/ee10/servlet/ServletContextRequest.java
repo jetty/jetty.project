@@ -56,6 +56,7 @@ import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -452,8 +453,23 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public Cookie[] getCookies()
         {
-            // TODO
-            return new Cookie[0];
+            // TODO: optimize this.
+            return Request.getCookies(getRequest()).stream()
+                .map(this::convertCookie)
+                .toArray(Cookie[]::new);
+        }
+
+        public Cookie convertCookie(HttpCookie cookie)
+        {
+            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
+            // TODO: inbound (client-to-server) cookies don't have all these parameters.
+//            result.setPath(cookie.getPath());
+//            result.setDomain(cookie.getDomain());
+//            result.setSecure(cookie.isSecure());
+//            result.setHttpOnly(cookie.isHttpOnly());
+//            result.setMaxAge((int)cookie.getMaxAge());
+            // TODO: sameSite?
+            return result;
         }
 
         @Override
@@ -573,7 +589,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public StringBuffer getRequestURL()
         {
-            return new StringBuffer(ServletContextRequest.this.getHttpURI().asString());
+            return new StringBuffer(HttpURI.build(ServletContextRequest.this.getHttpURI()).query(null).asString());
         }
 
         @Override

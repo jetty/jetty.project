@@ -375,7 +375,6 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         if (chunk.isTerminal())
         {
-
             if (chunk instanceof Content.Chunk.Error errorChunk)
             {
                 Throwable error = errorChunk.getCause();

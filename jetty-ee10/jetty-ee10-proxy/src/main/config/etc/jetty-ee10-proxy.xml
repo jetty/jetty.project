@@ -4,7 +4,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.ee10.proxy.ConnectHandler">
+    <New class="org.eclipse.jetty.server.ConnectHandler">
       <Set name="handler">
         <New class="org.eclipse.jetty.ee10.servlet.ServletHandler">
           <Call id="proxyHolder" name="addServletWithMapping">

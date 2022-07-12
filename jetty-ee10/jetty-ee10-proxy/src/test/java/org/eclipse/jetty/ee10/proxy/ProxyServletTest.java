@@ -107,6 +107,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -610,6 +611,7 @@ public class ProxyServletTest
             {
                 // Make sure the proxy coalesced the Via headers into just one.
                 ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(request);
+                assertNotNull(servletContextRequest);
                 assertEquals(1, servletContextRequest.getHeaders().getFields(HttpHeader.VIA).size());
                 PrintWriter writer = response.getWriter();
                 List<String> viaValues = Collections.list(request.getHeaders("Via"));
@@ -622,7 +624,7 @@ public class ProxyServletTest
 
         String existingViaHeader = "1.0 charon";
         ContentResponse response = client.newRequest("http://localhost:" + serverConnector.getLocalPort())
-            .header(HttpHeader.VIA, existingViaHeader)
+            .headers(headers -> headers.put(HttpHeader.VIA, existingViaHeader))
             .send();
         String expected = String.join(", ", existingViaHeader, "1.1 " + viaHost);
         assertThat(response.getContentAsString(), equalTo(expected));

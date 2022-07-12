@@ -45,6 +45,7 @@ import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
@@ -229,7 +230,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     /**
      * <p>Convenience extension of {@link AsyncMiddleManServlet} that offers transparent proxy functionalities.</p>
      *
-     * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
+     * @see AbstractProxyServlet.TransparentDelegate
      */
     public static class Transparent extends AsyncMiddleManServlet
     {
@@ -370,7 +371,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 for (ByteBuffer buffer : buffers)
                 {
                     newContentBytes += buffer.remaining();
-                    this.content.offer(buffer, counter);
+                    this.content.write(buffer, counter);
                 }
                 buffers.clear();
             }
@@ -844,11 +845,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         @Override
-        public boolean offer(ByteBuffer buffer, Callback callback)
+        public void write(ByteBuffer buffer, Callback callback)
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(clientRequest), buffer.remaining());
-            return super.offer(buffer, callback);
+            super.write(buffer, callback);
         }
     }
 

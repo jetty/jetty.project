@@ -65,7 +65,7 @@
 <!--    <module>jetty-ee9-openid</module>-->
 <!--    <module>jetty-ee9-osgi</module>-->
     <module>jetty-ee9-plus</module>
-<!--    <module>jetty-ee9-proxy</module>-->
+    <module>jetty-ee9-proxy</module>
     <module>jetty-ee9-quickstart</module>
 <!--    <module>jetty-ee9-runner</module>-->
     <module>jetty-ee9-websocket</module>

@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
@@ -98,7 +99,7 @@ public class AsyncProxyServlet extends ProxyServlet
     /**
      * <p>Convenience extension of {@link AsyncProxyServlet} that offers transparent proxy functionalities.</p>
      *
-     * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
+     * @see AbstractProxyServlet.TransparentDelegate
      */
     public static class Transparent extends AsyncProxyServlet
     {

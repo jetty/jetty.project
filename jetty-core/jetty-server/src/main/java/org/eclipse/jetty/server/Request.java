@@ -196,6 +196,8 @@ public interface Request extends Attributes, Content.Source
      */
     boolean addErrorListener(Predicate<Throwable> onError);
 
+    TunnelSupport getTunnelSupport();
+
     void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
 
     static String getLocalAddr(Request request)
@@ -551,6 +553,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return getWrapped().isPushSupported();
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             getWrapped().push(request);
@@ -560,6 +568,12 @@ public interface Request extends Attributes, Content.Source
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return getWrapped().addErrorListener(onError);
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return getWrapped().getTunnelSupport();
         }
 
         @Override

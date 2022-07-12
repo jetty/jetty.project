@@ -173,8 +173,6 @@ public class BalancerServletTest
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(balancer.getHandler());
         balancer.setHandler(rewrite);
-        //TODO can't find method?
-        //rewrite.setRewriteRequestURI(true);
         rewrite.addRule(new VirtualHostRuleContainer());
         balancer.start();
 
@@ -182,7 +180,7 @@ public class BalancerServletTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
         assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
-        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/%0A'"));
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException

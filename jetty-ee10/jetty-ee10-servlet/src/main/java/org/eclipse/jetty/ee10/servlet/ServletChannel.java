@@ -433,7 +433,7 @@ public class ServletChannel implements Runnable
                         try
                         {
                             // Get ready to send an error response
-                            getResponse().reset();
+                            getResponse().resetContent();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError

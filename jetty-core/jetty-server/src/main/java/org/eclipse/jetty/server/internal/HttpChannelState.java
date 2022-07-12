@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -997,6 +998,12 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return true;
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             getStream().push(request);
@@ -1028,6 +1035,12 @@ public class HttpChannelState implements HttpChannel, Components
                 }
                 return true;
             }
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return getStream().getTunnelSupport();
         }
 
         @Override

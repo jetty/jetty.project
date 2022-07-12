@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
@@ -2350,6 +2351,12 @@ public class ResponseTest
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return false;
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
         }
@@ -2358,6 +2365,12 @@ public class ResponseTest
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return false;
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return null;
         }
 
         @Override

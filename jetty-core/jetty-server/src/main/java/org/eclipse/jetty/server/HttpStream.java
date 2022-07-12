@@ -26,6 +26,12 @@ import org.eclipse.jetty.util.Callback;
 public interface HttpStream extends Callback
 {
     /**
+     * Attribute used to get the {@link Connection} from the request attributes. This should not be used to set the
+     * connection as a request attribute, instead use {@link HttpStream#setUpgradeConnection(Connection)}.
+     */
+    String UPGRADE_CONNECTION_ATTRIBUTE = HttpStream.class.getName() + ".UPGRADE";
+
+    /**
      * @return an ID unique within the lifetime scope of the associated protocol connection.
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
      */
@@ -66,6 +72,11 @@ public interface HttpStream extends Callback
     void setUpgradeConnection(Connection connection);
 
     Connection upgrade();
+
+    default TunnelSupport getTunnelSupport()
+    {
+        return null;
+    }
 
     default Throwable consumeAvailable()
     {
@@ -174,6 +185,12 @@ public interface HttpStream extends Callback
         public Connection upgrade()
         {
             return getWrapped().upgrade();
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return getWrapped().getTunnelSupport();
         }
 
         @Override
