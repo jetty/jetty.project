@@ -19,5 +19,12 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-webapp</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

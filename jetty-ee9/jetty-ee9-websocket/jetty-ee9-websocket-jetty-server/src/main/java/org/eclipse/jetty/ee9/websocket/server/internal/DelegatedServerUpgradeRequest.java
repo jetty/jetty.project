@@ -265,7 +265,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Object getServletAttribute(String name)
     {
-        return httpServletRequest.getAttribute(name);
+        return upgradeRequest.getAttribute(name);
     }
 
     @Override
@@ -296,6 +296,6 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public void setServletAttribute(String name, Object value)
     {
-        httpServletRequest.setAttribute(name, value);
+        upgradeRequest.setAttribute(name, value);
     }
 }

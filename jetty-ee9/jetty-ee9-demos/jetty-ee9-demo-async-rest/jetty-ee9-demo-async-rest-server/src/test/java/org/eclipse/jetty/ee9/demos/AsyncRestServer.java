@@ -28,9 +28,9 @@ public class AsyncRestServer
         // Find the async-reset webapp based on common IDE working directories
         // TODO import webapp as maven artifact
         Path home = FileSystems.getDefault().getPath(System.getProperty("jetty.home", ".")).toAbsolutePath();
-        Path war = home.resolve("../async-rest-webapp/target/async-rest/");
-        if (!Files.exists(war))
-            war = home.resolve("examples/async-rest/async-rest-webapp/target/async-rest/");
+        System.err.println(home);
+        Path war = home.resolve("jetty-ee9/jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-12.0.0-SNAPSHOT");
+        System.err.println(war);
         if (!Files.exists(war))
             throw new IllegalArgumentException("Cannot find async-rest webapp");
 

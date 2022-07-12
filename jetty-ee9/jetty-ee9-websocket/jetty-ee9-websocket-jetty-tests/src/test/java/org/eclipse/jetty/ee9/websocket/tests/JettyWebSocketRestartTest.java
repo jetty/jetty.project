@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,7 +67,6 @@ public class JettyWebSocketRestartTest
         server.stop();
     }
 
-    @Disabled
     @Test
     public void testWebSocketRestart() throws Exception
     {
@@ -87,7 +85,7 @@ public class JettyWebSocketRestartTest
         // We have not accumulated websocket resources by restarting.
         assertThat(contextHandler.getEventListeners().size(), is(numEventListeners));
         assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(1));
-        assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(1));
+        assertThat(contextHandler.getCoreContextHandler().getContainedBeans(WebSocketServerComponents.class).size(), is(1));
         assertNotNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
         assertNotNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
 
@@ -100,7 +98,7 @@ public class JettyWebSocketRestartTest
         server.stop();
         assertThat(contextHandler.getEventListeners().size(), is(0));
         assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(0));
-        assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(0));
+        assertThat(contextHandler.getCoreContextHandler().getContainedBeans(WebSocketServerComponents.class).size(), is(0));
         assertNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
         assertNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
         assertThat(contextHandler.getServletHandler().getFilters().length, is(0));

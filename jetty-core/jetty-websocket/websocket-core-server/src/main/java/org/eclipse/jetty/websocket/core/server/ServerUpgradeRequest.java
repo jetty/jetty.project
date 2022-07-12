@@ -41,12 +41,12 @@ public class ServerUpgradeRequest extends Request.Wrapper
         this.request = baseRequest;
     }
 
-    public void upgrade()
+    public void upgrade(Attributes attributes)
     {
-        attributes.clearAttributes();
-        for (String name : request.getAttributeNameSet())
+        this.attributes.clearAttributes();
+        for (String name : attributes.getAttributeNameSet())
         {
-            attributes.setAttribute(name, request.getAttribute(name));
+            this.attributes.setAttribute(name, attributes.getAttribute(name));
         }
         upgraded = true;
     }
