@@ -24,7 +24,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
@@ -218,15 +217,18 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(URI uri) throws IOException
     {
-        // Otherwise build a MountedPathResource.
         try
         {
+            // If the URI is not absolute
             if (!uri.isAbsolute())
             {
-                if (uri.toString().startsWith(FileSystems.getDefault().getSeparator()))
+                // If it is an absolute path,
+                if (uri.toString().startsWith("/"))
+                    // just add the scheme
                     uri = new URI("file", uri.toString(), null);
                 else
-                    throw new IllegalArgumentException("not an absolute uri: " + uri);
+                    // otherwise resolve against the current directory
+                    uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
             }
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
