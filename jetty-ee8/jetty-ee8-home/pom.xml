@@ -414,11 +414,11 @@
 <!--      <artifactId>jetty-ee8-jaspi</artifactId>-->
 <!--      <optional>true</optional>-->
 <!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
-<!--      <artifactId>jetty-ee8-jndi</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-jndi</artifactId>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo ee8 Apps -->
 <!--    <dependency>-->
 <!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
