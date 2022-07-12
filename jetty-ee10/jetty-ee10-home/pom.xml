@@ -415,6 +415,11 @@
       <artifactId>jetty-ee10-jaspi</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jndi</artifactId>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo EE10 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>

@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matcher;
@@ -33,7 +32,7 @@ public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
         for (Instruction instruction : instructions)
         {
             instruction.encode(lease);
@@ -56,8 +55,7 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
-        NullByteBufferPool bufferPool = new NullByteBufferPool();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(bufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
         instructions.forEach(i -> i.encode(lease));
         assertThat(lease.getSize(), is(instructions.size()));
         ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(lease.getTotalLength()), false);

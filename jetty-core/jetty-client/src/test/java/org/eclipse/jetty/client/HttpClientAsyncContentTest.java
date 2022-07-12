@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -45,11 +45,11 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                try (Blocking.Callback blocker = _blocking.callback())
+                try (Blocker.Callback blocker = _blocking.callback())
                 {
                     Content.Sink.write(response, false, "A", blocker);
                 }
-                try (Blocking.Callback blocker = _blocking.callback())
+                try (Blocker.Callback blocker = _blocking.callback())
                 {
                     Content.Sink.write(response, false, "A", blocker);
                 }

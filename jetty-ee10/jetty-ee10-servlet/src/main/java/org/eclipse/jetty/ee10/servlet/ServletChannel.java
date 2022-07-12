@@ -38,7 +38,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
@@ -462,7 +462,7 @@ public class ServletChannel implements Runnable
                                 // TODO: do this non-blocking.
                                 // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
                                 // _state.completing();
-                                try (Blocking.Callback blocker = Blocking.callback())
+                                try (Blocker.Callback blocker = Blocker.callback())
                                 {
                                     dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_request, getResponse(), blocker));
                                     blocker.block();

@@ -11,8 +11,8 @@ ee10-security
 client
 
 [lib]
+lib/jetty-util-ajax-${jetty.version}.jar
 lib/jetty-ee10-openid-${jetty.version}.jar
-lib/jetty-ee10-util-ajax-${jetty.version}.jar
 
 [files]
 basehome:modules/openid/jetty-ee10-openid-baseloginservice.xml|etc/jetty-ee10-openid-baseloginservice.xml

@@ -291,7 +291,7 @@ public class XmlConfigurationTest
         {
             writer.write(rawXml);
         }
-        return new XmlConfiguration(new PathResource(testFile));
+        return new XmlConfiguration(Resource.newResource(testFile));
     }
 
     @Test
@@ -1609,7 +1609,7 @@ public class XmlConfigurationTest
                     "  </Set>" +
                     "</Configure>");
 
-        configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
+        configuration.setJettyStandardIdsAndProperties(null, war);
 
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
@@ -1724,7 +1724,7 @@ public class XmlConfigurationTest
 
         try
         {
-            configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
+            configuration.setJettyStandardIdsAndProperties(null, war);
             configuration.getProperties().put("jetty.base", jettyBasePath);
             if (configValue != null)
                 configuration.getProperties().put("jetty.sslContext.keyStorePath", configValue);

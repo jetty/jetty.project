@@ -683,5 +683,21 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             return this;
         }
+
+        public abstract static class Blocking extends Processor
+        {
+            public Blocking()
+            {
+                super(InvocationType.BLOCKING);
+            }
+        }
+
+        public abstract static class NonBlocking extends Processor
+        {
+            public NonBlocking()
+            {
+                super(InvocationType.NON_BLOCKING);
+            }
+        }
     }
 }

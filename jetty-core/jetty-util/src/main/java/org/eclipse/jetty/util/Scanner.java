@@ -299,7 +299,9 @@ public class Scanner extends ContainerLifeCycle
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the changed file
          * @throws Exception May be thrown for handling errors
          */
-        void fileChanged(String filename) throws Exception;
+        default void fileChanged(String filename) throws Exception
+        {
+        }
 
         /**
          * Called when a file is added.
@@ -307,7 +309,9 @@ public class Scanner extends ContainerLifeCycle
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the added file
          * @throws Exception May be thrown for handling errors
          */
-        void fileAdded(String filename) throws Exception;
+        default void fileAdded(String filename) throws Exception
+        {
+        }
 
         /**
          * Called when a file is removed.
@@ -315,7 +319,9 @@ public class Scanner extends ContainerLifeCycle
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the removed file
          * @throws Exception May be thrown for handling errors
          */
-        void fileRemoved(String filename) throws Exception;
+        default void fileRemoved(String filename) throws Exception
+        {
+        }
     }
 
     /**
@@ -390,7 +396,7 @@ public class Scanner extends ContainerLifeCycle
         _scanInterval = scanInterval;
     }
 
-    public void setScanDirs(List<File> dirs)
+    public void setScanDirs(List<Path> dirs)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
@@ -398,12 +404,12 @@ public class Scanner extends ContainerLifeCycle
         _scannables.clear();
         if (dirs == null)
             return;
-        for (File f :dirs)
+        for (Path p :dirs)
         {
-            if (f.isDirectory())
-                addDirectory(f.toPath());
+            if (Files.isDirectory(p))
+                addDirectory(p);
             else
-                addFile(f.toPath());
+                addFile(p);
         }
     }
 

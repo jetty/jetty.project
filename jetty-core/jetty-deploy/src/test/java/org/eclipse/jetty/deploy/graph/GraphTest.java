@@ -29,7 +29,7 @@ public class GraphTest
     public void testPath()
     {
 
-        Path path = new Path();
+        Route path = new Route();
 
         assertEquals(0, path.nodes());
         assertEquals(null, path.firstNode());
@@ -53,7 +53,7 @@ public class GraphTest
         graph.addNode(nodeA);
         assertEquals(1, graph.getNodes().size());
         assertEquals(0, graph.getEdges().size());
-        Path path = graph.getPath(nodeA, nodeA);
+        Route path = graph.getPath(nodeA, nodeA);
         assertEquals(0, path.nodes());
     }
 
@@ -64,7 +64,7 @@ public class GraphTest
         graph.addEdge(new Edge(nodeA, nodeB));
         assertEquals(2, graph.getNodes().size());
         assertEquals(1, graph.getEdges().size());
-        Path path = graph.getPath(nodeA, nodeB);
+        Route path = graph.getPath(nodeA, nodeB);
         assertEquals(2, path.nodes());
     }
 
@@ -77,7 +77,7 @@ public class GraphTest
         graph.addEdge(new Edge(nodeB, nodeC));
         assertEquals(3, graph.getNodes().size());
         assertEquals(3, graph.getEdges().size());
-        Path path = graph.getPath(nodeA, nodeB);
+        Route path = graph.getPath(nodeA, nodeB);
         assertEquals(2, path.nodes());
         path = graph.getPath(nodeA, nodeC);
         assertEquals(2, path.nodes());
@@ -95,11 +95,11 @@ public class GraphTest
         graph.addEdge(new Edge(nodeD, nodeC));
         assertEquals(4, graph.getNodes().size());
         assertEquals(4, graph.getEdges().size());
-        Path path = graph.getPath(nodeA, nodeC);
-        assertEquals(3, path.nodes());
+        Route route = graph.getPath(nodeA, nodeC);
+        assertEquals(3, route.nodes());
 
-        path = graph.getPath(nodeC, nodeA);
-        assertEquals(null, path);
+        route = graph.getPath(nodeC, nodeA);
+        assertEquals(null, route);
     }
 
     @Test
@@ -112,16 +112,16 @@ public class GraphTest
         graph.addEdge(new Edge(nodeD, nodeA));
         assertEquals(4, graph.getNodes().size());
         assertEquals(4, graph.getEdges().size());
-        Path path = graph.getPath(nodeA, nodeB);
-        assertEquals(2, path.nodes());
+        Route route = graph.getPath(nodeA, nodeB);
+        assertEquals(2, route.nodes());
 
-        path = graph.getPath(nodeA, nodeC);
-        assertEquals(3, path.nodes());
-        path = graph.getPath(nodeA, nodeD);
-        assertEquals(4, path.nodes());
+        route = graph.getPath(nodeA, nodeC);
+        assertEquals(3, route.nodes());
+        route = graph.getPath(nodeA, nodeD);
+        assertEquals(4, route.nodes());
 
         graph.addNode(nodeE);
-        path = graph.getPath(nodeA, nodeE);
-        assertEquals(null, path);
+        route = graph.getPath(nodeA, nodeE);
+        assertEquals(null, route);
     }
 }

@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -1524,7 +1523,10 @@ public class Request implements HttpServletRequest
 
         _method = _coreRequest.getMethod();
         _uri = _coreRequest.getHttpURI();
-        _pathInContext = URIUtil.decodePath(_coreRequest.getPathInContext());
+
+        _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
+            ? _coreRequest.getPathInContext()
+            : URIUtil.decodePath(_coreRequest.getPathInContext());
         _httpFields = _coreRequest.getHeaders();
 
         setSecure(_coreRequest.isSecure());

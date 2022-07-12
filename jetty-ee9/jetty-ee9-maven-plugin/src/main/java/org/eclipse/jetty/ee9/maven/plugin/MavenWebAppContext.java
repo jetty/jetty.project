@@ -377,9 +377,9 @@ public class MavenWebAppContext extends WebAppContext
                         // return the resource matching the web-inf classes
                         // rather than the test classes
                         if (_classes != null)
-                            return Resource.newResource(_classes);
+                            return Resource.newResource(_classes.toPath());
                         else if (_testClasses != null)
-                            return Resource.newResource(_testClasses);
+                            return Resource.newResource(_testClasses.toPath());
                     }
                     else
                     {
@@ -503,4 +503,11 @@ public class MavenWebAppContext extends WebAppContext
             LOG.warn("Problem initializing cdi", e);
         }
     }
+
+    // need to be overridden to avoid Maven reflection issues with super class and override method
+    public void setExtraClasspath(String extraClasspath) throws IOException
+    {
+        super.setExtraClasspath(extraClasspath);
+    }
+
 }

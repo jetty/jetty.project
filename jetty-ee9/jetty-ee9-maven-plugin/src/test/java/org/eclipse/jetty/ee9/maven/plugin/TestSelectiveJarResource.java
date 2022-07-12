@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -39,13 +39,14 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (SelectiveJarResource sjr = new SelectiveJarResource(new URL("jar:" + testJar.toUri().toASCIIString() + "!/")))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> includes = new ArrayList<>();
             includes.add("**/*.html");
             sjr.setIncludes(includes);
-            sjr.copyTo(unpackDir.toFile());
+            sjr.copyTo(unpackDir);
             assertTrue(Files.exists(unpackDir.resolve("top.html")));
             assertTrue(Files.exists(unpackDir.resolve("aa/a1.html")));
             assertTrue(Files.exists(unpackDir.resolve("aa/a2.html")));
@@ -63,13 +64,14 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (SelectiveJarResource sjr = new SelectiveJarResource(new URL("jar:" + testJar.toUri().toASCIIString() + "!/")))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/*");
             sjr.setExcludes(excludes);
-            sjr.copyTo(unpackDir.toFile());
+            sjr.copyTo(unpackDir);
             assertFalse(Files.exists(unpackDir.resolve("top.html")));
             assertFalse(Files.exists(unpackDir.resolve("aa/a1.html")));
             assertFalse(Files.exists(unpackDir.resolve("aa/a2.html")));
@@ -87,8 +89,9 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (SelectiveJarResource sjr = new SelectiveJarResource(new URL("jar:" + testJar.toUri().toASCIIString() + "!/")))
+        try (Resource.Mount mount = Resource.mountJar(testJar))
         {
+            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/deep/*");
@@ -96,7 +99,7 @@ public class TestSelectiveJarResource
             List<String> includes = new ArrayList<>();
             includes.add("bb/*");
             sjr.setIncludes(includes);
-            sjr.copyTo(unpackDir.toFile());
+            sjr.copyTo(unpackDir);
             assertFalse(Files.exists(unpackDir.resolve("top.html")));
             assertFalse(Files.exists(unpackDir.resolve("aa/a1.html")));
             assertFalse(Files.exists(unpackDir.resolve("aa/a2.html")));

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -28,8 +29,10 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -157,7 +160,7 @@ public class XmlConfiguration
      * @param server The Server object to set
      * @param webapp The webapps Resource
      */
-    public void setJettyStandardIdsAndProperties(Object server, Resource webapp)
+    public void setJettyStandardIdsAndProperties(Object server, Path webapp)
     {
         try
         {
@@ -174,10 +177,9 @@ public class XmlConfiguration
 
             if (webapp != null)
             {
-                Path webappPath = webapp.getFile().toPath().toAbsolutePath();
-                getProperties().put("jetty.webapp", webappPath.toString());
-                getProperties().put("jetty.webapps", webappPath.getParent().toString());
-                getProperties().put("jetty.webapps.uri", normalizeURI(webappPath.getParent().toUri().toString()));
+                getProperties().put("jetty.webapp", webapp.toString());
+                getProperties().put("jetty.webapps", webapp.getParent().toString());
+                getProperties().put("jetty.webapps.uri", normalizeURI(webapp.getParent().toUri().toString()));
             }
         }
         catch (Exception e)
@@ -193,8 +195,8 @@ public class XmlConfiguration
         return uri;
     }
 
-    private final Map<String, Object> _idMap = new HashMap<>();
-    private final Map<String, String> _propertyMap = new HashMap<>();
+    private final Map<String, Object> _idMap;
+    private final Map<String, String> _propertyMap;
     private final Resource _location;
     private final String _dtd;
     private ConfigurationProcessor _processor;
@@ -216,11 +218,27 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.getInputStream())
+        this(resource.getPath(), null, null);
+    }
+
+    /**
+     * Reads and parses the XML configuration file.
+     *
+     * @param path the XML configuration
+     * @param idMap Map of objects with IDs
+     * @param properties Map of properties
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
+     */
+    public XmlConfiguration(Path path, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
+    {
+        try (ConfigurationParser parser = getParser(); InputStream inputStream = Files.newInputStream(path))
         {
-            _location = resource;
+            _location = Resource.newResource(path);
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
+            _idMap = idMap == null ? new HashMap<>() : idMap;
+            _propertyMap = properties == null ? new HashMap<>() : properties;
         }
     }
 
@@ -1872,8 +1890,8 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
-                            try (Resource resource = Resource.newResource(arg);
-                                 InputStream inputStream = resource.getInputStream())
+                            Resource resource = Resource.newResource(arg);
+                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                             {
                                 (envBuilder == null ? coreProperties : envProperties).load(inputStream);
                             }

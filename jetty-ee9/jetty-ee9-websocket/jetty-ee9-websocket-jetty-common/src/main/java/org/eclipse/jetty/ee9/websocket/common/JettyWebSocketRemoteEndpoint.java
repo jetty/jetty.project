@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
-import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -46,37 +45,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.batchMode = batchMode;
-    }
-
-    /**
-     * Initiate close of the Remote with no status code (no payload)
-     *
-     * @since 10.0
-     */
-    public void close()
-    {
-        close(StatusCode.NO_CODE, null);
-    }
-
-    /**
-     * Initiate close of the Remote with specified status code and optional reason phrase
-     *
-     * @param statusCode the status code (must be valid and can be sent)
-     * @param reason optional reason code
-     * @since 10.0
-     */
-    public void close(int statusCode, String reason)
-    {
-        try
-        {
-            FutureCallback b = new FutureCallback();
-            coreSession.close(statusCode, reason, b);
-            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
     }
 
     @Override
@@ -225,7 +193,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     }
 
     @Override
-    public org.eclipse.jetty.ee9.websocket.api.BatchMode getBatchMode()
+    public BatchMode getBatchMode()
     {
         return batchMode;
     }

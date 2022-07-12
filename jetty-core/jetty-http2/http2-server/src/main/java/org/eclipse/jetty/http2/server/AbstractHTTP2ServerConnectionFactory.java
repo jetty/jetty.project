@@ -291,7 +291,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
-        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
+        RetainableByteBufferPool retainableByteBufferPool = connector.getByteBufferPool().asRetainableByteBufferPool();
 
         HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector,
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);

@@ -228,8 +228,7 @@ public class MavenWebAppContext extends WebAppContext
                 resources.add(r);
             }
         }
-        //TODO: needs WebAppContext.setResourceBase sorted out
-        //setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
+        setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
 
     public List<File> getWebInfLib()
@@ -378,9 +377,9 @@ public class MavenWebAppContext extends WebAppContext
                         // return the resource matching the web-inf classes
                         // rather than the test classes
                         if (_classes != null)
-                            return Resource.newResource(_classes);
+                            return Resource.newResource(_classes.toPath());
                         else if (_testClasses != null)
-                            return Resource.newResource(_testClasses);
+                            return Resource.newResource(_testClasses.toPath());
                     }
                     else
                     {

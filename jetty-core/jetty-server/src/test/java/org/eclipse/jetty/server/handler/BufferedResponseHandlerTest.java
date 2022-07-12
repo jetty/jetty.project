@@ -18,6 +18,7 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -44,6 +45,7 @@ public class BufferedResponseHandlerTest
     public void setUp() throws Exception
     {
         _server = new Server();
+        _server.addBean(new NoopByteBufferPool()); // Avoid giving larger buffers than requested
         HttpConfiguration config = new HttpConfiguration();
         config.setOutputBufferSize(1024);
         config.setOutputAggregationSize(256);

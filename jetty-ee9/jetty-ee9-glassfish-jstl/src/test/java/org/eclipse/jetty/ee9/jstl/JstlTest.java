@@ -51,31 +51,38 @@ public class JstlTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-
-        // Setup WebAppContext
-        File testWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
-
-        // Prepare WebApp libs
-        File libDir = new File(testWebAppDir, "WEB-INF/lib");
-        FS.ensureDirExists(libDir);
-        File testTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
-        JAR.create(testTagLibDir, new File(libDir, "testtaglib.jar"));
+        
+        //Base dir for test
+        File testDir = MavenTestingUtils.getTargetTestingDir("jstl");
+        File testLibDir = new File(testDir, "WEB-INF/lib");
+        FS.ensureDirExists(testLibDir);
+                
+        //Make a taglib jar
+        File srcTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
+        File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-taglib-scratch");
+        IO.copy(srcTagLibDir, scratchTagLibDir);
+        File tagLibJar =  new File(testLibDir, "testtaglib.jar");
+        JAR.create(scratchTagLibDir, tagLibJar);
+        
+        //Copy content
+        File srcWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
+        IO.copyDir(srcWebAppDir, testDir);
 
         // Configure WebAppCont
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-
+        
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
-        JspConfig.init(context, testWebAppDir.toURI(), scratchDir);
-
+        JspConfig.init(context, testDir.toURI(), scratchDir);
+        
         context.addConfiguration(new AnnotationConfiguration());
-
+        
         server.setHandler(context);
-
+        
         // Start Server
         server.start();
-
+        
         // Figure out Base URI
         String host = connector.getHost();
         if (host == null)

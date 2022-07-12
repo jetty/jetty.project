@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -39,11 +39,11 @@ import org.slf4j.LoggerFactory;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends Handler.Processor
+public class DumpHandler extends Handler.Processor.Blocking
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
-    private final Blocking.Shared _blocker = new Blocking.Shared(); 
+    private final Blocker.Shared _blocker = new Blocker.Shared();
     private final String _label;
 
     public DumpHandler()
@@ -53,7 +53,6 @@ public class DumpHandler extends Handler.Processor
 
     public DumpHandler(String label)
     {
-        super(InvocationType.BLOCKING);
         _label = label;
     }
 
@@ -68,7 +67,7 @@ public class DumpHandler extends Handler.Processor
 
         if (Boolean.parseBoolean(params.getValue("flush")))
         {
-            try (Blocking.Callback blocker = _blocker.callback())
+            try (Blocker.Callback blocker = _blocker.callback())
             {
                 response.write(false, null, blocker);
                 blocker.block();
@@ -97,7 +96,7 @@ public class DumpHandler extends Handler.Processor
                     chunk = request.read();
                     if (chunk == null)
                     {
-                        try (Blocking.Runnable blocker = _blocker.runnable())
+                        try (Blocker.Runnable blocker = _blocker.runnable())
                         {
                             request.demand(blocker);
                             blocker.block();
@@ -193,7 +192,7 @@ public class DumpHandler extends Handler.Processor
 
         response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
 
-        try (Blocking.Callback blocker = _blocker.callback())
+        try (Blocker.Callback blocker = _blocker.callback())
         {
             response.write(false, BufferUtil.toBuffer(buf.toByteArray()), blocker);
             blocker.block();
@@ -205,7 +204,7 @@ public class DumpHandler extends Handler.Processor
         // write remaining content after commit
         String padding = "ABCDEFGHIJ".repeat(99) + "ABCDEFGH\r\n";
 
-        try (Blocking.Callback blocker = _blocker.callback())
+        try (Blocker.Callback blocker = _blocker.callback())
         {
             response.write(true, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)), blocker);
             blocker.block();

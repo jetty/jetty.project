@@ -20,10 +20,15 @@ import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.Environment;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -48,7 +53,7 @@ public class DeploymentManagerTest
         depman.start();
 
         // Trigger new App
-        mockProvider.findWebapp("foo-webapp-1.war");
+        mockProvider.createWebapp("foo-webapp-1.war");
 
         // Test app tracking
         Collection<App> apps = depman.getApps();
@@ -56,9 +61,11 @@ public class DeploymentManagerTest
         assertEquals(1, apps.size(), "Expected App Count");
 
         // Test app get
-        App actual = depman.getAppByOriginId("mock-foo-webapp-1.war");
+        App app = apps.stream().findFirst().orElse(null);
+        assertNotNull(app);
+        App actual = depman.getApp(app.getPath());
         assertNotNull(actual, "Should have gotten app (by id)");
-        assertEquals("mock-foo-webapp-1.war", actual.getFilename(), "Should have gotten app (by id)");
+        assertThat(actual.getPath().toString(), endsWith("mock-foo-webapp-1.war"));
     }
 
     @Test
@@ -75,6 +82,57 @@ public class DeploymentManagerTest
         Set<AppLifeCycle.Binding> deploybindings = depman.getLifeCycle().getBindings("deploying");
         assertNotNull(deploybindings, "'deploying' Bindings should not be null");
         assertEquals(1, deploybindings.size(), "'deploying' Bindings.size");
+    }
+
+    @Test
+    public void testDefaultEnvironment()
+    {
+        DeploymentManager depman = new DeploymentManager();
+        assertThat(depman.getDefaultEnvironmentName(), Matchers.nullValue());
+
+        Environment.ensure("ee7");
+        depman.addAppProvider(new MockAppProvider()
+        {
+            @Override
+            public String getEnvironmentName()
+            {
+                return "ee7";
+            }
+        });
+        assertThat(depman.getDefaultEnvironmentName(), is("ee7"));
+
+        Environment.ensure("ee12");
+        depman.addAppProvider(new MockAppProvider()
+        {
+            @Override
+            public String getEnvironmentName()
+            {
+                return "ee12";
+            }
+        });
+        assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
+
+        Environment.ensure("ee10");
+        depman.addAppProvider(new MockAppProvider()
+        {
+            @Override
+            public String getEnvironmentName()
+            {
+                return "ee12";
+            }
+        });
+        assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
+
+        Environment.ensure("somethingElse");
+        depman.addAppProvider(new MockAppProvider()
+        {
+            @Override
+            public String getEnvironmentName()
+            {
+                return "ee12";
+            }
+        });
+        assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
     }
 
     @Test

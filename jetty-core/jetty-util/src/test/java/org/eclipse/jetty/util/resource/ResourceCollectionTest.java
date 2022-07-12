@@ -115,7 +115,7 @@ public class ResourceCollectionTest
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
-        PathResource resource = new PathResource(path);
+        Resource resource = Resource.newResource(path);
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
@@ -129,7 +129,7 @@ public class ResourceCollectionTest
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
-        PathResource resource = new PathResource(path);
+        Resource resource = Resource.newResource(path);
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
@@ -143,7 +143,7 @@ public class ResourceCollectionTest
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
-        PathResource resource = new PathResource(path);
+        Resource resource = Resource.newResource(path);
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
@@ -155,9 +155,9 @@ public class ResourceCollectionTest
 
     private void assertThrowIllegalStateException(ResourceCollection coll)
     {
-        assertThrows(IllegalStateException.class, () -> coll.addPath("foo"));
+        assertThrows(IllegalStateException.class, () -> coll.resolve("foo"));
         assertThrows(IllegalStateException.class, coll::exists);
-        assertThrows(IllegalStateException.class, coll::getFile);
+        assertThrows(IllegalStateException.class, coll::getPath);
         assertThrows(IllegalStateException.class, coll::getInputStream);
         assertThrows(IllegalStateException.class, coll::getReadableByteChannel);
         assertThrows(IllegalStateException.class, coll::getURI);
@@ -165,11 +165,10 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, coll::isDirectory);
         assertThrows(IllegalStateException.class, coll::lastModified);
         assertThrows(IllegalStateException.class, coll::list);
-        assertThrows(IllegalStateException.class, coll::close);
         assertThrows(IllegalStateException.class, () ->
         {
             Path destPath = workdir.getPathFile("bar");
-            coll.copyTo(destPath.toFile());
+            coll.copyTo(destPath);
         });
     }
 
@@ -181,9 +180,9 @@ public class ResourceCollectionTest
             Resource.newResource("src/test/resources/org/eclipse/jetty/util/resource/two/"),
             Resource.newResource("src/test/resources/org/eclipse/jetty/util/resource/three/"));
 
-        assertThat(Arrays.asList(rc1.list()), contains("1.txt", "2.txt", "3.txt", "dir/"));
-        assertThat(Arrays.asList(rc1.addPath("dir").list()), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc1.addPath("unknown").list(), nullValue());
+        assertThat(rc1.list(), contains("1.txt", "2.txt", "3.txt", "dir/"));
+        assertThat(rc1.resolve("dir").list(), contains("1.txt", "2.txt", "3.txt"));
+        assertThat(rc1.resolve("unknown").list(), nullValue());
     }
 
     @Test
@@ -217,7 +216,7 @@ public class ResourceCollectionTest
             "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
-        Resource r = rc.addPath("dir");
+        Resource r = rc.resolve("dir");
         assertTrue(r instanceof ResourceCollection);
         rc = (ResourceCollection)r;
         assertEquals(getContent(rc, "1.txt"), "1 - one");
@@ -236,13 +235,13 @@ public class ResourceCollectionTest
 
         File dest = MavenTestingUtils.getTargetTestingDir("copyto");
         FS.ensureDirExists(dest);
-        rc.copyTo(dest);
+        rc.copyTo(dest.toPath());
 
         Resource r = Resource.newResource(dest.toURI());
         assertEquals(getContent(r, "1.txt"), "1 - one");
         assertEquals(getContent(r, "2.txt"), "2 - two");
         assertEquals(getContent(r, "3.txt"), "3 - three");
-        r = r.addPath("dir");
+        r = r.resolve("dir");
         assertEquals(getContent(r, "1.txt"), "1 - one");
         assertEquals(getContent(r, "2.txt"), "2 - two");
         assertEquals(getContent(r, "3.txt"), "3 - three");
@@ -252,7 +251,7 @@ public class ResourceCollectionTest
 
     static String getContent(Resource r, String path) throws Exception
     {
-        Resource resource = r.addPath(path);
+        Resource resource = r.resolve(path);
         StringBuilder buffer = new StringBuilder();
         try (InputStream in = resource.getInputStream();
              InputStreamReader reader = new InputStreamReader(in);

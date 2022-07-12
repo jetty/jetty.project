@@ -493,6 +493,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
@@ -501,7 +505,6 @@
       <classifier>shaded</classifier>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-home</artifactId>
@@ -514,7 +517,6 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>

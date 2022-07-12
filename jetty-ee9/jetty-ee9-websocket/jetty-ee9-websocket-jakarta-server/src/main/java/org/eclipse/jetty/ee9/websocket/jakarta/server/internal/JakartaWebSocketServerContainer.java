@@ -36,7 +36,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultCon
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -298,7 +298,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        try (Blocking.Callback callback = Blocking.callback())
+        try (Blocker.Callback callback = Blocker.callback())
         {
             handshaker.upgradeRequest(negotiator, httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, components, defaultCustomizer);
             callback.block();

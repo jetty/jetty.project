@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * ResourceFactory.
@@ -22,18 +23,22 @@ import java.io.IOException;
 public interface ResourceFactory
 {
     /**
-     * Get a Resource from a provided String.
      * <p>
-     * The behavior here is dependent on the
-     * implementation of ResourceFactory.
-     * The provided path can be resolved
-     * against a known Resource, or can
-     * be a from-scratch Resource.
+     * Returns the resource contained inside the current resource with the
+     * given name, which may or may not exist.
      * </p>
-     *
-     * @param path The path to the resource
-     * @return The resource, that might not actually exist (yet).
-     * @throws IOException if unable to create Resource
+     * <p>
+     * The {@code subUriPath} parameter is interpreted like {@link URI#resolve(String)} would, except for a few convenient differences:
+     * <ul>
+     *     <li>{@code subUriPath} must not contain URI-invalid characters (<code>', [, %, ?</code> ...)</li>
+     *     <li>{@code subUriPath} can contain escaped characters that are going to be correctly interpreted</li>
+     *     <li>All prepended slashes are ignored</li>
+     *     <li>If the resulting resource provably points to an existing directory, a / is automatically appended</li>
+     * </ul>
+     *</p>
+     * @param subUriPath The path segment to add.
+     * @return the Resource for the resolved path within this Resource, never null
+     * @throws IOException if unable to resolve the path
      */
-    Resource getResource(String path) throws IOException;
+    Resource resolve(String subUriPath) throws IOException;
 }

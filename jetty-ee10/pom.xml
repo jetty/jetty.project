@@ -13,6 +13,7 @@
   <packaging>pom</packaging>
 
   <properties>
+    <com.sun.mail.version>2.0.1</com.sun.mail.version>
     <!-- TODO: Remove these javax.* entries? -->
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
@@ -51,8 +52,9 @@
     <module>jetty-ee10-cdi</module>
     <module>jetty-ee10-jaas</module>
     <module>jetty-ee10-jaspi</module>
+    <module>jetty-ee10-jndi</module>
     <module>jetty-ee10-jspc-maven-plugin</module>
-    <!-- TODO <module>jetty-ee10-maven-plugin</module>-->
+    <module>jetty-ee10-maven-plugin</module>
     <module>jetty-ee10-openid</module>
     <!-- TODO -->
     <!-- module>jetty-ee10-osgi</module -->
@@ -102,6 +104,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jaspi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-jndi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -275,7 +282,7 @@
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
-        <version>${jakarta.mail.api.version}</version>
+        <version>${com.sun.mail.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.el</groupId>
@@ -361,11 +368,6 @@
         <groupId>jakarta.xml.ws</groupId>
         <artifactId>jakarta.xml.ws-api</artifactId>
         <version>${jakarta.xml.ws.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.websocket</groupId>
-        <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>

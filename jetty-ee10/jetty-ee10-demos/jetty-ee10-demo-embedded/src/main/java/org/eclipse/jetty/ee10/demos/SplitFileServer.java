@@ -20,7 +20,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -79,8 +78,8 @@ public class SplitFileServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Resource resource0 = new PathResource(Paths.get("src/test/resources/dir0"));
-        Resource resource1 = new PathResource(Paths.get("src/test/resources/dir1"));
+        Resource resource0 = Resource.newResource(Paths.get("src/test/resources/dir0"));
+        Resource resource1 = Resource.newResource(Paths.get("src/test/resources/dir1"));
 
         Server server = createServer(port, resource0, resource1);
 

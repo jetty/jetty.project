@@ -17,4 +17,4 @@ ee10-annotations
 lib/ee10-demo-mock-resources-${jetty.version}.jar
 
 [files]
-maven://org.eclipse.jetty.ee10.demos/ee10-demo-mock-resources/${jetty.version}/jar|lib/ee10-demo-mock-resources-${jetty.version}.jar
+maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-mock-resources/${jetty.version}/jar|lib/ee10-demo-mock-resources-${jetty.version}.jar

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>tests</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee10-test-maven-plugin</artifactId>
+  <packaging>jar</packaging>
+  <name>EE10 :: Jetty Test :: Jetty Maven Plugin</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jetty.ee10.maven.plugin.tests</bundle-symbolic-name>
+    <jetty.stopKey>FREEBEER</jetty.stopKey>
+    <jetty.jvmArgs></jetty.jvmArgs>
+
+    <!-- TODO fix duplication -->
+    <jakarta.servlet.api.version>6.0.0</jakarta.servlet.api.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+     <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-maven-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+         <execution>
+           <id>test-reserve-ports</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <configuration>
+              <portNames>
+                <portName>test.stopPort</portName>
+                <portName>test.jettyPort</portName>
+              </portNames>
+            </configuration>
+          </execution>
+          <execution>
+            <id>reserve-ports</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <configuration>
+              <portNames>
+                <portName>jetty.stopPort</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+            <argLine>-Dstop.port=@{test.stopPort} -Djetty.port=@{test.jettyPort}</argLine>
+            <excludes>
+                <exclude>**/IntegrationTest*.java</exclude>
+            </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <addTestClassPath>true</addTestClassPath>
+          <ignoreFailures>true</ignoreFailures>
+          <setupIncludes>
+            <setupInclude>it-parent-pom/pom.xml</setupInclude>
+          </setupIncludes>
+          <pomExcludes>
+            <!-- enable again when springboot is migrated to jakarta -->
+            <pomExclude>javax-annotation-api/pom.xml</pomExclude>
+            <!-- enable again when gwt is migrated to jakarta -->
+            <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
+            <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
+            <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
+          </pomExcludes>
+          <scriptVariables>
+            <jettyStopKey>${jetty.stopKey}</jettyStopKey>
+            <jettyStopPort>${jetty.stopPort}</jettyStopPort>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
+          </scriptVariables>
+          <settingsFile>src/it/settings.xml</settingsFile>
+          <goals>
+            <goal>clean</goal>
+          </goals>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

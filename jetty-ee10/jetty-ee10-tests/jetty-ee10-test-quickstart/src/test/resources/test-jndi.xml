@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the test-jndi webapp                                  -->
+<!-- =============================================================== -->
+<Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
+    <Arg>
+      <New class="org.example.MockUserTransaction"/>
+    </Arg>
+  </New>
+
+  <!-- Define an env entry with Server scope for java:comp/env                   -->
+  <New id="woggle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
+    <Arg><Property name='server'/></Arg>
+    <Arg>woggle</Arg>
+    <Arg type="java.lang.Integer">4000</Arg>
+    <Arg type="boolean">false</Arg>
+  </New>
+
+  <!-- Define an env entry with webapp scope for java:comp/env                   -->
+  <New id="wiggle"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>wiggle</Arg>
+    <Arg type="java.lang.Double">100</Arg>
+    <Arg type="boolean">true</Arg>
+  </New>
+
+  <!-- A mock DataSource                                           -->
+  <New id="mydatasource" class="org.eclipse.jetty.ee10.plus.jndi.Resource">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+      <New class="org.example.MockDataSource"/>
+    </Arg>
+  </New>
+
+</Configure>

@@ -15,27 +15,25 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
@@ -55,6 +53,7 @@ import org.slf4j.LoggerFactory;
  * implements some heuristics to ignore some files found in the scans: <ul>
  * <li>Hidden files (starting with ".") are ignored</li>
  * <li>Directories with names ending in ".d" are ignored</li>
+ * <li>Property files with names ending in ".properties" are not deployed.</li>
  * <li>If a directory and a WAR file exist ( eg foo/ and foo.war) then the directory is assumed to be
  * the unpacked WAR and only the WAR is deployed (which may reused the unpacked directory)</li>
  * <li>If a directory and a matching XML file exist ( eg foo/ and foo.xml) then the directory is assumed to be
@@ -62,20 +61,23 @@ import org.slf4j.LoggerFactory;
  * <li>If a WAR file and a matching XML exist (eg foo.war and foo.xml) then the WAR is assumed to
  * be configured by the XML and only the XML is deployed.
  * </ul>
+ * <p>
+ * Only {@link App}s discovered that report {@link App#getEnvironmentName()} matching this providers
+ * {@link #getEnvironmentName()} will be deployed.
+ * </p>
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
- * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
+ * properties for the webapp file such as "jetty.webapp" and directory as "jetty.webapps".
+ * The properties will be initialized with:<ul>
+ *     <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
+ *     <li>The properties set on this provider via {@link #getProperties()}</li>
+ * </ul>
  */
-@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
+@ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
 public class ContextProvider extends ScanningAppProvider
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ContextProvider.class);
 
-    private boolean _extract = false;
-    private boolean _parentLoaderPriority = false;
-    private ConfigurationManager _configurationManager;
-    private String _defaultsDescriptor;
-    private File _tempDirectory;
-    private String[] _configurationClasses;
+    private final Map<String, String> _properties = new HashMap<>();
 
     public class Filter implements FilenameFilter
     {
@@ -87,13 +89,16 @@ public class ContextProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            // TODO close resource!
-            Resource resource = Resource.newResource(new File(dir, name));
+            Resource resource = Resource.newResource(new File(dir, name).toPath());
             if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
 
             // ignore hidden files
             if (lowerName.startsWith("."))
+                return false;
+
+            // ignore property files
+            if (lowerName.endsWith(".properties"))
                 return false;
 
             // Ignore some directories
@@ -131,161 +136,203 @@ public class ContextProvider extends ScanningAppProvider
         setScanInterval(0);
     }
 
-    /**
-     * Get the extractWars.
-     *
-     * @return the extractWars
-     * @deprecated use {@link #isExtract()}
-     */
-    @Deprecated
-    public boolean isExtractWars()
+    public Map<String, String> getProperties()
     {
-        return isExtract();
+        return _properties;
     }
 
     /**
-     * @return True if WAR and JAR are extraced on deploy.
+     * Get the extractWars.
+     * This is equivalent to getting the {@link Deployable#EXTRACT_WARS} property.
+     *
+     * @return the extractWars
      */
-    @ManagedAttribute("extract WAR and JAR files")
-    public boolean isExtract()
+    @ManagedAttribute("extract war files")
+    public boolean isExtractWars()
     {
-        return _extract;
+        return Boolean.parseBoolean(_properties.get(Deployable.EXTRACT_WARS));
     }
 
     /**
      * Set the extractWars.
+     * This is equivalent to setting the {@link Deployable#EXTRACT_WARS} property.
      *
-     * @param extract the extractWars to set
-     * @deprecated use {@link #setExtract(boolean)}
+     * @param extractWars the extractWars to set
      */
-    @Deprecated
-    public void setExtractWars(boolean extract)
+    public void setExtractWars(boolean extractWars)
     {
-        setExtract(extract);
-    }
-
-    /**
-     * Set to extract WAR and JAR files.
-     *
-     * @param extract the extractWars to set
-     */
-    public void setExtract(boolean extract)
-    {
-        _extract = extract;
+        _properties.put(Deployable.EXTRACT_WARS, Boolean.toString(extractWars));
     }
 
     /**
      * Get the parentLoaderPriority.
+     * This is equivalent to getting the {@link Deployable#PARENT_LOADER_PRIORITY} property.
      *
      * @return the parentLoaderPriority
      */
     @ManagedAttribute("parent classloader has priority")
     public boolean isParentLoaderPriority()
     {
-        return _parentLoaderPriority;
+        return Boolean.parseBoolean(_properties.get(Deployable.PARENT_LOADER_PRIORITY));
     }
 
     /**
      * Set the parentLoaderPriority.
+     * This is equivalent to setting the {@link Deployable#PARENT_LOADER_PRIORITY} property.
      *
      * @param parentLoaderPriority the parentLoaderPriority to set
      */
     public void setParentLoaderPriority(boolean parentLoaderPriority)
     {
-        _parentLoaderPriority = parentLoaderPriority;
+        _properties.put(Deployable.PARENT_LOADER_PRIORITY, Boolean.toString(parentLoaderPriority));
     }
 
     /**
      * Get the defaultsDescriptor.
+     * This is equivalent to getting the {@link Deployable#DEFAULTS_DESCRIPTOR} property.
      *
      * @return the defaultsDescriptor
      */
     @ManagedAttribute("default descriptor for webapps")
     public String getDefaultsDescriptor()
     {
-        return _defaultsDescriptor;
+        return _properties.get(Deployable.DEFAULTS_DESCRIPTOR);
     }
 
     /**
      * Set the defaultsDescriptor.
+     * This is equivalent to setting the {@link Deployable#DEFAULTS_DESCRIPTOR} property.
      *
      * @param defaultsDescriptor the defaultsDescriptor to set
      */
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
-        _defaultsDescriptor = defaultsDescriptor;
-    }
-
-    public ConfigurationManager getConfigurationManager()
-    {
-        return _configurationManager;
+        _properties.put(Deployable.DEFAULTS_DESCRIPTOR, defaultsDescriptor);
     }
 
     /**
-     * Set the configurationManager.
-     *
-     * @param configurationManager the configurationManager to set
+     * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     * @param configurations The configuration class names as a comma separated list
      */
-    public void setConfigurationManager(ConfigurationManager configurationManager)
+    public void setConfigurationClasses(String configurations)
     {
-        updateBean(_configurationManager, configurationManager);
-        _configurationManager = configurationManager;
+        setConfigurationClasses(StringUtil.isBlank(configurations) ? null : configurations.split(","));
     }
 
     /**
+     * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations == null ? null : configurations.clone();
-    }
-
-    @ManagedAttribute("configuration classes for webapps to be processed through")
-    public String[] getConfigurationClasses()
-    {
-        return _configurationClasses;
+        _properties.put(Deployable.CONFIGURATION_CLASSES, (configurations == null)
+            ? null
+            : String.join(",", configurations));
     }
 
     /**
-     * Set the Work directory where unpacked WAR files are managed from.
+     *
+     * This is equivalent to getting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     * @return The configuration class names.
+     */
+    @ManagedAttribute("configuration classes for webapps to be processed through")
+    public String[] getConfigurationClasses()
+    {
+        String cc = _properties.get(Deployable.CONFIGURATION_CLASSES);
+        return cc == null ? new String[0] : cc.split(",");
+    }
+
+    /**
+     * Set the temporary directory for deployment.
      * <p>
-     * Default is the same as the <code>java.io.tmpdir</code> System Property.
+     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
+     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
+     *
+     * @param directory the new work directory
+     */
+    public void setTempDir(String directory)
+    {
+        _properties.put(Deployable.BASE_TEMP_DIR, directory);
+    }
+
+    /**
+     * Set the temporary directory for deployment.
+     * <p>
+     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
+     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
      *
      * @param directory the new work directory
      */
     public void setTempDir(File directory)
     {
-        _tempDirectory = directory;
+        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
     }
 
     /**
-     * Get the user supplied Work Directory.
+     * Get the temporary directory for deployment.
+     * <p>
+     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
      *
      * @return the user supplied work directory (null if user has not set Temp Directory yet)
      */
     @ManagedAttribute("temp directory for use, null if no user set temp directory")
     public File getTempDir()
     {
-        return _tempDirectory;
+        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
+        return tmpDir == null ? null : new File(tmpDir);
     }
 
-    protected void initializeWebAppContextDefaults(ContextHandler webapp)
+    protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
     {
-        if (_defaultsDescriptor != null)
-            webapp.setAttribute("defaultsDescriptor", _defaultsDescriptor);
-
-        if (_tempDirectory != null)
+        // find the ContextHandler
+        ContextHandler contextHandler;
+        if (context instanceof ContextHandler handler)
+            contextHandler = handler;
+        else if (Supplier.class.isAssignableFrom(context.getClass()))
         {
-            // TODO work out temp directory
-            // TODO set if the temp directory is persistent
-            webapp.setAttribute(Server.BASE_TEMP_DIR_ATTR, _tempDirectory);
+            @SuppressWarnings("unchecked")
+            Supplier<ContextHandler> provider = (Supplier<ContextHandler>)context;
+            contextHandler = provider.get();
         }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not a context {}", context);
+            
+            return null;
+        }
+
+        assert contextHandler != null;
+
+        initializeContextPath(contextHandler, path);
+
+        if (Files.isDirectory(path))
+            contextHandler.setBaseResource(Resource.newResource(path));
+
+        //TODO think of better way of doing this
+        //pass through properties as attributes directly
+        for (Map.Entry<String, String> prop : properties.entrySet())
+        {
+            String key = prop.getKey();
+            String value = prop.getValue();
+            if (key.startsWith(Deployable.ATTRIBUTE_PREFIX))
+                contextHandler.setAttribute(key.substring(Deployable.ATTRIBUTE_PREFIX.length()), value);
+        }
+
+        String contextPath = properties.get(Deployable.CONTEXT_PATH);
+        if (StringUtil.isNotBlank(contextPath))
+            contextHandler.setContextPath(contextPath);
+
+        if (context instanceof Deployable deployable)
+            deployable.initializeDefaults(properties);
+
+        return contextHandler;
     }
 
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Environment environment = Environment.get(app.getEnvironment());
+        Environment environment = Environment.get(app.getEnvironmentName());
 
         if (LOG.isDebugEnabled())
             LOG.debug("createContextHandler {} in {}", app, environment);
@@ -295,52 +342,32 @@ public class ContextProvider extends ScanningAppProvider
         {
             Thread.currentThread().setContextClassLoader(environment.getClassLoader());
 
-            Resource resource = Resource.newResource(app.getFilename());
-            if (!resource.exists())
-                throw new IllegalStateException("App resource does not exist " + resource);
-            resource = unpack(resource); // TODO move unpacking to below.
-
-            File file = resource.getFile();
+            // Create de-aliased file
+            Path path = app.getPath().toRealPath().toAbsolutePath().toFile().getCanonicalFile().toPath();
+            if (!Files.exists(path))
+                throw new IllegalStateException("App resource does not exist " + path);
 
 
-            final String contextName = file.getName();
-
-            // Resource aliases (after getting name) to ensure baseResource is not an alias
-            if (resource.isAlias())
-            {
-                file = new File(resource.getAlias()).toPath().toRealPath().toFile();
-                resource = Resource.newResource(file);
-                if (!resource.exists())
-                    throw new IllegalStateException("App resource does not exist " + resource);
-            }
+            // prepare properties
+            Map<String, String> properties = new HashMap<>();
+            properties.putAll(getProperties());
+            properties.putAll(app.getProperties());
 
             // Handle a context XML file
-            if (resource.exists() && FileID.isXmlFile(file))
+            if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(resource)
+                XmlConfiguration xmlc = new XmlConfiguration(path, null, properties)
                 {
                     @Override
                     public void initializeDefaults(Object context)
                     {
                         super.initializeDefaults(context);
-
-                        // If the XML created object is a ContextHandler
-                        if (context instanceof ContextHandler contextHandler)
-                        {
-                            initializeWebAppContextDefaults(contextHandler);
-                            initializeContextPath(contextHandler, contextName, true);
-
-                            // TODO look for associated WAR file or directory
-                            // TODO if it is a WAR file, then perhaps unpack it
-                            // TODO set as default baseResource
-                        }
+                        ContextProvider.this.initializeContextHandler(context, path, properties);
                     }
                 };
 
                 xmlc.getIdMap().put("Environment", environment);
-                getDeploymentManager().scope(xmlc, resource);
-                if (getConfigurationManager() != null)
-                    xmlc.getProperties().putAll(getConfigurationManager().getProperties());
+                xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
                 Object context = xmlc.configure();
                 if (context instanceof ContextHandler contextHandler)
@@ -354,37 +381,22 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("Unknown context type of " + context);
             }
             // Otherwise it must be a directory or an archive
-            else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
+            else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
             {
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
             }
 
             // Build the web application
-            @SuppressWarnings("unchecked")
             String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
             if (StringUtil.isBlank(contextHandlerClassName))
                 throw new IllegalStateException("No ContextHandler classname for " + app);
             Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
             if (contextHandlerClass == null)
                 throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
-            ContextHandler contextHandler;
-            if (Supplier.class.isAssignableFrom(contextHandlerClass))
-            {
-                @SuppressWarnings("unchecked")
-                Supplier<ContextHandler> provider = (Supplier<ContextHandler>)contextHandlerClass.getDeclaredConstructor().newInstance();
-                contextHandler = provider.get();
-            }
-            else
-            {
-                contextHandler = (ContextHandler)contextHandlerClass.getDeclaredConstructor().newInstance();
-            }
-            initializeWebAppContextDefaults(contextHandler);
-            initializeContextPath(contextHandler, contextName, !file.isDirectory());
 
-            // TODO unpack here (after temp directory is known)
-            contextHandler.setBaseResource(Resource.newResource(file.getAbsoluteFile()));
-
-            return contextHandler;
+            Object context = contextHandlerClass.getDeclaredConstructor().newInstance();
+            properties.put(Deployable.WAR, path.toString());
+            return initializeContextHandler(context, path, properties);
         }
         finally
         {
@@ -392,17 +404,11 @@ public class ContextProvider extends ScanningAppProvider
         }
     }
 
-    protected void initializeContextPath(ContextHandler context, String contextName, boolean stripExtension)
+    protected void initializeContextPath(ContextHandler context, Path path)
     {
-        String contextPath = contextName;
-
         // Strip any 3 char extension from non directories
-        if (stripExtension && contextPath.length() > 4 && contextPath.charAt(contextPath.length() - 4) == '.')
-            contextPath = contextPath.substring(0, contextPath.length() - 4);
-
-        // Ensure "/" is Not Trailing in context paths.
-        if (contextPath.endsWith("/") && contextPath.length() > 1)
-            contextPath = contextPath.substring(0, contextPath.length() - 1);
+        String basename = FileID.getBasename(path);
+        String contextPath = basename;
 
         // special case of archive (or dir) named "root" is / context
         if (contextPath.equalsIgnoreCase("root"))
@@ -423,233 +429,54 @@ public class ContextProvider extends ScanningAppProvider
             contextPath = "/" + contextPath;
 
         // Set the display name and context Path
-        context.setDisplayName(contextName);
+        context.setDisplayName(basename);
         context.setContextPath(contextPath);
     }
 
-    @Override
-    protected void fileChanged(String filename) throws Exception
+    protected boolean isDeployable(Path path)
     {
-        File file = new File(filename);
-        if (!file.exists())
-            return;
+        String basename = FileID.getBasename(path);
 
-        File parent = file.getParentFile();
-
-        //is the file that changed a directory? 
-        if (file.isDirectory())
+        //is the file that changed a directory?
+        if (Files.isDirectory(path))
         {
-            //is there a .xml file of the same name?
-            if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-                return; //ignore it
-
-            //is there .war file of the same name?
-            if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-                return; //ignore it
-
-            super.fileChanged(filename);
-            return;
+            // deploy if there is not a .xml or .war file of the same basename?
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
+                !Files.exists(path.getParent().resolve(basename + ".XML")) &&
+                !Files.exists(path.getParent().resolve(basename + ".war")) &&
+                !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        //is the file that changed a .war file?
-        if (lowname.endsWith(".war"))
+        // deploy if there is not a .war for of the same basename
+        if (FileID.isWebArchive(path))
         {
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            String xmlname = base + ".xml";
-            if (exists(xmlname))
-            {
-                //if a .xml file exists for it, then redeploy that instead
-                File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getPath());
-                return;
-            }
-
-            xmlname = base + ".XML";
-            if (exists(xmlname))
-            {
-                //if a .XML file exists for it, then redeploy that instead
-                File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getPath());
-                return;
-            }
-
-            //redeploy the changed war
-            super.fileChanged(filename);
-            return;
+            // if a .xml file exists for it
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
+                !Files.exists(path.getParent().resolve(basename + ".XML"));
         }
 
-        //is the file that changed a .xml file?
-        if (lowname.endsWith(".xml"))
-            super.fileChanged(filename);
+        // otherwise only deploy an XML
+        return FileID.isXml(path);
     }
 
     @Override
-    protected void fileAdded(String filename) throws Exception
+    protected void pathChanged(Path path) throws Exception
     {
-        File file = new File(filename);
-        if (!file.exists())
-            return;
-
-        //is the file that was added a directory? 
-        if (file.isDirectory())
-        {
-            //is there a .xml file of the same name?
-            if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-                return; //assume we will get added events for the xml file
-
-            //is there .war file of the same name?
-            if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-                return; //assume we will get added events for the war file
-
-            //is there .jar file of the same name?
-            if (exists(file.getName() + ".jar") || exists(file.getName() + ".JAR"))
-                return; //assume we will get added events for the jar file
-
-            super.fileAdded(filename);
-            return;
-        }
-
-        //is the file that was added a .war file?
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        if (lowname.endsWith(".war"))
-        {
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            //is there a .xml file of the same name?
-            if (exists(base + ".xml") || exists(base + ".XML"))
-                return; //ignore it as we should get addition of the xml file
-
-            super.fileAdded(filename);
-            return;
-        }
-
-        //is the file that was added an .xml file?
-        if (lowname.endsWith(".xml"))
-            super.fileAdded(filename);
+        if (Files.exists(path) && isDeployable(path))
+            super.pathChanged(path);
     }
 
     @Override
-    protected void fileRemoved(String filename) throws Exception
+    protected void pathAdded(Path path) throws Exception
     {
-        File file = new File(filename);
-
-        //is the file that was removed a .war file?
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        if (lowname.endsWith(".war"))
-        {
-            //is there a .xml file of the same name?
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            if (exists(base + ".xml") || exists(base + ".XML"))
-                return; //ignore it as we should get removal of the xml file
-
-            super.fileRemoved(filename);
-            return;
-        }
-
-        //is the file that was removed an .xml file?
-        if (lowname.endsWith(".xml"))
-        {
-            super.fileRemoved(filename);
-            return;
-        }
-
-        //is there a .xml file of the same name?
-        if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-            return; //assume we will get removed events for the xml file
-
-        //is there .war file of the same name?
-        if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-            return; //assume we will get removed events for the war file
-
-        super.fileRemoved(filename);
+        if (Files.exists(path) && isDeployable(path))
+            super.pathAdded(path);
     }
 
-    public Resource unpack(Resource resourceBase) throws IOException
+    @Override
+    protected void pathRemoved(Path path) throws Exception
     {
-        // Accept aliases for WAR files
-        if (resourceBase.isAlias())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} anti-aliased to {}", resourceBase, resourceBase.getAlias());
-            URI alias = resourceBase.getAlias();
-            resourceBase.close();
-            resourceBase = Resource.newResource(alias);
-        }
-
-        if (!isExtract() || resourceBase.isDirectory() || resourceBase.getFile() == null)
-            return resourceBase;
-
-        // is the extension a known extension
-        if (!resourceBase.getFile().getName().toLowerCase().endsWith(".war") &&
-            !resourceBase.getFile().getName().toLowerCase().endsWith(".jar"))
-            return resourceBase;
-
-        // Track the original web_app Resource, as this could be a PathResource.
-        // Later steps force the Resource to be a JarFileResource, which introduces
-        // URLConnection caches in such a way that it prevents Hot Redeployment
-        // on MS Windows.
-        Resource originalResource = resourceBase;
-
-        // Look for unpacked directory
-        Path path = resourceBase.getPath();
-        String name = path.getName(path.getNameCount() - 1).toString();
-        name = name.substring(0, name.length() - 4);
-        Path directory = path.getParent(); // TODO support unpacking to temp or work directory
-        File unpacked = directory.resolve(name).toFile();
-        File extractLock = directory.resolve(".extract_lock").toFile();
-
-        if (!Files.isWritable(directory))
-        {
-            LOG.warn("!Writable {} -> {}", resourceBase, directory);
-            return resourceBase;
-        }
-
-        // Does the directory already exist and is newer than the packed file?
-        if (unpacked.exists())
-        {
-            // If it is not a directory, then we can't unpack
-            if (!unpacked.isDirectory())
-            {
-                LOG.warn("Unusable {} -> {}", resourceBase, unpacked);
-                return resourceBase;
-            }
-
-            // If it is newer than the resource base and there is no partial extraction, then use it.
-            if (Files.getLastModifiedTime(directory).toMillis() >= resourceBase.lastModified() && !extractLock.exists())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Reuse {} -> {}", resourceBase, unpacked);
-                resourceBase.close();
-                return Resource.newResource(unpacked);
-            }
-
-            extractLock.createNewFile();
-            IO.delete(unpacked);
-        }
-        else
-        {
-            extractLock.createNewFile();
-        }
-
-        if (!unpacked.mkdir())
-        {
-            LOG.warn("Cannot Create {} -> {}", resourceBase, unpacked);
-            extractLock.delete();
-            return resourceBase;
-        }
-
-        LOG.debug("Unpack {} -> {}", resourceBase, unpacked);
-        try (Resource jar = JarResource.newJarResource(resourceBase))
-        {
-            jar.copyTo(unpacked);
-        }
-
-        extractLock.delete();
-        resourceBase.close();
-
-        return Resource.newResource(unpacked);
+        if (isDeployable(path))
+            super.pathRemoved(path);
     }
 }

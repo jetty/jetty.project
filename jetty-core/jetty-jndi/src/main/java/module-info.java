@@ -18,14 +18,11 @@ module org.eclipse.jetty.jndi
     requires transitive java.naming;
     requires transitive org.eclipse.jetty.server;
 
-    // Only required if using MailSessionReference.
-    // requires static jakarta.mail;
     // Only required if using DataSourceCloser.
     requires static java.sql;
     // requires static org.eclipse.jetty.security;
 
     exports org.eclipse.jetty.jndi;
-    exports org.eclipse.jetty.jndi.factories;
     exports org.eclipse.jetty.jndi.java;
     exports org.eclipse.jetty.jndi.local;
 }

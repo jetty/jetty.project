@@ -19,6 +19,7 @@ lib/jetty-server-${jetty.version}.jar
 lib/jetty-xml-${jetty.version}.jar
 lib/jetty-util-${jetty.version}.jar
 lib/jetty-io-${jetty.version}.jar
+lib/jetty-ee-${jetty.version}.jar
 
 [xml]
 etc/jetty.xml

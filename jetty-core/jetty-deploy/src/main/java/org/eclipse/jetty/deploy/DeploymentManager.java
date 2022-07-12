@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,19 +31,18 @@ import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.Path;
+import org.eclipse.jetty.deploy.graph.Route;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,10 +124,25 @@ public class DeploymentManager extends ContainerLifeCycle
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
-    private Attributes.Mapped _contextAttributes = new Attributes.Mapped();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
+
+    /**
+     * Get the default {@link Environment} name for deployed applications.
+     * @return The name of environment known to the {@link AppProvider}s returned from
+     * {@link #getAppProviders()} that matches {@link Deployable#EE_ENVIRONMENT_NAME}.
+     * If multiple names match, then the maximal name, according to {@link Deployable#EE_ENVIRONMENT_COMPARATOR}
+     * is returned.
+     */
+    public String getDefaultEnvironmentName()
+    {
+        return _providers.stream()
+            .map(AppProvider::getEnvironmentName)
+            .filter(Deployable.EE_ENVIRONMENT_NAME)
+            .max(Deployable.EE_ENVIRONMENT_COMPARATOR)
+            .orElse(null);
+    }
 
     /**
      * Receive an app for processing.
@@ -139,7 +153,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void addApp(App app)
     {
-        LOG.debug("Deployable added: {}", app.getFilename());
+        LOG.info("addApp: {}", app);
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -273,16 +287,28 @@ public class DeploymentManager extends ContainerLifeCycle
         super.doStop();
     }
 
-    private AppEntry findAppByOriginId(String originId)
+    private AppEntry findApp(String appId)
     {
-        if (originId == null)
-        {
+        if (appId == null)
             return null;
-        }
 
         for (AppEntry entry : _apps)
         {
-            if (originId.equals(entry.app.getFilename()))
+            Path path = entry.app.getPath();
+            if (appId.equals(path.getName(path.getNameCount() - 1).toString()))
+                return entry;
+        }
+        return null;
+    }
+
+    private AppEntry findApp(Path path)
+    {
+        if (path == null)
+            return null;
+
+        for (AppEntry entry : _apps)
+        {
+            if (path.equals(entry.app.getPath()))
             {
                 return entry;
             }
@@ -290,13 +316,17 @@ public class DeploymentManager extends ContainerLifeCycle
         return null;
     }
 
-    public App getAppByOriginId(String originId)
+    public App getApp(String appId)
     {
-        AppEntry entry = findAppByOriginId(originId);
+        AppEntry entry = findApp(appId);
+        return entry == null ? null : entry.getApp();
+    }
+
+    public App getApp(Path path)
+    {
+        AppEntry entry = findApp(path);
         if (entry == null)
-        {
             return null;
-        }
         return entry.app;
     }
 
@@ -373,22 +403,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return ret;
     }
 
-    /**
-     * Get a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name context attribute name
-     * @return the context attribute value
-     */
-    public Object getContextAttribute(String name)
-    {
-        return _contextAttributes.getAttribute(name);
-    }
-
-    public Attributes.Mapped getContextAttributes()
-    {
-        return _contextAttributes;
-    }
-
     @ManagedAttribute("Deployed Contexts")
     public ContextHandlerCollection getContexts()
     {
@@ -421,6 +435,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void removeApp(App app)
     {
+        LOG.info("removeApp: {}", app);
         Iterator<AppEntry> it = _apps.iterator();
         while (it.hasNext())
         {
@@ -430,7 +445,6 @@ public class DeploymentManager extends ContainerLifeCycle
                 if (!AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
                     requestAppGoal(entry.app, AppLifeCycle.UNDEPLOYED);
                 it.remove();
-                LOG.debug("Deployable removed: {}", entry.app);
             }
         }
     }
@@ -451,16 +465,6 @@ public class DeploymentManager extends ContainerLifeCycle
     }
 
     /**
-     * Remove a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name the context attribute name
-     */
-    public void removeContextAttribute(String name)
-    {
-        _contextAttributes.removeAttribute(name);
-    }
-
-    /**
      * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
      *
@@ -469,7 +473,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void requestAppGoal(App app, String nodeName)
     {
-        AppEntry appentry = findAppByOriginId(app.getFilename());
+        AppEntry appentry = findApp(app.getPath());
         if (appentry == null)
         {
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
@@ -493,7 +497,7 @@ public class DeploymentManager extends ContainerLifeCycle
             throw new IllegalStateException("Node not present in Deployment Manager: " + nodeName);
         }
         // Compute lifecycle steps
-        Path path = _lifecycle.getPath(appentry.lifecyleNode, destinationNode);
+        Route path = _lifecycle.getPath(appentry.lifecyleNode, destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.
@@ -563,29 +567,12 @@ public class DeploymentManager extends ContainerLifeCycle
     @ManagedOperation(value = "request the app to be moved to the specified lifecycle node", impact = "ACTION")
     public void requestAppGoal(@Name("appId") String appId, @Name("nodeName") String nodeName)
     {
-        AppEntry appentry = findAppByOriginId(appId);
+        AppEntry appentry = findApp(appId);
         if (appentry == null)
         {
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
         }
         requestAppGoal(appentry, nodeName);
-    }
-
-    /**
-     * Set a contextAttribute that will be set for every Context deployed by this provider.
-     *
-     * @param name the context attribute name
-     * @param value the context attribute value
-     */
-    public void setContextAttribute(String name, Object value)
-    {
-        _contextAttributes.setAttribute(name, value);
-    }
-
-    public void setContextAttributes(Attributes contextAttributes)
-    {
-        this._contextAttributes.clearAttributes();
-        this._contextAttributes.addAll(contextAttributes);
     }
 
     public void setContexts(ContextHandlerCollection contexts)
@@ -633,11 +620,5 @@ public class DeploymentManager extends ContainerLifeCycle
     public Collection<Node> getNodes()
     {
         return _lifecycle.getNodes();
-    }
-
-    public void scope(XmlConfiguration xmlc, Resource webapp)
-        throws IOException
-    {
-        xmlc.setJettyStandardIdsAndProperties(getServer(), webapp);
     }
 }

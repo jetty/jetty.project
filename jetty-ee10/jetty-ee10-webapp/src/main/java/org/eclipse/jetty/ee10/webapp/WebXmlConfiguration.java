@@ -15,8 +15,11 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,8 @@ import org.slf4j.LoggerFactory;
 public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
+
+    private Resource.Mount _mount;
 
     public WebXmlConfiguration()
     {
@@ -43,12 +48,27 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
+            Resource dftResource = Resource.newSystemResource(defaultsDescriptor, mount -> _mount = mount);
             if (dftResource == null)
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
                 if (defaultsDescriptor.startsWith(pkg))
-                    dftResource = Resource.newResource(WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length())));
+                {
+                    URL url = WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length()));
+                    if (url != null)
+                    {
+                        URI resource = url.toURI();
+                        if (resource.getScheme().equalsIgnoreCase("jar"))
+                        {
+                            _mount = Resource.mount(resource);
+                            dftResource = _mount.root();
+                        }
+                        else
+                        {
+                            dftResource = Resource.newResource(resource);
+                        }
+                    }
+                }
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
@@ -100,7 +120,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // do web.xml file
-            Resource web = webInf.addPath("web.xml");
+            Resource web = webInf.resolve("web.xml");
             if (web.exists())
                 return web;
             if (LOG.isDebugEnabled())
@@ -117,6 +137,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
         //TODO: ErrorPageErorrHandler is not an ErrorProcessor
         if (context.getErrorProcessor() instanceof ErrorPageErrorHandler errorPageErrorHandler) 
             errorPageErrorHandler.setErrorPages(null);
+
+        IO.close(_mount);
+        _mount = null;
 
         // TODO remove classpaths from classloader
     }

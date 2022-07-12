@@ -15,9 +15,9 @@ package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -102,11 +102,11 @@ public class WebAppPropertyConverter
         props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isPersistTempDirectory()));
 
         //send over the calculated resource bases that includes unpacked overlays
-        Resource baseResource = webApp.getBaseResource();
+        Resource baseResource = webApp.getResourceBase();
         if (baseResource instanceof ResourceCollection)
-            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
+            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getResourceBase()).getResources()));
         else if (baseResource instanceof Resource)
-            props.put(BASE_DIRS, webApp.getBaseResource().toString());
+            props.put(BASE_DIRS, webApp.getResourceBase().toString());
         
         //if there is a war file, use that
         if (webApp.getWar() != null)
@@ -171,7 +171,7 @@ public class WebAppPropertyConverter
         if (resource == null)
             throw new IllegalStateException("No resource");
 
-        fromProperties(webApp, Resource.newResource(resource).getFile(), server, jettyProperties);
+        fromProperties(webApp, Resource.newResource(resource).getPath(), server, jettyProperties);
     }
 
     /**
@@ -224,8 +224,7 @@ public class WebAppPropertyConverter
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setWar(null);
-            //TODO: needs WebAppContext.setResourceBase sorted out
-            //webApp.setBaseResource(bases);
+            webApp.setBaseResource(bases);
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
@@ -309,18 +308,18 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String, String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, Path propsFile, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
 
         if (propsFile == null)
             throw new IllegalArgumentException("No properties file");
-        
-        if (!propsFile.exists())
-            throw new IllegalArgumentException(propsFile.getCanonicalPath() + " does not exist");
-        
+
+        if (!Files.exists(propsFile))
+            throw new IllegalArgumentException(propsFile + " does not exist");
+
         Properties props = new Properties();
-        try (InputStream in = new FileInputStream(propsFile))
+        try (InputStream in = Files.newInputStream(propsFile))
         {
             props.load(in);
         }

@@ -101,6 +101,43 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
     }
 
+    private static class StoppingTask implements Runnable
+    {
+        private final CountDownLatch _running;
+        private final CountDownLatch _blocked;
+        private final QueuedThreadPool _tp;
+        Thread _thread;
+        CountDownLatch _completed = new CountDownLatch(1);
+
+        public StoppingTask(CountDownLatch running, CountDownLatch blocked, QueuedThreadPool tp)
+        {
+            _running = running;
+            _blocked = blocked;
+            _tp = tp;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                _thread = Thread.currentThread();
+                _running.countDown();
+                _blocked.await();
+                _tp.doStop();
+                _completed.countDown();
+            }
+            catch (InterruptedException x)
+            {
+                x.printStackTrace();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     private class RunningJob implements Runnable
     {
         final CountDownLatch _run = new CountDownLatch(1);
@@ -945,6 +982,49 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             leasedJobs.forEach(job -> job._stopping.countDown());
             tp.stop();
         }
+    }
+
+    @Test
+    public void testInterruptedStop() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool();
+        tp.setStopTimeout(1000);
+        tp.start();
+
+        CountDownLatch running = new CountDownLatch(3);
+        CountDownLatch blocked = new CountDownLatch(1);
+        CountDownLatch forever = new CountDownLatch(2);
+        CountDownLatch interrupted = new CountDownLatch(1);
+
+        Runnable runForever = () ->
+        {
+            try
+            {
+                running.countDown();
+                forever.await();
+            }
+            catch (InterruptedException x)
+            {
+                interrupted.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        };
+
+        StoppingTask stopping = new StoppingTask(running, blocked, tp);
+
+        tp.execute(runForever);
+        tp.execute(stopping);
+        tp.execute(runForever);
+
+        assertTrue(running.await(5, TimeUnit.SECONDS));
+        blocked.countDown();
+        Thread.sleep(100); // wait until in doStop, then....
+        stopping._thread.interrupt(); // spurious interrupt
+        assertTrue(interrupted.await(5, TimeUnit.SECONDS));
+        assertTrue(stopping._completed.await(5, TimeUnit.SECONDS));
     }
 
     private int count(String s, String p)

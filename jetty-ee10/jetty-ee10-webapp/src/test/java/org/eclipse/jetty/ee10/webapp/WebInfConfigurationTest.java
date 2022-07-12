@@ -20,7 +20,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,7 +90,7 @@ public class WebInfConfigurationTest
             FS.touch(base);
         }
 
-        Resource resource = new PathResource(base);
+        Resource resource = Resource.newResource(base);
         assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
     }
 }

@@ -14,9 +14,10 @@
 package org.eclipse.jetty.ee9.security;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.JarFileResource;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -90,16 +89,21 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
         try
         {
-            Resource configResource = Resource.newResource(config);
-
-            if (configResource instanceof JarFileResource)
-                _configPath = extractPackedFile((JarFileResource)configResource);
-            else if (configResource instanceof PathResource)
-                _configPath = ((PathResource)configResource).getPath();
-            else if (configResource.getFile() != null)
-                setConfigFile(configResource.getFile());
+            if (config.toLowerCase().startsWith("jar:"))
+            {
+                try (Resource.Mount mount = Resource.mount(URI.create(config)))
+                {
+                    Resource configResource = mount.root();
+                    _configPath = extractPackedFile(configResource);
+                }
+            }
             else
-                throw new IllegalArgumentException(config);
+            {
+                Path configPath = Resource.newResource(config).getPath();
+                if (configPath == null)
+                    throw new IllegalArgumentException(config);
+                _configPath = configPath;
+            }
         }
         catch (Exception e)
         {
@@ -118,7 +122,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         return _configPath;
     }
 
-    private Path extractPackedFile(JarFileResource configResource) throws IOException
+    private Path extractPackedFile(Resource configResource) throws IOException
     {
         String uri = configResource.getURI().toASCIIString();
         int colon = uri.lastIndexOf(":");
@@ -133,7 +137,11 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
         Files.deleteIfExists(extractedPath);
         extractedPath.toFile().deleteOnExit();
-        IO.copy(configResource.getInputStream(), new FileOutputStream(extractedPath.toFile()));
+        try (InputStream is = Files.newInputStream(configResource.getPath());
+             OutputStream os = Files.newOutputStream(extractedPath))
+        {
+            IO.copy(is, os);
+        }
         if (isHotReload())
         {
             LOG.warn("Cannot hot reload from packed configuration: {}", configResource);
@@ -172,7 +180,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         if (_configPath == null)
             return null;
-        return new PathResource(_configPath);
+        return Resource.newResource(_configPath);
     }
 
     /**

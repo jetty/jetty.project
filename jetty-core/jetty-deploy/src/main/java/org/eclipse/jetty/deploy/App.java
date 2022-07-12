@@ -13,36 +13,60 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Attributes;
 
 /**
- * The information about an App that is managed by the {@link DeploymentManager}
+ * The information about an App that is managed by the {@link DeploymentManager}.
  */
 public class App
 {
     private final DeploymentManager _manager;
     private final AppProvider _provider;
-    private final String _environment;
-    private final String _filename;
+    private final Path _path;
+    private final Map<String, String> _properties = new HashMap<>();
     private ContextHandler _context;
 
     /**
      * Create an App with specified Origin ID and archivePath
-     *
+     * <p>
+     * Any properties file that exists with the same {@link FileID#getBasename(Path)} as the
+     * filename passed will be used to initialize the properties returned by {@link #getProperties()}.
      * @param manager the deployment manager
      * @param provider the app provider
-     * @param environment the name of the environment or null for the server environment.
-     * @param filename the filename of the base resource of the application
+     * @param path the path to the application directory, war file or XML descriptor
      * @see App#getFilename()
      * @see App#getContextPath()
      */
-    public App(DeploymentManager manager, AppProvider provider, String environment, String filename)
+    public App(DeploymentManager manager, AppProvider provider, Path path)
     {
         _manager = manager;
         _provider = provider;
-        _environment = environment;
-        _filename = filename;
+        _path = path;
+
+        try
+        {
+            String basename = FileID.getBasename(path);
+            Path properties = path.getParent().resolve(basename + ".properties");
+            if (Files.exists(properties))
+            {
+                Properties p = new Properties();
+                p.load(new FileInputStream(properties.toFile()));
+                p.keySet().stream().map(Object::toString).forEach(k -> _properties.put(k, p.getProperty(k)));
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -61,6 +85,11 @@ public class App
         return _provider;
     }
 
+    public Map<String, String> getProperties()
+    {
+        return _properties;
+    }
+
     /**
      * Get ContextHandler for the App.
      *
@@ -74,36 +103,8 @@ public class App
     public ContextHandler getContextHandler() throws Exception
     {
         if (_context == null)
-        {
             _context = getAppProvider().createContextHandler(this);
-
-            Attributes.Mapped attributes = _manager.getContextAttributes();
-            if (attributes != null && attributes.size() > 0)
-            {
-                // Merge the manager attributes under the existing attributes
-                for (String name : attributes.getAttributeNameSet())
-                {
-                    _context.setAttribute(name, attributes.getAttribute(name));
-                }
-            }
-        }
         return _context;
-    }
-
-    /**
-     * The context path {@link App} relating to how it is installed on the
-     * jetty server side.
-     *
-     * NOTE that although the method name indicates that this is a unique
-     * identifier, it is not, as many contexts may have the same contextPath,
-     * yet different virtual hosts.
-     *
-     * @return the context path for the App
-     * @deprecated Use getContextPath instead.
-     */
-    public String getContextId()
-    {
-        return getContextPath();
     }
 
     /**
@@ -117,9 +118,14 @@ public class App
         return _context == null ? null : _context.getContextPath();
     }
 
-    public String getEnvironment()
+    /**
+     * Get the environment name.
+     * @return The {@link org.eclipse.jetty.util.component.Environment} name for the application
+     * if set with the {@link Deployable#ENVIRONMENT} property, else null.
+     */
+    public String getEnvironmentName()
     {
-        return _environment;
+        return getProperties().get(Deployable.ENVIRONMENT);
     }
 
     /**
@@ -127,14 +133,14 @@ public class App
      *
      * @return String representing the origin of this app.
      */
-    public String getFilename()
+    public Path getPath()
     {
-        return this._filename;
+        return _path;
     }
 
     @Override
     public String toString()
     {
-        return "App[" + _context + "," + _filename + "]";
+        return "App@%x[%s,%s,%s]".formatted(hashCode(), getEnvironmentName(), _context, _path);
     }
 }

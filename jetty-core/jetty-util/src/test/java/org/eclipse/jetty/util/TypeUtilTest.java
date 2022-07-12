@@ -162,7 +162,7 @@ public class TypeUtilTest
 
         // Classes from maven dependencies
         Resource resource = Resource.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
-        assertThat(resource.getFile().getCanonicalPath(), Matchers.startsWith(mavenRepoPath.toFile().getCanonicalPath()));
+        assertThat(resource.getPath().toString(), Matchers.startsWith(mavenRepoPath.toString()));
     }
 
     @Test

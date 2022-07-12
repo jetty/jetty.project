@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * EmptyResource
@@ -37,11 +38,6 @@ public class EmptyResource extends Resource
     public boolean isContainedIn(Resource r) throws MalformedURLException
     {
         return false;
-    }
-
-    @Override
-    public void close()
-    {
     }
 
     @Override
@@ -75,7 +71,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public File getFile() throws IOException
+    public Path getPath()
     {
         return null;
     }
@@ -111,13 +107,13 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public String[] list()
+    public List<String> list()
     {
         return null;
     }
 
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource resolve(String subUriPath) throws IOException
     {
         return this;
     }

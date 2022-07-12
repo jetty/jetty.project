@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -577,10 +579,14 @@ public class BufferUtil
 
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
-        try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
+        readFrom(file.toPath(), buffer);
+    }
+
+    public static void readFrom(Path path, ByteBuffer buffer) throws IOException
+    {
+        try (SeekableByteChannel channel = Files.newByteChannel(path))
         {
-            FileChannel channel = raf.getChannel();
-            long needed = raf.length();
+            long needed = Files.size(path);
 
             while (needed > 0 && buffer.hasRemaining())
             {
@@ -1019,8 +1025,8 @@ public class BufferUtil
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
         int pos = BufferUtil.flipToFill(buffer);
-        if (resource.getFile() != null)
-            BufferUtil.readFrom(resource.getFile(), buffer);
+        if (resource.getPath() != null)
+            BufferUtil.readFrom(resource.getPath(), buffer);
         else
         {
             try (InputStream is = resource.getInputStream();)
@@ -1052,6 +1058,11 @@ public class BufferUtil
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
         return toMappedBuffer(file.toPath(), 0, file.length());
+    }
+
+    public static ByteBuffer toMappedBuffer(Path path) throws IOException
+    {
+        return toMappedBuffer(path, 0, Files.size(path));
     }
 
     public static ByteBuffer toMappedBuffer(Path filePath, long pos, long len) throws IOException

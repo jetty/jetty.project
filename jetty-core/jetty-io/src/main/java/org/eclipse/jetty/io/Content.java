@@ -19,8 +19,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
@@ -32,7 +34,7 @@ import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
-import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -127,7 +129,7 @@ public class Content
          * @param source the source to read
          * @param promise the promise to notify when the whole content has been read into a ByteBuffer.
          */
-        public static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
+        static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
         {
             new ContentSourceByteBuffer(source, promise).run();
         }
@@ -139,7 +141,7 @@ public class Content
          * @return the ByteBuffer containing the content
          * @throws IOException if reading the content fails
          */
-        public static ByteBuffer asByteBuffer(Source source) throws IOException
+        static ByteBuffer asByteBuffer(Source source) throws IOException
         {
             try
             {
@@ -161,7 +163,7 @@ public class Content
          * @param charset the charset to use to convert the bytes into characters
          * @param promise the promise to notify when the whole content has been converted into a String
          */
-        public static void asString(Source source, Charset charset, Promise<String> promise)
+        static void asString(Source source, Charset charset, Promise<String> promise)
         {
             new ContentSourceString(source, charset, promise).convert();
         }
@@ -174,7 +176,7 @@ public class Content
          * @return the String obtained from the content
          * @throws IOException if reading the content fails
          */
-        public static String asString(Source source) throws IOException
+        static String asString(Source source) throws IOException
         {
             try
             {
@@ -194,7 +196,7 @@ public class Content
          * @param source the source to read from
          * @return an InputStream that reads from the content source
          */
-        public static InputStream asInputStream(Source source)
+        static InputStream asInputStream(Source source)
         {
             return new ContentSourceInputStream(source);
         }
@@ -205,7 +207,7 @@ public class Content
          * @param source the source to read from
          * @return a Publisher that publishes chunks read from the content source
          */
-        public static Flow.Publisher<Chunk> asPublisher(Source source)
+        static Flow.Publisher<Chunk> asPublisher(Source source)
         {
             return new ContentSourcePublisher(source);
         }
@@ -218,7 +220,7 @@ public class Content
          * @param callback the callback to notify when the whole content has been read
          * or an error occurred while reading the content
          */
-        public static void consumeAll(Source source, Callback callback)
+        static void consumeAll(Source source, Callback callback)
         {
             new ContentSourceConsumer(source, callback).run();
         }
@@ -230,7 +232,7 @@ public class Content
          * @param source the source to read from
          * @throws IOException if reading the content fails
          */
-        public static void consumeAll(Source source) throws IOException
+        static void consumeAll(Source source) throws IOException
         {
             try
             {
@@ -247,7 +249,7 @@ public class Content
         /**
          * @return the content length, if known, or -1 if the content length is unknown
          */
-        public default long getLength()
+        default long getLength()
         {
             return -1;
         }
@@ -280,7 +282,7 @@ public class Content
          * @return a chunk of content, possibly an error instance, or {@code null}
          * @see #demand(Runnable)
          */
-        public Chunk read();
+        Chunk read();
 
         /**
          * <p>Demands to invoke the given demand callback parameter when a chunk of content is available.</p>
@@ -301,7 +303,7 @@ public class Content
          * @throws IllegalStateException when this method is called with an existing demand
          * @see #read()
          */
-        public void demand(Runnable demandCallback);
+        void demand(Runnable demandCallback);
 
         /**
          * <p>Fails this content source, possibly failing and discarding accumulated
@@ -313,7 +315,7 @@ public class Content
          *
          * @param failure the cause of the failure
          */
-        public void fail(Throwable failure);
+        void fail(Throwable failure);
 
         /**
          * <p>A wrapper of a nested source of content, that may transform the chunks obtained from
@@ -323,7 +325,7 @@ public class Content
          * <p>Implementations should override {@link #transform(Chunk)} with the transformation
          * logic.</p>
          */
-        public abstract static class Transformer extends ContentSourceTransformer
+        abstract class Transformer extends ContentSourceTransformer
         {
             public Transformer(Content.Source rawSource)
             {
@@ -362,7 +364,7 @@ public class Content
          * @param sink the sink to write to
          * @return an OutputStream that writes to the content sink
          */
-        public static OutputStream asOutputStream(Sink sink)
+        static OutputStream asOutputStream(Sink sink)
         {
             return new ContentSinkOutputStream(sink);
         }
@@ -374,7 +376,7 @@ public class Content
          * @param callback the callback to notify when the Subscriber is complete
          * @return a Subscriber that writes to the content sink
          */
-        public static Flow.Subscriber<Chunk> asSubscriber(Sink sink, Callback callback)
+        static Flow.Subscriber<Chunk> asSubscriber(Sink sink, Callback callback)
         {
             return new ContentSinkSubscriber(sink, callback);
         }
@@ -387,9 +389,9 @@ public class Content
          * @param byteBuffer the ByteBuffers to write
          * @throws IOException if the write operation fails
          */
-        public static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
+        static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
         {
-            try (Blocking.Callback callback = Blocking.callback())
+            try (Blocker.Callback callback = Blocker.callback())
             {
                 sink.write(last, byteBuffer, callback);
                 callback.block();
@@ -404,7 +406,7 @@ public class Content
          * @param utf8Content the String to write
          * @param callback the callback to notify when the write operation is complete
          */
-        public static void write(Sink sink, boolean last, String utf8Content, Callback callback)
+        static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
             sink.write(last, StandardCharsets.UTF_8.encode(utf8Content), callback);
         }
@@ -417,7 +419,7 @@ public class Content
          * @param byteBuffer the ByteBuffer to write
          * @param callback the callback to notify when the write operation is complete
          */
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+        void write(boolean last, ByteBuffer byteBuffer, Callback callback);
     }
 
     /**
@@ -431,11 +433,11 @@ public class Content
         /**
          * <p>An empty, non-last, chunk.</p>
          */
-        public static final Chunk EMPTY = ByteBufferChunk.EMPTY;
+        Chunk EMPTY = ByteBufferChunk.EMPTY;
         /**
          * <p>An empty, last, chunk.</p>
          */
-        public static final Content.Chunk EOF = ByteBufferChunk.EOF;
+        Content.Chunk EOF = ByteBufferChunk.EOF;
 
         /**
          * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
@@ -444,9 +446,9 @@ public class Content
          * @param last whether the Chunk is the last one
          * @return a new Chunk
          */
-        public static Chunk from(ByteBuffer byteBuffer, boolean last)
+        static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return from(byteBuffer, last, null);
+            return new ByteBufferChunk(byteBuffer, last);
         }
 
         /**
@@ -457,9 +459,22 @@ public class Content
          * @param releaser the code to run when this Chunk is released
          * @return a new Chunk
          */
-        public static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
+        static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return new ByteBufferChunk(byteBuffer, last, releaser);
+            return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+        }
+
+        /**
+         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         *
+         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
+         * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
+         * @return a new Chunk
+         */
+        static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
+        {
+            return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
         }
 
         /**
@@ -468,7 +483,7 @@ public class Content
          * @param failure the cause of the failure
          * @return a new Error.Chunk
          */
-        public static Error from(Throwable failure)
+        static Error from(Throwable failure)
         {
             return new Error(failure);
         }
@@ -502,7 +517,7 @@ public class Content
          * </tbody>
          * </table>
          */
-        public static Chunk next(Chunk chunk)
+        static Chunk next(Chunk chunk)
         {
             if (chunk == null || chunk instanceof Error)
                 return chunk;
@@ -514,22 +529,22 @@ public class Content
         /**
          * @return the ByteBuffer of this Chunk
          */
-        public ByteBuffer getByteBuffer();
+        ByteBuffer getByteBuffer();
 
         /**
          * @return whether this is the last Chunk
          */
-        public boolean isLast();
+        boolean isLast();
 
         /**
          * <p>Releases the resources associated to this Chunk.</p>
          */
-        public void release();
+        void release();
 
         /**
          * @return the number of bytes remaining in this Chunk
          */
-        public default int remaining()
+        default int remaining()
         {
             return getByteBuffer().remaining();
         }
@@ -537,7 +552,7 @@ public class Content
         /**
          * @return whether this Chunk has remaining bytes
          */
-        public default boolean hasRemaining()
+        default boolean hasRemaining()
         {
             return getByteBuffer().hasRemaining();
         }
@@ -550,7 +565,7 @@ public class Content
          * @param length the maximum number of bytes to copy
          * @return the number of bytes actually copied
          */
-        public default int get(byte[] bytes, int offset, int length)
+        default int get(byte[] bytes, int offset, int length)
         {
             ByteBuffer b = getByteBuffer();
             if (b == null || !b.hasRemaining())
@@ -566,7 +581,7 @@ public class Content
          * @param length the maximum number of bytes to skip
          * @return the number of bytes actually skipped
          */
-        public default int skip(int length)
+        default int skip(int length)
         {
             ByteBuffer byteBuffer = getByteBuffer();
             length = Math.min(byteBuffer.remaining(), length);
@@ -577,12 +592,12 @@ public class Content
         /**
          * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
          * <p>A terminal chunk is either an {@link Error error chunk},
-         * or a Chunk that {@link #isLast() is last} and has no remaining
+         * or a Chunk that {@link #isLast()} is true and has no remaining
          * bytes.</p>
          *
          * @return whether this Chunk is a terminal chunk
          */
-        public default boolean isTerminal()
+        default boolean isTerminal()
         {
             return this instanceof Error || isLast() && !hasRemaining();
         }
@@ -593,7 +608,7 @@ public class Content
          *
          * @see #from(Throwable)
          */
-        public static final class Error implements Chunk
+        final class Error implements Chunk
         {
             private final Throwable cause;
 

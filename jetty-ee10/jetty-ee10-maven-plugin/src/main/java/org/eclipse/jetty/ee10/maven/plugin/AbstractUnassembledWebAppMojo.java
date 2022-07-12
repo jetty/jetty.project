@@ -125,7 +125,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //The first time we run, remember the original base dir
         if (originalBaseResource == null)
         {
-            if (webApp.getBaseResource() == null)
+            if (webApp.getResourceBase() == null)
             {
                 //Use the default static resource location
                 if (!webAppSourceDirectory.exists())
@@ -133,14 +133,13 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 originalBaseResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
             }
             else
-                originalBaseResource = webApp.getBaseResource();
+                originalBaseResource = webApp.getResourceBase();
         }
 
         //On every subsequent re-run set it back to the original base dir before
         //we might have applied any war overlays onto it
         
-        //TODO: needs WebAppContext.setBaseResource sorted out
-        //webApp.setBaseResource(originalBaseResource);
+        webApp.setBaseResource(originalBaseResource);
 
         if (webApp.getWar() == null)
             webApp.setWar(originalBaseResource.getURI().toURL().toExternalForm());
@@ -167,7 +166,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
             {
-                Resource r = Resource.newResource(webXml);
+                Resource r = Resource.newResource(webXml.toPath());
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -175,9 +174,9 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }
 
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
-            if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
+            if (webApp.getDescriptor() == null && webApp.getResourceBase() != null)
             {
-                Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
+                Resource r = webApp.getResourceBase().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());

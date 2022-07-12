@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -198,7 +199,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final ServletContextApi _servletContext;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final Map<String, String> _initParams = new HashMap<>();
-    private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
@@ -655,19 +655,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             .toArray(String[]::new);
     }
 
-    /**
-     * Set the default context path.
-     * A default context path may be overriden by a default-context-path element
-     * in a web.xml
-     *
-     * @param contextPath The _contextPath to set.
-     */
-    public void setDefaultContextPath(String contextPath)
-    {
-        setContextPath(contextPath);
-        _contextPathDefault = true;
-    }
-
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -686,14 +673,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public String getDefaultResponseCharacterEncoding()
     {
         return _defaultResponseCharacterEncoding;
-    }
-
-    /**
-     * @return True if the current contextPath is from default settings
-     */
-    public boolean isContextPathDefault()
-    {
-        return _contextPathDefault;
     }
 
     /**
@@ -724,7 +703,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         super.setContextPath(contextPath);
         _contextPathEncoded = URIUtil.encodePath(contextPath);
-        _contextPathDefault = false;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
@@ -882,7 +860,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Resource resource = baseResource.resolve(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;
@@ -971,13 +949,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 if (!path.endsWith(URIUtil.SLASH))
                     path = path + URIUtil.SLASH;
 
-                String[] l = resource.list();
+                List<String> l = resource.list();
                 if (l != null)
                 {
                     HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.length; i++)
+                    for (int i = 0; i < l.size(); i++)
                     {
-                        set.add(path + l[i]);
+                        set.add(path + l.get(i));
                     }
                     return set;
                 }
@@ -3101,9 +3079,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 Resource resource = ServletContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    File file = resource.getFile();
-                    if (file != null)
-                        return file.getCanonicalPath();
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath != null)
+                        return resourcePath.normalize().toString();
                 }
             }
             catch (Exception e)

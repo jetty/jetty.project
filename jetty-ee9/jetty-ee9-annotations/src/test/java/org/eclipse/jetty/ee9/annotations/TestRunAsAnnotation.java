@@ -44,7 +44,7 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        Resource fakeXml = Resource.newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml"));
+        Resource fakeXml = Resource.newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml").toPath());
         wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(fakeXml));
         
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);

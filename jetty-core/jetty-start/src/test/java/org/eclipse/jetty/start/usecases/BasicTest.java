@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
@@ -34,10 +35,12 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BasicTest extends AbstractUseCase
 {
@@ -108,6 +111,59 @@ public class BasicTest extends AbstractUseCase
         assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(not(startsWith("file:"))));
         assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(results.baseHome.getBase()));
         assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(not(startsWith("file:"))));
+    }
+
+    @Test
+    public void testAddModuleDoesNotExist() throws Exception
+    {
+        setupDistHome();
+
+        Files.write(baseDir.resolve("start.ini"),
+            List.of(
+                "--module=main",
+                "--module=does-not-exist"
+            ),
+            StandardCharsets.UTF_8);
+
+        // === Execute Main
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        UsageException usage = assertThrows(UsageException.class, () ->
+        {
+            ExecResults results = exec(runArgs, true);
+            if (results.exception != null)
+            {
+                throw results.exception;
+            }
+        });
+        assertThat(usage.getMessage(), containsString("Unknown module=[does-not-exist]"));
+    }
+
+    @Test
+    public void testAddModuleDoesNotExistMultiple() throws Exception
+    {
+        setupDistHome();
+
+        Files.write(baseDir.resolve("start.ini"),
+            List.of(
+                "--module=main",
+                "--module=does-not-exist",
+                "--module=also-not-present"
+            ),
+            StandardCharsets.UTF_8);
+
+        // === Execute Main
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        UsageException usage = assertThrows(UsageException.class, () ->
+        {
+            ExecResults results = exec(runArgs, true);
+            if (results.exception != null)
+            {
+                throw results.exception;
+            }
+        });
+        assertThat(usage.getMessage(), containsString("Unknown modules=[does-not-exist, also-not-present]"));
     }
 
     @Test
@@ -204,8 +260,8 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("-Xmx1g");
 
         // Arbitrary Libs
-        Path extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar").toPath().toRealPath();
-        Path extraDir = MavenTestingUtils.getTestResourceDir("extra-resources").toPath().toRealPath();
+        Path extraJar = MavenTestingUtils.getTestResourcePathFile("extra-libs/example.jar").toRealPath();
+        Path extraDir = MavenTestingUtils.getTestResourcePathDir("extra-resources").toRealPath();
 
         assertThat("Extra Jar exists: " + extraJar, Files.exists(extraJar), is(true));
         assertThat("Extra Dir exists: " + extraDir, Files.exists(extraDir), is(true));

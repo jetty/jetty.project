@@ -90,7 +90,7 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
+        webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourcePathDir("root")));
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);
@@ -149,7 +149,7 @@ public class TestWebAppPropertyConverter
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
         assertThat(webApp.getBaseResource(), instanceOf(ResourceCollection.class));
-        assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base1).toString()));
-        assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base2).toString()));
+        assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base1.toPath()).toString()));
+        assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base2.toPath()).toString()));
     }
 }

@@ -440,7 +440,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(wsClient.getWebSocketComponents(), bufferPool);
+        RetainableByteBufferPool retainableByteBufferPool = bufferPool.asRetainableByteBufferPool();
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);

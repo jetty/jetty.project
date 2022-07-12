@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
+import java.nio.file.Files;
+
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -45,7 +47,7 @@ public class ServerListener implements LifeCycle.Listener
             try
             {
                 Resource r = Resource.newResource(_tokenFile);
-                r.getFile().createNewFile();
+                Files.createFile(r.getPath());
             }
             catch (Exception e)
             {

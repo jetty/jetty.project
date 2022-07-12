@@ -1607,8 +1607,8 @@ public class URIUtil
         if ("jar".equalsIgnoreCase(uriA.getScheme()))
         {
             // at this point we know that both uri's are "jar:"
-            URI uriAssp = URI.create(uriA.getSchemeSpecificPart());
-            URI uriBssp = URI.create(uriB.getSchemeSpecificPart());
+            URI uriAssp = URI.create(uriA.getRawSchemeSpecificPart());
+            URI uriBssp = URI.create(uriB.getRawSchemeSpecificPart());
             return equalsIgnoreEncodings(uriAssp, uriBssp);
         }
 

@@ -23,7 +23,7 @@ ee10-websocket-jetty
 ee10-demo-realm
 
 [files]
-webapps-ee10/ee10-demo-jetty.d/
-basehome:modules/demo.d/ee10-demo-jetty.xml|webapps-ee10/ee10-demo-jetty.xml
-basehome:modules/demo.d/ee10-demo-jetty-override-web.xml|webapps-ee10/ee10-demo-jetty.d/ee10-demo-jetty-override-web.xml
-maven://org.eclipse.jetty.ee10.demos/ee10-demo-jetty-webapp/${jetty.version}/war|webapps-ee10/ee10-demo-jetty.war
+webapps/ee10-demo-jetty.d/
+basehome:modules/demo.d/ee10-demo-jetty.xml|webapps/ee10-demo-jetty.xml
+basehome:modules/demo.d/ee10-demo-jetty-override-web.xml|webapps/ee10-demo-jetty.d/ee10-demo-jetty-override-web.xml
+maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-jetty-webapp/${jetty.version}/war|webapps/ee10-demo-jetty.war

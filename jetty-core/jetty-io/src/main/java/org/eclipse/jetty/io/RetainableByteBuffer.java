@@ -37,10 +37,10 @@ public class RetainableByteBuffer implements Retainable
 {
     private final ByteBuffer buffer;
     private final AtomicInteger references = new AtomicInteger();
-    private final Consumer<ByteBuffer> releaser;
+    private final Consumer<RetainableByteBuffer> releaser;
     private final AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
 
-    RetainableByteBuffer(ByteBuffer buffer, Consumer<ByteBuffer> releaser)
+    RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
     {
         this.releaser = releaser;
         this.buffer = buffer;
@@ -112,7 +112,7 @@ public class RetainableByteBuffer implements Retainable
         if (ref == 0)
         {
             lastUpdate.setOpaque(System.nanoTime());
-            releaser.accept(buffer);
+            releaser.accept(this);
             return true;
         }
         return false;

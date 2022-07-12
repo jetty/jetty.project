@@ -15,11 +15,6 @@
         <Set name="contexts">
           <Ref refid="Contexts" />
         </Set>
-        <!-- TODO move this to an environment -->
-        <Call name="setContextAttribute">
-          <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*/.*jakarta.servlet.jsp.jstl-.*\.jar$</Arg>
-        </Call>
 
         <!-- Add a customize step to the deployment lifecycle -->
         <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
