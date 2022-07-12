@@ -16,6 +16,7 @@
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
@@ -31,6 +32,7 @@
     <module>jetty-ee8-webapp</module>
     <module>jetty-ee8-jaas</module>
     <module>jetty-ee8-plus</module>
+    <module>jetty-ee8-jndi</module>
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
     <module>jetty-ee8-bom</module>
@@ -148,6 +150,11 @@
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-javax-websocket-api</artifactId>
           <version>${jakarta.websocket.api.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.mail.glassfish</artifactId>
+          <version>${javax.mail.glassfish.version}</version>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
