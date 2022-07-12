@@ -260,6 +260,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
             session.removeAttribute(CLAIMS);
             session.removeAttribute(RESPONSE);
+            session.removeAttribute(ISSUER);
         }
     }
 
@@ -269,30 +270,33 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
             Response baseResponse = baseRequest.getResponse();
-            String endSessionEndpoint = _openIdConfiguration.getEndSessionEndpoint();
-            if (endSessionEndpoint == null)
-                return;
 
             StringBuilder redirectUri = new StringBuilder(128);
             URIUtil.appendSchemeHostPort(redirectUri, request.getScheme(), request.getServerName(), request.getServerPort());
             redirectUri.append(baseRequest.getContextPath());
             redirectUri.append(_logoutRedirectPath);
 
+            String endSessionEndpoint = _openIdConfiguration.getEndSessionEndpoint();
             HttpSession session = baseRequest.getSession(false);
-            if (session == null)
+            if (endSessionEndpoint == null || session == null)
+            {
+                baseResponse.sendRedirect(redirectUri.toString(), true);
                 return;
+            }
 
             Object openIdResponse = session.getAttribute(OpenIdAuthenticator.RESPONSE);
-            if (openIdResponse instanceof Map)
+            if (!(openIdResponse instanceof Map))
             {
-                @SuppressWarnings("rawtypes")
-                String idToken = (String)((Map)openIdResponse).get("id_token");
-
-                baseResponse.sendRedirect(endSessionEndpoint +
-                        "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) +
-                        "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri.toString(), StandardCharsets.UTF_8),
-                    true);
+                baseResponse.sendRedirect(redirectUri.toString(), true);
+                return;
             }
+
+            @SuppressWarnings("rawtypes")
+            String idToken = (String)((Map)openIdResponse).get("id_token");
+            baseResponse.sendRedirect(endSessionEndpoint +
+                    "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) +
+                    "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri.toString(), StandardCharsets.UTF_8),
+                true);
         }
         catch (Throwable t)
         {

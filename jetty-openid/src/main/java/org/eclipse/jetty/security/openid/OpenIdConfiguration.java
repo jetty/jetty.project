@@ -42,6 +42,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
     private static final String TOKEN_ENDPOINT = "token_endpoint";
+    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
     private static final String ISSUER = "issuer";
 
     private final HttpClient httpClient;
@@ -164,11 +165,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         tokenEndpoint = (String)discoveryDocument.get(TOKEN_ENDPOINT);
         if (tokenEndpoint == null)
             throw new IllegalStateException(TOKEN_ENDPOINT);
-        
-        endSessionEndpoint = (String)discoveryDocument.get("end_session_endpoint");
+
+        // End session endpoint is optional.
         if (endSessionEndpoint == null)
-            throw new IllegalArgumentException("end_session_endpoint");
-            
+            endSessionEndpoint = (String)discoveryDocument.get(END_SESSION_ENDPOINT);
+
         // We are lenient and not throw here as some major OIDC providers do not conform to this.
         if (!Objects.equals(discoveryDocument.get(ISSUER), issuer))
             LOG.warn("The issuer in the metadata is not correct.");
