@@ -43,7 +43,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -453,7 +452,8 @@ public class IOTest
     @Test
     public void testDeleteNull()
     {
-        assertFalse(IO.delete(null));
+        assertFalse(IO.delete((File)null));
+        assertFalse(IO.delete((Path)null));
     }
 
     @Test
@@ -569,7 +569,7 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(realPath));
         assertTrue(Files.isSymbolicLink(linkPath));
 
-        Resource link = new PathResource(dir).addPath("link");
+        Resource link = Resource.newResource(dir.toPath()).resolve("link");
         assertThat(link.isAlias(), is(true));
     }
 

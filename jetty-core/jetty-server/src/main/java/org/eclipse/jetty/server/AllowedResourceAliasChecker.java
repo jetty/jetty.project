@@ -221,7 +221,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             if (resource instanceof PathResource)
                 return ((PathResource)resource).getPath();
-            return (resource == null) ? null : resource.getFile().toPath();
+            return (resource == null) ? null : resource.getPath();
         }
         catch (Throwable t)
         {

@@ -14,9 +14,12 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,8 +73,28 @@ public class DefaultHandler extends Handler.Processor
             URL fav = getClass().getResource(faviconRef);
             if (fav != null)
             {
-                Resource r = Resource.newResource(fav);
-                favbytes = IO.readBytes(r.getInputStream());
+                URI uri = fav.toURI();
+                Resource.Mount mount;
+                Resource r;
+                if (uri.getScheme().equalsIgnoreCase("jar"))
+                {
+                    mount = Resource.mount(uri);
+                    r = mount.root();
+                }
+                else
+                {
+                    mount = null;
+                    r = Resource.newResource(uri);
+                }
+
+                try (InputStream is = Files.newInputStream(r.getPath()))
+                {
+                    favbytes = IO.readBytes(is);
+                }
+                finally
+                {
+                    IO.close(mount);
+                }
             }
         }
         catch (Exception e)

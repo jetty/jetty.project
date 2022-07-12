@@ -89,37 +89,35 @@ public class ContextProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            try (Resource resource = Resource.newResource(new File(dir, name)))
+            Resource resource = Resource.newResource(new File(dir, name).toPath());
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
+                return false;
+
+            // ignore hidden files
+            if (lowerName.startsWith("."))
+                return false;
+
+            // ignore property files
+            if (lowerName.endsWith(".properties"))
+                return false;
+
+            // Ignore some directories
+            if (resource.isDirectory())
             {
-                if (getMonitoredResources().stream().anyMatch(resource::isSame))
+                // is it a nominated config directory
+                if (lowerName.endsWith(".d"))
                     return false;
 
-                // ignore hidden files
-                if (lowerName.startsWith("."))
+                // is it an unpacked directory for an existing war file?
+                if (exists(name + ".war") || exists(name + ".WAR"))
                     return false;
 
-                // ignore property files
-                if (lowerName.endsWith(".properties"))
+                // is it a directory for an existing xml file?
+                if (exists(name + ".xml") || exists(name + ".XML"))
                     return false;
 
-                // Ignore some directories
-                if (resource.isDirectory())
-                {
-                    // is it a nominated config directory
-                    if (lowerName.endsWith(".d"))
-                        return false;
-
-                    // is it an unpacked directory for an existing war file?
-                    if (exists(name + ".war") || exists(name + ".WAR"))
-                        return false;
-
-                    // is it a directory for an existing xml file?
-                    if (exists(name + ".xml") || exists(name + ".XML"))
-                        return false;
-
-                    //is it a sccs dir?
-                    return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
-                }
+                //is it a sccs dir?
+                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
             }
 
             // else is it a war file
@@ -358,7 +356,7 @@ public class ContextProvider extends ScanningAppProvider
             // Handle a context XML file
             if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(path.toFile(), null, properties)
+                XmlConfiguration xmlc = new XmlConfiguration(path, null, properties)
                 {
                     @Override
                     public void initializeDefaults(Object context)

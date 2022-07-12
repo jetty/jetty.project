@@ -51,7 +51,7 @@ public class ResourceContentFactory implements ContentFactory
         try
         {
             // try loading the content from our factory.
-            Resource resource = _factory.getResource(pathInContext);
+            Resource resource = _factory.resolve(pathInContext);
             return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)
@@ -87,7 +87,7 @@ public class ResourceContentFactory implements ContentFactory
             for (CompressedContentFormat format : _precompressedFormats)
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
-                Resource compressedResource = _factory.getResource(compressedPathInContext);
+                Resource compressedResource = _factory.resolve(compressedPathInContext);
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,

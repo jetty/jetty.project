@@ -15,9 +15,9 @@ package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -171,7 +171,7 @@ public class WebAppPropertyConverter
         if (resource == null)
             throw new IllegalStateException("No resource");
 
-        fromProperties(webApp, Resource.newResource(resource).getFile(), server, jettyProperties);
+        fromProperties(webApp, Resource.newResource(resource).getPath(), server, jettyProperties);
     }
 
     /**
@@ -308,18 +308,18 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String, String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, Path propsFile, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
 
         if (propsFile == null)
             throw new IllegalArgumentException("No properties file");
-        
-        if (!propsFile.exists())
-            throw new IllegalArgumentException(propsFile.getCanonicalPath() + " does not exist");
-        
+
+        if (!Files.exists(propsFile))
+            throw new IllegalArgumentException(propsFile + " does not exist");
+
         Properties props = new Properties();
-        try (InputStream in = new FileInputStream(propsFile))
+        try (InputStream in = Files.newInputStream(propsFile))
         {
             props.load(in);
         }

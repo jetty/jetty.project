@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -859,7 +860,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Resource resource = baseResource.resolve(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;
@@ -948,13 +949,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 if (!path.endsWith(URIUtil.SLASH))
                     path = path + URIUtil.SLASH;
 
-                String[] l = resource.list();
+                List<String> l = resource.list();
                 if (l != null)
                 {
                     HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.length; i++)
+                    for (int i = 0; i < l.size(); i++)
                     {
-                        set.add(path + l[i]);
+                        set.add(path + l.get(i));
                     }
                     return set;
                 }
@@ -3078,9 +3079,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 Resource resource = ServletContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    File file = resource.getFile();
-                    if (file != null)
-                        return file.getCanonicalPath();
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath != null)
+                        return resourcePath.normalize().toString();
                 }
             }
             catch (Exception e)

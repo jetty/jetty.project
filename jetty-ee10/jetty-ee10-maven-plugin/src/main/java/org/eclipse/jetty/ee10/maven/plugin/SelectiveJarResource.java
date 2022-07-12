@@ -18,7 +18,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +34,7 @@ import java.util.jar.Manifest;
 import org.codehaus.plexus.util.SelectorUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * Selectively copies resources from a jar file based on includes/excludes.
  */
-public class SelectiveJarResource extends JarResource
+public class SelectiveJarResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(SelectiveJarResource.class);
     
@@ -53,18 +58,14 @@ public class SelectiveJarResource extends JarResource
      */
     public static final List<String> DEFAULT_EXCLUDES = Collections.emptyList();
 
+    final Resource _delegate;
     List<String> _includes = null;
     List<String> _excludes = null;
     boolean _caseSensitive = false;
 
-    public SelectiveJarResource(URL url)
+    public SelectiveJarResource(Resource resource)
     {
-        super(url);
-    }
-
-    public SelectiveJarResource(URL url, boolean useCaches)
-    {
-        super(url, useCaches);
+        _delegate = resource;
     }
 
     public void setCaseSensitive(boolean caseSensitive)
@@ -107,7 +108,31 @@ public class SelectiveJarResource extends JarResource
     }
 
     @Override
-    public void copyTo(File directory) throws IOException
+    public Path getPath()
+    {
+        return _delegate.getPath();
+    }
+
+    @Override
+    public boolean isContainedIn(Resource r) throws IOException
+    {
+        return _delegate.isContainedIn(r);
+    }
+
+    @Override
+    public URI getURI()
+    {
+        return _delegate.getURI();
+    }
+
+    @Override
+    public String getName()
+    {
+        return _delegate.getName();
+    }
+
+    @Override
+    public void copyTo(Path directory) throws IOException
     {
         if (_includes == null)
             _includes = DEFAULT_INCLUDES;
@@ -147,7 +172,7 @@ public class SelectiveJarResource extends JarResource
                     continue;
                 }
 
-                File file = new File(directory, entryName);
+                Path file = directory.resolve(entryName);
 
                 if (entry.isDirectory())
                 {
@@ -156,8 +181,8 @@ public class SelectiveJarResource extends JarResource
                         if (!isExcluded(entryName))
                         {
                             // Make directory
-                            if (!file.exists())
-                                file.mkdirs();
+                            if (!Files.exists(file))
+                                Files.createDirectories(file);
                         }
                         else
                             LOG.debug("{} dir is excluded", entryName);
@@ -173,19 +198,19 @@ public class SelectiveJarResource extends JarResource
                         if (!isExcluded(entryName))
                         {
                             // make directory (some jars don't list dirs)
-                            File dir = new File(file.getParent());
-                            if (!dir.exists())
-                                dir.mkdirs();
+                            Path dir = file.getParent();
+                            if (!Files.exists(dir))
+                                Files.createDirectories(dir);
 
                             // Make file
-                            try (OutputStream fout = new FileOutputStream(file))
+                            try (OutputStream fout = Files.newOutputStream(file))
                             {
                                 IO.copy(jin, fout);
                             }
 
                             // touch the file.
                             if (entry.getTime() >= 0)
-                                file.setLastModified(entry.getTime());
+                                Files.setLastModifiedTime(file, FileTime.fromMillis(entry.getTime()));
                         }
                         else
                             LOG.debug("{} file is excluded", entryName);
@@ -200,10 +225,10 @@ public class SelectiveJarResource extends JarResource
             {
                 if (isIncluded("META-INF") && !isExcluded("META-INF"))
                 {
-                    File metaInf = new File(directory, "META-INF");
-                    metaInf.mkdir();
-                    File f = new File(metaInf, "MANIFEST.MF");
-                    try (OutputStream fout = new FileOutputStream(f))
+                    Path metaInf = directory.resolve("META-INF");
+                    Files.createDirectory(metaInf);
+                    Path f = metaInf.resolve("MANIFEST.MF");
+                    try (OutputStream fout = Files.newOutputStream(f))
                     {
                         manifest.write(fout);
                     }

@@ -47,7 +47,6 @@ import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * This goal will compile jsps for a webapp so that they can be included in a
@@ -518,12 +517,10 @@ public class JspcMojo extends AbstractMojo
     {
         //add any classes from the webapp
         List<URL> urls = new ArrayList<URL>();
-        String classesDir = classesDirectory.getCanonicalPath();
-        classesDir = classesDir + (classesDir.endsWith(File.pathSeparator) ? "" : File.separator);
-        urls.add(Resource.toURL(new File(classesDir)));
+        urls.add(classesDirectory.toURI().toURL());
 
         if (getLog().isDebugEnabled())
-            getLog().debug("Adding to classpath classes dir: " + classesDir);
+            getLog().debug("Adding to classpath classes dir: " + classesDirectory);
 
         //add the dependencies of the webapp (which will form WEB-INF/lib)
         for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
@@ -537,7 +534,7 @@ public class JspcMojo extends AbstractMojo
                 if (getLog().isDebugEnabled())
                     getLog().debug("Adding to classpath dependency file: " + filePath);
 
-                urls.add(Resource.toURL(artifact.getFile()));
+                urls.add(artifact.getFile().toURI().toURL());
             }
         }
         return urls;

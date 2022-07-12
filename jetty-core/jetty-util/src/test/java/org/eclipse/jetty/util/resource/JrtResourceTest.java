@@ -26,9 +26,9 @@ public class JrtResourceTest
     {
         Resource resource = Resource.newResource("jrt:/java.base");
 
-        assertThat(resource.exists(), is(false));
-        assertThat(resource.isDirectory(), is(false));
-        assertThat(resource.length(), is(-1L));
+        assertThat(resource.exists(), is(true));
+        assertThat(resource.isDirectory(), is(true));
+        assertThat(resource.length(), is(0L));
     }
 
     @Test
@@ -37,8 +37,8 @@ public class JrtResourceTest
     {
         Resource resource = Resource.newResource("jrt:/");
 
-        assertThat(resource.exists(), is(false));
-        assertThat(resource.isDirectory(), is(false));
-        assertThat(resource.length(), is(-1L));
+        assertThat(resource.exists(), is(true));
+        assertThat(resource.isDirectory(), is(true));
+        assertThat(resource.length(), is(0L));
     }
 }

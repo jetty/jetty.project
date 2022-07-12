@@ -27,7 +27,6 @@ import java.util.List;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +53,7 @@ public class WebAppClassLoaderTest
     public void init() throws Exception
     {
         this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        Resource webapp = new PathResource(testWebappDir);
+        Resource webapp = Resource.newResource(testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
@@ -62,8 +61,8 @@ public class WebAppClassLoaderTest
         _context.setExtraClasspath("target/test-classes/ext/*");
 
         _loader = new WebAppClassLoader(_context);
-        _loader.addJars(webapp.addPath("WEB-INF/lib"));
-        _loader.addClassPath(webapp.addPath("WEB-INF/classes"));
+        _loader.addJars(webapp.resolve("WEB-INF/lib"));
+        _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
         _context.setServer(new Server());

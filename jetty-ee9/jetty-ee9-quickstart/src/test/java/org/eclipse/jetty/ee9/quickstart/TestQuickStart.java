@@ -240,7 +240,7 @@ public class TestQuickStart
         quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
 
         //apply the context xml file
-        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTestResourceFile("context.xml")));
+        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTestResourceFile("context.xml").toPath()));
         xmlConfig.configure(quickstart);
 
         //generate the quickstart

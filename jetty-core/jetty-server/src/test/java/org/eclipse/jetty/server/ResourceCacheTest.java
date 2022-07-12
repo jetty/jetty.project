@@ -113,9 +113,9 @@ public class ResourceCacheTest
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
         ResourceCollection rc = new ResourceCollection(
-            new PathResource(basePath.resolve("one")),
-            new PathResource(basePath.resolve("two")),
-            new PathResource(basePath.resolve("three")));
+            Resource.newResource(basePath.resolve("one")),
+            Resource.newResource(basePath.resolve("two")),
+            Resource.newResource(basePath.resolve("three")));
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -143,9 +143,9 @@ public class ResourceCacheTest
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
         ResourceCollection rc = new ResourceCollection(
-            new PathResource(basePath.resolve("one")),
-            new PathResource(basePath.resolve("two")),
-            new PathResource(basePath.resolve("three")));
+            Resource.newResource(basePath.resolve("one")),
+            Resource.newResource(basePath.resolve("two")),
+            Resource.newResource(basePath.resolve("three")));
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -349,7 +349,7 @@ public class ResourceCacheTest
     {
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
-        Resource resource = new PathResource(basePath.resolve("four"));
+        Resource resource = Resource.newResource(basePath.resolve("four"));
         MimeTypes mime = new MimeTypes();
 
         CachedContentFactory cache = new CachedContentFactory(null, resource, mime, false, false, CompressedContentFormat.NONE);

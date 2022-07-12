@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -149,6 +149,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    private boolean _canonicalEncodingURIs = false;
 
     /**
      * Get the current ServletContext implementation.
@@ -285,6 +286,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean getAllowNullPathInfo()
     {
         return _allowNullPathInfo;
+    }
+
+    // TODO this is a thought bubble
+    public void setCanonicalEncodingURIs(boolean encoding)
+    {
+        _canonicalEncodingURIs = encoding;
+    }
+
+    // TODO this is a thought bubble
+    public boolean isCanonicalEncodingURIs()
+    {
+        return _canonicalEncodingURIs;
     }
 
     /**
@@ -1393,7 +1406,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Resource resource = baseResource.resolve(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;
@@ -1482,13 +1495,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (!path.endsWith(URIUtil.SLASH))
                     path = path + URIUtil.SLASH;
 
-                String[] l = resource.list();
+                List<String> l = resource.list();
                 if (l != null)
                 {
                     HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.length; i++)
+                    for (int i = 0; i < l.size(); i++)
                     {
-                        set.add(path + l[i]);
+                        set.add(path + l.get(i));
                     }
                     return set;
                 }
@@ -1833,9 +1846,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Resource resource = ContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    File file = resource.getFile();
-                    if (file != null)
-                        return file.getCanonicalPath();
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath != null)
+                        return resourcePath.toAbsolutePath().normalize().toString();
                 }
             }
             catch (Exception e)

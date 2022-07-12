@@ -31,7 +31,7 @@ public class FileID
      */
     public static boolean isWebArchive(File file)
     {
-        return isWebArchive(file.getName().toLowerCase(Locale.ENGLISH));
+        return isWebArchive(file.getName());
     }
 
     /**
@@ -42,7 +42,7 @@ public class FileID
      */
     public static boolean isWebArchive(Path path)
     {
-        return isWebArchive(path.toString().toLowerCase(Locale.ENGLISH));
+        return isWebArchive(path.getFileName().toString());
     }
 
     /**
@@ -64,12 +64,12 @@ public class FileID
 
     public static boolean isXml(Path path)
     {
-        return isXml(path.toString());
+        return isXml(path.getFileName().toString());
     }
 
-    public static boolean isXml(String name)
+    public static boolean isXml(String filename)
     {
-        return name.toLowerCase(Locale.ENGLISH).endsWith(".xml");
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
 
     /**
@@ -80,7 +80,7 @@ public class FileID
      */
     public static String getBasename(Path path)
     {
-        String basename = path.getName(path.getNameCount() - 1).toString();
+        String basename = path.getFileName().toString();
         int dot = basename.lastIndexOf('.');
         if (dot >= 0)
             basename = basename.substring(0, dot);

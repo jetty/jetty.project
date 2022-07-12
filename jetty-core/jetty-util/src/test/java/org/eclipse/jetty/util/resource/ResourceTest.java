@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,13 +23,16 @@ import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -49,6 +53,7 @@ public class ResourceTest
 {
     private static final boolean DIR = true;
     private static final boolean EXISTS = true;
+    private static final List<Closeable> TO_CLOSE = new ArrayList<>();
 
     static class Scenario
     {
@@ -62,7 +67,7 @@ public class ResourceTest
             throws Exception
         {
             this.test = data.resource + "+" + path;
-            resource = data.resource.addPath(path);
+            resource = data.resource.resolve(path);
             this.exists = exists;
             this.dir = dir;
         }
@@ -71,7 +76,7 @@ public class ResourceTest
             throws Exception
         {
             this.test = data.resource + "+" + path;
-            resource = data.resource.addPath(path);
+            resource = data.resource.resolve(path);
             this.exists = exists;
             this.dir = dir;
             this.content = content;
@@ -109,7 +114,7 @@ public class ResourceTest
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(file);
+            resource = Resource.newResource(file.toPath());
         }
 
         Scenario(String url, boolean exists, boolean dir, String content)
@@ -216,10 +221,8 @@ public class ResourceTest
         cases.addCase(new Scenario(tdata1, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
         cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/content/", !EXISTS, !DIR));
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/", !EXISTS, !DIR));
-
         String urlRef = cases.uriRef.toASCIIString();
+        TO_CLOSE.add(Resource.mount(URI.create("jar:" + urlRef + "TestData/test.zip!/")));
         Scenario zdata = new Scenario("jar:" + urlRef + "TestData/test.zip!/", EXISTS, DIR);
         cases.addCase(zdata);
 
@@ -249,6 +252,12 @@ public class ResourceTest
         return cases.stream();
     }
 
+    @AfterAll
+    public static void tearDown()
+    {
+        TO_CLOSE.forEach(IO::close);
+    }
+
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
@@ -270,7 +279,8 @@ public class ResourceTest
     {
         if (data.dir)
         {
-            Resource r = data.resource.addPath("foo%/b r");
+            Resource r = data.resource.resolve("foo%25/b%20r");
+            assertThat(r.getPath().toString(), Matchers.anyOf(Matchers.endsWith("foo%/b r"), Matchers.endsWith("foo%\\b r")));
             assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
         }
     }
@@ -334,17 +344,49 @@ public class ResourceTest
     }
 
     @Test
+    public void testResourceExtraSlashStripping() throws Exception
+    {
+        Resource ra = Resource.newResource("file:/a/b/c");
+        Resource rb = ra.resolve("///");
+        Resource rc = ra.resolve("///d/e///f");
+
+        assertEquals(ra, rb);
+        assertEquals(rc.getURI().getPath(), "/a/b/c/d/e/f");
+
+        Resource rd = Resource.newResource("file:///a/b/c");
+        Resource re = rd.resolve("///");
+        Resource rf = rd.resolve("///d/e///f");
+
+        assertEquals(rd, re);
+        assertEquals(rf.getURI().getPath(), "/a/b/c/d/e/f");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testWindowsResourceFromString() throws Exception
+    {
+        // Check strings that look like URIs but actually are paths.
+        Resource ra = Resource.newResource("C:\\foo\\bar");
+        Resource rb = Resource.newResource("C:/foo/bar");
+        Resource rc = Resource.newResource("C:///foo/bar");
+
+        assertEquals(rb, ra);
+        assertEquals(rb, rc);
+    }
+
+    @Test
+    @Disabled("does isAlias still make sense?")
     public void testClimbAboveBase() throws Exception
     {
         Resource resource = Resource.newResource("/foo/bar");
-        assertThrows(MalformedURLException.class, () -> resource.addPath(".."));
+        assertThrows(MalformedURLException.class, () -> resource.resolve(".."));
 
-        Resource same = resource.addPath(".");
+        Resource same = resource.resolve(".");
         assertNotNull(same);
         assertTrue(same.isAlias());
 
-        assertThrows(MalformedURLException.class, () -> resource.addPath("./.."));
+        assertThrows(MalformedURLException.class, () -> resource.resolve("./.."));
 
-        assertThrows(MalformedURLException.class, () -> resource.addPath("./../bar"));
+        assertThrows(MalformedURLException.class, () -> resource.resolve("./../bar"));
     }
 }
