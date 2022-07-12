@@ -1359,7 +1359,7 @@ public class ResourceHandler extends Handler.Wrapper
         public Resource getResource()
         {
             // TODO cache or create in constructor?
-            return new PathResource(_path);
+            return Resource.newResource(_path);
         }
 
         @Override

@@ -53,7 +53,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
                 {
                     if (originalBaseStr.contains(r.toString()))
                         continue;
-                    IO.delete(r.getFile());
+                    IO.delete(r.getPath());
                 }
             }
         }

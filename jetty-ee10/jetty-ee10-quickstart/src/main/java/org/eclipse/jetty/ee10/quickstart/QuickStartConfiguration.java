@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -229,22 +229,21 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
-            File tmp = new File(context.getResourceBase().getFile(), "WEB-INF");
-            tmp.mkdirs();
+            Files.createDirectories(context.getResourceBase().getPath().resolve("WEB-INF"));
             webInf = context.getWebInf();
         }
 
         Resource qstart;
         if (attr == null || StringUtil.isBlank(attr.toString()))
         {
-            qstart = webInf.addPath("quickstart-web.xml");
+            qstart = webInf.resolve("quickstart-web.xml");
         }
         else
         {
             try
             {
                 // Try a relative resolution
-                qstart = Resource.newResource(webInf.getFile().toPath().resolve(attr.toString()));
+                qstart = Resource.newResource(webInf.getPath().resolve(attr.toString()));
             }
             catch (Throwable th)
             {

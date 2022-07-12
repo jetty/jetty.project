@@ -20,8 +20,10 @@ import java.util.List;
 
 import org.acme.webapp.TestAnnotation;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ public class TestMetaData
     File nonFragFile;
     Resource fragResource;
     Resource nonFragResource;
+    Resource.Mount mount;
     Resource webfragxml;
     Resource containerDir;
     Resource webInfClassesDir;
@@ -57,13 +60,14 @@ public class TestMetaData
         assertTrue(jarDir.exists());
         fragFile = new File(jarDir, "zeta.jar");
         assertTrue(fragFile.exists());
-        fragResource = Resource.newResource(fragFile);
+        fragResource = Resource.newResource(fragFile.toPath());
         nonFragFile = new File(jarDir, "sigma.jar");
-        nonFragResource = Resource.newResource(nonFragFile);
+        nonFragResource = Resource.newResource(nonFragFile.toPath());
         assertTrue(nonFragFile.exists());
-        webfragxml = Resource.newResource("jar:" + fragFile.toURI().toString() + "!/META-INF/web-fragment.xml");
-        containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container"));
-        webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses"));
+        mount = Resource.mountJar(fragFile.toPath());
+        webfragxml = mount.root().resolve("/META-INF/web-fragment.xml");
+        containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
+        webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
         wac = new WebAppContext();
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);
@@ -71,6 +75,12 @@ public class TestMetaData
         annotationC = new TestAnnotation(wac, "com.acme.C", null, applications);
         annotationD = new TestAnnotation(wac, "com.acme.D", containerDir, applications);
         annotationE = new TestAnnotation(wac, "com.acme.E", webInfClassesDir, applications);
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        IO.close(mount);
     }
 
     @Test

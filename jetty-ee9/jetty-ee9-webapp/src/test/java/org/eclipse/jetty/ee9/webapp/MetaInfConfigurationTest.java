@@ -84,7 +84,7 @@ public class MetaInfConfigurationTest
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context25 = new WebAppContext();
         context25.setConfigurationDiscovered(false);
-        context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
+        context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25.toPath())));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
@@ -93,7 +93,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta25b = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
-        context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
+        context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25.toPath())));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
         meta25b.preConfigure(context25b);
@@ -102,7 +102,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta31 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context31 = new WebAppContext();
-        context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31)));
+        context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31.toPath())));
         context31.getServletContext().setEffectiveMajorVersion(3);
         context31.getServletContext().setEffectiveMinorVersion(1);
         meta31.preConfigure(context31);
@@ -112,7 +112,7 @@ public class MetaInfConfigurationTest
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context31false = new WebAppContext();
         context31false.setConfigurationDiscovered(true);
-        context31false.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
+        context31false.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false.toPath())));
         context31false.getServletContext().setEffectiveMajorVersion(3);
         context31false.getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);

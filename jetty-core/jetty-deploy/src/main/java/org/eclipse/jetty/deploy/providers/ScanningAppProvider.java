@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.deploy.providers;
 
-import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -211,11 +210,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             throw new IllegalStateException("Unknown environment " + _environmentName);
 
         LOG.info("Deployment monitor {} in {} at intervals {}s", getEnvironmentName(), _monitored, getScanInterval());
-        List<File> files = new ArrayList<>();
+        List<Path> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
-            if (resource.exists() && resource.getFile().canRead())
-                files.add(resource.getFile());
+            if (resource.exists() && Files.isReadable(resource.getPath()))
+                files.add(resource.getPath());
             else
                 LOG.warn("Does not exist: {}", resource);
         }

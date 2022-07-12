@@ -13,16 +13,12 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -178,6 +174,5 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public void release()
     {
-        _resource.close();
     }
 }

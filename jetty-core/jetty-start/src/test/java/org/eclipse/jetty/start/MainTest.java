@@ -104,7 +104,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        Path homePath = MavenTestingUtils.getTestResourcePathDir("dist-home").toRealPath();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
 

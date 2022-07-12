@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -280,14 +282,13 @@ public class JettyEmbedder extends AbstractLifeCycle
         //If there is a quickstart file, then quickstart the webapp.
         if (webApp.getTempDirectory() != null)
         {
-            File qs = new File(webApp.getTempDirectory(), "quickstart-web.xml");
-            if (qs.exists() && qs.isFile())
+            Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
+            if (Files.exists(qs) && Files.isRegularFile(qs))
             {
                 webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(qs));
                 webApp.addConfiguration(new MavenQuickStartConfiguration());
                 webApp.setAttribute(QuickStartConfiguration.MODE, Mode.QUICKSTART);
             }
-
         }
 
         //add the webapp to the server

@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -313,21 +314,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         StringBuilder classpath = new StringBuilder();
         for (URL url : urls)
         {
-            try
+            // TODO do this without Resource?
+            Resource resource = Resource.newResource(url);
+            Path path = resource.getPath();
+            if (path != null && Files.exists(path))
             {
-                // TODO do this without Resource?
-                Resource resource = Resource.newResource(url);
-                File file = resource.getFile();
-                if (file != null && file.exists())
-                {
-                    if (classpath.length() > 0)
-                        classpath.append(File.pathSeparatorChar);
-                    classpath.append(file.getAbsolutePath());
-                }
-            }
-            catch (IOException e)
-            {
-                LOG.debug("Could not found resource: {}", url, e);
+                if (classpath.length() > 0)
+                    classpath.append(File.pathSeparatorChar);
+                classpath.append(path.toAbsolutePath());
             }
         }
         if (classpath.length() == 0)

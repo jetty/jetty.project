@@ -70,7 +70,7 @@ public class AnnotationParser
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
-    protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
+    protected Map<String, String> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private final int _asmVersion;
 
@@ -556,9 +556,9 @@ public class AnnotationParser
      * @param classname the name of the class
      * @param location the fully qualified location of the class
      */
-    public void addParsedClass(String classname, Resource location)
+    public void addParsedClass(String classname, String location)
     {
-        Resource existing = _parsedClassNames.putIfAbsent(classname, location);
+        String existing = _parsedClassNames.putIfAbsent(classname, location);
         if (existing != null)
             LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
@@ -580,7 +580,7 @@ public class AnnotationParser
         if (resource != null)
         {
             Resource r = Resource.newResource(resource);
-            addParsedClass(className, r);
+            addParsedClass(className, r.toString());
             try (InputStream is = r.getInputStream())
             {
                 scanClass(handlers, null, is);
@@ -606,7 +606,7 @@ public class AnnotationParser
             if (resource != null)
             {
                 Resource r = Resource.newResource(resource);
-                addParsedClass(clazz.getName(), r);
+                addParsedClass(clazz.getName(), r.toString());
                 try (InputStream is = r.getInputStream())
                 {
                     scanClass(handlers, null, is);
@@ -655,7 +655,7 @@ public class AnnotationParser
                 if (resource != null)
                 {
                     Resource r = Resource.newResource(resource);
-                    addParsedClass(className, r);
+                    addParsedClass(className, r.toString());
                     try (InputStream is = r.getInputStream())
                     {
                         scanClass(handlers, null, is);
@@ -766,7 +766,7 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", root);
 
-        File rootFile = root.getFile();
+        Path rootPath = root.getPath();
 
         MultiException me = new MultiException();
         Collection<Resource> resources = root.getAllResources();
@@ -777,10 +777,10 @@ public class AnnotationParser
                 if (r.isDirectory())
                     continue;
 
-                File file = r.getFile();
-                if (isValidClassFileName((file == null ? null : file.getName())))
+                Path path = r.getPath();
+                if (isValidClassFileName((path == null ? null : path.getFileName().toString())))
                 {
-                    Path classpath = rootFile.toPath().relativize(file.toPath());
+                    Path classpath = rootPath.relativize(path);
                     String str = classpath.toString();
                     str = str.substring(0, str.lastIndexOf(".class"));
                     str = StringUtil.replace(str, File.separatorChar, '.');
@@ -789,23 +789,23 @@ public class AnnotationParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Scanning class {}", r);
-                        addParsedClass(str, r);
+                        addParsedClass(str, r.toString());
                         try (InputStream is = r.getInputStream())
                         {
-                            scanClass(handlers, Resource.newResource(file.getParentFile()), is);
+                            scanClass(handlers, Resource.newResource(path.getParent()), is);
                         }
                     }
                     catch (Exception ex)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Error scanning file {}", file, ex);
-                        me.add(new RuntimeException("Error scanning file " + file, ex));
+                            LOG.debug("Error scanning file {}", path, ex);
+                        me.add(new RuntimeException("Error scanning file " + path, ex));
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Skipping scan on invalid file {}", file);
+                        LOG.debug("Skipping scan on invalid file {}", path);
                 }
             }
         }
@@ -831,7 +831,8 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(), _javaPlatform, false))
+            // TODO is the jarResource's Path always convertible to File?
+            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath().toFile(), _javaPlatform, false))
             {
                 jarFile.stream().forEach(e ->
                 {
@@ -873,9 +874,10 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
-            addParsedClass(shortName, Resource.newResource("jar:" + jar.getURI() + "!/" + entry.getNameInJar()));
+            String location = Resource.toJarPath(jar.toString(), entry.getNameInJar());
+            addParsedClass(shortName, location);
             if (LOG.isDebugEnabled())
-                LOG.debug("Scanning class from jar {}!/{}", jar, entry);
+                LOG.debug("Scanning class from jar {}", location);
             try (InputStream is = entry.getInputStream())
             {
                 scanClass(handlers, jar, is);

@@ -26,8 +26,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.JarFileResource;
-import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -41,6 +40,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.ee9.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
+    private Resource.Mount _mount;
 
     public WebInfConfiguration()
     {
@@ -65,12 +65,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof WebAppClassLoader)
         {
             // Look for classes directory
-            Resource classes = webInf.addPath("classes/");
+            Resource classes = webInf.resolve("classes/");
             if (classes.exists())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
-            Resource lib = webInf.addPath("lib/");
+            Resource lib = webInf.resolve("lib/");
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
@@ -92,9 +92,10 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
 
+        IO.close(_mount);
+        _mount = null;
+
         //reset the base resource back to what it was before we did any unpacking of resources
-        if (context.getBaseResource() != null)
-            context.getBaseResource().close();
         context.setBaseResource(_preUnpackBaseResource);
     }
 
@@ -301,7 +302,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Try webapp={} exists={} directory={} file={}", webApp, webApp.exists(), webApp.isDirectory(), webApp.getFile());
+                LOG.debug("Try webapp={} exists={} directory={} file={}", webApp, webApp.exists(), webApp.isDirectory(), webApp.getPath());
 
             // Track the original web_app Resource, as this could be a PathResource.
             // Later steps force the Resource to be a JarFileResource, which introduces
@@ -313,30 +314,29 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                Resource jarWebApp = JarResource.newJarResource(webApp);
-                if (jarWebApp.exists() && jarWebApp.isDirectory())
-                    webApp = jarWebApp;
+                _mount = Resource.mountJar(webApp.getPath());
+                webApp = _mount.root();
             }
 
             // If we should extract or the URL is still not usable
             if (webApp.exists() && (
-                (context.isCopyWebDir() && webApp.getFile() != null && webApp.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && webApp.getFile() != null && !webApp.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && webApp.getFile() == null) ||
-                    !webApp.isDirectory())
+                (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
+                    (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
+                    (context.isExtractWAR() && webApp.getPath() == null) ||
+                    !originalWarResource.isDirectory())
             )
             {
                 // Look for sibling directory.
-                File extractedWebAppDir = null;
+                Path extractedWebAppDir = null;
 
                 if (war != null)
                 {
                     // look for a sibling like "foo/" to a "foo.war"
-                    File warfile = Resource.newResource(war).getFile();
-                    if (warfile != null && warfile.getName().toLowerCase(Locale.ENGLISH).endsWith(".war"))
+                    Path warfile = Resource.newResource(war).getPath();
+                    if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
-                        File sibling = new File(warfile.getParent(), warfile.getName().substring(0, warfile.getName().length() - 4));
-                        if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
+                        Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
+                        if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))
                             extractedWebAppDir = sibling;
                     }
                 }
@@ -344,11 +344,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (extractedWebAppDir == null)
                 {
                     // Then extract it if necessary to the temporary location
-                    extractedWebAppDir = new File(context.getTempDirectory(), "webapp");
+                    extractedWebAppDir = context.getTempDirectory().toPath().resolve("webapp");
                     context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
                 }
 
-                if (webApp.getFile() != null && webApp.getFile().isDirectory())
+                if (webApp.getPath() != null && webApp.isDirectory())
                 {
                     // Copy directory
                     if (LOG.isDebugEnabled())
@@ -361,35 +361,41 @@ public class WebInfConfiguration extends AbstractConfiguration
                     //This will help us detect interrupted extractions.
                     File extractionLock = new File(context.getTempDirectory(), ".extract_lock");
 
-                    if (!extractedWebAppDir.exists())
+                    if (!Files.exists(extractedWebAppDir))
                     {
                         //it hasn't been extracted before so extract it
                         extractionLock.createNewFile();
-                        extractedWebAppDir.mkdir();
+                        Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                        Resource jarWebApp = JarResource.newJarResource(webApp);
-                        jarWebApp.copyTo(extractedWebAppDir);
+                        try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                        {
+                            Resource jarWebApp = mount.root();
+                            jarWebApp.copyTo(extractedWebAppDir);
+                        }
                         extractionLock.delete();
                     }
                     else
                     {
                         // Only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
                         // Use the original War Resource to obtain lastModified to avoid filesystem locks on MS Windows.
-                        if (originalWarResource.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
+                        if (originalWarResource.lastModified() > Files.getLastModifiedTime(extractedWebAppDir).toMillis() || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
-                            extractedWebAppDir.mkdir();
+                            Files.createDirectory(extractedWebAppDir);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                            Resource jarWebApp = JarResource.newJarResource(webApp);
-                            jarWebApp.copyTo(extractedWebAppDir);
+                            try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                            {
+                                Resource jarWebApp = mount.root();
+                                jarWebApp.copyTo(extractedWebAppDir);
+                            }
                             extractionLock.delete();
                         }
                     }
                 }
-                webApp = Resource.newResource(extractedWebAppDir.getCanonicalPath());
+                webApp = Resource.newResource(extractedWebAppDir.normalize());
             }
 
             // Now do we have something usable?
@@ -408,13 +414,13 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Do we need to extract WEB-INF/lib?
         if (context.isCopyWebInf() && !context.isCopyWebDir())
         {
-            Resource webInf = webApp.addPath("WEB-INF/");
+            Resource webInf = webApp.resolve("WEB-INF/");
 
             File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
             if (extractedWebInfDir.exists())
                 IO.delete(extractedWebInfDir);
             extractedWebInfDir.mkdir();
-            Resource webInfLib = webInf.addPath("lib/");
+            Resource webInfLib = webInf.resolve("lib/");
             File webInfDir = new File(extractedWebInfDir, "WEB-INF");
             webInfDir.mkdir();
 
@@ -427,10 +433,10 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
-                webInfLib.copyTo(webInfLibDir);
+                webInfLib.copyTo(webInfLibDir.toPath());
             }
 
-            Resource webInfClasses = webInf.addPath("classes/");
+            Resource webInfClasses = webInf.resolve("classes/");
             if (webInfClasses.exists())
             {
                 File webInfClassesDir = new File(webInfDir, "classes");
@@ -439,7 +445,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfClassesDir.mkdir();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
-                webInfClasses.copyTo(webInfClassesDir);
+                webInfClasses.copyTo(webInfClassesDir.toPath());
             }
 
             webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath());
@@ -560,25 +566,17 @@ public class WebInfConfiguration extends AbstractConfiguration
     protected static String getResourceBaseName(Resource resource)
     {
         // Use File System and File interface if present
-        try
-        {
-            File resourceFile = resource.getFile();
-            if ((resourceFile != null) && (resource instanceof JarFileResource))
-            {
-                resourceFile = ((JarFileResource)resource).getJarFile();
-            }
+        Path resourceFile = resource.getPath();
 
-            if (resourceFile != null)
-            {
-                return resourceFile.getName();
-            }
-        }
-        catch (IOException e)
+        if ((resourceFile != null) && (resource instanceof MountedPathResource))
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Resource has no File reference: {}", resource);
-            }
+            resourceFile = ((MountedPathResource)resource).getContainerPath();
+        }
+
+        if (resourceFile != null)
+        {
+            Path fileName = resourceFile.getFileName();
+            return fileName == null ? "" : fileName.toString();
         }
 
         // Use URI itself.

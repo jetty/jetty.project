@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee10.jsp;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,7 +65,7 @@ public class TestJettyJspServlet
     public void setUp() throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
-        File baseDir = MavenTestingUtils.getTestResourceDir("base");
+        Path baseDir = MavenTestingUtils.getTestResourcePathDir("base");
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
@@ -74,7 +74,7 @@ public class TestJettyJspServlet
         context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");
         jspHolder.setInitParameter("scratchdir", workdir.getPath().toString());
-        context.setBaseResource(baseDir.toPath());
+        context.setBaseResource(baseDir);
         context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
         dfltHolder.setName("default");

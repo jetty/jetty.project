@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -121,9 +122,9 @@ public class SniSslConnectionFactoryTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         config.accept(sslContextFactory, secureRequestCustomizer);
 
-        File keystoreFile = sslContextFactory.getKeyStoreResource().getFile();
-        if (!keystoreFile.exists())
-            throw new FileNotFoundException(keystoreFile.getAbsolutePath());
+        Path keystoreFile = sslContextFactory.getKeyStoreResource().getPath();
+        if (!Files.exists(keystoreFile))
+            throw new FileNotFoundException(keystoreFile.toAbsolutePath().toString());
 
         sslContextFactory.setKeyStorePassword("storepwd");
 

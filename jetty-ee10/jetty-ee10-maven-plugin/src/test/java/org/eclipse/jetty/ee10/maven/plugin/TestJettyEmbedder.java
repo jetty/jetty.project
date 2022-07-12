@@ -86,7 +86,7 @@ public class TestJettyEmbedder
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
-        otherHandler.setBaseResource(MavenTestingUtils.getTestResourceDir("root").toPath());
+        otherHandler.setBaseResource(MavenTestingUtils.getTestResourcePathDir("root"));
 
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);

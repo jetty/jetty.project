@@ -396,7 +396,7 @@ public class Scanner extends ContainerLifeCycle
         _scanInterval = scanInterval;
     }
 
-    public void setScanDirs(List<File> dirs)
+    public void setScanDirs(List<Path> dirs)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
@@ -404,12 +404,12 @@ public class Scanner extends ContainerLifeCycle
         _scannables.clear();
         if (dirs == null)
             return;
-        for (File f :dirs)
+        for (Path p :dirs)
         {
-            if (f.isDirectory())
-                addDirectory(f.toPath());
+            if (Files.isDirectory(p))
+                addDirectory(p);
             else
-                addFile(f.toPath());
+                addFile(p);
         }
     }
 

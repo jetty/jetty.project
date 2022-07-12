@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,14 +33,13 @@ public class ClassPathResourceTest
     {
         final String classPathName = "Resource.class";
 
-        try (Resource resource = Resource.newClassPathResource(classPathName);)
-        {
-            // A class path cannot be a directory
-            assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+        Resource resource = Resource.newClassPathResource(classPathName);
 
-            // A class path must exist
-            assertTrue(resource.exists(), "Class path resource does not exist.");
-        }
+        // A class path cannot be a directory
+        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
     }
 
     /**
@@ -77,10 +77,7 @@ public class ClassPathResourceTest
         // A class path must be a directory
         assertTrue(resource.isDirectory(), "Class path must be a directory.");
 
-        if (!(resource instanceof JarFileResource))
-        {
-            assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
-        }
+        assertTrue(Files.isDirectory(resource.getPath()), "Class path returned file must be a directory.");
 
         // A class path must exist
         assertTrue(resource.exists(), "Class path resource does not exist.");
@@ -105,10 +102,10 @@ public class ClassPathResourceTest
 
         assertTrue(resource != null);
 
-        File file = resource.getFile();
+        Path path = resource.getPath();
 
-        assertEquals(fileName, file.getName(), "File name from class path is not equal.");
-        assertTrue(file.isFile(), "File returned from class path should be a file.");
+        assertEquals(fileName, path.getFileName().toString(), "File name from class path is not equal.");
+        assertTrue(Files.isRegularFile(path), "File returned from class path should be a regular file.");
 
         // A class path must exist
         assertTrue(resource.exists(), "Class path resource does not exist.");

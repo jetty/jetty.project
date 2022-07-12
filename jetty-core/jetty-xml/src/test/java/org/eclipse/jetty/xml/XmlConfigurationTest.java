@@ -291,7 +291,7 @@ public class XmlConfigurationTest
         {
             writer.write(rawXml);
         }
-        return new XmlConfiguration(new PathResource(testFile));
+        return new XmlConfiguration(Resource.newResource(testFile));
     }
 
     @Test

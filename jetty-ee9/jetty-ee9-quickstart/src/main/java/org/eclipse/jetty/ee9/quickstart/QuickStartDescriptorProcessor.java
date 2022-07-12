@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -44,6 +46,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
 {
 
     private String _originAttributeName = null;
+    // possibly mounted resources that need to be cleaned up eventually
+    private List<Resource.Mount> _mountedResources;
 
     /**
      *
@@ -71,6 +75,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     public void end(WebAppContext context, Descriptor descriptor)
     {
         _originAttributeName = null;
+        if (_mountedResources != null)
+            _mountedResources.forEach(IO::close);
     }
 
     /**
@@ -186,13 +192,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                 Object o = context.getAttribute(MetaInfConfiguration.METAINF_TLDS);
                 if (o instanceof Collection<?>)
                     tlds.addAll((Collection<?>)o);
+
                 for (String i : values)
                 {
-                    Resource r = Resource.newResource(normalizer.expand(i));
-                    if (r.exists())
-                        tlds.add(r.getURI().toURL());
-                    else
-                        throw new IllegalArgumentException("TLD not found: " + r);
+                    String entry = normalizer.expand(i);
+                    tlds.add(Resource.toURI(entry).toURL());
                 }
 
                 //empty list signals that tlds were prescanned but none found.
@@ -205,7 +209,16 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 for (String i : values)
                 {
-                    Resource r = Resource.newResource(normalizer.expand(i));
+                    URI expandedEntry = Resource.toURI(normalizer.expand(i));
+                    if (expandedEntry.toString().startsWith("jar:file:"))
+                    {
+                        Resource.Mount mount = Resource.mount(expandedEntry);
+                        if (_mountedResources == null)
+                            _mountedResources = new ArrayList<>();
+                        _mountedResources.add(mount);
+                    }
+
+                    Resource r = Resource.newResource(expandedEntry);
                     if (r.exists())
                         visitMetaInfResource(context, r);
                     else

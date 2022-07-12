@@ -71,15 +71,9 @@ public class AbstractHandlerMBean extends ObjectMBean
                 name = "ROOT";
         }
 
-        try
-        {
-            if (name == null && context.getResourceBase() != null)
-                name = context.getResourceBase().getFile().getName();
-        }
-        catch (IOException e)
-        {
-            // TODO
-        }
+        if (name == null && context.getResourceBase() != null)
+            name = context.getResourceBase().getPath().getFileName().toString();
+
         List<String> vhosts = context.getVirtualHosts();
         if (vhosts.size() > 0)
             name = '"' + name + "@" + vhosts.get(0) + '"';

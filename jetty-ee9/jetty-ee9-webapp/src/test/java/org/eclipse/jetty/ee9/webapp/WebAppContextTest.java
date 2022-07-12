@@ -44,7 +44,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -271,7 +270,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(new PathResource(tempDir));
+        context.setBaseResource(Resource.newResource(tempDir));
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -302,7 +301,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setBaseResource(Resource.newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -366,7 +365,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setBaseResource(Resource.newResource(testWebapp));
         context.setContextPath("/");
         contexts.addHandler(context);
 
@@ -389,7 +388,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setBaseResource(Resource.newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -419,7 +418,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setBaseResource(Resource.newResource(testWebapp));
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -501,7 +500,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(new PathResource(warPath));
+        context.setBaseResource(Resource.newResource(warPath));
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -581,7 +580,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(new PathResource(warPath));
+        context.setBaseResource(Resource.newResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
 

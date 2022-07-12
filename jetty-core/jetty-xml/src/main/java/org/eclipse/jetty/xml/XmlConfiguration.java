@@ -14,7 +14,6 @@
 package org.eclipse.jetty.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -30,8 +29,10 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -217,23 +218,23 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        this(resource.getFile(), null, null);
+        this(resource.getPath(), null, null);
     }
 
     /**
      * Reads and parses the XML configuration file.
      *
-     * @param file the XML configuration
+     * @param path the XML configuration
      * @param idMap Map of objects with IDs
      * @param properties Map of properties
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
      */
-    public XmlConfiguration(File file, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
+    public XmlConfiguration(Path path, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = new FileInputStream(file))
+        try (ConfigurationParser parser = getParser(); InputStream inputStream = Files.newInputStream(path))
         {
-            _location = Resource.newResource(file);
+            _location = Resource.newResource(path);
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
             _idMap = idMap == null ? new HashMap<>() : idMap;
@@ -1889,8 +1890,8 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
-                            try (Resource resource = Resource.newResource(arg);
-                                 InputStream inputStream = resource.getInputStream())
+                            Resource resource = Resource.newResource(arg);
+                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                             {
                                 (envBuilder == null ? coreProperties : envProperties).load(inputStream);
                             }

@@ -14,30 +14,39 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.CopyOption;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -55,40 +64,88 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-//TODO remove
-public abstract class Resource implements ResourceFactory, Closeable
+public abstract class Resource implements ResourceFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
+    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+
+    private static final Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("file:")
+        .with("jrt:")
+        .with("jar:")
+        .build();
+
+    // TODO remove
     public static boolean __defaultUseCaches = true;
-    volatile Object _associate;
 
     /**
      * Change the default setting for url connection caches.
      * Subsequent URLConnections will use this default.
      *
      * @param useCaches true to enable URL connection caches, false otherwise.
+     * TODO remove
      */
     public static void setDefaultUseCaches(boolean useCaches)
     {
         __defaultUseCaches = useCaches;
     }
 
+    // TODO remove
     public static boolean getDefaultUseCaches()
     {
         return __defaultUseCaches;
     }
 
     /**
-     * Construct a resource from a uri.
-     *
-     * @param uri A URI.
-     * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
+     * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
+     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from the mounted resource.
+     * @throws IOException If the uri could not be mounted.
      */
-    public static Resource newResource(URI uri)
-        throws MalformedURLException
+    public static Resource.Mount mount(URI uri) throws IOException
     {
-        return newResource(uri.toURL());
+        if (!uri.getScheme().equalsIgnoreCase("jar"))
+            throw new IllegalArgumentException("not an allowed URI: " + uri);
+        return FileSystemPool.INSTANCE.mount(uri);
+    }
+
+    /**
+     * @param path The path to a jar file to be mounted (e.g. "file:/tmp/some.jar")
+     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from the mounted resource.
+     * @throws IOException If the path could not be mounted
+     */
+    public static Resource.Mount mountJar(Path path) throws IOException
+    {
+        URI pathUri = path.toUri();
+        if (!pathUri.getScheme().equalsIgnoreCase("file"))
+            throw new IllegalArgumentException("not an allowed path: " + path);
+        URI jarUri = URI.create(toJarRoot(pathUri.toString()));
+        return FileSystemPool.INSTANCE.mount(jarUri);
+    }
+
+    public static String toJarRoot(String jarFile)
+    {
+        return "jar:" + jarFile + "!/";
+    }
+
+    public static String toJarPath(String jarFile, String pathInJar)
+    {
+        return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
+    }
+
+    public static URI toURI(String resource)
+    {
+        Objects.requireNonNull(resource);
+
+        // Only try URI for string for known schemes, otherwise assume it is a Path
+        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
+            ? URI.create(resource)
+            : Paths.get(resource).toUri();
+
+        return uri;
     }
 
     /**
@@ -99,47 +156,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static Resource newResource(URL url)
     {
-        return newResource(url, __defaultUseCaches);
-    }
-
-    /**
-     * Construct a resource from a url.
-     *
-     * @param url the url for which to make the resource
-     * @param useCaches true enables URLConnection caching if applicable to the type of resource
-     * @return a new resource from the given URL
-     */
-    static Resource newResource(URL url, boolean useCaches)
-    {
-        if (url == null)
-            return null;
-
-        String urlString = url.toExternalForm();
-        if (urlString.startsWith("file:"))
+        try
         {
-            try
-            {
-                return new PathResource(url);
-            }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Bad PathResource: {}", url, e);
-                else
-                    LOG.warn("Bad PathResource: {} {}", url, e.toString());
-                return new BadResource(url, e.toString());
-            }
+            return newResource(url.toURI());
         }
-        else if (urlString.startsWith("jar:file:"))
+        catch (IOException | URISyntaxException e)
         {
-            return new JarFileResource(url, useCaches);
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
-        else if (urlString.startsWith("jar:"))
-        {
-            return new JarResource(url, useCaches);
-        }
-
-        return new URLResource(url, null, useCaches);
     }
 
     /**
@@ -147,51 +171,38 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @param resource A URL or filename.
      * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem accessing URI
      */
     public static Resource newResource(String resource) throws IOException
     {
-        return newResource(resource, __defaultUseCaches);
+        return newResource(toURI(resource));
     }
 
     /**
-     * Construct a resource from a string.
+     * Construct a resource from a uri.
      *
-     * @param resource A URL or filename.
-     * @param useCaches controls URLConnection caching
+     * @param uri A URI.
      * @return A Resource object.
-     * @throws MalformedURLException Problem accessing URI
+     * @throws IOException Problem accessing URI
      */
-    public static Resource newResource(String resource, boolean useCaches) throws IOException
+    public static Resource newResource(URI uri) throws IOException
     {
-        URL url;
+        if (!uri.isAbsolute())
+            throw new IllegalArgumentException("not an absolute uri: " + uri);
+
+        // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
+        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
+            return new PathResource(uri);
+
+        // Otherwise build a MountedPathResource.
         try
         {
-            // Try to format as a URL?
-            url = new URL(resource);
+            return new MountedPathResource(uri);
         }
-        catch (MalformedURLException e)
+        catch (ProviderNotFoundException ex)
         {
-            if (!resource.startsWith("ftp:") &&
-                !resource.startsWith("file:") &&
-                !resource.startsWith("jar:"))
-            {
-                // It's likely a file/path reference.
-                return new PathResource(Paths.get(resource));
-            }
-            else
-            {
-                LOG.warn("Bad Resource: {}", resource);
-                throw e;
-            }
+            throw new IllegalArgumentException(ex);
         }
-
-        return newResource(url, useCaches);
-    }
-
-    public static Resource newResource(File file)
-    {
-        return new PathResource(file.toPath());
     }
 
     /**
@@ -199,11 +210,17 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @param path the path
      * @return the Resource for the provided path
-     * @since 9.4.10
      */
     public static Resource newResource(Path path)
     {
-        return new PathResource(path);
+        try
+        {
+            return newResource(path.toUri());
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Unsupported path: " + path, e);
+        }
     }
 
     /**
@@ -216,6 +233,21 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws IOException Problem accessing resource.
      */
     public static Resource newSystemResource(String resource) throws IOException
+    {
+        return newSystemResource(resource, null);
+    }
+
+    /**
+     * Construct a system resource from a string.
+     * The resource is tried as classloader resource before being
+     * treated as a normal resource.
+     *
+     * @param resource Resource as string representation
+     * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
+     * @return The new Resource
+     * @throws IOException Problem accessing resource.
+     */
+    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer) throws IOException
     {
         URL url = null;
         // Try to format as a URL?
@@ -258,18 +290,21 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (url == null)
             return null;
 
-        return newResource(url);
-    }
-
-    /**
-     * Find a classpath resource.
-     *
-     * @param resource the relative name of the resource
-     * @return Resource or null
-     */
-    public static Resource newClassPathResource(String resource)
-    {
-        return newClassPathResource(resource, true, false);
+        try
+        {
+            URI uri = url.toURI();
+            if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
+            {
+                Mount mount = mount(uri);
+                mountConsumer.accept(mount);
+                return mount.root();
+            }
+            return newResource(uri);
+        }
+        catch (IOException | URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
     }
 
     /**
@@ -279,41 +314,47 @@ public abstract class Resource implements ResourceFactory, Closeable
      * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
      * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      *
-     * @param name The relative name of the resource
-     * @param useCaches True if URL caches are to be used.
-     * @param checkParents True if forced searching of parent Classloaders is performed to work around
-     * loaders with inverted priorities
+     * @param resource the relative name of the resource
      * @return Resource or null
      */
-    public static Resource newClassPathResource(String name, boolean useCaches, boolean checkParents)
+    public static Resource newClassPathResource(String resource)
     {
-        URL url = Resource.class.getResource(name);
+        URL url = Resource.class.getResource(resource);
 
         if (url == null)
-            url = Loader.getResource(name);
+            url = Loader.getResource(resource);
         if (url == null)
             return null;
-        return newResource(url, useCaches);
+        return newResource(url);
     }
 
-    public static boolean isContainedIn(Resource r, Resource containingResource) throws MalformedURLException
+    /**
+     * Return true if the Resource r is contained in the Resource containingResource, either because
+     * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
+     * @param r the contained resource
+     * @param containingResource the containing resource
+     * @return true if the Resource is contained, false otherwise
+     * @throws IOException Problem accessing resource
+     */
+    public static boolean isContainedIn(Resource r, Resource containingResource) throws IOException
     {
         return r.isContainedIn(containingResource);
     }
 
-    public Path getPath()
-    {
-        try
-        {
-            return getFile().toPath();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+    /**
+     * Return the Path corresponding to this resource.
+     * @return the path.
+     */
+    public abstract Path getPath();
 
-    public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
+    /**
+     * Return true if this resource is contained in the Resource r, either because
+     * r is a folder or a jar file or any form of resource capable of containing other resources.
+     * @param r the containing resource
+     * @return true if this Resource is contained, false otherwise
+     * @throws IOException Problem accessing resource
+     */
+    public abstract boolean isContainedIn(Resource r) throws IOException;
 
     /**
      * Return true if the passed Resource represents the same resource as the Resource.
@@ -328,34 +369,64 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
-     * Release any temporary resources held by the resource.
-     */
-    @Override
-    public abstract void close();
-
-    /**
+     * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:
+     * {@link #getPath()} and {@link LinkOption#NOFOLLOW_LINKS}.
      * @return true if the represented resource exists.
      */
-    public abstract boolean exists();
+    public boolean exists()
+    {
+        return Files.exists(getPath(), NO_FOLLOW_LINKS);
+    }
 
     /**
+     * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()}.
      * @return true if the represented resource is a container/directory.
      */
-    public abstract boolean isDirectory();
+    public boolean isDirectory()
+    {
+        return Files.isDirectory(getPath(), FOLLOW_LINKS);
+    }
 
     /**
      * Time resource was last modified.
-     *
-     * @return the last modified time as milliseconds since unix epoch
+     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     * @return the last modified time as milliseconds since unix epoch or
+     * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
      */
-    public abstract long lastModified();
+    public long lastModified()
+    {
+        try
+        {
+            FileTime ft = Files.getLastModifiedTime(getPath(), FOLLOW_LINKS);
+            return ft.toMillis();
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return 0;
+        }
+    }
 
     /**
      * Length of the resource.
-     *
-     * @return the length of the resource
+     * Equivalent to {@link Files#size(Path)} with the following parameter:
+     * {@link #getPath()}.
+     * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
      */
-    public abstract long length();
+    public long length()
+    {
+        try
+        {
+            return Files.size(getPath());
+        }
+        catch (IOException e)
+        {
+            // in case of error, use File.length logic of 0L
+            return 0L;
+        }
+    }
 
     /**
      * URI representing the resource.
@@ -363,22 +434,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return an URI representing the given resource
      */
     public abstract URI getURI();
-
-    public URI toUri()
-    {
-        // TODO deprecate toUri or getURI
-        return getURI();
-    }
-
-    /**
-     * File representing the given resource.
-     *
-     * @return an File representing the given resource or NULL if this
-     * is not possible.
-     * @throws IOException if unable to get the resource due to permissions
-     */
-    public abstract File getFile()
-        throws IOException;
 
     /**
      * The name of the resource.
@@ -392,83 +447,168 @@ public abstract class Resource implements ResourceFactory, Closeable
      *
      * @return an input stream to the resource
      * @throws IOException if unable to open the input stream
+     * @deprecated Replace with {@link #getPath()} and {@link Files#newInputStream(Path, OpenOption...)}.
      */
-    public abstract InputStream getInputStream()
-        throws IOException;
+    @Deprecated(forRemoval = true)
+    public InputStream getInputStream() throws IOException
+    {
+        return Files.newInputStream(getPath(), StandardOpenOption.READ);
+    }
 
     /**
      * Readable ByteChannel for the resource.
      *
      * @return an readable bytechannel to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated Replace with {@link #getPath()} and {@link Files#newByteChannel(Path, OpenOption...)}.
      */
-    public abstract ReadableByteChannel getReadableByteChannel()
-        throws IOException;
+    @Deprecated(forRemoval = true)
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
+    }
 
     /**
      * Deletes the given resource
-     *
-     * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
-     * be deleted.
-     * @throws SecurityException if unable to delete due to permissions
+     * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
+     * {@link #getPath()}.
+     * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
+     * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
      */
-    public abstract boolean delete()
-        throws SecurityException;
+    public boolean delete()
+    {
+        try
+        {
+            return Files.deleteIfExists(getPath());
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return false;
+        }
+    }
 
     /**
      * Rename the given resource
-     *
+     * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
+     * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
+     * on the {@code Path} returned by {@code move()}.
      * @param dest the destination name for the resource
      * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     * @throws SecurityException if unable to rename due to permissions
      */
-    public abstract boolean renameTo(Resource dest)
-        throws SecurityException;
+    public boolean renameTo(Resource dest)
+    {
+        try
+        {
+            Path result = Files.move(getPath(), dest.getPath());
+            return Files.exists(result, NO_FOLLOW_LINKS);
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return false;
+        }
+    }
 
     /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
+     * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
+     * {@link DirectoryStream}, taking the {@link Path#getFileName()} of each iterated entry and appending a {@code /} to
+     * the file name if testing it with {@link Files#isDirectory(Path, LinkOption...)} returns true.
      *
-     * @return a list of resource names contained in the given resource, or null.
+     * @return a list of resource names contained in the given resource, or null if {@link DirectoryIteratorException} or
+     * {@link IOException} was thrown while building the filename list.
      * Note: The resource names are not URL encoded.
      */
-    public abstract String[] list();
-
-    /**
-     * Returns the resource contained inside the current resource with the
-     * given name, which may or may not exist.
-     *
-     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
-     * the resulting Resource will return true from {@link #isAlias()}.
-     * @return the Resource for the resolved path within this Resource, never null
-     * @throws IOException if unable to resolve the path
-     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
-     * a relative path attempts to access above the root resource.
-     */
-    public abstract Resource addPath(String path)
-        throws IOException, MalformedURLException;
-
-    /**
-     * Get a resource from within this resource.
-     */
-    @Override
-    public Resource getResource(String path) throws IOException
+    public List<String> list()
     {
-        return addPath(path);
+        try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
+        {
+            List<String> entries = new ArrayList<>();
+            for (Path entry : dir)
+            {
+                String name = entry.getFileName().toString();
+
+                if (Files.isDirectory(entry))
+                {
+                    name += "/";
+                }
+
+                entries.add(name);
+            }
+            return entries;
+        }
+        catch (DirectoryIteratorException e)
+        {
+            LOG.debug("Directory list failure", e);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Directory list access failure", e);
+        }
+        return null;
     }
 
-    // FIXME: this appears to not be used
-    @SuppressWarnings("javadoc")
-    public Object getAssociate()
+    /**
+     * {@inheritDoc}
+     */
+    public Resource resolve(String subUriPath) throws IOException
     {
-        return _associate;
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(subUriPath) == null)
+            throw new IOException(subUriPath);
+
+        if (URIUtil.SLASH.equals(subUriPath))
+            return this;
+
+        // Sub-paths are always resolved under the given URI,
+        // we compensate for input sub-paths like "/subdir"
+        // where default resolve behavior would be to treat
+        // that like an absolute path.
+        while (subUriPath.startsWith(URIUtil.SLASH))
+            subUriPath = subUriPath.substring(1);
+
+        URI uri = getURI();
+        URI resolvedUri;
+        if (uri.isOpaque())
+        {
+            // TODO create a subclass with an optimized implementation of this.
+            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
+            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
+            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
+            String scheme = uri.getScheme();
+            URI subUri = URI.create(uri.getSchemeSpecificPart());
+            if (subUri.isOpaque())
+                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
+
+            if (!subUri.getPath().endsWith(URIUtil.SLASH))
+                subUri = URI.create(subUri + URIUtil.SLASH);
+
+            URI subUriResolved = uriResolve(subUri, subUriPath);
+            resolvedUri = URI.create(scheme + ":" + subUriResolved);
+        }
+        else
+        {
+            if (!uri.getPath().endsWith(URIUtil.SLASH))
+                uri = URI.create(uri + URIUtil.SLASH);
+            resolvedUri = uriResolve(uri, subUriPath);
+        }
+        return newResource(resolvedUri);
     }
 
-    // FIXME: this appear to not be used
-    @SuppressWarnings("javadoc")
-    public void setAssociate(Object o)
+    private static URI uriResolve(URI uri, String subUriPath) throws IOException
     {
-        _associate = o;
+        try
+        {
+            return uri.resolve(subUriPath);
+        }
+        catch (IllegalArgumentException iae)
+        {
+            throw new IOException(iae);
+        }
     }
 
     /**
@@ -503,7 +643,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (base == null || !isDirectory())
             return null;
 
-        String[] rawListing = list();
+        List<String> rawListing = list();
         if (rawListing == null)
         {
             return null;
@@ -544,7 +684,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = addPath(l);
+            Resource item = resolve(l);
             items.add(item);
         }
 
@@ -728,10 +868,10 @@ public abstract class Resource implements ResourceFactory, Closeable
         try
         {
             // if a Resource supports File
-            File file = getFile();
-            if (file != null)
+            Path path = getPath();
+            if (path != null)
             {
-                return file.getName();
+                return path.getFileName().toString();
             }
         }
         catch (Throwable ignored)
@@ -839,24 +979,26 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param destination the destination file to create
      * @throws IOException if unable to copy the resource
      */
-    public void copyTo(File destination)
+    public void copyTo(Path destination)
         throws IOException
     {
-        if (destination.exists())
+        if (Files.exists(destination))
             throw new IllegalArgumentException(destination + " exists");
 
         // attempt simple file copy
-        File src = getFile();
+        Path src = getPath();
         if (src != null)
         {
-            Files.copy(src.toPath(), destination.toPath(),
+            // TODO ATOMIC_MOVE seems useless for a copy and REPLACE_EXISTING contradicts the
+            //  javadoc that explicitly states "Will not replace existing destination file."
+            Files.copy(src, destination,
                 StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
             return;
         }
 
         // use old school stream based copy
         try (InputStream in = getInputStream();
-             OutputStream out = new FileOutputStream(destination))
+             OutputStream out = Files.newOutputStream(destination))
         {
             IO.copy(in, out);
         }
@@ -910,12 +1052,12 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             ArrayList<Resource> deep = new ArrayList<>();
             {
-                String[] list = list();
+                List<String> list = list();
                 if (list != null)
                 {
                     for (String i : list)
                     {
-                        Resource r = addPath(i);
+                        Resource r = resolve(i);
                         if (r.isDirectory())
                             deep.addAll(r.getAllResources());
                         else
@@ -929,18 +1071,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Generate a properly encoded URL from a {@link File} instance.
-     *
-     * @param file Target file.
-     * @return URL of the target file.
-     * @throws MalformedURLException if unable to convert File to URL
-     */
-    public static URL toURL(File file) throws MalformedURLException
-    {
-        return file.toURI().toURL();
     }
 
     /**
@@ -996,19 +1126,19 @@ public abstract class Resource implements ResourceFactory, Closeable
             {
                 String dir = token.substring(0, token.length() - 2);
                 // Use directory
-                Resource dirResource = resourceFactory.getResource(dir);
+                Resource dirResource = resourceFactory.resolve(dir);
                 if (dirResource.exists() && dirResource.isDirectory())
                 {
                     // To obtain the list of entries
-                    String[] entries = dirResource.list();
+                    List<String> entries = dirResource.list();
                     if (entries != null)
                     {
-                        Arrays.sort(entries);
+                        entries.sort(Comparator.naturalOrder());
                         for (String entry : entries)
                         {
                             try
                             {
-                                Resource resource = dirResource.addPath(entry);
+                                Resource resource = dirResource.resolve(entry);
                                 if (!resource.isDirectory())
                                 {
                                     returnedResources.add(resource);
@@ -1029,10 +1159,28 @@ public abstract class Resource implements ResourceFactory, Closeable
             else
             {
                 // Simple reference, add as-is
-                returnedResources.add(resourceFactory.getResource(token));
+                returnedResources.add(resourceFactory.resolve(token));
             }
         }
 
         return returnedResources;
+    }
+
+    /**
+     * Certain {@link Resource}s (e.g.: JAR files) require mounting before they can be used. This class is the representation
+     * of such mount allowing the use of more {@link Resource}s.
+     * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
+     * be released.
+     * @see #mount(URI)
+     * @see #mountJar(Path)
+     */
+    public interface Mount extends Closeable
+    {
+        /**
+         * Return the root {@link Resource} made available by this mount.
+         * @return the resource.
+         * @throws IOException Problem accessing resource
+         */
+        Resource root() throws IOException;
     }
 }

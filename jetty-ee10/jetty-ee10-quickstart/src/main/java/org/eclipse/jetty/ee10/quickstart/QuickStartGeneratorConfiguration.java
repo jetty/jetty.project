@@ -14,9 +14,9 @@
 package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -812,9 +812,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile(), false))
+        try (OutputStream os = Files.newOutputStream(_quickStartWebXml.getPath()))
         {
-            generateQuickStartWebXml(context, fos);
+            generateQuickStartWebXml(context, os);
             LOG.info("Generated {}", _quickStartWebXml);
             if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
                 LOG.warn("Generated to non persistent location: {}", _quickStartWebXml);

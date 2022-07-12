@@ -47,9 +47,9 @@ public class EnvironmentBuilder
     {
         for (String classPath : classPaths)
         {
-            try (Resource resource = Resource.newResource(classPath))
+            try
             {
-                _classpath.add(resource.getURI().toURL());
+                _classpath.add(Resource.newResource(classPath).getURI().toURL());
             }
             catch (IOException e)
             {

@@ -13,20 +13,21 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -222,7 +223,7 @@ public class ResourceCollection extends Resource
 
     /**
      * Add a path to the resource collection.
-     * @param path The path segment to add
+     * @param subUriPath The path segment to add
      * @return The resulting resource(s) :
      * <ul>
      *   <li>is a file that exists in at least one of the collection, then the first one found is returned</li>
@@ -233,16 +234,16 @@ public class ResourceCollection extends Resource
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
-    public Resource addPath(String path) throws IOException
+    public Resource resolve(String subUriPath) throws IOException
     {
         assertResourcesSet();
 
-        if (path == null)
+        if (subUriPath == null)
         {
             throw new MalformedURLException("null path");
         }
 
-        if (path.length() == 0 || URIUtil.SLASH.equals(path))
+        if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))
         {
             return this;
         }
@@ -253,7 +254,7 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
-            addedResource = res.addPath(path);
+            addedResource = res.resolve(subUriPath);
             if (!addedResource.exists())
                 continue;
             if (!addedResource.isDirectory())
@@ -299,17 +300,14 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public File getFile() throws IOException
+    public Path getPath()
     {
         assertResourcesSet();
-
         for (Resource r : _resources)
         {
-            File f = r.getFile();
-            if (f != null)
-            {
-                return f;
-            }
+            Path p = r.getPath();
+            if (p != null)
+                return p;
         }
         return null;
     }
@@ -417,31 +415,20 @@ public class ResourceCollection extends Resource
      * @return The list of resource names(merged) contained in the collection of resources.
      */
     @Override
-    public String[] list()
+    public List<String> list()
     {
         assertResourcesSet();
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            String[] list = r.list();
+            List<String> list = r.list();
             if (list != null)
-                Collections.addAll(set, list);
+                set.addAll(list);
         }
 
-        String[] result = set.toArray(new String[0]);
-        Arrays.sort(result);
+        ArrayList<String> result = new ArrayList<>(set);
+        result.sort(Comparator.naturalOrder());
         return result;
-    }
-
-    @Override
-    public void close()
-    {
-        assertResourcesSet();
-
-        for (Resource r : _resources)
-        {
-            r.close();
-        }
     }
 
     @Override
@@ -451,8 +438,7 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public void copyTo(File destination)
-        throws IOException
+    public void copyTo(Path destination) throws IOException
     {
         assertResourcesSet();
 
