@@ -4,6 +4,6 @@
    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" 
    version="3.1">
 
-	<display-name>Async REST Webservice Example</display-name>
+	<display-name>ee9 Demo Async REST WebApp</display-name>
 
 </web-app>

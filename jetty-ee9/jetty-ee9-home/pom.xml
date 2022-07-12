@@ -69,11 +69,16 @@
             <id>copy-ee9-lib-jakarta-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-jakarta-websocket-api</artifactId>
+                  <version>${jakarta.websocket.api.version}</version>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${assembly-directory}/lib/ee9-websocket</outputDirectory>
             </configuration>
           </execution>
@@ -81,12 +86,17 @@
             <id>copy-ee9-lib-jakarta-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-jakarta-websocket-api</artifactId>
+                  <version>${jakarta.websocket.api.version}</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${source-assembly-directory}/lib/ee9-websocket</outputDirectory>
             </configuration>
           </execution>

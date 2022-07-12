@@ -68,10 +68,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Handler.Nested;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -2447,7 +2449,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Processor
+    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Processor
     {
         CoreContextHandler()
         {
@@ -2491,7 +2493,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-
+        
+        @Override
+        public void insertHandler(Nested handler)
+        {
+            Nested tail = handler;
+            while (tail.getHandler() instanceof Handler.Wrapper)
+                tail = (Handler.Wrapper)tail.getHandler();
+            if (tail.getHandler() != null)
+                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+        
+            tail.setHandler(getHandler());
+            super.setHandler(handler);
+        }
+        
         @Override
         public void setHandler(Handler handler)
         {
