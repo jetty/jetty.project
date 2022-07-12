@@ -7,7 +7,7 @@
     <Set name="handler">
       <New class="org.eclipse.jetty.server.handler.ResourceHandler">
         <Set name="baseResource">
-          <Call name="get" class="java.nio.file.Paths">
+          <Call name="newResource" class="org.eclipse.jetty.util.resource.Resource">
             <Arg>
               <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
                 <Arg><Property name="jetty.base"/></Arg>

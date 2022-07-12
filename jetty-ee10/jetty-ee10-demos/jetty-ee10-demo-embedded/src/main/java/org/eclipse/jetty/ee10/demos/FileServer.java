@@ -15,7 +15,7 @@ package org.eclipse.jetty.ee10.demos;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -43,8 +43,8 @@ public class FileServer
         // Configure the ResourceHandler. Setting the resource base indicates where the files should be served out of.
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
         resourceHandler.setDirAllowed(true);
-        resourceHandler.setWelcomeFiles(Arrays.asList(new String[]{"index.html"}));
-        resourceHandler.setBaseResource(baseResource.getPath());
+        resourceHandler.setWelcomeFiles(List.of("index.html"));
+        resourceHandler.setBaseResource(baseResource);
 
         // Add the ResourceHandler to the server.
         server.setHandler(new Handler.Collection(resourceHandler, new DefaultHandler()));
