@@ -24,6 +24,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
@@ -108,6 +109,8 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountIfNeeded(URI uri)
     {
+        if (uri == null || uri.getScheme() == null)
+            return null;
         try
         {
             return (uri.getScheme().equalsIgnoreCase("jar")) ? FileSystemPool.INSTANCE.mount(uri) : null;
@@ -215,19 +218,24 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(URI uri) throws IOException
     {
-        if (!uri.isAbsolute())
-            throw new IllegalArgumentException("not an absolute uri: " + uri);
-
-        // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-            return new PathResource(uri);
-
         // Otherwise build a MountedPathResource.
         try
         {
+            if (!uri.isAbsolute())
+            {
+                if (uri.toString().startsWith(FileSystems.getDefault().getSeparator()))
+                    uri = new URI("file", uri.toString(), null);
+                else
+                    throw new IllegalArgumentException("not an absolute uri: " + uri);
+            }
+
+            // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
+            if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
+                return new PathResource(uri);
+
             return new MountedPathResource(uri);
         }
-        catch (ProviderNotFoundException ex)
+        catch (URISyntaxException | ProviderNotFoundException ex)
         {
             throw new IllegalArgumentException(ex);
         }

@@ -128,10 +128,14 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonAbsoluteURI()
+    public void testNonAbsoluteURI() throws Exception
     {
         assertThrows(IllegalArgumentException.class,
             () -> Resource.newResource(new URI("path/to/resource")));
+
+        Resource resource =  Resource.newResource(new URI("/path/to/resource"));
+        assertThat(resource, notNullValue());
+        assertThat(resource.getURI().toString(), is("file:/path/to/resource"));
     }
 
     @Test

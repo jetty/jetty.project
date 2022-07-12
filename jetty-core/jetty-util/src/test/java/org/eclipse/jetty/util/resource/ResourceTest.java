@@ -17,7 +17,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.InvalidPathException;
@@ -375,18 +374,23 @@ public class ResourceTest
     }
 
     @Test
-    @Disabled("does isAlias still make sense?")
     public void testClimbAboveBase() throws Exception
     {
         Resource resource = Resource.newResource("/foo/bar");
-        assertThrows(MalformedURLException.class, () -> resource.resolve(".."));
+        assertThrows(IOException.class, () -> resource.resolve(".."));
 
+        assertThrows(IOException.class, () -> resource.resolve("./.."));
+
+        assertThrows(IOException.class, () -> resource.resolve("./../bar"));
+    }
+
+    @Test
+    @Disabled
+    public void testDotAlias() throws Exception
+    {
+        Resource resource = Resource.newResource("/foo/bar");
         Resource same = resource.resolve(".");
         assertNotNull(same);
         assertTrue(same.isAlias());
-
-        assertThrows(MalformedURLException.class, () -> resource.resolve("./.."));
-
-        assertThrows(MalformedURLException.class, () -> resource.resolve("./../bar"));
     }
 }
