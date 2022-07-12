@@ -99,10 +99,32 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
+     * <p>Mount a URI if it is needed.</p>
+     * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
+     * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from a mounted resource.
+     * @throws IllegalArgumentException If the uri could not be mounted.
+     * @see #mount(URI)
+     */
+    public static Resource.Mount mountIfNeeded(URI uri)
+    {
+        try
+        {
+            return (uri.getScheme().equalsIgnoreCase("jar")) ? FileSystemPool.INSTANCE.mount(uri) : null;
+        }
+        catch (IOException ioe)
+        {
+            throw new IllegalArgumentException(ioe);
+        }
+    }
+
+    /**
      * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
      * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
      * they no longer require any resources from the mounted resource.
      * @throws IOException If the uri could not be mounted.
+     * @throws IllegalArgumentException If the URI does not require a mount.
+     * @see #mountIfNeeded(URI)
      */
     public static Resource.Mount mount(URI uri) throws IOException
     {
@@ -136,6 +158,12 @@ public abstract class Resource implements ResourceFactory
         return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
     }
 
+    /**
+     * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
+     *                 representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * @return The {@link URI} form of the resource.
+     */
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);

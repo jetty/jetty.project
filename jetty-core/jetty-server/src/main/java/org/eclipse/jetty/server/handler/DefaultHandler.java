@@ -74,26 +74,13 @@ public class DefaultHandler extends Handler.Processor
             if (fav != null)
             {
                 URI uri = fav.toURI();
-                Resource.Mount mount;
-                Resource r;
-                if (uri.getScheme().equalsIgnoreCase("jar"))
+                try (Resource.Mount mount = Resource.mountIfNeeded(uri))
                 {
-                    mount = Resource.mount(uri);
-                    r = mount.root();
-                }
-                else
-                {
-                    mount = null;
-                    r = Resource.newResource(uri);
-                }
-
-                try (InputStream is = Files.newInputStream(r.getPath()))
-                {
-                    favbytes = IO.readBytes(is);
-                }
-                finally
-                {
-                    IO.close(mount);
+                    Resource resource = mount == null ? Resource.newResource(uri) : mount.root();
+                    try (InputStream is = Files.newInputStream(resource.getPath()))
+                    {
+                        favbytes = IO.readBytes(is);
+                    }
                 }
             }
         }
