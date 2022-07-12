@@ -126,6 +126,41 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-transaction-api-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction.api.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-transaction-api-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction.api.version}</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-ee10-annotations-deps</id>
             <phase>generate-resources</phase>
             <goals>
