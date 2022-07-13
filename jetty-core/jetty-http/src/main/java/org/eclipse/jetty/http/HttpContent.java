@@ -31,8 +31,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
-// TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
-//  are available via the Path API
 public interface HttpContent
 {
     HttpField getContentType();
@@ -59,10 +57,6 @@ public interface HttpContent
 
     String getETagValue();
 
-    // TODO rename?
-    Path getPath();
-
-    // TODO getPath() is supposed to replace the following
     Resource getResource();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();

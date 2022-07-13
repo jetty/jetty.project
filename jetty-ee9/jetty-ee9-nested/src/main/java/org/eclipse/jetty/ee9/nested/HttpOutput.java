@@ -1314,7 +1314,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            ReadableByteChannel rbc = Files.newByteChannel(httpContent.getPath());
+            ReadableByteChannel rbc = Files.newByteChannel(httpContent.getResource().getPath());
             sendContent(rbc, callback);
         }
         catch (Throwable x)

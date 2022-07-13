@@ -44,6 +44,6 @@ public class HttpContentRangeWriter
         if (buffer != null)
             return new ByteBufferRangeWriter(buffer);
 
-        return new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getPath()));
+        return new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getResource().getPath()));
     }
 }
