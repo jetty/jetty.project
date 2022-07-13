@@ -20,6 +20,7 @@ import javax.naming.NameNotFoundException;
 import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee10.plus.jndi.Transaction;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
@@ -89,7 +90,7 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         try
         {
-            Transaction.bindToENC();
+            Transaction.bindTransactionToENC(ServletContextHandler.__environment.getName());
         }
         catch (NameNotFoundException e)
         {

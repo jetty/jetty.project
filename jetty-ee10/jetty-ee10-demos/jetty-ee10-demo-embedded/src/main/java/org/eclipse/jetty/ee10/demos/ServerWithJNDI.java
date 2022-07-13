@@ -36,7 +36,7 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemos.find("demo-jndi-webapp/target/demo-jndi-webapp-@VER@.war");
+        Path testJndiWar = JettyDemos.find("ee10-demo-jndi-webapp/target/ee10-demo-jndi-webapp-@VER@.war");
         webapp.setWarResource(Resource.newResource(testJndiWar));
         server.setHandler(webapp);
 
@@ -45,7 +45,7 @@ public class ServerWithJNDI
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new org.eclipse.jetty.ee10.plus.jndi.Transaction(
+        new org.eclipse.jetty.ee10.plus.jndi.Transaction("ee10",
             new org.example.MockUserTransaction());
 
         // Define an env entry with Server scope.
