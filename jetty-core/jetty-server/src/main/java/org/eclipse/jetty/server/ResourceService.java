@@ -443,7 +443,7 @@ public class ResourceService
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
 
                 // TODO need helper code to edit URIs
-                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
+                String uri = URIUtil.addPaths(request.getContextPath(), welcome);
                 String q = request.getHttpURI().getQuery();
                 if (q != null && !q.isEmpty())
                     uri += "?" + q;

@@ -880,7 +880,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testWelcomeRedirect() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -942,7 +941,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testRelativeRedirect() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -986,7 +984,6 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    @Disabled
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1003,6 +1000,10 @@ public class DefaultServletTest
 
         String rawResponse;
         HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/dir%3F/index.html HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
         rawResponse = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);

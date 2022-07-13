@@ -711,7 +711,7 @@ public class DefaultServlet extends HttpServlet implements ResourceService.Welco
                     // Redirect to the index
                     response.setContentLength(0);
 
-                    String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
+                    String uri = URIUtil.addPaths(request.getContextPath(), welcome);
                     String q = request.getQueryString();
                     if (q != null && !q.isEmpty())
                         uri += "?" + q;

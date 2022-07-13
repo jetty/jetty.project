@@ -526,6 +526,39 @@ public class ResourceHandlerTest
     }
 
     @Test
+    public void testWelcomeDirWithQuestion() throws Exception
+    {
+        Path dir = TEST_PATH.resolve("dir?");
+        Files.createDirectories(dir);
+        Path welcome = dir.resolve("welcome.txt");
+        try (FileOutputStream out = new FileOutputStream(welcome.toFile()))
+        {
+            out.write("Hello".getBytes());
+        }
+        welcome.toFile().deleteOnExit();
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/dir? HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/dir%3F HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getField(LOCATION).getValue(), endsWith("/resource/dir%3F/"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/dir%3F/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("Hello"));
+
+        _resourceHandler.setRedirectWelcome(true);
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/dir%3F/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+        assertThat(response.getField(LOCATION).getValue(), endsWith("/resource/dir%3F/welcome.txt"));
+    }
+
+    @Test
     public void testWelcomeRedirect() throws Exception
     {
         try
