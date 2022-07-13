@@ -327,8 +327,6 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <exclude>**/org/eclipse/jetty/maven/**</exclude>
-            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
@@ -348,6 +346,17 @@
           <execution>
             <id>jacoco-initialize</id>
             <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-setup-m-invoker-p</id>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of maven-invoker-plugin -->
+              <propertyName>invoker.mavenOpts</propertyName>
+            </configuration>
             <goals>
               <goal>prepare-agent</goal>
             </goals>

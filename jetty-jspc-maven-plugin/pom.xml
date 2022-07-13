@@ -11,7 +11,6 @@
   <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
-    <jacoco.skip>true</jacoco.skip>
   </properties>
   <build>
     <plugins>
