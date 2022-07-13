@@ -25,6 +25,7 @@ import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.plus.annotation.Injection;
 import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
@@ -155,6 +156,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
+                    if (!bound)
+                        bound = NamingEntryUtil.bindToENC(ContextHandler.ENVIRONMENT.getName(), name, mappedName);
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
                     if (!bound)
@@ -297,15 +300,19 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             {
                 try
                 {
-                    //try binding name to environment
-                    //try the webapp's environment first
+                    //try binding name
+                    //try the webapp's scope first
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
+                    
+                    //try the environment scope
+                    if (!bound)
+                        bound = NamingEntryUtil.bindToENC(ContextHandler.ENVIRONMENT.getName(), name, mappedName);
 
-                    //try the server's environment
+                    //try the server's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
 
-                    //try the jvm's environment
+                    //try the jvm's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
 

@@ -8,6 +8,7 @@
   <Set name="configurationDiscovered">true</Set>
 
   <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
+    <Arg><Property name="environment" default="ee"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />
     </Arg>
