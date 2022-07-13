@@ -17,10 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -356,33 +353,9 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         @Override
-        public java.util.Collection<HttpField> getHeaders()
+        public HttpFields getHeaders()
         {
-            List<HttpField> fields = new ArrayList<>();
-            HttpFields headers = request.getHeaders();
-            Set<String> names = headers.getFieldNamesCollection();
-            for (String name : names)
-            {
-                Enumeration<String> values = headers.getValues(name);
-                while (values.hasMoreElements())
-                {
-                    String value = values.nextElement();
-                    fields.add(new HttpField(name, value));
-                }
-            }
-            return fields;
-        }
-
-        @Override
-        public Enumeration<String> getHeaderValues(String name)
-        {
-            return request.getHeaders().getValues(name);
-        }
-
-        @Override
-        public long getHeaderDate(String name)
-        {
-            return request.getHeaders().getDateField(name);
+            return request.getHeaders();
         }
 
         @Override

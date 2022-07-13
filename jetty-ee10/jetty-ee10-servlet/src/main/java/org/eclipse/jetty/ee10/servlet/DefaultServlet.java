@@ -18,10 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
-import java.util.List;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
@@ -35,6 +32,7 @@ import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -115,16 +113,13 @@ public class DefaultServlet extends HttpServlet
     private static class ServletGenericRequest implements ResourceService.GenericRequest
     {
         private final HttpServletRequest request;
+        private final HttpFields httpFields;
 
         ServletGenericRequest(HttpServletRequest request)
         {
             this.request = request;
-        }
+            HttpFields.Mutable fields = HttpFields.build();
 
-        @Override
-        public Collection<HttpField> getHeaders()
-        {
-            List<HttpField> httpFields = new ArrayList<>();
             Enumeration<String> headerNames = request.getHeaderNames();
             while (headerNames.hasMoreElements())
             {
@@ -133,22 +128,16 @@ public class DefaultServlet extends HttpServlet
                 while (headerValues.hasMoreElements())
                 {
                     String headerValue = headerValues.nextElement();
-                    httpFields.add(new HttpField(headerName, headerValue));
+                    fields.add(new HttpField(headerName, headerValue));
                 }
             }
+            httpFields = fields.asImmutable();
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
             return httpFields;
-        }
-
-        @Override
-        public Enumeration<String> getHeaderValues(String name)
-        {
-            return request.getHeaders(name);
-        }
-
-        @Override
-        public long getHeaderDate(String name)
-        {
-            return request.getDateHeader(name);
         }
 
         @Override

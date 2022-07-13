@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -137,7 +137,8 @@ public class ResourceService
         String pathInContext = request.getPathInContext();
 
         // Is this a Range request?
-        Enumeration<String> reqRanges = request.getHeaderValues(HttpHeader.RANGE.asString());
+
+        Enumeration<String> reqRanges = request.getHeaders().getValues(HttpHeader.RANGE.asString());
         if (!hasDefinedRange(reqRanges))
             reqRanges = null;
 
@@ -212,7 +213,7 @@ public class ResourceService
 
     private List<String> getPreferredEncodingOrder(GenericRequest request)
     {
-        Enumeration<String> headers = request.getHeaderValues(HttpHeader.ACCEPT_ENCODING.asString());
+        Enumeration<String> headers = request.getHeaders().getValues(HttpHeader.ACCEPT_ENCODING.asString());
         if (!headers.hasMoreElements())
             return Collections.emptyList();
 
@@ -372,7 +373,7 @@ public class ResourceService
                     return true;
                 }
 
-                long ifmsl = request.getHeaderDate(HttpHeader.IF_MODIFIED_SINCE.asString());
+                long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
                     response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
@@ -828,11 +829,7 @@ public class ResourceService
 
     public interface GenericRequest
     {
-        Collection<HttpField> getHeaders();
-
-        Enumeration<String> getHeaderValues(String name);
-
-        long getHeaderDate(String name);
+        HttpFields getHeaders();
 
         HttpURI getHttpURI();
 
