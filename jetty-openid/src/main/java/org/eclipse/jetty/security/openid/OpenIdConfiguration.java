@@ -100,7 +100,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authMethod") String authMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authorizationEndpoint, httpClient);
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authMethod, httpClient);
     }
 
     /**

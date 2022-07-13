@@ -83,7 +83,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     private final SecureRandom _secureRandom = new SecureRandom();
     private OpenIdConfiguration _openIdConfiguration;
     private String _redirectPath;
-    private String _logoutRedirectPath = "/";
+    private String _logoutRedirectPath;
     private String _errorPage;
     private String _errorPath;
     private String _errorQuery;
@@ -264,30 +264,47 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         }
     }
 
+    /**
+     * This will attempt to redirect the request to the end_session_endpoint, and finally to the {@link #REDIRECT_PATH}.
+     *
+     * If end_session_endpoint is defined the request will be redirected to the end_session_endpoint, the optional
+     * post_logout_redirect_uri parameter will be set if {@link #REDIRECT_PATH} is non-null.
+     *
+     * If the end_session_endpoint is not defined then the request will be redirected to {@link #REDIRECT_PATH} if it is a
+     * non-null value, otherwise no redirection will be done.
+     *
+     * @param request the request to redirect.
+     */
     private void attemptLogoutRedirect(ServletRequest request)
     {
         try
         {
             Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
             Response baseResponse = baseRequest.getResponse();
-
-            StringBuilder redirectUri = new StringBuilder(128);
-            URIUtil.appendSchemeHostPort(redirectUri, request.getScheme(), request.getServerName(), request.getServerPort());
-            redirectUri.append(baseRequest.getContextPath());
-            redirectUri.append(_logoutRedirectPath);
-
             String endSessionEndpoint = _openIdConfiguration.getEndSessionEndpoint();
+            String redirectUri = null;
+            if (_logoutRedirectPath != null)
+            {
+                StringBuilder sb = new StringBuilder(128);
+                URIUtil.appendSchemeHostPort(sb, request.getScheme(), request.getServerName(), request.getServerPort());
+                sb.append(baseRequest.getContextPath());
+                sb.append(_logoutRedirectPath);
+                redirectUri = sb.toString();
+            }
+
             HttpSession session = baseRequest.getSession(false);
             if (endSessionEndpoint == null || session == null)
             {
-                baseResponse.sendRedirect(redirectUri.toString(), true);
+                if (redirectUri != null)
+                    baseResponse.sendRedirect(redirectUri, true);
                 return;
             }
 
             Object openIdResponse = session.getAttribute(OpenIdAuthenticator.RESPONSE);
             if (!(openIdResponse instanceof Map))
             {
-                baseResponse.sendRedirect(redirectUri.toString(), true);
+                if (redirectUri != null)
+                    baseResponse.sendRedirect(redirectUri, true);
                 return;
             }
 
@@ -295,7 +312,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String idToken = (String)((Map)openIdResponse).get("id_token");
             baseResponse.sendRedirect(endSessionEndpoint +
                     "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) +
-                    "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri.toString(), StandardCharsets.UTF_8),
+                    ((redirectUri == null) ? "" : "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8)),
                 true);
         }
         catch (Throwable t)
