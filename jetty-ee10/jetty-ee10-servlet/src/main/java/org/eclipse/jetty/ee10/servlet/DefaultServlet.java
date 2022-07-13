@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,6 +25,7 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,6 +60,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -69,6 +73,11 @@ public class DefaultServlet extends HttpServlet
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
 
+    private Resource.Mount _resourceBaseMount;
+    private Resource.Mount _stylesheetMount;
+    private Resource _stylesheet;
+    private boolean _useFileMappedBuffer = false;
+
     @Override
     public void init() throws ServletException
     {
@@ -76,11 +85,57 @@ public class DefaultServlet extends HttpServlet
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        // TODO lots of review needed of this initialization
+        Resource baseResource = servletContextHandler.getResourceBase();
+        String rb = getInitParameter("resourceBase");
+        if (rb != null)
+        {
+            try
+            {
+                URI resourceUri = Resource.toURI(rb);
+                _resourceBaseMount = Resource.mountIfNeeded(resourceUri);
+                baseResource = Resource.newResource(resourceUri);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                throw new UnavailableException(e.toString());
+            }
+        }
 
+        // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
+        // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
         CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
-        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(servletContextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
+
+        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(baseResource, mimeTypes, precompressedFormats);
+        CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
+
+        int maxCacheSize = getInitInt("maxCacheSize", -2);
+        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+
+        try
+        {
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            {
+                if (maxCacheSize >= 0)
+                    cached.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    cached.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    cached.setMaxCachedFiles(maxCachedFiles);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to setup CachedContentFactory", e);
+            throw new UnavailableException(e.toString());
+        }
+
+        String resourceCache = getInitParameter("resourceCache");
+        getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
+        _resourceService.setContentFactory(cached);
 
         if (servletContextHandler.getWelcomeFiles() == null)
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
@@ -100,27 +155,6 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
-        /*
-        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-
-        _relativeResourceBase = getInitParameter("relativeResourceBase");
-
-        String rb = getInitParameter("resourceBase");
-        if (rb != null)
-        {
-            if (_relativeResourceBase != null)
-                throw new UnavailableException("resourceBase & relativeResourceBase");
-            try
-            {
-                _resourceBase = _contextHandler.newResource(rb);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to create resourceBase from {}", rb, e);
-                throw new UnavailableException(e.toString());
-            }
-        }
-
         String stylesheet = getInitParameter("stylesheet");
         try
         {
@@ -137,7 +171,7 @@ public class DefaultServlet extends HttpServlet
             }
             if (_stylesheet == null)
             {
-                _stylesheet = ResourceHandler.getDefaultStylesheet();
+                _stylesheet = _resourceService.getStylesheet();
             }
         }
         catch (Exception e)
@@ -154,50 +188,7 @@ public class DefaultServlet extends HttpServlet
 
         String cc = getInitParameter("cacheControl");
         if (cc != null)
-            _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
-
-        String resourceCache = getInitParameter("resourceCache");
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-        if (resourceCache != null)
-        {
-            if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
-                LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
-            if (_relativeResourceBase != null || _resourceBase != null)
-                throw new UnavailableException("resourceCache specified with resource bases");
-            _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
-        }
-
-        try
-        {
-            if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
-            {
-                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
-                if (maxCacheSize >= 0)
-                    _cache.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    _cache.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    _cache.setMaxCachedFiles(maxCachedFiles);
-                _servletContext.setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cache);
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
-        }
-
-        HttpContent.ContentFactory contentFactory = _cache;
-        if (contentFactory == null)
-        {
-            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats());
-            if (resourceCache != null)
-                _servletContext.setAttribute(resourceCache, contentFactory);
-        }
-        _resourceService.setContentFactory(contentFactory);
-        _resourceService.setWelcomeFactory(this);
+            _resourceService.setCacheControl(cc);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
@@ -213,16 +204,23 @@ public class DefaultServlet extends HttpServlet
         }
         else
         {
-            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+            // .svgz files are gzipped svg files and must be served with Content-Encoding:gzip
             gzipEquivalentFileExtensions.add(".svgz");
         }
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
-        _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
+        // TODO: remove? _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("resource base = {}", _resourceBase);
-        */
+            LOG.debug("base resource = {}", baseResource);
+    }
+
+    @Override
+    public void destroy()
+    {
+        super.destroy();
+        IO.close(_stylesheetMount);
+        IO.close(_resourceBaseMount);
     }
 
     private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
@@ -303,7 +301,8 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        HttpContent content = _resourceService.getContent(req.getServletPath(), resp.getBufferSize());
+        String pathInContext = _resourceService.isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
+        HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
         if (content == null)
         {
             // no content

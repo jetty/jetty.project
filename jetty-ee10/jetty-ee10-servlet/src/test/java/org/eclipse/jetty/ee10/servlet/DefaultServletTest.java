@@ -251,7 +251,6 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
-    @Disabled
     public void testListingFilenamesOnly() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -272,7 +271,12 @@ public class DefaultServletTest
         String resBasePath = docRoot.toAbsolutePath().toString();
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
+        String req1 = """
+            GET /context/one/deep/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -288,7 +292,6 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
-    @Disabled
     public void testListingFilenamesOnlyUrlResource() throws Exception
     {
         URL extraResource = context.getClassLoader().getResource("rez/one");
@@ -304,29 +307,35 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
 
-        StringBuffer req1;
+        String rawRequest;
         String rawResponse;
         HttpTester.Response response;
         String body;
 
         // Test that GET works first.
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/one HTTP/1.0\n");
-        req1.append("\n");
+        rawRequest = """
+            GET /context/extra/deep/xxx HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(body, containsString("is this the one?"));
+        assertThat(body, containsString("this is just a file named xxx"));
 
         // Typical directory listing of location in jar:file:// URL
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/deep/ HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/deep/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest.toString());
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -339,11 +348,14 @@ public class DefaultServletTest
         assertThat(body, not(containsString(ODD_JAR)));
 
         // Get deep resource
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/deep/yyy HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/deep/yyy HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -352,11 +364,14 @@ public class DefaultServletTest
 
         // Convoluted directory listing of location in jar:file:// URL
         // This exists to test proper encoding output
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/oddities/ HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/oddities/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -1067,33 +1082,58 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContent(), containsString("JSP support not configured"));
 
         createFile(index, "<h1>Hello Index</h1>");
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         if (deleteFile(index))
         {
-            rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"));
 
             if (deleteFile(inde))
             {
-                rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+                rawResponse = connector.getResponse("""
+                    GET /context/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """);
                 response = HttpTester.parseResponse(rawResponse);
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
                 assertThat(response.getContent(), containsString("JSP support not configured"));

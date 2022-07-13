@@ -79,9 +79,9 @@ public class ResourceService
     {
     }
 
-    public HttpContent getContent(String servletPath, int outputBufferSize) throws IOException
+    public HttpContent getContent(String path, int outputBufferSize) throws IOException
     {
-        return _contentFactory.getContent(servletPath, outputBufferSize);
+        return _contentFactory.getContent(path == null ? "" : path, outputBufferSize);
     }
 
     public HttpContent.ContentFactory getContentFactory()
