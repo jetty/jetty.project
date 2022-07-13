@@ -321,7 +321,8 @@ public class OpenIdProvider extends ContainerLifeCycle
             String logoutRedirect = req.getParameter("post_logout_redirect_uri");
             if (logoutRedirect == null)
             {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "no post_logout_redirect_uri");
+                resp.setStatus(HttpServletResponse.SC_OK);
+                resp.getWriter().println("logout success on end_session_endpoint");
                 return;
             }
 

@@ -104,6 +104,7 @@ public class OpenIdAuthenticationTest
         server.addBean(new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET));
         securityHandler.setInitParameter(OpenIdAuthenticator.REDIRECT_PATH, "/redirect_path");
         securityHandler.setInitParameter(OpenIdAuthenticator.ERROR_PAGE, "/error");
+        securityHandler.setInitParameter(OpenIdAuthenticator.LOGOUT_REDIRECT_PATH, "/");
         context.setSecurityHandler(securityHandler);
 
         server.start();
