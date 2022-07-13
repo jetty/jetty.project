@@ -178,6 +178,14 @@ public abstract class Resource implements ResourceFactory
         return uri;
     }
 
+    public static String dump(Resource resource)
+    {
+        if (resource == null)
+            return "null exists=false directory=false lm=-1";
+        return "%s exists=%b directory=%b lm=%d"
+            .formatted(resource.toString(), resource.exists(), resource.isDirectory(), resource.lastModified());
+    }
+
     /**
      * Construct a resource from a url.
      *

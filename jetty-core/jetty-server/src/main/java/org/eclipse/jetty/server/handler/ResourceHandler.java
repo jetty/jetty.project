@@ -99,11 +99,6 @@ public class ResourceHandler extends Handler.Wrapper
 
             for (String welcome : _welcomes)
             {
-                // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
-                //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
-                //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
-                //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
-                //          EVEN IF the file does not exist.
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
                 Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
                 if (welcomePath != null && welcomePath.exists())

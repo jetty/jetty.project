@@ -18,15 +18,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
@@ -48,39 +49,267 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultServlet extends HttpServlet
+public class DefaultServlet extends HttpServlet implements ResourceService.WelcomeFactory
 {
     private ResourceService _resourceService;
+    private ServletContextHandler _servletContextHandler;
 
     @Override
-    public void init(ServletConfig config) throws ServletException
+    public void init() throws ServletException
     {
-        ContextHandler contextHandler = initContextHandler(config.getServletContext());
-
+        _servletContextHandler = initContextHandler(getServletContext());
         _resourceService = new ServletResourceService();
+        _resourceService.setWelcomeFactory(this);
+
+        // TODO lots of review needed of this initialization
+
         MimeTypes mimeTypes = new MimeTypes();
         CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
-        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(contextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
+        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(_servletContextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
 
-        // TODO init other settings
-    }
+        if (_servletContextHandler.getWelcomeFiles() == null)
+            _servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
 
-    protected ContextHandler initContextHandler(ServletContext servletContext)
-    {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context == null)
+        _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
+        _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
+        _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
+        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
+        _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly", _resourceService.isPathInfoOnly()));
+        _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
+
+        /*
+        if ("exact".equals(getInitParameter("welcomeServlets")))
         {
-            if (servletContext instanceof ServletContextHandler.ServletContextApi api)
-                return api.getContext().getServletContextHandler();
-
-            throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-                servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+            _welcomeExactServlets = true;
+            _welcomeServlets = false;
         }
         else
+            _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
+
+        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
+
+        _relativeResourceBase = getInitParameter("relativeResourceBase");
+
+        String rb = getInitParameter("resourceBase");
+        if (rb != null)
+        {
+            if (_relativeResourceBase != null)
+                throw new UnavailableException("resourceBase & relativeResourceBase");
+            try
+            {
+                _resourceBase = _contextHandler.newResource(rb);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                throw new UnavailableException(e.toString());
+            }
+        }
+
+        String stylesheet = getInitParameter("stylesheet");
+        try
+        {
+            if (stylesheet != null)
+            {
+                URI uri = Resource.toURI(stylesheet);
+                _stylesheetMount = Resource.mountIfNeeded(uri);
+                _stylesheet = Resource.newResource(uri);
+                if (!_stylesheet.exists())
+                {
+                    LOG.warn("Stylesheet {} does not exist", stylesheet);
+                    _stylesheet = null;
+                }
+            }
+            if (_stylesheet == null)
+            {
+                _stylesheet = ResourceHandler.getDefaultStylesheet();
+            }
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to use stylesheet: {}", stylesheet, e);
+            else
+                LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
+        }
+
+        int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
+        if (encodingHeaderCacheSize >= 0)
+            _resourceService.setEncodingCacheSize(encodingHeaderCacheSize);
+
+        String cc = getInitParameter("cacheControl");
+        if (cc != null)
+            _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
+
+        String resourceCache = getInitParameter("resourceCache");
+        int maxCacheSize = getInitInt("maxCacheSize", -2);
+        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+        if (resourceCache != null)
+        {
+            if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
+                LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
+            if (_relativeResourceBase != null || _resourceBase != null)
+                throw new UnavailableException("resourceCache specified with resource bases");
+            _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
+        }
+
+        try
+        {
+            if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
+            {
+                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
+                if (maxCacheSize >= 0)
+                    _cache.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    _cache.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    _cache.setMaxCachedFiles(maxCachedFiles);
+                _servletContext.setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cache);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to setup CachedContentFactory", e);
+            throw new UnavailableException(e.toString());
+        }
+
+        HttpContent.ContentFactory contentFactory = _cache;
+        if (contentFactory == null)
+        {
+            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats());
+            if (resourceCache != null)
+                _servletContext.setAttribute(resourceCache, contentFactory);
+        }
+        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setWelcomeFactory(this);
+
+        List<String> gzipEquivalentFileExtensions = new ArrayList<>();
+        String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
+        if (otherGzipExtensions != null)
+        {
+            //comma separated list
+            StringTokenizer tok = new StringTokenizer(otherGzipExtensions, ",", false);
+            while (tok.hasMoreTokens())
+            {
+                String s = tok.nextToken().trim();
+                gzipEquivalentFileExtensions.add((s.charAt(0) == '.' ? s : "." + s));
+            }
+        }
+        else
+        {
+            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+            gzipEquivalentFileExtensions.add(".svgz");
+        }
+        _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
+
+        _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("resource base = {}", _resourceBase);
+        */
+    }
+
+    @Override
+    public String getWelcomeFile(String pathInContext) throws IOException
+    {
+        String[] welcomes = _servletContextHandler.getWelcomeFiles();
+
+        if (welcomes == null)
+            return null;
+
+        // TODO this feels inefficient
+        Resource base = _servletContextHandler.getResourceBase().resolve(pathInContext);
+        for (String welcome : welcomes)
+        {
+            Resource welcomePath = base.resolve(welcome);
+            if (welcomePath != null && welcomePath.exists())
+                return URIUtil.addPaths(pathInContext, welcome);;
+        }
+
+        // TODO look for a servlet match
+
+        // not found
+        return null;
+    }
+
+    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
+    {
+        if (precompressed == null && gzip == null)
+        {
+            return dft;
+        }
+        List<CompressedContentFormat> ret = new ArrayList<>();
+        if (precompressed != null && precompressed.indexOf('=') > 0)
+        {
+            for (String pair : precompressed.split(","))
+            {
+                String[] setting = pair.split("=");
+                String encoding = setting[0].trim();
+                String extension = setting[1].trim();
+                ret.add(new CompressedContentFormat(encoding, extension));
+                if (gzip == Boolean.TRUE && !ret.contains(CompressedContentFormat.GZIP))
+                    ret.add(CompressedContentFormat.GZIP);
+            }
+        }
+        else if (precompressed != null)
+        {
+            if (Boolean.parseBoolean(precompressed))
+            {
+                ret.add(CompressedContentFormat.BR);
+                ret.add(CompressedContentFormat.GZIP);
+            }
+        }
+        else if (gzip == Boolean.TRUE)
+        {
+            // gzip handling is for backwards compatibility with older Jetty
+            ret.add(CompressedContentFormat.GZIP);
+        }
+        return ret.toArray(new CompressedContentFormat[ret.size()]);
+    }
+
+    private Boolean getInitBoolean(String name)
+    {
+        String value = getInitParameter(name);
+        if (value == null || value.length() == 0)
+            return null;
+        return (value.startsWith("t") ||
+            value.startsWith("T") ||
+            value.startsWith("y") ||
+            value.startsWith("Y") ||
+            value.startsWith("1"));
+    }
+
+    private boolean getInitBoolean(String name, boolean dft)
+    {
+        return Optional.ofNullable(getInitBoolean(name)).orElse(dft);
+    }
+
+    private int getInitInt(String name, int dft)
+    {
+        String value = getInitParameter(name);
+        if (value == null)
+            value = getInitParameter(name);
+        if (value != null && value.length() > 0)
+            return Integer.parseInt(value);
+        return dft;
+    }
+
+    protected ServletContextHandler initContextHandler(ServletContext servletContext)
+    {
+        if (servletContext instanceof ServletContextHandler.ServletContextApi api)
+            return api.getContext().getServletContextHandler();
+
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context != null)
             return context.getContextHandler();
+
+        throw new IllegalArgumentException("The servletContext " + servletContext + " " +
+            servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
     }
 
     @Override
@@ -155,7 +384,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public String getPathInContext()
         {
-            return _request.getRequestURI();
+            return URIUtil.addPaths(_request.getServletPath(), _request.getPathInfo());
         }
 
         @Override

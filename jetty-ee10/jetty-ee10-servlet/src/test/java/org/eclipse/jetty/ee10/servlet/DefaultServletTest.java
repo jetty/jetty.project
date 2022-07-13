@@ -682,7 +682,6 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("welcomeScenarios")
-    @Disabled
     public void testWelcome(Scenario scenario) throws Exception
     {
         Path one = docRoot.resolve("one");
