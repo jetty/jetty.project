@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
@@ -311,12 +312,12 @@ public class DefaultServlet extends HttpServlet
         else
         {
             // serve content
-            try // (Blocker.Callback callback = Blocker.callback())
+            try (Blocker.Callback callback = Blocker.callback())
             {
                 ServletCoreRequest coreRequest = new ServletCoreRequest(req);
                 ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
-                _resourceService.doGet(coreRequest, coreResponse, Callback.NOOP, content);
-                // callback.block();
+                _resourceService.doGet(coreRequest, coreResponse, callback, content);
+                callback.block();
             }
             catch (Exception e)
             {
@@ -713,7 +714,8 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
+                if (BufferUtil.hasContent(byteBuffer))
+                    BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
                 if (last)
                     _response.getOutputStream().close();
                 callback.succeeded();
@@ -803,6 +805,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected boolean welcome(Request rq, Response rs, Callback callback) throws IOException
         {
+            // TODO The contract of this method is very confused: it has a callback a return and throws?
+
             // TODO, this unwrapping is fragile
             HttpServletRequest request = ((ServletCoreRequest)rq)._request;
             HttpServletResponse response = ((ServletCoreResponse)rs)._response;
@@ -811,55 +815,59 @@ public class DefaultServlet extends HttpServlet
             String welcome = welcomeFactory == null ? null : welcomeFactory.getWelcomeFile(pathInContext);
             boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
 
-            if (welcome != null)
+            if (welcome == null)
+                return false;
+
+            String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
+                : request.getServletPath();
+
+            if (isPathInfoOnly())
+                welcome = URIUtil.addPaths(servletPath, welcome);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("welcome={}", welcome);
+
+            ServletContext context = request.getServletContext();
+
+            if (isRedirectWelcome() || context == null)
             {
-                String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
-                    : request.getServletPath();
-
-                if (isPathInfoOnly())
-                    welcome = URIUtil.addPaths(servletPath, welcome);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("welcome={}", welcome);
-
-                ServletContext context = request.getServletContext();
-
-                if (isRedirectWelcome() || context == null)
-                {
-                    // Redirect to the index
-                    response.setContentLength(0);
-                    // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
-                    HttpURI.Mutable uri = HttpURI.build(rq.getHttpURI());
-                    String parameter = uri.getParam();
-                    uri.path(URIUtil.addPaths(rq.getContext().getContextPath(), welcome));
-                    uri.param(parameter);
-                    response.sendRedirect(response.encodeRedirectURL(uri.getPathQuery()));
-                    return true;
-                }
-
-                RequestDispatcher dispatcher = context.getRequestDispatcher(URIUtil.encodePath(welcome));
-                if (dispatcher != null)
-                {
-                    // Forward to the index
-                    try
-                    {
-                        if (included)
-                        {
-                            dispatcher.include(request, response);
-                        }
-                        else
-                        {
-                            request.setAttribute("org.eclipse.jetty.server.welcome", welcome);
-                            dispatcher.forward(request, response);
-                        }
-                    }
-                    catch (ServletException e)
-                    {
-                        callback.failed(e);
-                    }
-                }
+                // Redirect to the index
+                response.setContentLength(0);
+                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
+                HttpURI.Mutable uri = HttpURI.build(rq.getHttpURI());
+                String parameter = uri.getParam();
+                uri.path(URIUtil.addPaths(rq.getContext().getContextPath(), welcome));
+                uri.param(parameter);
+                response.sendRedirect(response.encodeRedirectURL(uri.getPathQuery()));
+                callback.succeeded();
                 return true;
             }
+
+            RequestDispatcher dispatcher = context.getRequestDispatcher(URIUtil.encodePath(welcome));
+            if (dispatcher != null)
+            {
+                // Forward to the index
+                try
+                {
+                    if (included)
+                    {
+                        dispatcher.include(request, response);
+                    }
+                    else
+                    {
+                        request.setAttribute("org.eclipse.jetty.server.welcome", welcome);
+                        dispatcher.forward(request, response);
+                    }
+                    callback.succeeded();
+                    return true;
+                }
+                catch (ServletException e)
+                {
+                    callback.failed(e);
+                    return true;
+                }
+            }
+
             return false;
         }
 
