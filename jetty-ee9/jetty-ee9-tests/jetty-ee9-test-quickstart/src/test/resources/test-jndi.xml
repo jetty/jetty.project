@@ -7,6 +7,7 @@
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+    <Arg>ee9</Arg>
     <Arg>
       <New class="com.acme.MockUserTransaction"/>
     </Arg>
