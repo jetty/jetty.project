@@ -95,8 +95,8 @@ public class RangeWriterTest
 
     public static Stream<Arguments> impls() throws IOException, URISyntaxException
     {
-        Resource realFileSystemResource = new PathResource(initDataFile());
-        Resource nonDefaultFileSystemResource = new PathResource(initZipFsDataFile());
+        Resource realFileSystemResource = Resource.newResource(initDataFile());
+        Resource nonDefaultFileSystemResource = Resource.newResource(initZipFsDataFile());
 
         return Stream.of(
             Arguments.of("Traditional / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, true))),

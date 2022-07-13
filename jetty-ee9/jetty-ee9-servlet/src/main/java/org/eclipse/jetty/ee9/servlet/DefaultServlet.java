@@ -208,12 +208,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (css != null)
             {
+                /* TODO: FIXME: not able to use Stylesheet (yet) See PR #8276
                 _stylesheet = Resource.newResource(css);
                 if (!_stylesheet.exists())
                 {
                     LOG.warn("!{}", css);
                     _stylesheet = null;
                 }
+                 */
             }
             if (_stylesheet == null)
             {
@@ -405,27 +407,31 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      * HttpContext.getResource but derived servlets may provide
      * their own mapping.
      *
-     * @param pathInContext The path to find a resource for.
+     * @param subUriPath The path to find a resource for.
      * @return The resource to serve.
      */
     @Override
-    public Resource getResource(String pathInContext)
+    public Resource resolve(String subUriPath)
     {
+        // TODO thought bubble
+        if (!_contextHandler.isCanonicalEncodingURIs())
+            subUriPath = URIUtil.encodePath(subUriPath);
+
         Resource r = null;
         if (_relativeResourceBase != null)
-            pathInContext = URIUtil.addPaths(_relativeResourceBase, pathInContext);
+            subUriPath = URIUtil.addPaths(_relativeResourceBase, subUriPath);
 
         try
         {
             if (_resourceBase != null)
             {
-                r = _resourceBase.addPath(pathInContext);
-                if (!_contextHandler.checkAlias(pathInContext, r))
+                r = _resourceBase.resolve(subUriPath);
+                if (!_contextHandler.checkAlias(subUriPath, r))
                     r = null;
             }
             else if (_servletContext instanceof ContextHandler.APIContext)
             {
-                r = _contextHandler.getResource(pathInContext);
+                r = _contextHandler.getResource(subUriPath);
             }
             else
             {
@@ -433,14 +439,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Resource {}={}", pathInContext, r);
+                LOG.debug("Resource {}={}", subUriPath, r);
         }
         catch (IOException e)
         {
             LOG.trace("IGNORED", e);
         }
 
-        if ((r == null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))
+        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
             r = _stylesheet;
 
         return r;
@@ -500,7 +506,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         for (String s : _welcomes)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, s);
-            Resource welcome = getResource(welcomeInContext);
+            Resource welcome = resolve(welcomeInContext);
             if (welcome != null && welcome.exists())
                 return welcomeInContext;
 

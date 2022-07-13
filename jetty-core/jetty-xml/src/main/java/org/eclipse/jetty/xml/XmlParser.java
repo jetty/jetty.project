@@ -29,7 +29,6 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,7 +234,7 @@ public class XmlParser
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parse: {}", file);
-        return parse(new InputSource(Resource.toURL(file).toString()));
+        return parse(new InputSource(file.toURI().toURL().toString()));
     }
 
     /**

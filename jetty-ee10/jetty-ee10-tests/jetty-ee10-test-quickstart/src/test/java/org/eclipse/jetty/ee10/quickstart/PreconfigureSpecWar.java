@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,19 +30,19 @@ public class PreconfigureSpecWar
 
     public static void main(String[] args) throws Exception
     {
-        Path target = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured");
-        if (Files.exists(target))
-        {
-            IO.delete(target.toFile());
-        }
-        Files.createDirectories(target.resolve("WEB-INF"));
+        Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureSpecWar.class.getSimpleName());
+        FS.ensureEmpty(workdir);
 
-        Path realmPropertiesDest = MavenTestingUtils.getTargetPath().resolve("test-spec-realm.properties");
+        Path target = workdir.resolve("test-spec-preconfigured");
+        FS.ensureEmpty(target);
+        FS.ensureDirExists(target.resolve("WEB-INF"));
+
+        Path realmPropertiesDest = target.resolve("test-spec-realm.properties");
         Files.deleteIfExists(realmPropertiesDest);
 
         Path realmPropertiesSrc = MavenTestingUtils.getTestResourcePath("realm.properties");
         Files.copy(realmPropertiesSrc, realmPropertiesDest);
-        System.setProperty("jetty.home", MavenTestingUtils.getTargetDir().getAbsolutePath());
+        System.setProperty("jetty.home", target.toString());
 
         PreconfigureQuickStartWar.main(
             MavenTestingUtils.getTargetFile("test-spec.war").toString(),
@@ -52,10 +51,10 @@ public class PreconfigureSpecWar
 
         LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
 
-        Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
-        try (InputStream in = Files.newInputStream(quickStartXml))
+        if (LOG.isDebugEnabled())
         {
-            IO.copy(in, System.out);
+            Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
+            System.out.println(Files.readString(quickStartXml));
         }
     }
 }

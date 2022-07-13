@@ -14,6 +14,7 @@
 package org.eclipse.jetty.deploy;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -45,10 +46,11 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         this.webappsDir = MavenTestingUtils.getTestResourceDir("webapps");
     }
 
-    public void findWebapp(String name)
+    public App createWebapp(String name)
     {
-        App app = new App(deployMan, this, "mock-" + name);
+        App app = new App(deployMan, this, Path.of("./mock-" + name));
         this.deployMan.addApp(app);
+        return app;
     }
 
     @Override
@@ -56,11 +58,13 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     {
         ContextHandler contextHandler = new ContextHandler();
 
-        File war = new File(webappsDir, app.getFilename().substring(5));
+        String name = app.getPath().toString();
+        name = name.substring(name.lastIndexOf("-")  + 1);
+        File war = new File(webappsDir, name);
 
         String path = war.getName();
 
-        if (FileID.isWebArchiveFile(war))
+        if (FileID.isWebArchive(war))
         {
             // Context Path is the same as the archive.
             path = path.substring(0, path.length() - 4);

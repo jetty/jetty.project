@@ -54,7 +54,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -187,7 +187,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(new PathResource(staticBase));
+        context.setBaseResource(Resource.newResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");

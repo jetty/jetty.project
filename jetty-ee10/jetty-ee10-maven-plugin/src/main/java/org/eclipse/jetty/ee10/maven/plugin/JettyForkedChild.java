@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -193,8 +194,8 @@ public class JettyForkedChild extends AbstractLifeCycle
         jetty.start();
 
         //touch file to signify start of jetty
-        Resource r = Resource.newResource(tokenFile);
-        r.getFile().createNewFile();
+        Resource r = Resource.newResource(tokenFile.toPath());
+        Files.createFile(r.getPath());
 
         //Start a watcher on a file that will change if the
         //webapp is regenerated; stop the webapp, apply the

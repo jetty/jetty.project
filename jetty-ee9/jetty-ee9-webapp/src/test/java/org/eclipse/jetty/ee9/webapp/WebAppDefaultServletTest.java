@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,7 +89,7 @@ public class WebAppDefaultServletTest
         }
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(new PathResource(directoryPath));
+        context.setBaseResource(Resource.newResource(directoryPath));
         context.setContextPath("/");
         server.setHandler(context);
         server.start();

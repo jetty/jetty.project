@@ -40,7 +40,7 @@ public class SSLCloseTest
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
+        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore.toPath()));
         sslContextFactory.setKeyStorePassword("storepwd");
 
         Server server = new Server();

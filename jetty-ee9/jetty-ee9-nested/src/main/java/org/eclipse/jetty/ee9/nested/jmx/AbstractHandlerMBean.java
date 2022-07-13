@@ -81,16 +81,8 @@ public class AbstractHandlerMBean extends ObjectMBean
 
         if (name == null && context.getBaseResource() != null)
         {
-            try
-            {
-                if (context.getBaseResource().getFile() != null)
-                    name = context.getBaseResource().getFile().getName();
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                name = context.getBaseResource().getName();
-            }
+            if (context.getBaseResource().getPath() != null)
+                name = context.getBaseResource().getPath().getFileName().toString();
         }
 
         if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)

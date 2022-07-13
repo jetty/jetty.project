@@ -20,10 +20,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +42,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -151,6 +157,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
+    private List<Resource.Mount> _mountedResources;
+
     public MetaInfConfiguration()
     {
         addDependencies(WebXmlConfiguration.class);
@@ -169,6 +177,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesResources(findClassDirs(context));
 
         scanJars(context);
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        if (_mountedResources != null)
+        {
+            _mountedResources.forEach(IO::close);
+        }
+        super.deconfigure(context);
     }
 
     /**
@@ -459,18 +477,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (target.isDirectory())
             {
                 //TODO think  how to handle an unpacked jar file (eg for osgi)
-                resourcesDir = target.addPath("/META-INF/resources");
+                resourcesDir = target.resolve("/META-INF/resources");
             }
             else
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                resourcesDir = Resource.newResource(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
+                resourcesDir = mount.root();
+                if (_mountedResources == null)
+                    _mountedResources = new ArrayList<>();
+                _mountedResources.add(mount);
             }
 
             if (!resourcesDir.exists() || !resourcesDir.isDirectory())
             {
-                resourcesDir.close();
                 resourcesDir = EmptyResource.INSTANCE;
             }
 
@@ -533,7 +554,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
-                webFrag = Resource.newResource(new File(jar.getFile(), "/META-INF/web-fragment.xml"));
+                webFrag = Resource.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
             }
             else
             {
@@ -542,7 +563,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             if (!webFrag.exists() || webFrag.isDirectory())
             {
-                webFrag.close();
                 webFrag = EmptyResource.INSTANCE;
             }
 
@@ -606,7 +626,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             tlds = new HashSet<URL>();
             if (jar.isDirectory())
             {
-                tlds.addAll(getTlds(jar.getFile()));
+                tlds.addAll(getTlds(jar.getPath()));
             }
             else
             {
@@ -655,28 +675,33 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @return the list of tlds found
      * @throws IOException if unable to scan the directory
      */
-    public Collection<URL> getTlds(File dir) throws IOException
+    public Collection<URL> getTlds(Path dir) throws IOException
     {
-        if (dir == null || !dir.isDirectory())
+        if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<URL>();
+        HashSet<URL> tlds = new HashSet<>();
 
-        File[] files = dir.listFiles();
-        if (files != null)
+        final Path rootDir = dir;
+        Files.walkFileTree(dir, new SimpleFileVisitor<>()
         {
-            for (File f : files)
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
             {
-                if (f.isDirectory())
-                    tlds.addAll(getTlds(f));
-                else
-                {
-                    String name = f.getCanonicalPath();
-                    if (name.contains("META-INF") && name.endsWith(".tld"))
-                        tlds.add(f.toURI().toURL());
-                }
+                if (!Files.isSameFile(rootDir, dir))
+                    tlds.addAll(getTlds(dir));
+                return FileVisitResult.SKIP_SUBTREE;
             }
-        }
+
+            @Override
+            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
+            {
+                String name = f.normalize().toString();
+                if (name.contains("META-INF") && name.endsWith(".tld"))
+                    tlds.add(f.toUri().toURL());
+                return FileVisitResult.CONTINUE;
+            }
+        });
         return tlds;
     }
 
@@ -691,8 +716,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     {
         HashSet<URL> tlds = new HashSet<URL>();
 
-        String jarUri = uriJarPrefix(uri, "!/");
-        URL url = new URL(jarUri);
+        URI jarUri = uriJarPrefix(uri, "!/");
+        URL url = jarUri.toURL();
         JarURLConnection jarConn = (JarURLConnection)url.openConnection();
         jarConn.setUseCaches(Resource.getDefaultUseCaches());
         JarFile jarFile = jarConn.getJarFile();
@@ -764,19 +789,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         List<Resource> jarResources = new ArrayList<Resource>();
-        Resource webInfLib = webInf.addPath("/lib");
+        Resource webInfLib = webInf.resolve("/lib");
         if (webInfLib.exists() && webInfLib.isDirectory())
         {
-            String[] files = webInfLib.list();
+            List<String> files = webInfLib.list();
             if (files != null)
             {
-                Arrays.sort(files);
+                files.sort(Comparator.naturalOrder());
             }
-            for (int f = 0; files != null && f < files.length; f++)
+            for (int f = 0; files != null && f < files.size(); f++)
             {
                 try
                 {
-                    Resource file = webInfLib.addPath(files[f]);
+                    Resource file = webInfLib.resolve(files.get(f));
                     String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
@@ -787,7 +812,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 }
                 catch (Exception ex)
                 {
-                    LOG.warn("Unable to load WEB-INF file {}", files[f], ex);
+                    LOG.warn("Unable to load WEB-INF file {}", files.get(f), ex);
                 }
             }
         }
@@ -832,7 +857,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.addPath("classes/");
+            Resource classes = webInf.resolve("classes/");
             if (classes.exists())
                 return classes;
         }
@@ -858,16 +883,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .collect(Collectors.toList());
     }
 
-    private String uriJarPrefix(URI uri, String suffix)
+    private URI uriJarPrefix(URI uri, String suffix)
     {
         String uriString = uri.toString();
         if (uriString.startsWith("jar:"))
         {
-            return uriString + suffix;
+            return URI.create(uriString + suffix);
         }
         else
         {
-            return "jar:" + uriString + suffix;
+            return URI.create("jar:" + uriString + suffix);
         }
     }
 
@@ -878,7 +903,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (resource.isDirectory())
                 return false;
 
-            if (resource.getFile() == null)
+            if (resource.getPath() == null)
                 return false;
         }
         catch (Throwable t)

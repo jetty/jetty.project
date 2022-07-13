@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandlerFactory;
@@ -41,10 +42,8 @@ public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFa
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
-        // Copy servlet params and attributes with UpgradeHttpServletRequest which may be inaccessible after upgrade.
         ServletContextRequest servletContextRequest = Request.as(upgradeRequest, ServletContextRequest.class);
-        UpgradeHttpServletRequest httpServletRequest = new UpgradeHttpServletRequest(servletContextRequest.getHttpServletRequest());
-        httpServletRequest.upgrade();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
 
         JettyWebSocketFrameHandler frameHandler = super.newJettyFrameHandler(websocketPojo);
         frameHandler.setUpgradeRequest(new DelegatedServerUpgradeRequest(upgradeRequest, httpServletRequest));

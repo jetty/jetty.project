@@ -14,11 +14,13 @@
 package org.eclipse.jetty.quic.quiche;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -43,12 +45,12 @@ public class SSLKeyPair
     private final Certificate[] certChain;
     private final String alias;
 
-    public SSLKeyPair(File storeFile, String storeType, char[] storePassword, String alias, char[] keyPassword) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException
+    public SSLKeyPair(Path storeFile, String storeType, char[] storePassword, String alias, char[] keyPassword) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException
     {
         KeyStore keyStore = KeyStore.getInstance(storeType);
-        try (FileInputStream fis = new FileInputStream(storeFile))
+        try (InputStream is = Files.newInputStream(storeFile))
         {
-            keyStore.load(fis, storePassword);
+            keyStore.load(is, storePassword);
             this.alias = alias;
             this.key = keyStore.getKey(alias, keyPassword);
             this.certChain = keyStore.getCertificateChain(alias);

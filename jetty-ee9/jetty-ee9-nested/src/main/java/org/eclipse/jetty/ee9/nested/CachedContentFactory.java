@@ -173,7 +173,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             return content;
 
         // try loading the content from our factory.
-        Resource resource = _factory.getResource(pathInContext);
+        Resource resource = _factory.resolve(pathInContext);
         HttpContent loaded = load(pathInContext, resource, maxBufferSize);
         if (loaded != null)
             return loaded;
@@ -228,7 +228,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     if (compressedContent == null || compressedContent.isValid())
                     {
                         compressedContent = null;
-                        Resource compressedResource = _factory.getResource(compressedPathInContext);
+                        Resource compressedResource = _factory.resolve(compressedPathInContext);
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                             compressedResource.length() < resource.length())
                         {
@@ -274,7 +274,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
-                Resource compressedResource = _factory.getResource(compressedPathInContext);
+                Resource compressedResource = _factory.resolve(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
@@ -339,10 +339,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         // a non shared resource.  Also ignore max buffer size
         try
         {
-            if (_useFileMappedBuffer && resource.getFile() != null && resource.length() < Integer.MAX_VALUE)
-                return BufferUtil.toMappedBuffer(resource.getFile());
+            if (_useFileMappedBuffer && resource.getPath() != null && resource.length() < Integer.MAX_VALUE)
+                return BufferUtil.toMappedBuffer(resource.getPath());
         }
-        catch (IOException | IllegalArgumentException e)
+        catch (IOException | IllegalArgumentException | UnsupportedOperationException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to get Mapped Buffer for {}", resource, e);
@@ -484,7 +484,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _cachedSize.addAndGet(-BufferUtil.length(buffer));
 
             _cachedFiles.decrementAndGet();
-            _resource.close();
         }
 
         @Override

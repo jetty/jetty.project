@@ -15,6 +15,8 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
@@ -87,37 +89,35 @@ public class ContextProvider extends ScanningAppProvider
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-            try (Resource resource = Resource.newResource(new File(dir, name)))
+            Resource resource = Resource.newResource(new File(dir, name).toPath());
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
+                return false;
+
+            // ignore hidden files
+            if (lowerName.startsWith("."))
+                return false;
+
+            // ignore property files
+            if (lowerName.endsWith(".properties"))
+                return false;
+
+            // Ignore some directories
+            if (resource.isDirectory())
             {
-                if (getMonitoredResources().stream().anyMatch(resource::isSame))
+                // is it a nominated config directory
+                if (lowerName.endsWith(".d"))
                     return false;
 
-                // ignore hidden files
-                if (lowerName.startsWith("."))
+                // is it an unpacked directory for an existing war file?
+                if (exists(name + ".war") || exists(name + ".WAR"))
                     return false;
 
-                // ignore property files
-                if (lowerName.endsWith(".properties"))
+                // is it a directory for an existing xml file?
+                if (exists(name + ".xml") || exists(name + ".XML"))
                     return false;
 
-                // Ignore some directories
-                if (resource.isDirectory())
-                {
-                    // is it a nominated config directory
-                    if (lowerName.endsWith(".d"))
-                        return false;
-
-                    // is it an unpacked directory for an existing war file?
-                    if (exists(name + ".war") || exists(name + ".WAR"))
-                        return false;
-
-                    // is it a directory for an existing xml file?
-                    if (exists(name + ".xml") || exists(name + ".XML"))
-                        return false;
-
-                    //is it a sccs dir?
-                    return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
-                }
+                //is it a sccs dir?
+                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
             }
 
             // else is it a war file
@@ -282,7 +282,7 @@ public class ContextProvider extends ScanningAppProvider
         return tmpDir == null ? null : new File(tmpDir);
     }
 
-    protected ContextHandler initializeContextHandler(Object context, File file, Map<String, String> properties)
+    protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
     {
         // find the ContextHandler
         ContextHandler contextHandler;
@@ -304,10 +304,10 @@ public class ContextProvider extends ScanningAppProvider
 
         assert contextHandler != null;
 
-        initializeContextPath(contextHandler, file.getName());
+        initializeContextPath(contextHandler, path);
 
-        if (file.isDirectory())
-            contextHandler.setBaseResource(Resource.newResource(file));
+        if (Files.isDirectory(path))
+            contextHandler.setBaseResource(Resource.newResource(path));
 
         //TODO think of better way of doing this
         //pass through properties as attributes directly
@@ -343,9 +343,10 @@ public class ContextProvider extends ScanningAppProvider
             Thread.currentThread().setContextClassLoader(environment.getClassLoader());
 
             // Create de-aliased file
-            File file = new File(app.getFilename()).toPath().toRealPath().toFile().getCanonicalFile().getAbsoluteFile();
-            if (!file.exists())
-                throw new IllegalStateException("App resource does not exist " + file);
+            Path path = app.getPath().toRealPath().toAbsolutePath().toFile().getCanonicalFile().toPath();
+            if (!Files.exists(path))
+                throw new IllegalStateException("App resource does not exist " + path);
+
 
             // prepare properties
             Map<String, String> properties = new HashMap<>();
@@ -353,20 +354,20 @@ public class ContextProvider extends ScanningAppProvider
             properties.putAll(app.getProperties());
 
             // Handle a context XML file
-            if (FileID.isXmlFile(file))
+            if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(file, null, properties)
+                XmlConfiguration xmlc = new XmlConfiguration(path, null, properties)
                 {
                     @Override
                     public void initializeDefaults(Object context)
                     {
                         super.initializeDefaults(context);
-                        ContextProvider.this.initializeContextHandler(context, file, properties);
+                        ContextProvider.this.initializeContextHandler(context, path, properties);
                     }
                 };
 
                 xmlc.getIdMap().put("Environment", environment);
-                xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), file);
+                xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
                 Object context = xmlc.configure();
                 if (context instanceof ContextHandler contextHandler)
@@ -380,7 +381,7 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("Unknown context type of " + context);
             }
             // Otherwise it must be a directory or an archive
-            else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
+            else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
             {
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
             }
@@ -394,8 +395,8 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
 
             Object context = contextHandlerClass.getDeclaredConstructor().newInstance();
-            properties.put(Deployable.WAR, file.getCanonicalPath());
-            return initializeContextHandler(context, file, properties);
+            properties.put(Deployable.WAR, path.toString());
+            return initializeContextHandler(context, path, properties);
         }
         finally
         {
@@ -403,14 +404,11 @@ public class ContextProvider extends ScanningAppProvider
         }
     }
 
-    protected void initializeContextPath(ContextHandler context, String contextName)
+    protected void initializeContextPath(ContextHandler context, Path path)
     {
         // Strip any 3 char extension from non directories
-        String contextPath = FileID.getDot3Basename(contextName);
-
-        // Ensure "/" is Not Trailing in context paths.
-        if (contextPath.endsWith("/") && contextPath.length() > 1)
-            contextPath = contextPath.substring(0, contextPath.length() - 1);
+        String basename = FileID.getBasename(path);
+        String contextPath = basename;
 
         // special case of archive (or dir) named "root" is / context
         if (contextPath.equalsIgnoreCase("root"))
@@ -431,147 +429,54 @@ public class ContextProvider extends ScanningAppProvider
             contextPath = "/" + contextPath;
 
         // Set the display name and context Path
-        context.setDisplayName(contextName);
+        context.setDisplayName(basename);
         context.setContextPath(contextPath);
     }
 
-    @Override
-    protected void fileChanged(String filename) throws Exception
+    protected boolean isDeployable(Path path)
     {
-        File file = new File(filename);
-        if (!file.exists())
-            return;
+        String basename = FileID.getBasename(path);
 
-        File parent = file.getParentFile();
-
-        //is the file that changed a directory? 
-        if (file.isDirectory())
+        //is the file that changed a directory?
+        if (Files.isDirectory(path))
         {
-            //is there a .xml file of the same name?
-            if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-                return; //ignore it
-
-            //is there .war file of the same name?
-            if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-                return; //ignore it
-
-            super.fileChanged(filename);
-            return;
+            // deploy if there is not a .xml or .war file of the same basename?
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
+                !Files.exists(path.getParent().resolve(basename + ".XML")) &&
+                !Files.exists(path.getParent().resolve(basename + ".war")) &&
+                !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        //is the file that changed a .war file?
-        if (lowname.endsWith(".war"))
+        // deploy if there is not a .war for of the same basename
+        if (FileID.isWebArchive(path))
         {
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            String xmlname = base + ".xml";
-            if (exists(xmlname))
-            {
-                //if a .xml file exists for it, then redeploy that instead
-                File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getPath());
-                return;
-            }
-
-            xmlname = base + ".XML";
-            if (exists(xmlname))
-            {
-                //if a .XML file exists for it, then redeploy that instead
-                File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getPath());
-                return;
-            }
-
-            //redeploy the changed war
-            super.fileChanged(filename);
-            return;
+            // if a .xml file exists for it
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
+                !Files.exists(path.getParent().resolve(basename + ".XML"));
         }
 
-        //is the file that changed a .xml file?
-        if (lowname.endsWith(".xml"))
-            super.fileChanged(filename);
+        // otherwise only deploy an XML
+        return FileID.isXml(path);
     }
 
     @Override
-    protected void fileAdded(String filename) throws Exception
+    protected void pathChanged(Path path) throws Exception
     {
-        File file = new File(filename);
-        if (!file.exists())
-            return;
-
-        //is the file that was added a directory? 
-        if (file.isDirectory())
-        {
-            //is there a .xml file of the same name?
-            if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-                return; //assume we will get added events for the xml file
-
-            //is there .war file of the same name?
-            if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-                return; //assume we will get added events for the war file
-
-            //is there .jar file of the same name?
-            if (exists(file.getName() + ".jar") || exists(file.getName() + ".JAR"))
-                return; //assume we will get added events for the jar file
-
-            super.fileAdded(filename);
-            return;
-        }
-
-        //is the file that was added a .war file?
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        if (lowname.endsWith(".war"))
-        {
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            //is there a .xml file of the same name?
-            if (exists(base + ".xml") || exists(base + ".XML"))
-                return; //ignore it as we should get addition of the xml file
-
-            super.fileAdded(filename);
-            return;
-        }
-
-        //is the file that was added an .xml file?
-        if (lowname.endsWith(".xml"))
-            super.fileAdded(filename);
+        if (Files.exists(path) && isDeployable(path))
+            super.pathChanged(path);
     }
 
     @Override
-    protected void fileRemoved(String filename) throws Exception
+    protected void pathAdded(Path path) throws Exception
     {
-        File file = new File(filename);
+        if (Files.exists(path) && isDeployable(path))
+            super.pathAdded(path);
+    }
 
-        //is the file that was removed a .war file?
-        String lowname = file.getName().toLowerCase(Locale.ENGLISH);
-        if (lowname.endsWith(".war"))
-        {
-            //is there a .xml file of the same name?
-            String name = file.getName();
-            String base = name.substring(0, name.length() - 4);
-            if (exists(base + ".xml") || exists(base + ".XML"))
-                return; //ignore it as we should get removal of the xml file
-
-            super.fileRemoved(filename);
-            return;
-        }
-
-        //is the file that was removed an .xml file?
-        if (lowname.endsWith(".xml"))
-        {
-            super.fileRemoved(filename);
-            return;
-        }
-
-        //is there a .xml file of the same name?
-        if (exists(file.getName() + ".xml") || exists(file.getName() + ".XML"))
-            return; //assume we will get removed events for the xml file
-
-        //is there .war file of the same name?
-        if (exists(file.getName() + ".war") || exists(file.getName() + ".WAR"))
-            return; //assume we will get removed events for the war file
-
-        super.fileRemoved(filename);
+    @Override
+    protected void pathRemoved(Path path) throws Exception
+    {
+        if (isDeployable(path))
+            super.pathRemoved(path);
     }
 }

@@ -167,7 +167,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         char[] keyStorePassword = sslContextFactory.getKeyStorePassword().toCharArray();
         String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
         SSLKeyPair keyPair = new SSLKeyPair(
-            sslContextFactory.getKeyStoreResource().getFile(),
+            sslContextFactory.getKeyStoreResource().getPath(),
             sslContextFactory.getKeyStoreType(),
             keyStorePassword,
             alias,

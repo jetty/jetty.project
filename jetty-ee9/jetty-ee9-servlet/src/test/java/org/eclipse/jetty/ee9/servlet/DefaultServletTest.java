@@ -60,6 +60,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -119,7 +120,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(new PathResource(docRoot));
+        context.setBaseResource(Resource.newResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);

@@ -128,7 +128,7 @@ public class X509Test
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        serverSsl.setKeyStoreResource(new PathResource(keystorePath));
+        serverSsl.setKeyStoreResource(Resource.newResource(keystorePath));
         serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
     }
@@ -138,7 +138,7 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        clientSsl.setKeyStoreResource(new PathResource(keystorePath));
+        clientSsl.setKeyStoreResource(Resource.newResource(keystorePath));
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();
     }

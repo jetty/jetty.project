@@ -80,7 +80,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Resource welcome = getResource(welcomeInContext);
+            Resource welcome = resolve(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
         }
@@ -134,45 +134,45 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public Resource getResource(String path) throws IOException
+    public Resource resolve(String subUriPath) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, subUriPath);
 
-        if (StringUtil.isBlank(path))
+        if (StringUtil.isBlank(subUriPath))
         {
             throw new IllegalArgumentException("Path is blank");
         }
 
-        if (!path.startsWith("/"))
+        if (!subUriPath.startsWith("/"))
         {
-            throw new IllegalArgumentException("Path reference invalid: " + path);
+            throw new IllegalArgumentException("Path reference invalid: " + subUriPath);
         }
 
         Resource r = null;
 
         if (_baseResource != null)
         {
-            r = _baseResource.addPath(path);
+            r = _baseResource.resolve(subUriPath);
 
-            if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
+            if (r.isAlias() && (_context == null || !_context.checkAlias(subUriPath, r)))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
-                throw new IllegalStateException("Rejected alias reference: " + path);
+                throw new IllegalStateException("Rejected alias reference: " + subUriPath);
             }
         }
         else if (_context != null)
         {
-            r = _context.getResource(path);
+            r = _context.getResource(subUriPath);
         }
 
-        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
             r = getStylesheet();
 
         if (r == null)
         {
-            throw new FileNotFoundException("Resource: " + path);
+            throw new FileNotFoundException("Resource: " + subUriPath);
         }
 
         return r;

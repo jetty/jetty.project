@@ -14,6 +14,7 @@
 package org.eclipse.jetty.deploy.util;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Locale;
 
 /**
@@ -28,35 +29,61 @@ public class FileID
      * @param file the path to test.
      * @return True if a .war or .jar file.
      */
-    public static boolean isWebArchiveFile(File file)
+    public static boolean isWebArchive(File file)
     {
-        if (!file.isFile())
-            return false;
-
-        String name = file.getName().toLowerCase(Locale.ENGLISH);
-        return (name.endsWith(".war") || name.endsWith(".jar"));
-    }
-
-    public static boolean isXmlFile(File path)
-    {
-        if (!path.isFile())
-        {
-            return false;
-        }
-
-        String name = path.getName().toLowerCase(Locale.ENGLISH);
-        return name.endsWith(".xml");
+        return isWebArchive(file.getName());
     }
 
     /**
-     * Remove any 3 character suffix (e.g. ".war") from a path
-     * @param path The string path
-     * @return The path without the suffix or the original path
+     * Is the path a Web Archive File (not directory)
+     *
+     * @param path the path to test.
+     * @return True if a .war or .jar file.
      */
-    public static String getDot3Basename(String path)
+    public static boolean isWebArchive(Path path)
     {
-        if (path == null || path.length() <= 4 || path.charAt(path.length() - 4) != '.')
-            return path;
-        return path.substring(0, path.length() - 4);
+        return isWebArchive(path.getFileName().toString());
+    }
+
+    /**
+     * Is the filename a WAR file.
+     *
+     * @param filename the filename to test.
+     * @return True if a .war or .jar file.
+     */
+    public static boolean isWebArchive(String filename)
+    {
+        String name = filename.toLowerCase(Locale.ENGLISH);
+        return (name.endsWith(".war"));
+    }
+
+    public static boolean isXml(File path)
+    {
+        return isXml(path.getName());
+    }
+
+    public static boolean isXml(Path path)
+    {
+        return isXml(path.getFileName().toString());
+    }
+
+    public static boolean isXml(String filename)
+    {
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
+    }
+
+    /**
+     * Retrieve the basename of a path. This is the name of the
+     * last segment of the path, with any dot suffix (e.g. ".war") removed
+     * @param path The string path
+     * @return The last segment of the path without any dot suffix
+     */
+    public static String getBasename(Path path)
+    {
+        String basename = path.getFileName().toString();
+        int dot = basename.lastIndexOf('.');
+        if (dot >= 0)
+            basename = basename.substring(0, dot);
+        return basename;
     }
 }

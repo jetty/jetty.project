@@ -67,7 +67,7 @@ public class LowLevelQuicheTest
         clientQuicheConfig.setInitialMaxStreamsBidi(100L);
         clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
-        SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()).toFile(), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
+        SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
         File[] pemFiles = serverKeyPair.export(new File(System.getProperty("java.io.tmpdir")));
         serverQuicheConfig = new QuicheConfig();
         serverQuicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());

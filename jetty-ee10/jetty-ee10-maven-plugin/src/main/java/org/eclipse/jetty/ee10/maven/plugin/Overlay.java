@@ -84,6 +84,6 @@ public class Overlay
             throw new IllegalStateException("No overly unpack directory");
         //only unpack if the overlay is newer
         if (!dir.exists() || (getResource().lastModified() > dir.lastModified()))
-            getResource().copyTo(dir);
+            getResource().copyTo(dir.toPath());
     }
 }

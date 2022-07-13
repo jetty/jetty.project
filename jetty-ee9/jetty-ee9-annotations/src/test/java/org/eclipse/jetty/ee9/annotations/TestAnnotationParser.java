@@ -35,7 +35,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -218,7 +217,7 @@ public class TestAnnotationParser
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
-        parser.parse(handlers, new PathResource(jdk10Jar));
+        parser.parse(handlers, Resource.newResource(jdk10Jar.toPath()));
         // Should throw no exceptions
     }
 
@@ -252,8 +251,8 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClassesInJars() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar"));
-        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest_copy.jar"));
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar").toPath());
+        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest_copy.jar").toPath());
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -268,13 +267,13 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClasses() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar"));
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar").toPath());
         File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, testJar);
-        parser.parse(handlers, Resource.newResource(testClasses));
+        parser.parse(handlers, Resource.newResource(testClasses.toPath()));
         List<String> locations = handler.getParsedList("org.acme.ClassOne");
         assertNotNull(locations);
         assertEquals(2, locations.size());
