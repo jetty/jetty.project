@@ -36,7 +36,7 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemos.find("ee10-demo-jndi-webapp/target/ee10-demo-jndi-webapp-@VER@.war");
+        Path testJndiWar = JettyDemos.find("jetty-ee10-demo-jndi-webapp/target/jetty-ee10-demo-jndi-webapp-@VER@.war");
         webapp.setWarResource(Resource.newResource(testJndiWar));
         server.setHandler(webapp);
 
@@ -48,7 +48,7 @@ public class ServerWithJNDI
         new org.eclipse.jetty.ee10.plus.jndi.Transaction("ee10",
             new org.example.MockUserTransaction());
 
-        // Define an env entry with Server scope.
+        // Define an env entry with ee10 scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
         // This is equivalent to putting an env-entry in web.xml:
         // <env-entry>
@@ -56,7 +56,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry(server, "woggle", 4000, false);
+        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry("ee10", "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle

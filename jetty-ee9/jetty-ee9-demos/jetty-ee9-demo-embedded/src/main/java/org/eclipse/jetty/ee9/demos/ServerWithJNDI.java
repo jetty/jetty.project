@@ -46,9 +46,10 @@ public class ServerWithJNDI
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
         new org.eclipse.jetty.ee9.plus.jndi.Transaction(
+            "ee9",
             new org.example.MockUserTransaction());
 
-        // Define an env entry with Server scope.
+        // Define an env entry with ee9 scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
         // This is equivalent to putting an env-entry in web.xml:
         // <env-entry>
@@ -56,7 +57,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "woggle", 4000, false);
+        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("ee9", "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle
