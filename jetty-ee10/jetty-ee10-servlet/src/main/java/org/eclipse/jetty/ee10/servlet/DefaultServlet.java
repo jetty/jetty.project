@@ -53,26 +53,28 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultServlet extends HttpServlet implements ResourceService.WelcomeFactory
+public class DefaultServlet extends HttpServlet
 {
-    private ResourceService _resourceService;
-    private ServletContextHandler _servletContextHandler;
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
+    private ServletResourceService _resourceService;
+    private boolean _welcomeServlets = false;
+    private boolean _welcomeExactServlets = false;
 
     @Override
     public void init() throws ServletException
     {
-        _servletContextHandler = initContextHandler(getServletContext());
-        _resourceService = new ServletResourceService();
-        _resourceService.setWelcomeFactory(this);
+        ServletContextHandler servletContextHandler = initContextHandler(getServletContext());
+        _resourceService = new ServletResourceService(servletContextHandler);
+        _resourceService.setWelcomeFactory(_resourceService);
 
         // TODO lots of review needed of this initialization
 
         MimeTypes mimeTypes = new MimeTypes();
         CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
-        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(_servletContextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
+        _resourceService.setContentFactory(new CachingContentFactory(new ResourceContentFactory(servletContextHandler.getResourceBase(), mimeTypes, precompressedFormats)));
 
-        if (_servletContextHandler.getWelcomeFiles() == null)
-            _servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
+        if (servletContextHandler.getWelcomeFiles() == null)
+            servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
 
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
@@ -81,7 +83,6 @@ public class DefaultServlet extends HttpServlet implements ResourceService.Welco
         _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly", _resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
-        /*
         if ("exact".equals(getInitParameter("welcomeServlets")))
         {
             _welcomeExactServlets = true;
@@ -90,6 +91,7 @@ public class DefaultServlet extends HttpServlet implements ResourceService.Welco
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
+        /*
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
 
         _relativeResourceBase = getInitParameter("relativeResourceBase");
@@ -212,29 +214,6 @@ public class DefaultServlet extends HttpServlet implements ResourceService.Welco
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = {}", _resourceBase);
         */
-    }
-
-    @Override
-    public String getWelcomeFile(String pathInContext) throws IOException
-    {
-        String[] welcomes = _servletContextHandler.getWelcomeFiles();
-
-        if (welcomes == null)
-            return null;
-
-        // TODO this feels inefficient
-        Resource base = _servletContextHandler.getResourceBase().resolve(pathInContext);
-        for (String welcome : welcomes)
-        {
-            Resource welcomePath = base.resolve(welcome);
-            if (welcomePath != null && welcomePath.exists())
-                return URIUtil.addPaths(pathInContext, welcome);;
-        }
-
-        // TODO look for a servlet match
-
-        // not found
-        return null;
     }
 
     private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
@@ -679,9 +658,44 @@ public class DefaultServlet extends HttpServlet implements ResourceService.Welco
         }
     }
 
-    private static class ServletResourceService extends ResourceService
+    private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory
     {
-        private static final Logger LOG = LoggerFactory.getLogger(ServletResourceService.class);
+        private final ServletContextHandler _servletContextHandler;
+
+        ServletResourceService(ServletContextHandler servletContextHandler)
+        {
+            _servletContextHandler = servletContextHandler;
+        }
+
+        @Override
+        public String getWelcomeFile(String pathInContext) throws IOException
+        {
+            String[] welcomes = _servletContextHandler.getWelcomeFiles();
+
+            if (welcomes == null)
+                return null;
+
+            // TODO this feels inefficient
+            Resource base = _servletContextHandler.getResourceBase().resolve(pathInContext);
+            String welcomeServlet = null;
+            for (String welcome : welcomes)
+            {
+                Resource welcomePath = base.resolve(welcome);
+                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+
+                if (welcomePath != null && welcomePath.exists())
+                    return welcomeInContext;
+
+                if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
+                {
+                    ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
+                    if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this &&
+                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
+                        welcomeServlet = welcomeInContext;
+                }
+            }
+            return welcomeServlet;
+        }
 
         @Override
         protected boolean welcome(GenericRequest rq, GenericResponse rs, Callback callback) throws IOException

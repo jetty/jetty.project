@@ -259,6 +259,18 @@ public class DispatcherTest
     }
 
     @Test
+    public void testForwardSendError() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
+        _contextHandler.addServlet(SendErrorServlet.class, "/senderr/*");
+
+        String forwarded = _connector.getResponse("GET /context/forward?do=ctx.echo&uri=/senderr HTTP/1.0\n\n");
+
+        assertThat(forwarded, containsString("HTTP/1.1 590 "));
+        assertThat(forwarded, containsString("<h2>HTTP ERROR 590 Five Nine Zero</h2>"));
+    }
+
+    @Test
     public void testForwardExForwardEx() throws Exception
     {
         _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
@@ -774,6 +786,15 @@ public class DispatcherTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             res.getWriter().print("Roger That!");
+        }
+    }
+
+    public static class SendErrorServlet extends HttpServlet
+    {
+        @Override
+        public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+        {
+            res.sendError(590, "Five Nine Zero");
         }
     }
 

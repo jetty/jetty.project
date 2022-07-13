@@ -820,7 +820,7 @@ public class ResourceService
 
         /**
          * Finds a matching welcome file for the supplied {@link Resource}.
-         *
+         * TODO would be better to pass back a URI or a Resource
          * @param pathInContext the path of the request
          * @return The path of the matching welcome file in context or null.
          */

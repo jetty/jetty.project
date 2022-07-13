@@ -1050,7 +1050,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testWelcomeServlet() throws Exception
     {
         Path inde = docRoot.resolve("index.htm");
