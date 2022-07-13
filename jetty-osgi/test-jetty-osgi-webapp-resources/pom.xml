@@ -11,41 +11,31 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.resources</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
-       <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-resources-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-resources</id>
-                <phase>validate</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration>
-                  <outputDirectory>${basedir}/target/classes</outputDirectory>
-                  <resources>
-                    <resource>
-                        <directory>src/main/resources</directory>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/classes</outputDirectory>
+              <resources>
+                <resource>
+                    <directory>src/main/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -68,14 +58,6 @@
           <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must not deploy -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>

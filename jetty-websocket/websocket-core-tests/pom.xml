@@ -12,6 +12,8 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.tests</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <dependencies>
@@ -39,24 +41,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- No point deploying testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- No point building javadoc on testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

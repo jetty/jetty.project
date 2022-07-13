@@ -13,37 +13,10 @@
   <packaging>pom</packaging>
   <properties>
     <spotbugs.skip>true</spotbugs.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.source.skip>true</maven.source.skip>
   </properties>
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <configuration>
-            <!-- No point deploying testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <!-- no need of sources for test jars -->
-            <skipSource>true</skipSource>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
   <modules>
     <module>jetty-jmh</module>
     <module>jetty-http-tools</module>
