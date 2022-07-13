@@ -439,6 +439,22 @@ public class ResourceHandlerTest
             _local.getResponse("GET /resource/directory HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), endsWith("/resource/directory/"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/directory;JSESSIONID=12345678 HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response.get(LOCATION), endsWith("/resource/directory/;JSESSIONID=12345678"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/directory?name=value HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response.get(LOCATION), endsWith("/resource/directory/?name=value"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/directory;JSESSIONID=12345678?name=value HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response.get(LOCATION), endsWith("/resource/directory/;JSESSIONID=12345678?name=value"));
+
     }
 
     @Test

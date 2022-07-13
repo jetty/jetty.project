@@ -402,22 +402,16 @@ public class ResourceService
         // Redirect to directory
         if (!endsWithSlash)
         {
-            // TODO need helper code to edit URIs
-            StringBuilder buf = new StringBuilder(request.getHttpURI().asString());
-            int param = buf.lastIndexOf(";");
-            if (param < 0 || buf.lastIndexOf("/", param) > 0)
-                buf.append('/');
-            else
-                buf.insert(param, '/');
-            String q = request.getHttpURI().getQuery();
-            if (q != null && q.length() != 0)
+            HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
+            if (!uri.getCanonicalPath().endsWith("/"))
             {
-                buf.append('?');
-                buf.append(q);
+                String parameter = uri.getParam();
+                uri.path(uri.getCanonicalPath() + "/");
+                uri.param(parameter);
+                response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
+                response.sendRedirect(callback, uri.toString());
+                return;
             }
-            response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
-            response.sendRedirect(callback, buf.toString());
-            return;
         }
 
         // look for a welcome file

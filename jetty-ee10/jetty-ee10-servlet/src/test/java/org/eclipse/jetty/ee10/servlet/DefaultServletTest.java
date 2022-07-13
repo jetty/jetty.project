@@ -84,7 +84,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
 {
@@ -136,6 +135,28 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testGet() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        createFile(file, "How now brown cow");
+
+        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
     public void testListingWithSession() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -150,6 +171,7 @@ public class DefaultServletTest
 
         String rawResponse = connector.getResponse("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
 
         String body = response.getContent();
 
@@ -229,6 +251,7 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
+    @Disabled
     public void testListingFilenamesOnly() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -265,6 +288,7 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
+    @Disabled
     public void testListingFilenamesOnlyUrlResource() throws Exception
     {
         URL extraResource = context.getClassLoader().getResource("rez/one");
@@ -351,6 +375,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -405,12 +430,16 @@ public class DefaultServletTest
     {
         Scenarios scenarios = new Scenarios();
 
+        // TODO
+        /*
         scenarios.addScenario(
             "GET normal",
             "GET /context/ HTTP/1.0\r\n\r\n",
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
+
+         */
 
         scenarios.addScenario(
             "GET /context/index.html",
@@ -653,6 +682,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("welcomeScenarios")
+    @Disabled
     public void testWelcome(Scenario scenario) throws Exception
     {
         Path one = docRoot.resolve("one");
@@ -689,6 +719,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testWelcomeMultipleBasesBase() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -807,6 +838,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testIncludedWelcomeDifferentBase() throws Exception
     {
         Path altRoot = workDir.getPath().resolve("altroot");
@@ -849,6 +881,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testWelcomeRedirect() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -910,6 +943,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testRelativeRedirect() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -953,6 +987,7 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
+    @Disabled
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -985,6 +1020,7 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
+    @Disabled
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1014,6 +1050,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testWelcomeServlet() throws Exception
     {
         Path inde = docRoot.resolve("index.htm");
@@ -1066,6 +1103,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testSymLinks() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1172,6 +1210,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("welcomeServletScenarios")
+    @Disabled
     public void testWelcomeExactServlet(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1456,6 +1495,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
+    @Disabled
     public void testRangeRequests(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1481,6 +1521,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testFiltered() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1545,6 +1586,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1639,6 +1681,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCachedGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1721,6 +1764,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1808,6 +1852,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCachedBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1887,6 +1932,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testDefaultBrotliOverGzip() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1923,6 +1969,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCustomCompressionFormats() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1962,6 +2009,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testProgrammaticCustomCompressionFormats() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -2079,6 +2127,7 @@ public class DefaultServletTest
         "Hello World",
         "Now is the time for all good men to come to the aid of the party"
     })
+    @Disabled
     public void testIfETag(String content) throws Exception
     {
         createFile(docRoot.resolve("file.txt"), content);

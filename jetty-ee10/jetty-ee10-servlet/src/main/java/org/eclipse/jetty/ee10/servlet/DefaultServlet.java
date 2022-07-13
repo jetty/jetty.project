@@ -69,11 +69,11 @@ public class DefaultServlet extends HttpServlet
         ContextHandler.Context context = ContextHandler.getCurrentContext();
         if (context == null)
         {
-            if (servletContext instanceof ContextHandler.Context)
-                return ((ContextHandler.Context)servletContext).getContextHandler();
-            else
-                throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-                    servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+            if (servletContext instanceof ServletContextHandler.ServletContextApi api)
+                return api.getContext().getServletContextHandler();
+
+            throw new IllegalArgumentException("The servletContext " + servletContext + " " +
+                servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
         }
         else
             return context.getContextHandler();
