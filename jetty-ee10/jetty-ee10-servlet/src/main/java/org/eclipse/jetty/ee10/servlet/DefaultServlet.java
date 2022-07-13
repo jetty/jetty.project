@@ -14,23 +14,23 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,12 +42,20 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Components;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -294,10 +302,6 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        boolean useOutputDirectByteBuffers = true;
-        if (resp instanceof ServletContextResponse.ServletApiResponse servletApiResponse)
-            useOutputDirectByteBuffers = servletApiResponse.getResponse().getWrapped().getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-
         HttpContent content = _resourceService.getContent(req.getServletPath(), resp.getBufferSize());
         if (content == null)
         {
@@ -307,9 +311,12 @@ public class DefaultServlet extends HttpServlet
         else
         {
             // serve content
-            try
+            try // (Blocker.Callback callback = Blocker.callback())
             {
-                _resourceService.doGet(new ServletGenericRequest(req), new ServletGenericResponse(resp, useOutputDirectByteBuffers), Callback.NOOP, content);
+                ServletCoreRequest coreRequest = new ServletCoreRequest(req);
+                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
+                _resourceService.doGet(coreRequest, coreResponse, Callback.NOOP, content);
+                // callback.block();
             }
             catch (Exception e)
             {
@@ -324,14 +331,20 @@ public class DefaultServlet extends HttpServlet
         doGet(req, resp);
     }
 
-    private static class ServletGenericRequest implements ResourceService.GenericRequest
+    private static class ServletCoreRequest implements Request
     {
+        // TODO fully implement this class and move it to the top level
+        // TODO Some methods are directed to core that probably should be intercepted
+
         private final HttpServletRequest _request;
+        private final Request _coreRequest;
         private final HttpFields _httpFields;
 
-        ServletGenericRequest(HttpServletRequest request)
+        ServletCoreRequest(HttpServletRequest request)
         {
-            this._request = request;
+            _request = request;
+            _coreRequest = ServletContextRequest.getBaseRequest(request);
+
             HttpFields.Mutable fields = HttpFields.build();
 
             Enumeration<String> headerNames = request.getHeaderNames();
@@ -357,7 +370,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public HttpURI getHttpURI()
         {
-            return HttpURI.from(_request.getRequestURI());
+            return _coreRequest.getHttpURI();
         }
 
         @Override
@@ -367,9 +380,121 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public String getContextPath()
+        public void demand(Runnable demandCallback)
         {
-            return _request.getContextPath();
+            _coreRequest.demand(demandCallback);
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            _coreRequest.fail(failure);
+        }
+
+        @Override
+        public String getId()
+        {
+            return _request.getRequestId();
+        }
+
+        @Override
+        public Components getComponents()
+        {
+            return _coreRequest.getComponents();
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return _coreRequest.getConnectionMetaData();
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return _request.getMethod();
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return _coreRequest.getContext();
+        }
+
+        @Override
+        public long getTimeStamp()
+        {
+            return _coreRequest.getTimeStamp();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _request.isSecure();
+        }
+
+        @Override
+        public Content.Chunk read()
+        {
+            return _coreRequest.read();
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+            _coreRequest.push(request);
+        }
+
+        @Override
+        public boolean addErrorListener(Predicate<Throwable> onError)
+        {
+            return false;
+        }
+
+        @Override
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        {
+
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            Object value = _request.getAttribute(name);
+            _request.removeAttribute(name);
+            return value;
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            Object value = _request.getAttribute(name);
+            _request.setAttribute(name, attribute);
+            return value;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _request.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> set = new HashSet<>();
+            Enumeration<String> e = _request.getAttributeNames();
+            while (e.hasMoreElements())
+                set.add(e.nextElement());
+            return set;
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            Enumeration<String> e = _request.getAttributeNames();
+            while (e.hasMoreElements())
+                _request.removeAttribute(e.nextElement());
         }
     }
 
@@ -554,17 +679,21 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static class ServletGenericResponse implements ResourceService.GenericResponse
+    private static class ServletCoreResponse implements Response
     {
-        private final HttpServletResponse _response;
-        private final HttpFields.Mutable _httpFields;
-        private final boolean _useOutputDirectByteBuffers;
+        // TODO fully implement this class and move it to the top level
 
-        public ServletGenericResponse(HttpServletResponse response, boolean useOutputDirectByteBuffers)
+        private final HttpServletResponse _response;
+        private final ServletCoreRequest _coreRequest;
+        private final Response _coreResponse;
+        private final HttpFields.Mutable _httpFields;
+
+        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response)
         {
+            _coreRequest = coreRequest;
             _response = response;
+            _coreResponse = ServletContextResponse.getBaseResponse(response);
             _httpFields = new HttpServletResponseHttpFields(response);
-            _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
         }
 
         @Override
@@ -574,87 +703,61 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public int getOutputBufferSize()
-        {
-            return _response.getBufferSize();
-        }
-
-        @Override
         public boolean isCommitted()
         {
             return _response.isCommitted();
         }
 
         @Override
-        public boolean isUseOutputDirectByteBuffers()
-        {
-            return _useOutputDirectByteBuffers;
-        }
-
-        @Override
-        public void sendRedirect(Callback callback, String uri)
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             try
             {
-                _response.sendRedirect(uri);
+                BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
+                if (last)
+                    _response.getOutputStream().close();
                 callback.succeeded();
             }
-            catch (Throwable x)
+            catch (Throwable t)
             {
-                callback.failed(x);
+                callback.failed(t);
             }
         }
 
         @Override
-        public void writeError(Callback callback, int status)
+        public Request getRequest()
         {
-            _response.setStatus(status);
-            callback.succeeded();
+            return _coreRequest;
         }
 
         @Override
-        public void write(HttpContent content, Callback callback)
+        public int getStatus()
         {
-            ByteBuffer buffer = content.getBuffer();
-            if (buffer != null)
-            {
-                writeLast(buffer, callback);
-            }
-            else
-            {
-                try
-                {
-                    try (InputStream inputStream = Files.newInputStream(content.getResource().getPath());
-                         OutputStream outputStream = _response.getOutputStream())
-                    {
-                        IO.copy(inputStream, outputStream);
-                    }
-                    callback.succeeded();
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
-            }
+            return _response.getStatus();
         }
 
         @Override
-        public void writeLast(ByteBuffer byteBuffer, Callback callback)
+        public void setStatus(int code)
         {
-            try
-            {
-                ServletOutputStream outputStream = _response.getOutputStream();
-                byte[] bytes = new byte[byteBuffer.remaining()];
-                byteBuffer.get(bytes);
-                outputStream.write(bytes);
-                outputStream.close();
+            _response.setStatus(code);
+        }
 
-                callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
+        @Override
+        public HttpFields.Mutable getOrCreateTrailers()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully()
+        {
+            return _coreResponse.isCompletedSuccessfully();
+        }
+
+        @Override
+        public void reset()
+        {
+            _response.reset();
         }
     }
 
@@ -698,10 +801,11 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean welcome(GenericRequest rq, GenericResponse rs, Callback callback) throws IOException
+        protected boolean welcome(Request rq, Response rs, Callback callback) throws IOException
         {
-            HttpServletRequest request = ((ServletGenericRequest)rq)._request;
-            HttpServletResponse response = ((ServletGenericResponse)rs)._response;
+            // TODO, this unwrapping is fragile
+            HttpServletRequest request = ((ServletCoreRequest)rq)._request;
+            HttpServletResponse response = ((ServletCoreResponse)rs)._response;
             String pathInContext = rq.getPathInContext();
             WelcomeFactory welcomeFactory = getWelcomeFactory();
             String welcome = welcomeFactory == null ? null : welcomeFactory.getWelcomeFile(pathInContext);
@@ -724,13 +828,12 @@ public class DefaultServlet extends HttpServlet
                 {
                     // Redirect to the index
                     response.setContentLength(0);
-
-                    String uri = URIUtil.addPaths(request.getContextPath(), welcome);
-                    String q = request.getQueryString();
-                    if (q != null && !q.isEmpty())
-                        uri += "?" + q;
-
-                    response.sendRedirect(response.encodeRedirectURL(uri));
+                    // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
+                    HttpURI.Mutable uri = HttpURI.build(rq.getHttpURI());
+                    String parameter = uri.getParam();
+                    uri.path(URIUtil.addPaths(rq.getContext().getContextPath(), welcome));
+                    uri.param(parameter);
+                    response.sendRedirect(response.encodeRedirectURL(uri.getPathQuery()));
                     return true;
                 }
 
@@ -761,9 +864,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
+        protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
-            boolean included = ((ServletGenericRequest)request)._request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = ((ServletCoreRequest)request)._request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
             if (included)
                 return true;
             return super.passConditionalHeaders(request, response, content, callback);

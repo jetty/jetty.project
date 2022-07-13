@@ -730,7 +730,8 @@ public abstract class Resource implements ResourceFactory
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = resolve(l);
+            // TODO review the re-encoding here.  Perhaps better to get list from path
+            Resource item = resolve(URIUtil.encodePath(l));
             items.add(item);
         }
 

@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,7 +37,11 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -132,7 +136,7 @@ public class ResourceService
         return Resource.newResource(Path.of("/jetty-dir.css"));
     }
 
-    public void doGet(GenericRequest request, GenericResponse response, Callback callback, HttpContent content) throws Exception
+    public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
     {
         String pathInContext = request.getPathInContext();
 
@@ -162,7 +166,7 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                response.sendRedirect(callback, URIUtil.addPaths(request.getContextPath(), pathInContext));
+                Response.sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
                 return;
             }
 
@@ -201,17 +205,17 @@ public class ResourceService
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            response.writeError(callback, HttpStatus.NOT_FOUND_404);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         catch (IllegalArgumentException e)
         {
             LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
-                response.writeError(callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                Response.writeError(request, response, callback, e);
         }
     }
 
-    private List<String> getPreferredEncodingOrder(GenericRequest request)
+    private List<String> getPreferredEncodingOrder(Request request)
     {
         Enumeration<String> headers = request.getHeaders().getValues(HttpHeader.ACCEPT_ENCODING.asString());
         if (!headers.hasMoreElements())
@@ -284,7 +288,7 @@ public class ResourceService
     /**
      * @return true if the request was processed, false otherwise.
      */
-    protected boolean passConditionalHeaders(GenericRequest request, GenericResponse response, HttpContent content, Callback callback) throws IOException
+    protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -332,7 +336,7 @@ public class ResourceService
 
                     if (!match)
                     {
-                        response.writeError(callback, HttpStatus.PRECONDITION_FAILED_412);
+                        Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                         return true;
                     }
                 }
@@ -342,7 +346,7 @@ public class ResourceService
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
+                        Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                         return true;
                     }
 
@@ -352,7 +356,7 @@ public class ResourceService
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
+                            Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                             return true;
                         }
                     }
@@ -369,14 +373,14 @@ public class ResourceService
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
+                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    response.writeError(callback, HttpStatus.NOT_MODIFIED_304);
+                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
             }
@@ -384,21 +388,21 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
             {
-                response.writeError(callback, HttpStatus.PRECONDITION_FAILED_412);
+                Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return true;
             }
         }
         catch (IllegalArgumentException iae)
         {
             if (!response.isCommitted())
-                response.writeError(callback, HttpStatus.BAD_REQUEST_400);
+                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, null, iae);
             throw iae;
         }
 
         return false;
     }
 
-    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, GenericRequest request, GenericResponse response, Callback callback) throws Exception
+    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
         // Redirect to directory
         if (!endsWithSlash)
@@ -406,11 +410,12 @@ public class ResourceService
             HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
             if (!uri.getCanonicalPath().endsWith("/"))
             {
+                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
                 String parameter = uri.getParam();
                 uri.path(uri.getCanonicalPath() + "/");
                 uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                response.sendRedirect(callback, uri.toString());
+                Response.sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
         }
@@ -423,13 +428,13 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    protected boolean welcome(GenericRequest request, GenericResponse response, Callback callback) throws IOException
+    protected boolean welcome(Request request, Response response, Callback callback) throws IOException
     {
         String pathInContext = request.getPathInContext();
         String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
         if (welcome != null)
         {
-            String contextPath = request.getContextPath();
+            String contextPath = request.getContext().getContextPath();
 
             if (_pathInfoOnly)
                 welcome = URIUtil.addPaths(contextPath, welcome);
@@ -441,30 +446,28 @@ public class ResourceService
             {
                 // Redirect to the index
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-
-                // TODO need helper code to edit URIs
-                String uri = URIUtil.addPaths(request.getContextPath(), welcome);
-                String q = request.getHttpURI().getQuery();
-                if (q != null && !q.isEmpty())
-                    uri += "?" + q;
-
-                response.sendRedirect(callback, uri);
+                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
+                HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
+                String parameter = uri.getParam();
+                uri.path(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
+                uri.param(parameter);
+                Response.sendRedirect(request, response, callback, uri.getPathQuery());
                 return true;
             }
 
             // Serve welcome file
-            HttpContent c = _contentFactory.getContent(welcome, response.getOutputBufferSize());
+            HttpContent c = _contentFactory.getContent(welcome, 16 * 1024); // TODO output buffer size????
             sendData(request, response, callback, c, null);
             return true;
         }
         return false;
     }
 
-    private void sendDirectory(GenericRequest request, GenericResponse response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
     {
         if (!_dirAllowed)
         {
-            response.writeError(callback, HttpStatus.FORBIDDEN_403);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -472,17 +475,17 @@ public class ResourceService
         String dir = httpContent.getResource().getListHTML(base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (dir == null)
         {
-            response.writeError(callback, HttpStatus.FORBIDDEN_403);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
         response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
-        response.writeLast(ByteBuffer.wrap(data), callback);
+        response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private boolean sendData(GenericRequest request, GenericResponse response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
+    private boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
     {
         long contentLength = content.getContentLengthValue();
 
@@ -497,7 +500,7 @@ public class ResourceService
             putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
 
             // write the content
-            response.write(content, callback);
+            writeHttpContent(request, response, callback, content);
         }
         else
         {
@@ -598,7 +601,23 @@ public class ResourceService
         return true;
     }
 
-    private void putHeaders(GenericResponse response, HttpContent content, long contentLength)
+    protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
+    {
+        try
+        {
+            ByteBuffer buffer = content.getBuffer();
+            if (buffer != null)
+                response.write(true, buffer, callback);
+            else
+                new ContentWriterIteratingCallback(content, response, callback).iterate();
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+        }
+    }
+
+    protected void putHeaders(Response response, HttpContent content, long contentLength)
     {
         // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
         //      it might be better remove headers en masse and then just add the extras:
@@ -827,33 +846,56 @@ public class ResourceService
         String getWelcomeFile(String pathInContext) throws IOException;
     }
 
-    public interface GenericRequest
+    private static class ContentWriterIteratingCallback extends IteratingCallback
     {
-        HttpFields getHeaders();
+        private final ReadableByteChannel source;
+        private final Content.Sink sink;
+        private final Callback callback;
+        private final ByteBuffer byteBuffer;
 
-        HttpURI getHttpURI();
+        public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
+        {
+            // TODO: is it possible to do zero-copy transfer?
+//            WritableByteChannel c = Response.asWritableByteChannel(target);
+//            FileChannel fileChannel = (FileChannel) source;
+//            fileChannel.transferTo(0, contentLength, c);
 
-        String getPathInContext();
+            this.source = Files.newByteChannel(content.getResource().getPath());
+            this.sink = target;
+            this.callback = callback;
+            int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+            boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
+        }
 
-        String getContextPath();
-    }
+        @Override
+        protected Action process() throws Throwable
+        {
+            if (!source.isOpen())
+                return Action.SUCCEEDED;
+            byteBuffer.clear();
+            int read = source.read(byteBuffer);
+            if (read == -1)
+            {
+                IO.close(source);
+                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
+                return Action.SCHEDULED;
+            }
+            byteBuffer.flip();
+            sink.write(false, byteBuffer, this);
+            return Action.SCHEDULED;
+        }
 
-    public interface GenericResponse
-    {
-        HttpFields.Mutable getHeaders();
-        
-        boolean isCommitted();
+        @Override
+        protected void onCompleteSuccess()
+        {
+            callback.succeeded();
+        }
 
-        int getOutputBufferSize();
-
-        boolean isUseOutputDirectByteBuffers();
-
-        void sendRedirect(Callback callback, String uri);
-
-        void writeError(Callback callback, int status);
-
-        void write(HttpContent content, Callback callback);
-
-        void writeLast(ByteBuffer byteBuffer, Callback callback);
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 }

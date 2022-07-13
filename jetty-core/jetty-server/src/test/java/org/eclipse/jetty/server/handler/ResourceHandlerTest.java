@@ -154,6 +154,15 @@ public class ResourceHandlerTest
                 LN = "\n";
             }
         }
+
+        Path dirQ = TEST_PATH.resolve("dir?");
+        Files.createDirectories(dirQ);
+        Path welcome = dirQ.resolve("welcome.txt");
+        try (FileOutputStream out = new FileOutputStream(welcome.toFile()))
+        {
+            out.write("Hello".getBytes());
+        }
+        welcome.toFile().deleteOnExit();
     }
 
     @BeforeEach
@@ -528,15 +537,6 @@ public class ResourceHandlerTest
     @Test
     public void testWelcomeDirWithQuestion() throws Exception
     {
-        Path dir = TEST_PATH.resolve("dir?");
-        Files.createDirectories(dir);
-        Path welcome = dir.resolve("welcome.txt");
-        try (FileOutputStream out = new FileOutputStream(welcome.toFile()))
-        {
-            out.write("Hello".getBytes());
-        }
-        welcome.toFile().deleteOnExit();
-
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/dir? HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
