@@ -22,9 +22,7 @@ import java.util.List;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -387,27 +385,9 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         @Override
-        public boolean containsHeader(HttpHeader header)
+        public HttpFields.Mutable getHeaders()
         {
-            return response.getHeaders().contains(header);
-        }
-
-        @Override
-        public void putHeader(HttpField header)
-        {
-            response.getHeaders().put(header);
-        }
-
-        @Override
-        public void putHeader(HttpHeader header, String value)
-        {
-            response.getHeaders().put(header, value);
-        }
-
-        @Override
-        public void putHeaderLong(HttpHeader name, long value)
-        {
-            response.getHeaders().putLongField(name, value);
+            return response.getHeaders();
         }
 
         @Override

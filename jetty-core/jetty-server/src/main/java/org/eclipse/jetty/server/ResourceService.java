@@ -175,7 +175,7 @@ public class ResourceService
             if (precompressedContents != null && precompressedContents.size() > 0)
             {
                 // Tell caches that response may vary by accept-encoding
-                response.putHeader(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
+                response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
                 List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
@@ -185,13 +185,13 @@ public class ResourceService
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
                     content = precompressedContent;
-                    response.putHeader(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
+                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
                 }
             }
 
             // TODO this should be done by HttpContent#getContentEncoding
             if (isGzippedContent(pathInContext))
-                response.putHeader(HttpHeader.CONTENT_ENCODING, "gzip");
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
             sendData(request, response, callback, content, reqRanges);
@@ -409,7 +409,7 @@ public class ResourceService
                 String parameter = uri.getParam();
                 uri.path(uri.getCanonicalPath() + "/");
                 uri.param(parameter);
-                response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 response.sendRedirect(callback, uri.toString());
                 return;
             }
@@ -440,7 +440,7 @@ public class ResourceService
             if (_redirectWelcome)
             {
                 // Redirect to the index
-                response.putHeaderLong(HttpHeader.CONTENT_LENGTH, 0);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
 
                 // TODO need helper code to edit URIs
                 String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
@@ -477,8 +477,8 @@ public class ResourceService
         }
 
         byte[] data = dir.getBytes(StandardCharsets.UTF_8);
-        response.putHeader(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
-        response.putHeaderLong(HttpHeader.CONTENT_LENGTH, data.length);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
         response.writeLast(ByteBuffer.wrap(data), callback);
     }
 
@@ -618,36 +618,36 @@ public class ResourceService
 
         HttpField lm = content.getLastModified();
         if (lm != null)
-            response.putHeader(lm);
+            response.getHeaders().put(lm);
 
         if (contentLength == USE_KNOWN_CONTENT_LENGTH)
         {
-            response.putHeader(content.getContentLength());
+            response.getHeaders().put(content.getContentLength());
         }
         else if (contentLength > NO_CONTENT_LENGTH)
         {
-            response.putHeaderLong(HttpHeader.CONTENT_LENGTH, contentLength);
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
         }
 
         HttpField ct = content.getContentType();
         if (ct != null)
-            response.putHeader(ct);
+            response.getHeaders().put(ct);
 
         HttpField ce = content.getContentEncoding();
         if (ce != null)
-            response.putHeader(ce);
+            response.getHeaders().put(ce);
 
         if (_etags)
         {
             HttpField et = content.getETag();
             if (et != null)
-                response.putHeader(et);
+                response.getHeaders().put(et);
         }
 
-        if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES))
-            response.putHeader(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
-        if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL))
-            response.putHeader(_cacheControl);
+        if (_acceptRanges && !response.getHeaders().contains(HttpHeader.ACCEPT_RANGES))
+            response.getHeaders().put(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
+        if (_cacheControl != null && !response.getHeaders().contains(HttpHeader.CACHE_CONTROL))
+            response.getHeaders().put(_cacheControl);
     }
 
     private boolean hasDefinedRange(Enumeration<String> reqRanges)
@@ -840,14 +840,8 @@ public class ResourceService
 
     public interface GenericResponse
     {
-        boolean containsHeader(HttpHeader header);
-
-        void putHeader(HttpField header);
-
-        void putHeader(HttpHeader header, String value);
-
-        void putHeaderLong(HttpHeader name, long value);
-
+        HttpFields.Mutable getHeaders();
+        
         boolean isCommitted();
 
         int getOutputBufferSize();
