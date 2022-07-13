@@ -6,7 +6,7 @@
   metadata-complete="false"
   version="3.0">
 
-  <display-name>Transparent Proxy WebApp</display-name>
+  <display-name>EE10 Demo Proxy WebApp</display-name>
 
   <servlet>
     <servlet-name>JavadocTransparentProxy</servlet-name>

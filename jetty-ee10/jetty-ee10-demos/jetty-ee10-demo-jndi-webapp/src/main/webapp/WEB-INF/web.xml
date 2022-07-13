@@ -6,7 +6,7 @@
    metadata-complete="true"
    version="3.1"> 
 
-  <display-name>Test JNDI WebApp</display-name>
+  <display-name>EE10 Demo JNDI WebApp</display-name>
   
   <servlet>
     <servlet-name>JNDITest</servlet-name>
