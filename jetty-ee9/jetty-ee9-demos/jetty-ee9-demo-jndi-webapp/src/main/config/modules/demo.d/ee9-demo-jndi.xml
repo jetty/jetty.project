@@ -6,6 +6,7 @@
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
+    <Arg><Property name="environment" default="ee9"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />
     </Arg>
@@ -18,10 +19,10 @@
   <Set name="copyWebDir">false</Set>
   <Set name="configurationDiscovered">true</Set>
 
-  <!-- Define an env entry with Server scope for java:comp/env                   -->
+  <!-- Define an env entry with ee9  scope for java:comp/env                   -->
   <New id="woggle" class="org.eclipse.jetty.ee9.plus.jndi.EnvEntry">
     <Arg>
-      <Property name='server' />
+      <Property name="environment" default="ee9"/>
     </Arg>
     <Arg>woggle</Arg>
     <Arg type="java.lang.Integer">4000</Arg>

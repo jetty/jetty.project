@@ -27,6 +27,7 @@ import javax.naming.NamingException;
 import org.eclipse.jetty.ee10.plus.jndi.EnvEntry;
 import org.eclipse.jetty.ee10.plus.jndi.NamingDump;
 import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
@@ -238,6 +239,9 @@ public class EnvConfiguration extends AbstractConfiguration
 
         LOG.debug("Binding env entries from the server scope");
         doBindings(envCtx, context.getServer());
+        
+        LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.__environment.getName());
+        doBindings(envCtx, ServletContextHandler.__environment.getName());
 
         LOG.debug("Binding env entries from the context scope");
         doBindings(envCtx, context);

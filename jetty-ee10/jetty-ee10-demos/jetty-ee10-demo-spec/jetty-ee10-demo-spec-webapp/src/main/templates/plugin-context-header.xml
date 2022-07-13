@@ -10,6 +10,7 @@
 
   <!-- Configure the tx mgr (only needed for mvn jetty:run -->
   <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
+    <Arg>ee10</Arg>
     <Arg>
       <New class="org.example.MockUserTransaction"/>
     </Arg>

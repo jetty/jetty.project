@@ -46,7 +46,7 @@ public class ServerWithAnnotations
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("demo-spec/demo-spec-webapp/target/demo-spec-webapp-@VER@.war");
+        Path warFile = JettyDemos.find("ee10-demo-spec/ee10-demo-spec-webapp/target/demo-spec-webapp-@VER@.war");
         webapp.setWar(warFile.toString());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -55,7 +55,7 @@ public class ServerWithAnnotations
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new Transaction(new org.example.MockUserTransaction());
+        new Transaction("ee10", new org.example.MockUserTransaction());
 
         // Define an env entry with webapp scope.
         // THIS ENTRY IS OVERRIDDEN BY THE ENTRY IN jetty-env.xml
