@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!--
+This is the jetty specific web application configuration file.  When starting
+a Web Application, the WEB-INF/jetty-web.xml file is looked for and if found, treated
+as a org.eclipse.jetty.server.server.xml.XmlConfiguration file and is applied to the
+org.eclipse.jetty.ee8.servlet.WebApplicationContext object
+-->
+
+<Configure class="org.eclipse.jetty.ee8.webapp.WebAppContext">
+  <Get name="servletContext">
+    <Call name="log"><Arg>The ee8-demo-async-rest webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
+  </Get>
+</Configure>

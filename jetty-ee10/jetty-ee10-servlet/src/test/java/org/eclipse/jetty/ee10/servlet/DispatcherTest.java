@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -93,7 +95,8 @@ public class DispatcherTest
         _contextHandler.setContextPath("/context");
         _contextCollection.addHandler(_contextHandler);
         _resourceHandler = new ResourceHandler();
-        _resourceHandler.setBaseResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest").toAbsolutePath());
+        Path basePath = MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest");
+        _resourceHandler.setBaseResource(Resource.newResource(basePath));
         _resourceHandler.setPathInfoOnly(true);
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(_resourceHandler);
@@ -253,6 +256,18 @@ public class DispatcherTest
         String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testForwardSendError() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
+        _contextHandler.addServlet(SendErrorServlet.class, "/senderr/*");
+
+        String forwarded = _connector.getResponse("GET /context/forward?do=ctx.echo&uri=/senderr HTTP/1.0\n\n");
+
+        assertThat(forwarded, containsString("HTTP/1.1 590 "));
+        assertThat(forwarded, containsString("<h2>HTTP ERROR 590 Five Nine Zero</h2>"));
     }
 
     @Test
@@ -771,6 +786,15 @@ public class DispatcherTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             res.getWriter().print("Roger That!");
+        }
+    }
+
+    public static class SendErrorServlet extends HttpServlet
+    {
+        @Override
+        public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+        {
+            res.sendError(590, "Five Nine Zero");
         }
     }
 

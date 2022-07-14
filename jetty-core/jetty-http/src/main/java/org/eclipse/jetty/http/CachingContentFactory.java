@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -180,7 +179,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
         HttpContent httpContent = _authority.getContent(path, maxBuffer);
         // Do not cache directories or files that are too big
-        if (httpContent != null && !Files.isDirectory(httpContent.getPath()) && httpContent.getContentLengthValue() <= _maxCachedFileSize)
+        if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
         {
             httpContent = cachingHttpContent = new CachingHttpContent(path, null, httpContent);
             _cache.put(path, cachingHttpContent);
@@ -210,14 +209,14 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             if (_useFileMappedBuffer)
             {
                 // mmap the content into memory
-                byteBuffer = BufferUtil.toMappedBuffer(httpContent.getPath(), 0, _contentLengthValue);
+                byteBuffer = BufferUtil.toMappedBuffer(httpContent.getResource().getPath(), 0, _contentLengthValue);
             }
             else
             {
                 // TODO use pool & check length limit
                 // load the content into memory
                 byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
-                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getPath()))
+                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getResource().getPath()))
                 {
                     // fill buffer
                     int read = 0;
@@ -257,7 +256,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
             _cacheKey = key;
             _buffer = byteBuffer;
-            _lastModifiedValue = Files.getLastModifiedTime(httpContent.getPath());
+            _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
             _delegate = httpContent;
             _lastAccessed = System.nanoTime();
         }
@@ -289,7 +288,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         {
             try
             {
-                FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getPath());
+                FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
                 if (lastModifiedTime.equals(_lastModifiedValue))
                 {
                     _lastAccessed = System.nanoTime();
@@ -384,12 +383,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 return _etag;
             else
                 return _delegate.getETagValue();
-        }
-
-        @Override
-        public Path getPath()
-        {
-            return _delegate.getPath();
         }
 
         @Override

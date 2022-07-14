@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee8</groupId>
+    <artifactId>jetty-ee8</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.ee8.demos</groupId>
+  <artifactId>jetty-ee8-demos</artifactId>
+  <name>EE8 :: Jetty Demos :: Parent</name>
+  <packaging>pom</packaging>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
+          <excludePackageNames>bogus.*</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <modules>
+    <module>jetty-ee8-demo-simple-webapp</module>
+    <module>jetty-ee8-demo-async-rest</module>
+<!--    <module>jetty-ee9-demo-jaas-webapp</module>-->
+<!--    <module>jetty-ee9-demo-jndi-webapp</module>-->
+<!--    <module>jetty-ee9-demo-jetty-webapp</module>-->
+
+    <!-- Needs jetty-ee9-proxy                      -->
+    <!-- module>jetty-ee9-demo-proxy-webapp</module -->
+    <!-- module>jetty-ee9-demo-embedded</module     -->
+
+<!--    <module>jetty-ee9-demo-jsp-webapp</module>-->
+<!--    <module>jetty-ee9-demo-mock-resources</module>-->
+<!--    <module>jetty-ee9-demo-spec</module>-->
+<!--    <module>jetty-ee9-demo-template</module>-->
+  </modules>
+</project>

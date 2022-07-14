@@ -9,8 +9,8 @@ demo
 webapp
 
 [depends]
-jsp
-jstl
+ee9-jsp
+ee9-jstl
 ee9-deploy
 
 [files]

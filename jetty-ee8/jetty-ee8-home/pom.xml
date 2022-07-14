@@ -107,6 +107,23 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-transaction-api-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction-api.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-servlet-api-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -118,6 +135,24 @@
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-servlet-api</artifactId>
                   <version>${jetty.servlet.api.version}</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-transaction-api-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -414,11 +449,11 @@
 <!--      <artifactId>jetty-ee8-jaspi</artifactId>-->
 <!--      <optional>true</optional>-->
 <!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
-<!--      <artifactId>jetty-ee8-jndi</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-jndi</artifactId>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo ee8 Apps -->
 <!--    <dependency>-->
 <!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
@@ -466,14 +501,14 @@
 <!--      <type>jar</type>-->
 <!--      <optional>true</optional>-->
 <!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
-<!--      <artifactId>jetty-ee8-demo-async-rest-webapp</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <classifier>config</classifier>-->
-<!--      <type>jar</type>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8.demos</groupId>
+      <artifactId>jetty-ee8-demo-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
 <!--    <dependency>-->
 <!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
 <!--      <artifactId>jetty-ee8-demo-proxy-webapp</artifactId>-->
@@ -482,14 +517,14 @@
 <!--      <type>jar</type>-->
 <!--      <optional>true</optional>-->
 <!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
-<!--      <artifactId>jetty-ee8-demo-simple-webapp</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <classifier>config</classifier>-->
-<!--      <type>jar</type>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8.demos</groupId>
+      <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
 <!--    <dependency>-->
 <!--      <groupId>org.eclipse.jetty.ee8.demos</groupId>-->
 <!--      <artifactId>jetty-ee8-demo-jsp-webapp</artifactId>-->

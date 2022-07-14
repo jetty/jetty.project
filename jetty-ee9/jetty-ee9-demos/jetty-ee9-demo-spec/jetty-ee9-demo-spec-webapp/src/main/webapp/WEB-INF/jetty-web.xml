@@ -4,7 +4,7 @@
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Get name="servletContext">
     <Call name="log">
-      <Arg>The test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
+      <Arg>The ee9-demo-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
       <Arg></Arg>
     </Call>
   </Get>

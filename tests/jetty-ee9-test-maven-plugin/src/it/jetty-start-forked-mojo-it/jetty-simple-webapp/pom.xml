@@ -89,6 +89,13 @@
           <stopPort>@jetty.stopPort@</stopPort>
           <stopKey>@jetty.stopKey@</stopKey>
         </configuration>
+        <dependencies>
+          <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-slf4j-impl</artifactId>
+              <version>${jetty.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>start-jetty</id>

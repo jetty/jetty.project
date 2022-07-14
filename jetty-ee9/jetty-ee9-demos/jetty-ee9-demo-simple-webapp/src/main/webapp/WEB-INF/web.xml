@@ -4,12 +4,21 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
 
-  <display-name>Simple Web Application</display-name>
+  <display-name>EE9 Demo Simple WebApp</display-name>
 
   <!-- using a mime-type and extension that does NOT exist in jetty-http's mime.properties -->
   <mime-mapping>
     <extension>icon</extension>
     <mime-type>image/vnd.microsoft.icon</mime-type>
   </mime-mapping>
+
+  <servlet>
+    <servlet-name>hello</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee9.demo.simple.HelloWorldServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>hello</servlet-name>
+    <url-pattern>/hello/*</url-pattern>
+  </servlet-mapping>
 
 </web-app>

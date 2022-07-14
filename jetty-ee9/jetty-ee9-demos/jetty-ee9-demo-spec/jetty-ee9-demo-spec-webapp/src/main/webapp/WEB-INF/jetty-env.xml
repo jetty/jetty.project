@@ -5,7 +5,7 @@
 
 
  <!-- Add an override for a global EnvEntry                           -->
-  <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="maxAmount"  class="org.eclipse.jetty.ee9.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>maxAmount</Arg>
     <Arg type="java.lang.Double">55.0</Arg>

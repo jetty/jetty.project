@@ -69,11 +69,16 @@
             <id>copy-ee9-lib-jakarta-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-jakarta-websocket-api</artifactId>
+                  <version>${jakarta.websocket.api.version}</version>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${assembly-directory}/lib/ee9-websocket</outputDirectory>
             </configuration>
           </execution>
@@ -81,12 +86,17 @@
             <id>copy-ee9-lib-jakarta-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-jakarta-websocket-api</artifactId>
+                  <version>${jakarta.websocket.api.version}</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
               <outputDirectory>${source-assembly-directory}/lib/ee9-websocket</outputDirectory>
             </configuration>
           </execution>
@@ -108,6 +118,23 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-transaction-api-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction-api.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-servlet-api-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -119,6 +146,24 @@
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
                   <version>${jetty.servlet.api.version}</version>
+                  <classifier>sources</classifier>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-transaction-api-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -349,22 +394,22 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlets</artifactId>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-servlet</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-apache-jsp</artifactId>
@@ -429,20 +474,20 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.demos</groupId>-->
-<!--      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <classifier>config</classifier>-->
-<!--      <type>jar</type>-->
-<!--      <optional>true</optional>-->
-<!--      <exclusions>-->
-<!--        <exclusion>-->
-<!--          <groupId>javax.el</groupId>-->
-<!--          <artifactId>el-api</artifactId>-->
-<!--        </exclusion>-->
-<!--      </exclusions>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>

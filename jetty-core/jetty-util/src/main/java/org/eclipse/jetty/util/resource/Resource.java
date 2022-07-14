@@ -99,10 +99,34 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
+     * <p>Mount a URI if it is needed.</p>
+     * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
+     * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
+     * they no longer require any resources from a mounted resource.
+     * @throws IllegalArgumentException If the uri could not be mounted.
+     * @see #mount(URI)
+     */
+    public static Resource.Mount mountIfNeeded(URI uri)
+    {
+        if (uri == null || uri.getScheme() == null)
+            return null;
+        try
+        {
+            return (uri.getScheme().equalsIgnoreCase("jar")) ? FileSystemPool.INSTANCE.mount(uri) : null;
+        }
+        catch (IOException ioe)
+        {
+            throw new IllegalArgumentException(ioe);
+        }
+    }
+
+    /**
      * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
      * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
      * they no longer require any resources from the mounted resource.
      * @throws IOException If the uri could not be mounted.
+     * @throws IllegalArgumentException If the URI does not require a mount.
+     * @see #mountIfNeeded(URI)
      */
     public static Resource.Mount mount(URI uri) throws IOException
     {
@@ -136,6 +160,12 @@ public abstract class Resource implements ResourceFactory
         return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
     }
 
+    /**
+     * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
+     *                 representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * @return The {@link URI} form of the resource.
+     */
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
@@ -146,6 +176,14 @@ public abstract class Resource implements ResourceFactory
             : Paths.get(resource).toUri();
 
         return uri;
+    }
+
+    public static String dump(Resource resource)
+    {
+        if (resource == null)
+            return "null exists=false directory=false lm=-1";
+        return "%s exists=%b directory=%b lm=%d"
+            .formatted(resource.toString(), resource.exists(), resource.isDirectory(), resource.lastModified());
     }
 
     /**
@@ -160,7 +198,7 @@ public abstract class Resource implements ResourceFactory
         {
             return newResource(url.toURI());
         }
-        catch (IOException | URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
@@ -183,23 +221,30 @@ public abstract class Resource implements ResourceFactory
      *
      * @param uri A URI.
      * @return A Resource object.
-     * @throws IOException Problem accessing URI
      */
-    public static Resource newResource(URI uri) throws IOException
+    public static Resource newResource(URI uri)
     {
-        if (!uri.isAbsolute())
-            throw new IllegalArgumentException("not an absolute uri: " + uri);
-
-        // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-            return new PathResource(uri);
-
-        // Otherwise build a MountedPathResource.
         try
         {
+            // If the URI is not absolute
+            if (!uri.isAbsolute())
+            {
+                // If it is an absolute path,
+                if (uri.toString().startsWith("/"))
+                    // just add the scheme
+                    uri = new URI("file", uri.toString(), null);
+                else
+                    // otherwise resolve against the current directory
+                    uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
+            }
+
+            // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
+            if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
+                return new PathResource(uri);
+
             return new MountedPathResource(uri);
         }
-        catch (ProviderNotFoundException ex)
+        catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {
             throw new IllegalArgumentException(ex);
         }
@@ -213,14 +258,7 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(Path path)
     {
-        try
-        {
-            return newResource(path.toUri());
-        }
-        catch (IOException e)
-        {
-            throw new IllegalArgumentException("Unsupported path: " + path, e);
-        }
+        return newResource(path.toUri());
     }
 
     /**
@@ -684,7 +722,8 @@ public abstract class Resource implements ResourceFactory
         List<Resource> items = new ArrayList<>();
         for (String l : rawListing)
         {
-            Resource item = resolve(l);
+            // TODO review the re-encoding here.  Perhaps better to get list from path
+            Resource item = resolve(URIUtil.encodePath(l));
             items.add(item);
         }
 

@@ -17,6 +17,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee9.plus.jndi.Transaction;
@@ -89,7 +90,7 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         try
         {
-            Transaction.bindToENC();
+            Transaction.bindTransactionToENC(ContextHandler.ENVIRONMENT.getName());
         }
         catch (NameNotFoundException e)
         {

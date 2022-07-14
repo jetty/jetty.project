@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -35,12 +34,6 @@ public class PrecompressedHttpContent implements HttpContent
         {
             throw new NullPointerException("Missing compressed content and/or format");
         }
-    }
-
-    @Override
-    public Path getPath()
-    {
-        return _content.getPath();
     }
 
     @Override
@@ -128,8 +121,7 @@ public class PrecompressedHttpContent implements HttpContent
         return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
             this.getClass().getSimpleName(), hashCode(),
             _format,
-            _content.getPath(), _precompressedContent.getPath(),
-//            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
             0L, 0L,
             getContentType());
     }

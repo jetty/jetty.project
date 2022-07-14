@@ -6,7 +6,7 @@
    metadata-complete="false"
    version="5.0"> 
 
-  <display-name>Test Annotations WebApp</display-name>
+  <display-name>EE9 Demo Spec WebApp</display-name>
 
   <default-context-path>/test-spec</default-context-path>
   <request-character-encoding>utf-8</request-character-encoding>

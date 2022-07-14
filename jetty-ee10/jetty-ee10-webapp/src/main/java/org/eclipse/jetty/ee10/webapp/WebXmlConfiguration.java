@@ -57,16 +57,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     URL url = WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length()));
                     if (url != null)
                     {
-                        URI resource = url.toURI();
-                        if (resource.getScheme().equalsIgnoreCase("jar"))
-                        {
-                            _mount = Resource.mount(resource);
-                            dftResource = _mount.root();
-                        }
-                        else
-                        {
-                            dftResource = Resource.newResource(resource);
-                        }
+                        URI uri = url.toURI();
+                        _mount = Resource.mountIfNeeded(uri);
+                        dftResource = _mount == null ? Resource.newResource(uri) : _mount.root();
                     }
                 }
                 if (dftResource == null)

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.annotations.AnnotationDecorator;
@@ -78,6 +77,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     private Mode _mode = Mode.AUTO;
     private boolean _quickStart;
+    private QuickStartDescriptorProcessor _quickStartDescriptorProcessor;
 
     public QuickStartConfiguration()
     {
@@ -171,7 +171,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
             //add a processor to handle extended web.xml format
-            context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
+            _quickStartDescriptorProcessor = new QuickStartDescriptorProcessor();
+            context.getMetaData().addDescriptorProcessor(_quickStartDescriptorProcessor);
 
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
@@ -200,14 +201,24 @@ public class QuickStartConfiguration extends AbstractConfiguration
         }
     }
 
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        super.deconfigure(context);
+        if (_quickStartDescriptorProcessor != null)
+        {
+            _quickStartDescriptorProcessor.close();
+            _quickStartDescriptorProcessor = null;
+        }
+    }
+
     protected void quickStart(WebAppContext context)
         throws Exception
     {
         LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
-            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
-            .collect(Collectors.toList()).toArray(new Configuration[]{}));
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass())).toList().toArray(new Configuration[]{}));
         context.getMetaData().setWebDescriptor(new WebDescriptor((Resource)context.getAttribute(QUICKSTART_WEB_XML)));
         context.getContext().getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
         context.getContext().getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());

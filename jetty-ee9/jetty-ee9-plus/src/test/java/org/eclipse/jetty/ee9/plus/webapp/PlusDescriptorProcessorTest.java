@@ -35,7 +35,6 @@ import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

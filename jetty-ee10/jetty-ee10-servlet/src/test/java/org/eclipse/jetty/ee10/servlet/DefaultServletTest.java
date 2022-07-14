@@ -84,7 +84,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
 {
@@ -136,6 +135,28 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testGet() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        createFile(file, "How now brown cow");
+
+        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
     public void testListingWithSession() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -150,6 +171,7 @@ public class DefaultServletTest
 
         String rawResponse = connector.getResponse("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
 
         String body = response.getContent();
 
@@ -249,7 +271,12 @@ public class DefaultServletTest
         String resBasePath = docRoot.toAbsolutePath().toString();
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
+        String req1 = """
+            GET /context/one/deep/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -280,29 +307,35 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
 
-        StringBuffer req1;
+        String rawRequest;
         String rawResponse;
         HttpTester.Response response;
         String body;
 
         // Test that GET works first.
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/one HTTP/1.0\n");
-        req1.append("\n");
+        rawRequest = """
+            GET /context/extra/deep/xxx HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(body, containsString("is this the one?"));
+        assertThat(body, containsString("this is just a file named xxx"));
 
         // Typical directory listing of location in jar:file:// URL
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/deep/ HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/deep/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest.toString());
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -315,11 +348,14 @@ public class DefaultServletTest
         assertThat(body, not(containsString(ODD_JAR)));
 
         // Get deep resource
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/deep/yyy HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/deep/yyy HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -328,11 +364,14 @@ public class DefaultServletTest
 
         // Convoluted directory listing of location in jar:file:// URL
         // This exists to test proper encoding output
-        req1 = new StringBuffer();
-        req1.append("GET /context/extra/oddities/ HTTP/1.0\r\n");
-        req1.append("\r\n");
+        rawRequest = """
+            GET /context/extra/oddities/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
-        rawResponse = connector.getResponse(req1.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -351,6 +390,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -405,12 +445,16 @@ public class DefaultServletTest
     {
         Scenarios scenarios = new Scenarios();
 
+        // TODO
+        /*
         scenarios.addScenario(
             "GET normal",
             "GET /context/ HTTP/1.0\r\n\r\n",
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
+
+         */
 
         scenarios.addScenario(
             "GET /context/index.html",
@@ -689,6 +733,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testWelcomeMultipleBasesBase() throws Exception
     {
         Path dir = docRoot.resolve("dir");
@@ -807,6 +852,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testIncludedWelcomeDifferentBase() throws Exception
     {
         Path altRoot = workDir.getPath().resolve("altroot");
@@ -970,6 +1016,10 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
+        rawResponse = connector.getResponse("GET /context/dir%3F/index.html HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+
         rawResponse = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
@@ -985,6 +1035,7 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
+    @Disabled
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1031,33 +1082,58 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContent(), containsString("JSP support not configured"));
 
         createFile(index, "<h1>Hello Index</h1>");
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         if (deleteFile(index))
         {
-            rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"));
 
             if (deleteFile(inde))
             {
-                rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+                rawResponse = connector.getResponse("""
+                    GET /context/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """);
                 response = HttpTester.parseResponse(rawResponse);
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
                 assertThat(response.getContent(), containsString("JSP support not configured"));
@@ -1066,6 +1142,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testSymLinks() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1172,6 +1249,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("welcomeServletScenarios")
+    @Disabled
     public void testWelcomeExactServlet(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1456,6 +1534,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
+    @Disabled
     public void testRangeRequests(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1481,6 +1560,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testFiltered() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1545,6 +1625,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1639,6 +1720,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCachedGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1721,6 +1803,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1808,6 +1891,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCachedBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1887,6 +1971,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testDefaultBrotliOverGzip() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1923,6 +2008,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testCustomCompressionFormats() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1962,6 +2048,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @Disabled
     public void testProgrammaticCustomCompressionFormats() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -2079,6 +2166,7 @@ public class DefaultServletTest
         "Hello World",
         "Now is the time for all good men to come to the aid of the party"
     })
+    @Disabled
     public void testIfETag(String content) throws Exception
     {
         createFile(docRoot.resolve("file.txt"), content);

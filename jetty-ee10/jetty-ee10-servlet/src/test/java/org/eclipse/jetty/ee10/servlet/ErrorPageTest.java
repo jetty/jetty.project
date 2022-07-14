@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -284,6 +285,20 @@ public class ErrorPageTest
         String response = _connector.getResponse("GET /fail/code?code=599 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.ErrorPageTest$FailServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/code"));
+    }
+
+    @Test
+    public void testErrorMessage() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail/code?code=599&message=FiveNineNine HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(response, Matchers.containsString("ERROR_MESSAGE: FiveNineNine"));
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
@@ -629,10 +644,19 @@ public class ErrorPageTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String code = request.getParameter("code");
+            String message = request.getParameter("message");
             if (code != null)
-                response.sendError(Integer.parseInt(code));
+            {
+                if (StringUtil.isBlank(message))
+                    response.sendError(Integer.parseInt(code));
+                else
+                    response.sendError(Integer.parseInt(code), message);
+            }
             else
-                throw new ServletException(new IllegalStateException("Test Exception"));
+            {
+                throw new ServletException(
+                    new IllegalStateException(message == null ? "Test Exception" : message));
+            }
         }
     }
 

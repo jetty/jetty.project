@@ -49,11 +49,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -128,10 +130,16 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonAbsoluteURI()
+    public void testNonAbsoluteURI() throws Exception
     {
-        assertThrows(IllegalArgumentException.class,
-            () -> Resource.newResource(new URI("path/to/resource")));
+        Resource resource = Resource.newResource(new URI("path/to/resource"));
+        assertThat(resource, notNullValue());
+        assertThat(resource.getURI().toString(), startsWith("file:"));
+        assertThat(resource.getURI().toString(), endsWith("/path/to/resource"));
+
+        resource =  Resource.newResource(new URI("/path/to/resource"));
+        assertThat(resource, notNullValue());
+        assertThat(resource.getURI().toString(), is("file:/path/to/resource"));
     }
 
     @Test
@@ -154,16 +162,8 @@ public class FileSystemResourceTest
     @EnabledOnOs({LINUX, MAC})
     public void testBogusFilenameUnix()
     {
-        try
-        {
-            // A windows path is invalid under unix
-            Resource.newResource(URI.create("file://Z:/:"));
-            fail("expected IOException");
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
-        }
+        // A windows path is invalid under unix
+        assertThrows(IllegalArgumentException.class, () -> Resource.newResource(URI.create("file://Z:/:")));
     }
 
     @Test
@@ -1022,10 +1022,9 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
-            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1049,10 +1048,9 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
-            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 

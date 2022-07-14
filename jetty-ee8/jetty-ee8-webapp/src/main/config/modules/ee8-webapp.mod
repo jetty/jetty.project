@@ -33,7 +33,9 @@ lib/jetty-ee8-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addSystemClasses+=,org.example.
 #jetty.webapp.addServerClasses+=,org.example.
-contextHandlerClass = org.eclipse.jetty.ee8.webapp.WebAppContext
+
+[ini]
+contextHandlerClass=org.eclipse.jetty.ee8.webapp.WebAppContext
 
 [jpms]
 add-modules:java.instrument

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for Jaspi                                         -->
+  <!-- ===================================================================== -->
+  <Call class="jakarta.security.auth.message.config.AuthConfigFactory" name="setFactory">
+    <Arg>
+      <New id="jaspiAuthConfigFactory" class="org.eclipse.jetty.ee9.security.jaspi.DefaultAuthConfigFactory" />
+    </Arg>
+  </Call>
+  <Call name="addBean">
+    <Arg>
+      <Ref refid="jaspiAuthConfigFactory" />
+    </Arg>
+    <Arg type="boolean">false</Arg>
+  </Call>
+</Configure>

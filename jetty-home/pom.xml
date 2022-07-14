@@ -129,12 +129,12 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
-                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
+                jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -147,12 +147,12 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,glassfish-jstl,jetty-start
+                jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>

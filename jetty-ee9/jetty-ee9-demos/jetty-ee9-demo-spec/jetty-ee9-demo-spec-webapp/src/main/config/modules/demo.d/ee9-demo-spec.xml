@@ -3,17 +3,18 @@
 
 <Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/test-spec</Set>
-  <Set name="war"><Property name="jetty.webapps" />/demo-spec.war
+  <Set name="war"><Property name="jetty.webapps" />/ee9-demo-spec.war
   </Set>
   <Set name="configurationDiscovered">true</Set>
 
-  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
+    <Arg><Property name="environment" default="ee"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />
     </Arg>
   </New>
 
-  <New id="maxAmount" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New id="maxAmount" class="org.eclipse.jetty.ee9.plus.jndi.EnvEntry">
     <Arg>
       <Ref refid='wac' />
     </Arg>
@@ -22,7 +23,7 @@
     <Arg type="boolean">true</Arg>
   </New>
 
-  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+  <New id="mydatasource" class="org.eclipse.jetty.ee9.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>

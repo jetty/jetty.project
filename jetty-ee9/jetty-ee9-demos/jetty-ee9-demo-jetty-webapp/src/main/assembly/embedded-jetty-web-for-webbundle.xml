@@ -19,7 +19,7 @@ detected.
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/</Set>
-  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test.war</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/ee9-demo-jetty.war</Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Optional context configuration                                  -->
@@ -27,7 +27,7 @@ detected.
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault-ee9.xml</Set>
-  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/override-web.xml</Set>
+  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/ee9-demo-override-web.xml</Set>
 
   <!-- virtual hosts
   <Set name="virtualHosts">
@@ -49,10 +49,10 @@ detected.
 
   <Get name="securityHandler">
     <Set name="loginService">
-      <New class="org.eclipse.jetty.security.HashLoginService">
+      <New class="org.eclipse.jetty.ee9.security.HashLoginService">
 	    <Set name="name">Test Realm</Set>
 	    <Set name="config">
-	       <Property name="web-inf.uri">/realm.properties</Property>      
+	       <Property name="web-inf.uri">/ee9-demo-realm.properties</Property>      
 	    </Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
             <!--
@@ -63,31 +63,4 @@ detected.
     </Set>
     <Set name="checkWelcomeFiles">true</Set>
   </Get>
-
-  <!-- Non standard error page mapping -->
-  <!--
-  <Get name="errorHandler">
-    <Call name="addErrorPage">
-      <Arg type="int">500</Arg>
-      <Arg type="int">599</Arg>
-      <Arg type="String">/dump/errorCodeRangeMapping</Arg>
-    </Call>
-  </Get>
-  -->
-
-  <!-- Add context specific logger
-  <Set name="handler">
-    <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
-      <Set name="requestLog">
-	<New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
-	  <Set name="filename"><Property name="jetty.logs" default="./logs"/>/test-yyyy_mm_dd.request.log</Set>
-	  <Set name="filenameDateFormat">yyyy_MM_dd</Set>
-	  <Set name="append">true</Set>
-	  <Set name="LogTimeZone">GMT</Set>
-	</New>
-      </Set>
-    </New>
-  </Set>
-  -->
-
 </Configure>

@@ -13,7 +13,7 @@ webapp
 [depends]
 ee9-deploy
 jdbc
-jsp
+ee9-jsp
 ee9-annotations
 ext
 ee9-demo-realm

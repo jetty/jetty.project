@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -209,7 +210,11 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
     public static Resource getDefaultStylesheet()
     {
-        return Resource.newResource(ResourceHandler.class.getResource("/jetty-dir.css"));
+        // TODO do this some other way.  It is expensive to mount a whole jar when we could
+        //      just read the resource from the URL. We also leak the Mount.
+        URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
+        Resource.mountIfNeeded(css);
+        return Resource.newResource(css);
     }
 
     public String[] getWelcomeFiles()
