@@ -54,8 +54,10 @@ public class ResourceService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
 
-    private static final int NO_CONTENT_LENGTH = -1;
-    private static final int USE_KNOWN_CONTENT_LENGTH = -2;
+    // TODO: see if we can set this to private eventually
+    public static final int NO_CONTENT_LENGTH = -1;
+    // TODO: see if we can set this to private eventually
+    public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
     private WelcomeFactory _welcomeFactory;
@@ -501,12 +503,15 @@ public class ResourceService
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));
 
-        if (reqRanges == null || !reqRanges.hasMoreElements() || contentLength < 0)
+        if (reqRanges == null || !reqRanges.hasMoreElements())
         {
             // if there were no ranges, send entire entity
 
             // write the headers
-            putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
+            if (contentLength >= 0)
+                putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
+            else
+                putHeaders(response, content, NO_CONTENT_LENGTH);
 
             // write the content
             writeHttpContent(request, response, callback, content);
@@ -630,6 +635,7 @@ public class ResourceService
     {
         // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
         //      it might be better remove headers en masse and then just add the extras:
+        // NOTE: If these headers come from a Servlet Filter we shouldn't override them here.
 //        headers.remove(EnumSet.of(
 //            HttpHeader.LAST_MODIFIED,
 //            HttpHeader.CONTENT_LENGTH,

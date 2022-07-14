@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,9 +189,8 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         return httpContent;
     }
 
-    private class CachingHttpContent implements HttpContent
+    private class CachingHttpContent extends HttpContentWrapper
     {
-        private final HttpContent _delegate;
         private final ByteBuffer _buffer;
         private final FileTime _lastModifiedValue;
         private final String _cacheKey;
@@ -203,6 +201,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
         private CachingHttpContent(String key, String precalculatedEtag, HttpContent httpContent) throws IOException
         {
+            super(httpContent);
             _etag = precalculatedEtag;
             _contentLengthValue = httpContent.getContentLengthValue(); // TODO getContentLengthValue() could return -1
             ByteBuffer byteBuffer;
@@ -258,7 +257,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _cacheKey = key;
             _buffer = byteBuffer;
             _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
-            _delegate = httpContent;
             _lastAccessed = System.nanoTime();
         }
 
@@ -311,66 +309,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public HttpField getContentType()
-        {
-            return _delegate.getContentType();
-        }
-
-        @Override
-        public String getContentTypeValue()
-        {
-            return _delegate.getContentTypeValue();
-        }
-
-        @Override
-        public String getCharacterEncoding()
-        {
-            return _delegate.getCharacterEncoding();
-        }
-
-        @Override
-        public MimeTypes.Type getMimeType()
-        {
-            return _delegate.getMimeType();
-        }
-
-        @Override
-        public HttpField getContentEncoding()
-        {
-            return _delegate.getContentEncoding();
-        }
-
-        @Override
-        public String getContentEncodingValue()
-        {
-            return _delegate.getContentEncodingValue();
-        }
-
-        @Override
-        public HttpField getContentLength()
-        {
-            return _delegate.getContentLength();
-        }
-
-        @Override
-        public long getContentLengthValue()
-        {
-            return _delegate.getContentLengthValue();
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return _delegate.getLastModified();
-        }
-
-        @Override
-        public String getLastModifiedValue()
-        {
-            return _delegate.getLastModifiedValue();
-        }
-
-        @Override
         public HttpField getETag()
         {
             String eTag = getETagValue();
@@ -384,12 +322,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 return _etag;
             else
                 return _delegate.getETagValue();
-        }
-
-        @Override
-        public Resource getResource()
-        {
-            return _delegate.getResource();
         }
 
         @Override

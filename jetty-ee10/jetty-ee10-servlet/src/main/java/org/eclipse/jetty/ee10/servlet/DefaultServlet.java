@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpContentWrapper;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -339,13 +340,26 @@ public class DefaultServlet extends HttpServlet
             }
             else
             {
+                ServletCoreRequest coreRequest = new ServletCoreRequest(req);
+                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
 
+                if (coreResponse.isCommitted())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Response already committed for {}", coreRequest._coreRequest.getHttpURI());
+                    return;
+                }
+
+                // Servlet Filters could be interacting with the Response already.
+                if (coreResponse.isHttpServletResponseWrapped() ||
+                    coreResponse.isWritingOrStreaming())
+                {
+                    content = new UnknownLengthHttpContent(content);
+                }
 
                 // serve content
                 try (Blocker.Callback callback = Blocker.callback())
                 {
-                    ServletCoreRequest coreRequest = new ServletCoreRequest(req);
-                    ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
                     callback.block();
                 }
@@ -748,6 +762,28 @@ public class DefaultServlet extends HttpServlet
             return _response.isCommitted();
         }
 
+        /**
+         * Test if the HttpServletResponse is wrapped by the webapp.
+         *
+         * @return true if wrapped.
+         */
+        public boolean isHttpServletResponseWrapped()
+        {
+            return !(_response instanceof ServletContextResponse.ServletApiResponse);
+        }
+
+        /**
+         * Test if {@link HttpServletResponse#getOutputStream()} or
+         * {@link HttpServletResponse#getWriter()} has been called already
+         *
+         * @return true if {@link HttpServletResponse} has started to write or stream content
+         */
+        public boolean isWritingOrStreaming()
+        {
+            ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
+            return servletContextResponse.isWritingOrStreaming();
+        }
+
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
@@ -816,8 +852,11 @@ public class DefaultServlet extends HttpServlet
         {
             HttpContent httpContent = super.getContent(path, outputBufferSize);
 
-            if (!_servletContextHandler.checkAlias(path, httpContent.getResource()))
-                return null;
+            if (httpContent != null)
+            {
+                if (!_servletContextHandler.checkAlias(path, httpContent.getResource()))
+                    return null;
+            }
 
             return httpContent;
         }
@@ -950,6 +989,29 @@ public class DefaultServlet extends HttpServlet
         {
             // TODO, this unwrapping is fragile
             return ((ServletCoreResponse)response)._response;
+        }
+    }
+
+    /**
+     * Wrap an existing HttpContent with one that takes has an unknown/unspecified length.
+     */
+    private static class UnknownLengthHttpContent extends HttpContentWrapper
+    {
+        public UnknownLengthHttpContent(HttpContent content)
+        {
+            super(content);
+        }
+
+        @Override
+        public HttpField getContentLength()
+        {
+            return null;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return ResourceService.NO_CONTENT_LENGTH;
         }
     }
 }
