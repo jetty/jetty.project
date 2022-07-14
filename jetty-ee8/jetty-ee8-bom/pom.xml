@@ -57,7 +57,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- Jetty EE 9 Dependencies -->
+      <!-- Jetty EE 8 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee8</groupId>
         <artifactId>jetty-ee8-annotations</artifactId>

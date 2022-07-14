@@ -1,0 +1,29 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee8.demos</groupId>
+    <artifactId>jetty-ee8-demos</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee8-demo-async-rest</artifactId>
+  <packaging>pom</packaging>
+  <name>EE8 :: Jetty Demo :: Async Rest</name>
+
+  <modules>
+    <module>jetty-ee8-demo-async-rest-jar</module>
+    <module>jetty-ee8-demo-async-rest-webapp</module>
+    <module>jetty-ee8-demo-async-rest-server</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-async-rest-jar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>
