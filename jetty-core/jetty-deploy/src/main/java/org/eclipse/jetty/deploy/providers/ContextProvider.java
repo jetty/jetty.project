@@ -347,7 +347,6 @@ public class ContextProvider extends ScanningAppProvider
             if (!Files.exists(path))
                 throw new IllegalStateException("App resource does not exist " + path);
 
-
             // prepare properties
             Map<String, String> properties = new HashMap<>();
             properties.putAll(getProperties());

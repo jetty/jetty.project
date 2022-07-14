@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.docs.programming.server;
+package org.eclipse.jetty.core.demo;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Flow;
 
@@ -37,9 +35,6 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 public class HandlerDocs
 {
-    // TODO this class has been temporarily moved to jetty-core/jetty-demo
-    //      move it back when documentation is re-enabled
-
     public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
@@ -66,7 +61,7 @@ public class HandlerDocs
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
+            Content.Sink.write(response, true, "Hello World", callback);
         }
     }
 
