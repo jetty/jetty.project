@@ -44,10 +44,8 @@ public class AllowSymLinkAliasChecker implements AliasCheck
     public boolean check(String pathInContext, Resource resource)
     {
         // Only support PathResource alias checking
-        if (!(resource instanceof PathResource))
+        if (!(resource instanceof PathResource pathResource))
             return false;
-
-        PathResource pathResource = (PathResource)resource;
 
         try
         {

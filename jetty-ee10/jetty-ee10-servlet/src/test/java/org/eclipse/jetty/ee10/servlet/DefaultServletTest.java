@@ -1100,7 +1100,6 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "true");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
-
         defholder.setInitParameter("maxCacheSize", "1024000");
         defholder.setInitParameter("maxCachedFileSize", "512000");
         defholder.setInitParameter("maxCachedFiles", "100");
@@ -1288,7 +1287,6 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    @Disabled
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1405,7 +1403,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testSymLinks() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1417,8 +1414,8 @@ public class DefaultServletTest
         Path link = dir.resolve("link.txt");
         Path rLink = dir.resolve("rlink.txt");
         Files.writeString(foobar, "Foo Bar", UTF_8);
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
 
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("gzip", "false");
 
         String rawResponse;

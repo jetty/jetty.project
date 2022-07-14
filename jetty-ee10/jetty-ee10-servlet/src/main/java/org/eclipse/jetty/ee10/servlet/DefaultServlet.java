@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -340,6 +339,8 @@ public class DefaultServlet extends HttpServlet
             }
             else
             {
+
+
                 // serve content
                 try (Blocker.Callback callback = Blocker.callback())
                 {
@@ -811,6 +812,17 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        public HttpContent getContent(String path, int outputBufferSize) throws IOException
+        {
+            HttpContent httpContent = super.getContent(path, outputBufferSize);
+
+            if (!_servletContextHandler.checkAlias(path, httpContent.getResource()))
+                return null;
+
+            return httpContent;
+        }
+
+        @Override
         public String getWelcomeTarget(Request coreRequest) throws IOException
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
@@ -820,7 +832,9 @@ public class DefaultServlet extends HttpServlet
 
             HttpServletRequest request = getServletRequest(coreRequest);
 
-            if (request.getDispatcherType() == DispatcherType.INCLUDE)
+            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+
+            if (included)
             {
                 // Servlet 9.3 - don't process welcome target from INCLUDE dispatch
                 return null;

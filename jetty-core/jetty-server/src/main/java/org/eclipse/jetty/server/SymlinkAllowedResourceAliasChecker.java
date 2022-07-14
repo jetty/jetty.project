@@ -43,7 +43,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         if (_base == null)
             return false;
 
-        // do not allow any file separation characters in the URI, as we need to know exactly what are the segments
+        // do not allow any non-URI file separation characters in the URI (such as Windows), as we need to know exactly what are the segments
         if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
             return false;
 
