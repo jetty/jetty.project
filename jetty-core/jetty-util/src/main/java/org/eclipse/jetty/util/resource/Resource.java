@@ -198,7 +198,7 @@ public abstract class Resource implements ResourceFactory
         {
             return newResource(url.toURI());
         }
-        catch (IOException | URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
@@ -221,9 +221,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param uri A URI.
      * @return A Resource object.
-     * @throws IOException Problem accessing URI
      */
-    public static Resource newResource(URI uri) throws IOException
+    public static Resource newResource(URI uri)
     {
         try
         {
@@ -245,7 +244,7 @@ public abstract class Resource implements ResourceFactory
 
             return new MountedPathResource(uri);
         }
-        catch (URISyntaxException | ProviderNotFoundException ex)
+        catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {
             throw new IllegalArgumentException(ex);
         }
@@ -259,14 +258,7 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource newResource(Path path)
     {
-        try
-        {
-            return newResource(path.toUri());
-        }
-        catch (IOException e)
-        {
-            throw new IllegalArgumentException("Unsupported path: " + path, e);
-        }
+        return newResource(path.toUri());
     }
 
     /**

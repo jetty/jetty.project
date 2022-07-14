@@ -12,4 +12,13 @@
     <mime-type>image/vnd.microsoft.icon</mime-type>
   </mime-mapping>
 
+  <servlet>
+    <servlet-name>hello</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee10.demo.simple.HelloWorldServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>hello</servlet-name>
+    <url-pattern>/hello/*</url-pattern>
+  </servlet-mapping>
+
 </web-app>

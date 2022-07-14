@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demo.simple;
+package org.eclipse.jetty.ee10.demo.simple;
 
 import java.io.IOException;
 
@@ -26,8 +26,7 @@ public class HelloWorldServlet extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
         resp.getOutputStream().println("HelloWorld from Servlet-" +
-            getServletContext().getMajorVersion() +
-            " with " + Servlet.class
-        );
+            HttpServlet.class.getPackage().getSpecificationVersion() +
+            " with " + Servlet.class);
     }
 }

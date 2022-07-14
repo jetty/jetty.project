@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.net.URI;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -153,7 +154,17 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        return _resourceService.getStylesheet();
+        // TODO
+        return getDefaultStyleSheet();
+    }
+
+    public static Resource getDefaultStyleSheet()
+    {
+        // TODO do this some other way.  It is expensive to mount a whole jar when we could
+        //      just read the resource from the URL. We also leak the Mount.
+        URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
+        Resource.mountIfNeeded(css);
+        return Resource.newResource(css);
     }
 
     public List<String> getWelcomeFiles()
@@ -309,7 +320,7 @@ public class ResourceHandler extends Handler.Wrapper
     // TODO accept a Resource instead of a String?
     public void setStylesheet(String stylesheet)
     {
-        _resourceService.setStylesheet(stylesheet);
+        // TODO
     }
 
     public void setWelcomeFiles(List<String> welcomeFiles)

@@ -59,8 +59,6 @@ public class ResourceService
     private static final int NO_CONTENT_LENGTH = -1;
     private static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private Resource _defaultStylesheet;
-    private Resource _stylesheet;
     private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
     private WelcomeFactory _welcomeFactory;
@@ -108,32 +106,6 @@ public class ResourceService
     public List<String> getGzipEquivalentFileExtensions()
     {
         return _gzipEquivalentFileExtensions;
-    }
-
-    /**
-     * @return Returns the stylesheet as a Resource.
-     */
-    public Resource getStylesheet()
-    {
-        if (_stylesheet != null)
-        {
-            return _stylesheet;
-        }
-        else
-        {
-            if (_defaultStylesheet == null)
-            {
-                _defaultStylesheet = getDefaultStylesheet();
-            }
-            return _defaultStylesheet;
-        }
-    }
-
-    public static Resource getDefaultStylesheet()
-    {
-        // TODO the returned path should point to the classpath.
-        // This points to a non-existent file '/jetty-dir.css'.
-        return Resource.newResource(Path.of("/jetty-dir.css"));
     }
 
     public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
@@ -810,28 +782,6 @@ public class ResourceService
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)
     {
         _welcomeFactory = welcomeFactory;
-    }
-
-    /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
-     */
-    // TODO accept a Resource instead of a String?
-    public void setStylesheet(String stylesheet)
-    {
-        try
-        {
-            _stylesheet = Resource.newResource(Path.of(stylesheet));
-            if (!_stylesheet.exists())
-            {
-                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
-                _stylesheet = null;
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Invalid StyleSheet reference: {}", stylesheet, e);
-            throw new IllegalArgumentException(stylesheet);
-        }
     }
 
     public interface WelcomeFactory

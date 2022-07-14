@@ -1,0 +1,35 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Create the deployment manager                                   -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- The deplyment manager handles the lifecycle of deploying web    -->
+<!-- applications. Apps are provided by instances of the             -->
+<!-- AppProvider interface.                                          -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call id="DeploymentManager" name="getBean">
+    <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.deploy.DeploymentManager</Arg></Call></Arg>
+  </Call>
+  <Ref refid="DeploymentManager">
+    <Call name="addAppProvider">
+      <Arg>
+        <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+          <Set name="EnvironmentName">core</Set>
+          <Set name="monitoredDirName">
+            <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+              <Arg>
+                <Property name="jetty.base" />
+              </Arg>
+              <Arg>
+                <Property name="jetty.deploy.monitoredDir" default="webapps" />
+              </Arg>
+            </Call>
+          </Set>
+          <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
+          <Set name="tempDir" property="jetty.deploy.tempDir" />
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>

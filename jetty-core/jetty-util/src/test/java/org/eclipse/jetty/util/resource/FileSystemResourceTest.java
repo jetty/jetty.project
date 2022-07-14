@@ -162,16 +162,8 @@ public class FileSystemResourceTest
     @EnabledOnOs({LINUX, MAC})
     public void testBogusFilenameUnix()
     {
-        try
-        {
-            // A windows path is invalid under unix
-            Resource.newResource(URI.create("file://Z:/:"));
-            fail("expected IOException");
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
-        }
+        // A windows path is invalid under unix
+        assertThrows(IllegalArgumentException.class, () -> Resource.newResource(URI.create("file://Z:/:")));
     }
 
     @Test
@@ -1030,10 +1022,9 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
-            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 
@@ -1057,10 +1048,9 @@ public class FileSystemResourceTest
             // if we have r, then it better not exist
             assertFalse(r.exists());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
-            assertThat(e.getCause(), instanceOf(InvalidPathException.class));
         }
     }
 

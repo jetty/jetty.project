@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -155,6 +156,7 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
+        // TODO Move most of this to ResourceService
         String stylesheet = getInitParameter("stylesheet");
         try
         {
@@ -171,8 +173,10 @@ public class DefaultServlet extends HttpServlet
             }
             if (_stylesheet == null)
             {
-                _stylesheet = _resourceService.getStylesheet();
+                _stylesheet = ResourceHandler.getDefaultStyleSheet();
             }
+
+            // TODO the stylesheet is never actually used ?
         }
         catch (Exception e)
         {

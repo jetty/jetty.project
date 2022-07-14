@@ -206,6 +206,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
         }
 
+        // TODO move most of this to Resource Service
         String stylesheet = getInitParameter("stylesheet");
         try
         {
@@ -416,7 +417,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public Resource resolve(String subUriPath)
     {
-        // TODO thought bubble
         if (!_contextHandler.isCanonicalEncodingURIs())
             subUriPath = URIUtil.encodePath(subUriPath);
 
@@ -449,6 +449,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             LOG.trace("IGNORED", e);
         }
 
+        // TODO Move to ResourceService
         if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
             r = _stylesheet;
 
