@@ -2,37 +2,6 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
-    open-pull-requests-limit: 30
-    target-branch: "jetty-9.4.x"
-    schedule:
-      interval: "monthly"
-      day: "saturday"
-      time: "02:00"
-    # Associate with milestone 9.4.x
-    milestone: 3
-    ignore:
-      # Restrict updates in this branch to jetty in the 9.4.x space
-      - dependency-name: "javax.servlet:*"
-        versions: [ ">=4.0.0" ]
-      - dependency-name: "javax.activation:*"
-        versions: [ ">=1.3.0" ]
-      - dependency-name: "javax.annotation:*"
-        versions: [ ">=2.0.0" ]
-      - dependency-name: "javax.el:*"
-        versions: [ ">=4.0.0" ]
-      - dependency-name: "javax.inject:*"
-        versions: [ ">=2.0.0" ]
-      - dependency-name: "javax.websocket:*"
-        versions: [ ">=1.1.0" ]
-      - dependency-name: "org.infinispan:*"
-        versions: [ ">=12" ]
-      - dependency-name: "org.jboss.weld.servlet:*"
-        versions: [ ">=4.0.0" ]
-      - dependency-name: "org.glassfish.jaxb:*"
-        versions: [ ">=2.0.0"]
-
-  - package-ecosystem: "maven"
-    directory: "/"
     open-pull-requests-limit: 50
     target-branch: "jetty-10.0.x"
     schedule:
