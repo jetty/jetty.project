@@ -97,6 +97,9 @@
                 <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
               </mavenFilteringHints>
               <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+              <nonFilteredFileExtensions>
+                <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+              </nonFilteredFileExtensions>
               <resources>
                 <resource>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
