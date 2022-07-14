@@ -12,8 +12,17 @@
   <packaging>war</packaging>
 
   <properties>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-simple-webapp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.simple</bundle-symbolic-name>
   </properties>
 
   <!-- FIXME we should be able to reuse some files from the original ee9 src/main/webapp path -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>
