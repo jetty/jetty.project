@@ -57,7 +57,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -139,18 +139,28 @@ public class DefaultServletTest
     {
         Path file = docRoot.resolve("file.txt");
 
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         createFile(file, "How now brown cow");
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
@@ -169,7 +179,12 @@ public class DefaultServletTest
         FS.ensureDirExists(docRoot.resolve("two"));
         FS.ensureDirExists(docRoot.resolve("three"));
 
-        String rawResponse = connector.getResponse("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
+        String rawResponse = connector.getResponse("""
+            GET /context/;JSESSIONID=1234567890 HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
 
@@ -203,16 +218,24 @@ public class DefaultServletTest
          * Intentionally bad request URI. Sending a non-encoded URI with typically
          * encoded characters '<', '>', and '"'.
          */
-        String req1 = "GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.0\r\n" +
-            "\r\n";
+        String req1 = """
+            GET /context/;<script>window.alert("hi");</script> HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String body = response.getContent();
         assertThat(body, not(containsString("<script>")));
 
-        req1 = "GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\r\n" +
-            "\r\n";
+        req1 = """
+            GET /context/one/;"onmouseover='alert(document.location)' HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
 
         rawResponse = connector.getResponse(req1);
         response = HttpTester.parseResponse(rawResponse);
@@ -238,7 +261,12 @@ public class DefaultServletTest
         // Creating dir 'f??r' (Might not work in Windows)
         assumeMkDirSupported(docRoot, "f??r");
 
-        String rawResponse = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String body = response.getContent();
@@ -335,7 +363,7 @@ public class DefaultServletTest
             \r
             """;
 
-        rawResponse = connector.getResponse(rawRequest.toString());
+        rawResponse = connector.getResponse(rawRequest);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -417,13 +445,23 @@ public class DefaultServletTest
          */
 
         // First send request in improper, unencoded way.
-        String rawResponse = connector.getResponse("GET /context/dir;/ HTTP/1.0\r\n\r\n");
+        String rawResponse = connector.getResponse("""
+            GET /context/dir;/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         // Now send request in proper, encoded format.
-        rawResponse = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3B/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -445,20 +483,22 @@ public class DefaultServletTest
     {
         Scenarios scenarios = new Scenarios();
 
-        // TODO
-        /*
-        scenarios.addScenario(
-            "GET normal",
-            "GET /context/ HTTP/1.0\r\n\r\n",
+        scenarios.addScenario("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
-         */
-
-        scenarios.addScenario(
-            "GET /context/index.html",
-            "GET /context/index.html HTTP/1.0\r\n\r\n",
+        scenarios.addScenario("""
+                GET /context/index.html HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("Hello Index"))
         );
@@ -472,35 +512,50 @@ public class DefaultServletTest
 
         for (String prefix : notEncodedPrefixes)
         {
-            scenarios.addScenario(
-                "GET " + prefix,
-                "GET " + prefix + " HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.NOT_FOUND_404
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/",
-                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX", prefix),
                 HttpStatus.NOT_FOUND_404
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../../sekret/pass",
-                "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../../sekret/pass HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX", prefix),
                 HttpStatus.NOT_FOUND_404,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/..;/..;/sekret/pass",
-                "GET " + prefix + "/..;/..;/sekret/pass HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/..;/..;/sekret/pass HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
-                "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/%2E%2E/%2E%2E/sekret/pass HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
@@ -508,31 +563,43 @@ public class DefaultServletTest
             // A Raw Question mark in the prefix can be interpreted as a query section
             if (prefix.contains("?"))
             {
-                scenarios.addScenario(
-                    "GET " + prefix + "/../index.html",
-                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                scenarios.addScenario("""
+                        GET @PREFIX@/../index.html HTTP/1.1\r
+                        Host: local\r
+                        Connection: close\r
+                        \r
+                        """.replace("@PREFIX@", prefix),
                     HttpStatus.NOT_FOUND_404
                 );
             }
             else
             {
-                scenarios.addScenario(
-                    "GET " + prefix + "/../index.html",
-                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                scenarios.addScenario("""
+                        GET @PREFIX@/../index.html HTTP/1.1\r
+                        Host: local\r
+                        Connection: close\r
+                        \r
+                        """.replace("@PREFIX@", prefix),
                     HttpStatus.OK_200,
                     (response) -> assertThat(response.getContent(), containsString("Hello Index"))
                 );
             }
 
-            scenarios.addScenario(
-                "GET " + prefix + "/%2E%2E/index.html",
-                "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/%2E%2E/index.html HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../../",
-                "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../../ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.NOT_FOUND_404,
                 (response) ->
                 {
@@ -552,36 +619,51 @@ public class DefaultServletTest
 
         for (String prefix : encodedPrefixes)
         {
-            scenarios.addScenario(
-                "GET " + prefix,
-                "GET " + prefix + " HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.MOVED_TEMPORARILY_302,
                 (response) -> assertThat("Location header", response.get(HttpHeader.LOCATION), endsWith(prefix + "/"))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/",
-                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.OK_200
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/.%2E/.%2E/sekret/pass",
-                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.OK_200,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../index.html",
-                "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../index.html HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.OK_200,
                 (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../../",
-                "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../../ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.NOT_FOUND_404,
                 (response) ->
                 {
@@ -591,16 +673,22 @@ public class DefaultServletTest
                 }
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../../sekret/pass",
-                "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../../sekret/pass HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.NOT_FOUND_404,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            scenarios.addScenario(
-                "GET " + prefix + "/../index.html",
-                "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+            scenarios.addScenario("""
+                    GET @PREFIX@/../index.html HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
                 HttpStatus.OK_200,
                 (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
@@ -660,21 +748,36 @@ public class DefaultServletTest
     {
         scenarios.addScenario(
             "GET /context/one/ (index.htm match)",
-            "GET /context/one/ HTTP/1.0\r\n\r\n",
+            """
+                GET /context/one/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
         );
 
         scenarios.addScenario(
             "GET /context/two/ (index.html match)",
-            "GET /context/two/ HTTP/1.0\r\n\r\n",
+            """
+                GET /context/two/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
         scenarios.addScenario(
             "GET /context/three/ (index.html wins over index.htm)",
-            "GET /context/three/ HTTP/1.0\r\n\r\n",
+            """
+                GET /context/three/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
         );
@@ -686,7 +789,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "GET /context/ - (no match)",
-            "GET /context/ HTTP/1.0\r\n\r\n",
+            """
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.FORBIDDEN_403
         );
 
@@ -776,75 +884,135 @@ public class DefaultServletTest
         HttpTester.Response response;
 
         // Test other redirect
-        rawResponse = connector.getResponse("GET /context/other HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/other HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
 
         // Test alt default
-        rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/alt/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
         createFile(altIndex, "<h1>Alt Index</h1>");
-        rawResponse = connector.getResponse("GET /context/alt/dir/index.html HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/alt/dir/index.html HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
-        rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/alt/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
         createFile(altInde, "<h1>Alt Inde</h1>");
-        rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/alt/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
         if (deleteFile(altIndex))
         {
-            rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/alt/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("<h1>Alt Inde</h1>"));
 
             if (deleteFile(altInde))
             {
-                rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+                rawResponse = connector.getResponse("""
+                    GET /context/alt/dir/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """);
                 response = HttpTester.parseResponse(rawResponse);
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
 
         // Test normal default
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
         createFile(index, "<h1>Hello Index</h1>");
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
         if (deleteFile(index))
         {
-            rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"));
 
             if (deleteFile(inde))
             {
-                rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+                rawResponse = connector.getResponse("""
+                    GET /context/dir/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """);
                 response = HttpTester.parseResponse(rawResponse);
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
@@ -881,14 +1049,24 @@ public class DefaultServletTest
         HttpTester.Response response;
 
         // Test included alt default
-        rawResponse = connector.getResponse("GET /context/gateway HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/gateway HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         // 9.3 "The Include Method" - when include() is used, FileNotFoundException (and HTTP 500)
         // should be used
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
         createFile(altIndex, "<h1>Alt Index</h1>");
-        rawResponse = connector.getResponse("GET /context/gateway HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/gateway HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
@@ -918,37 +1096,67 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
         createFile(index, "<h1>Hello Index</h1>");
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://local/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/"));
+        assertThat(response, headerValue("Location", "http://local/context/dir/"));
 
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://local/context/dir/index.html"));
 
         if (deleteFile(index))
         {
-            rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "http://local/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
-                rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+                rawResponse = connector.getResponse("""
+                    GET /context/dir/ HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """);
                 response = HttpTester.parseResponse(rawResponse);
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
@@ -979,17 +1187,32 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, headerValue("Location", "/context/dir/"));
 
-        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
-        rawResponse = connector.getResponse("GET /context/dir/index.html/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/index.html/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, headerValue("Location", "/context/dir/index.html"));
@@ -1016,19 +1239,34 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/dir%3F/index.html HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3F/index.html HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3F HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/"));
+        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3F/"));
 
-        rawResponse = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3F/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/index.html"));
+        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3F/index.html"));
     }
 
     /**
@@ -1053,12 +1291,22 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/dir%3B HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3B HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/"));
 
-        rawResponse = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir%3B/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/index.html"));
@@ -1161,7 +1409,12 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/dir/foobar.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/dir/foobar.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("Foo Bar"));
@@ -1174,57 +1427,117 @@ public class DefaultServletTest
             Files.createSymbolicLink(dirRLink, new File("dir").toPath());
             Files.createSymbolicLink(link, foobar);
             Files.createSymbolicLink(rLink, new File("foobar.txt").toPath());
-            rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/link.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            rawResponse = connector.getResponse("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/rlink.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            rawResponse = connector.getResponse("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirlink/foobar.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            rawResponse = connector.getResponse("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirrlink/foobar.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            rawResponse = connector.getResponse("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirlink/link.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            rawResponse = connector.getResponse("GET /context/dirrlink/rlink.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirrlink/rlink.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
             context.addAliasCheck(new SymlinkAllowedResourceAliasChecker(context));
-            rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/link.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
 
-            rawResponse = connector.getResponse("GET /context/dir/rlink.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dir/rlink.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
 
-            rawResponse = connector.getResponse("GET /context/dirlink/foobar.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirlink/foobar.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
 
-            rawResponse = connector.getResponse("GET /context/dirrlink/foobar.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirrlink/foobar.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
 
-            rawResponse = connector.getResponse("GET /context/dirlink/link.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirlink/link.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
 
-            rawResponse = connector.getResponse("GET /context/dirrlink/link.txt HTTP/1.0\r\n\r\n");
+            rawResponse = connector.getResponse("""
+                GET /context/dirrlink/link.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
@@ -1237,7 +1550,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "GET /context/ - (/index.jsp servlet match)",
-            "GET /context/ HTTP/1.0\r\n\r\n",
+            """
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.INTERNAL_SERVER_ERROR_500,
             (response) -> assertThat(response.getContent(), containsString("JSP support not configured"))
         );
@@ -1302,7 +1620,12 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/index.html HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/index.html HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
@@ -1327,19 +1650,24 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "No range requested",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
             "Simple range request (no-close)",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9\r\n" +
-                "\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1351,11 +1679,13 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "Simple range request w/close",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9\r\n" +
-                "Connection: close\r\n" +
-                "\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9\r
+                Connection: close\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1365,10 +1695,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "Multiple ranges (x3)",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9,20-29,40-49\r\n" +
-                "\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1391,10 +1723,12 @@ public class DefaultServletTest
         );
 
         scenarios.addScenario("Multiple ranges (x4)",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
-                "\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49,70-79\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1419,10 +1753,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "Multiple ranges (x4) with empty range request",
-            "GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                "\r\n",
+            """
+                GET /context/data.txt HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1450,19 +1786,23 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "No mimetype resource - no range requested",
-            "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                \r
+                """,
             HttpStatus.OK_200,
             (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
             "No mimetype resource - simple range request",
-            "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9\r\n" +
-                "\r\n",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1474,10 +1814,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "No mimetype resource - multiple ranges (x3)",
-            "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9,20-29,40-49\r\n" +
-                "\r\n",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1501,10 +1843,12 @@ public class DefaultServletTest
 
         scenarios.addScenario(
             "No mimetype resource - multiple ranges (x5) with empty range request",
-            "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                "\r\n",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                \r
+                """,
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
@@ -1581,7 +1925,12 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
@@ -1594,7 +1943,12 @@ public class DefaultServletTest
         context.addFilter(OutputFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         server.start();
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
@@ -1602,7 +1956,12 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8"));
         assertThat(body, containsString("Extra Info"));
 
-        rawResponse = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/image.jpg HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
@@ -1616,7 +1975,12 @@ public class DefaultServletTest
         context.addFilter(WriterFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         server.start();
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
@@ -1645,7 +2009,12 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
@@ -1658,7 +2027,13 @@ public class DefaultServletTest
         String etag = response.get(HttpHeader.ETAG);
         String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connect: close\r
+            Accept-Encoding: gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -1669,7 +2044,13 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.gz HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding: gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -1681,7 +2062,14 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.gz HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding: gzip\r
+            If-None-Match: W/"wobble"\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -1694,26 +2082,60 @@ public class DefaultServletTest
         assertThat(body, containsString("fake gzip"));
 
         String badEtagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2X--gzip\"");
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + badEtagGzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", badEtagGzip));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(not(HttpStatus.NOT_MODIFIED_304)));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etagGzip));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etagGzip));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Accept-Encoding:gzip\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
@@ -1744,7 +2166,12 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Connection: close\r
+            Host: localhost:8080\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
@@ -1758,7 +2185,13 @@ public class DefaultServletTest
         String etag = response.get(HttpHeader.ETAG);
         String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Connection: close\r
+            Host: localhost:8080\r
+            Accept-Encoding:gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -1769,7 +2202,13 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.gz HTTP/1.1\r
+            Connection: close\r
+            Host: localhost:8080\r
+            Accept-Encoding:gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -1781,22 +2220,50 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etagGzip));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etagGzip));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
@@ -1820,7 +2287,12 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
@@ -1834,7 +2306,13 @@ public class DefaultServletTest
         String etag = response.get(HttpHeader.ETAG);
         String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip;q=0.9,br\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1845,7 +2323,13 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br,gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.br HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br,gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1857,7 +2341,14 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.br HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip\r
+            If-None-Match: W/"wobble"\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1869,22 +2360,50 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etagBr));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etagBr));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
@@ -1912,7 +2431,12 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
@@ -1926,7 +2450,13 @@ public class DefaultServletTest
         String etag = response.get(HttpHeader.ETAG);
         String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1937,7 +2467,13 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt.br HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1949,22 +2485,50 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etagBr));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etagBr));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:br\r
+            If-None-Match: W/"foobar",@ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
@@ -1986,7 +2550,13 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip, compress, br\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
@@ -1996,7 +2566,13 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br;q=0.9\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip, compress, br;q=0.9\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -2024,7 +2600,13 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:bzip2, br, gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
@@ -2036,7 +2618,12 @@ public class DefaultServletTest
 
         // TODO: show accept-encoding search order issue (shouldn't this request return data0.txt.br?)
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br, gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Accept-Encoding:br, gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -2070,7 +2657,13 @@ public class DefaultServletTest
         HttpTester.Response response;
         String body;
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:bzip2, br, gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
@@ -2082,7 +2675,12 @@ public class DefaultServletTest
 
         // TODO: show accept-encoding search order issue (shouldn't this request return data0.txt.br?)
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br, gzip\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Accept-Encoding:br, gzip\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
@@ -2102,7 +2700,12 @@ public class DefaultServletTest
 
         try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
         {
-            String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
+            String rawResponse = connector.getResponse("""
+                GET /context/%0a HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
             assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
@@ -2127,36 +2730,76 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.0\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         createFile(file, content);
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeader(HttpHeader.LAST_MODIFIED));
 
         String lastModified = response.get(HttpHeader.LAST_MODIFIED);
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: " + lastModified + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-Modified-Since: @LASTMODIFIED@\r
+            \r
+            """.replace("@LASTMODIFIED@", lastModified));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: " + DateGenerator.formatDate(System.currentTimeMillis() - 10000) + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-Modified-Since: @DATE@\r
+            \r
+            """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() - 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: " + DateGenerator.formatDate(System.currentTimeMillis() + 10000) + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-Modified-Since: @DATE@\r
+            \r
+            """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: " + DateGenerator.formatDate(System.currentTimeMillis() + 10000) + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-Unmodified-Since: @DATE@\r
+            \r
+            """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: " + DateGenerator.formatDate(System.currentTimeMillis() - 10000) + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-Unmodified-Since: @DATE@\r
+            \r
+            """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() - 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
@@ -2181,42 +2824,95 @@ public class DefaultServletTest
         String rawResponse;
         HttpTester.Response response;
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeader(HttpHeader.ETAG));
 
         String etag = response.get(HttpHeader.ETAG);
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host:test\r
+            Connection:close\r
+            If-None-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble," + etag + ",wobble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-None-Match: wibble,@ETAG@,wobble\r
+            \r
+            """.replace("@ETAG", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-None-Match: wibble\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-None-Match: wibble, wobble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-None-Match: wibble, wobble\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: " + etag + "\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-Match: @ETAG@\r
+            \r
+            """.replace("@ETAG", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble," + etag + ",wobble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-Match: wibble,@ETAG@,wobble\r
+            \r
+            """.replace("@ETAG", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-Match: wibble\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Match: wibble, wobble\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            If-Match: wibble, wobble\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
@@ -2230,11 +2926,11 @@ public class DefaultServletTest
         context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFC format
-        String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
+        String filename = "swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
 
         // Using filesystem, attempt to access via NFD format
-        Path nfdPath = docRoot.resolve("swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt");
+        Path nfdPath = docRoot.resolve("swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt");
         boolean filesystemSupportsNFDAccess = Files.exists(nfdPath);
 
         // Make requests
@@ -2242,13 +2938,23 @@ public class DefaultServletTest
         HttpTester.Response response;
 
         // Request as UTF-8 NFC
-        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/swedish-%C3%A5.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("hi a-with-circle"));
 
         // Request as UTF-8 NFD
-        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/swedish-a%CC%8A.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         if (filesystemSupportsNFDAccess)
         {
@@ -2270,24 +2976,34 @@ public class DefaultServletTest
         context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFD format
-        String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";
+        String filename = "swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
 
         // Using filesystem, attempt to access via NFC format
-        Path nfcPath = docRoot.resolve("swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt");
+        Path nfcPath = docRoot.resolve("swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt");
         boolean filesystemSupportsNFCAccess = Files.exists(nfcPath);
 
         String rawResponse;
         HttpTester.Response response;
 
         // Request as UTF-8 NFD
-        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/swedish-a%CC%8A.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("hi a-with-circle"));
 
         // Request as UTF-8 NFC
-        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        rawResponse = connector.getResponse("""
+            GET /context/swedish-%C3%A5.txt HTTP/1.1\r
+            Host: test\r
+            Connection:close\r
+            \r
+            """);
         response = HttpTester.parseResponse(rawResponse);
         if (filesystemSupportsNFCAccess)
         {
@@ -2420,9 +3136,19 @@ public class DefaultServletTest
 
     public static class Scenarios extends ArrayList<Arguments>
     {
+        public void addScenario(String rawRequest, int expectedStatus)
+        {
+            add(Arguments.of(new Scenario(rawRequest, expectedStatus)));
+        }
+
         public void addScenario(String description, String rawRequest, int expectedStatus)
         {
             add(Arguments.of(new Scenario(description, rawRequest, expectedStatus)));
+        }
+
+        public void addScenario(String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts)
+        {
+            add(Arguments.of(new Scenario(rawRequest, expectedStatus, extraAsserts)));
         }
 
         public void addScenario(String description, String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts)
@@ -2438,6 +3164,13 @@ public class DefaultServletTest
         public final int expectedStatus;
         public Consumer<HttpTester.Response> extraAsserts;
 
+        public Scenario(String rawRequest, int expectedStatus)
+        {
+            this.description = firstLine(rawRequest);
+            this.rawRequest = rawRequest;
+            this.expectedStatus = expectedStatus;
+        }
+
         public Scenario(String description, String rawRequest, int expectedStatus)
         {
             this.description = description;
@@ -2445,10 +3178,21 @@ public class DefaultServletTest
             this.expectedStatus = expectedStatus;
         }
 
+        public Scenario(String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts)
+        {
+            this(rawRequest, expectedStatus);
+            this.extraAsserts = extraAsserts;
+        }
+
         public Scenario(String description, String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts)
         {
             this(description, rawRequest, expectedStatus);
             this.extraAsserts = extraAsserts;
+        }
+
+        private String firstLine(String rawRequest)
+        {
+            return rawRequest.split("\n")[0];
         }
 
         @Override
