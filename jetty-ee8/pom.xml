@@ -58,6 +58,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <nonFilteredFileExtensions>
+            <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+            <nonFilteredFileExtension>raw</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>war</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tga</nonFilteredFileExtension>
+            <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+            <nonFilteredFileExtension>gz</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tif</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tiff</nonFilteredFileExtension>
+            <nonFilteredFileExtension>svgz</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jp2</nonFilteredFileExtension>
+            <nonFilteredFileExtension>rar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>bz2</nonFilteredFileExtension>
+            <nonFilteredFileExtension>br</nonFilteredFileExtension>
+            <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+          </nonFilteredFileExtensions>
+        </configuration>
         <dependencies>
           <dependency>
             <groupId>org.apache.maven.shared</groupId>
@@ -97,9 +117,6 @@
                 <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
               </mavenFilteringHints>
               <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-              <nonFilteredFileExtensions>
-                <nonFilteredFileExtension>p12</nonFilteredFileExtension>
-              </nonFilteredFileExtensions>
               <resources>
                 <resource>
                   <filtering>true</filtering>
