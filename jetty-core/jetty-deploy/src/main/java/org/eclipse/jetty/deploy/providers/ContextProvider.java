@@ -16,7 +16,6 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -288,6 +287,8 @@ public class ContextProvider extends ScanningAppProvider
 
     protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("initializeContextHandler {}", context);
         // find the ContextHandler
         ContextHandler contextHandler;
         if (context instanceof ContextHandler handler)
@@ -302,7 +303,6 @@ public class ContextProvider extends ScanningAppProvider
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Not a context {}", context);
-            
             return null;
         }
 
@@ -372,41 +372,32 @@ public class ContextProvider extends ScanningAppProvider
                 xmlc.getIdMap().put("Environment", environment);
                 xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
-                ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-                try
+                // If it is a core context environment, then look for a classloader
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
+                if (coreContextClassLoader != null)
+                    Thread.currentThread().setContextClassLoader(coreContextClassLoader);
+
+                // Create the context by running the configuration
+                Object context = xmlc.configure();
+
+                // Look for the contextHandler itself
+                ContextHandler contextHandler = null;
+                if (context instanceof ContextHandler c)
+                    contextHandler = c;
+                else if (context instanceof Supplier<?> supplier)
                 {
-                    // If it is a core context environment, then look for a classloader
-                    ClassLoader coreContextClassLoader = Environment.CORE.equals(environment)
-                        ? findCoreContextClassLoader(path) : null;
-                    if (coreContextClassLoader != null)
-                        Thread.currentThread().setContextClassLoader(coreContextClassLoader);
-
-                    // Create the context by running the configuration
-                    Object context = xmlc.configure();
-
-                    // Look for the contextHandler itself
-                    ContextHandler contextHandler = null;
-                    if (context instanceof ContextHandler c)
+                    Object nestedContext = supplier.get();
+                    if (nestedContext instanceof ContextHandler c)
                         contextHandler = c;
-                    else if (context instanceof Supplier<?> supplier)
-                    {
-                        Object nestedContext = supplier.get();
-                        if (nestedContext instanceof ContextHandler c)
-                            contextHandler = c;
-                    }
-                    if (contextHandler == null)
-                        throw new IllegalStateException("Unknown context type of " + context);
-
-                    // Set the classloader if we have a coreContextClassLoader
-                    if (coreContextClassLoader != null)
-                        contextHandler.setClassLoader(coreContextClassLoader);
-
-                    return contextHandler;
                 }
-                finally
-                {
-                    Thread.currentThread().setContextClassLoader(oldLoader);
-                }
+                if (contextHandler == null)
+                    throw new IllegalStateException("Unknown context type of " + context);
+
+                // Set the classloader if we have a coreContextClassLoader
+                if (coreContextClassLoader != null)
+                    contextHandler.setClassLoader(coreContextClassLoader);
+
+                return contextHandler;
             }
             // Otherwise it must be a directory or an archive
             else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
@@ -432,20 +423,21 @@ public class ContextProvider extends ScanningAppProvider
         }
     }
 
-    protected ClassLoader findCoreContextClassLoader(Path path) throws MalformedURLException, IOException
+    protected ClassLoader findCoreContextClassLoader(Path path) throws IOException
     {
+        Path webapps = path.getParent();
         String basename = FileID.getBasename(path);
         List<URL> urls = new ArrayList<>();
 
         // Is there a matching jar file?
-        Path contextJar = path.resolve(basename + ".jar");
+        Path contextJar = webapps.resolve(basename + ".jar");
         if (!Files.exists(contextJar))
-            contextJar = path.resolve(basename + ".JAR");
+            contextJar = webapps.resolve(basename + ".JAR");
         if (Files.exists(contextJar))
             urls.add(contextJar.toUri().toURL());
 
         // Is there a matching lib directory?
-        Path libDir = path.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "lib");
+        Path libDir = webapps.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "lib");
         if (Files.exists(libDir) && Files.isDirectory(libDir))
         {
             try (Stream<Path> paths = Files.list(libDir))
@@ -467,9 +459,12 @@ public class ContextProvider extends ScanningAppProvider
         }
 
         // Is there a matching lib directory?
-        Path classesDir = path.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "classes");
+        Path classesDir = webapps.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "classes");
         if (Files.exists(classesDir) && Files.isDirectory(libDir))
             urls.add(classesDir.toUri().toURL());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Core classloader for {}", urls);
 
         if (urls.isEmpty())
             return null;

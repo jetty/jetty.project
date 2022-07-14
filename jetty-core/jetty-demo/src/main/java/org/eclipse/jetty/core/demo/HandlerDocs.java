@@ -21,7 +21,6 @@ import java.util.Queue;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -43,7 +42,7 @@ public class HandlerDocs
             return (req, response, callback) ->
             {
                 response.setStatus(200);
-                response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
                 response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             };
         }
@@ -60,7 +59,7 @@ public class HandlerDocs
         private void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             Content.Sink.write(response, true, "Hello World", callback);
         }
     }
@@ -71,7 +70,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
         }
     }
@@ -82,7 +81,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             Blocker.Shared blocker = new Blocker.Shared();
             try (Blocker.Callback cb = blocker.callback())
             {
@@ -104,7 +103,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             try (PrintStream out = new PrintStream(Content.Sink.asOutputStream(response)))
             {
                 out.print("Hello ");
@@ -124,7 +123,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             new HelloWorldPublisher().subscribe(Content.Sink.asSubscriber(response, callback));
         }
     }
@@ -158,26 +157,6 @@ public class HandlerDocs
         }
     }
 
-    public static class DescriminatingGreeterHandler extends Handler.Processor.NonBlocking
-    {
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            if (HttpMethod.GET.is(request.getMethod()) &&
-                "greeting".equals(request.getPathInContext()))
-                return this;
-            return null;
-        }
-
-        @Override
-        public void process(Request request, Response response, Callback callback)
-        {
-            response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
-        }
-    }
-
     public static class EchoHandler extends Handler.Processor.NonBlocking
     {
         @Override
@@ -206,7 +185,7 @@ public class HandlerDocs
             {
                 String name = handler.getClass().getSimpleName().replace("Handler", "");
                 String path = "/" + name;
-                if (request.getPathInContext().equals(name))
+                if (request.getPathInContext().equals(path))
                 {
                     Request.Processor processor = handler.handle(request);
                     if (processor != null)
