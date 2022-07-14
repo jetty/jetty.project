@@ -102,6 +102,7 @@
               </nonFilteredFileExtensions>
               <resources>
                 <resource>
+                  <filtering>true</filtering>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
                 </resource>
               </resources>
