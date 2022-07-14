@@ -106,6 +106,26 @@
               </resources>
             </configuration>
           </execution>
+          <!-- TODO this would be nice to reuse mod files from ee9 but the mod file name need to be changed as well as the content -->
+<!--          <execution>-->
+<!--            <id>copy-ee8-modules-resources</id>-->
+<!--            <phase>generate-resources</phase>-->
+<!--            <goals>-->
+<!--              <goal>copy-resources</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <mavenFilteringHints>-->
+<!--                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>-->
+<!--              </mavenFilteringHints>-->
+<!--              <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>-->
+<!--              <resources>-->
+<!--                <resource>-->
+<!--                  <filtering>true</filtering>-->
+<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/config</directory>-->
+<!--                </resource>-->
+<!--              </resources>-->
+<!--            </configuration>-->
+<!--          </execution>-->
           <execution>
             <id>copy-ee8-test-resources</id>
             <phase>generate-test-resources</phase>
