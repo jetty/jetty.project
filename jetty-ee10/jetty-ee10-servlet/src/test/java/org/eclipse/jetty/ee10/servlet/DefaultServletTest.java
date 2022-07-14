@@ -1579,7 +1579,6 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("welcomeServletScenarios")
-    @Disabled
     public void testWelcomeExactServlet(Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1613,7 +1612,7 @@ public class DefaultServletTest
             scenario.extraAsserts.accept(response);
     }
 
-    @Disabled
+    @Disabled("Disabled until fix for HttpContent merged")
     @Test
     public void testDirectFromResourceHttpContent() throws Exception
     {
