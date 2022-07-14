@@ -1030,7 +1030,7 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
+    @Disabled("Not working as RequestDispatcher.include() isn't behaving as expected")
     public void testIncludedWelcomeDifferentBase() throws Exception
     {
         Path altRoot = workDir.getPath().resolve("altroot");
@@ -1066,8 +1066,13 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        // 9.3 "The Include Method" - when include() is used, FileNotFoundException (and HTTP 500)
-        // should be used
+
+        /* https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#93-the-include-method
+         * 9.3 - If the default servlet is the target of a RequestDispatch.include() and the requested
+         * resource does not exist, then the default servlet MUST throw FileNotFoundException.
+         * If the exception isn’t caught and handled, and the response
+         * hasn’t been committed, the status code MUST be set to 500.
+         */
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
         Files.writeString(altIndex, "<h1>Alt Index</h1>", UTF_8);

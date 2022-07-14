@@ -170,7 +170,7 @@ public class ResourceService
             sendData(request, response, callback, content, reqRanges);
         }
         // Can be thrown from contentFactory.getContent() call when using invalid characters
-        catch (InvalidPathException e)
+        catch (InvalidPathException e) // TODO: this cannot trigger here, as contentFactory.getContent() isn't called in this try block
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);

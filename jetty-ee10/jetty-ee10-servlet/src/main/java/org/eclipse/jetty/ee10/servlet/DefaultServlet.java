@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -30,6 +32,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -314,31 +317,50 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        // TODO: need special handling here for included if request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) is not null?
-        // Handling things like RequestDispatcher.INCLUDE_PATH_INFO?
-        // or is this handled elsewhere now?
-
         String pathInContext = isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
-        HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
-        if (content == null)
+        boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+        try
         {
-            // no content
-            resp.setStatus(404);
+            HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
+            if (content == null || !content.getResource().exists())
+            {
+                if (included)
+                {
+                    /* https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#93-the-include-method
+                     * 9.3 - If the default servlet is the target of a RequestDispatch.include() and the requested
+                     * resource does not exist, then the default servlet MUST throw FileNotFoundException.
+                     * If the exception isn’t caught and handled, and the response
+                     * hasn’t been committed, the status code MUST be set to 500.
+                     */
+                    throw new FileNotFoundException(pathInContext);
+                }
+
+                // no content
+                resp.setStatus(404);
+            }
+            else
+            {
+                // serve content
+                try (Blocker.Callback callback = Blocker.callback())
+                {
+                    ServletCoreRequest coreRequest = new ServletCoreRequest(req);
+                    ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
+                    _resourceService.doGet(coreRequest, coreResponse, callback, content);
+                    callback.block();
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
+            }
         }
-        else
+        catch (InvalidPathException e)
         {
-            // serve content
-            try (Blocker.Callback callback = Blocker.callback())
-            {
-                ServletCoreRequest coreRequest = new ServletCoreRequest(req);
-                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
-                _resourceService.doGet(coreRequest, coreResponse, callback, content);
-                callback.block();
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
+            if (included)
+                throw new FileNotFoundException(pathInContext);
+            resp.setStatus(404);
         }
     }
 
@@ -797,6 +819,12 @@ public class DefaultServlet extends HttpServlet
                 return null;
 
             HttpServletRequest request = getServletRequest(coreRequest);
+
+            if (request.getDispatcherType() == DispatcherType.INCLUDE)
+            {
+                // Servlet 9.3 - don't process welcome target from INCLUDE dispatch
+                return null;
+            }
 
             String requestTarget = isPathInfoOnly() ? request.getPathInfo() : coreRequest.getPathInContext();
 
