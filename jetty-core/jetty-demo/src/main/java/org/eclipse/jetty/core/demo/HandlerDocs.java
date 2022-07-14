@@ -82,17 +82,15 @@ public class HandlerDocs
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-            Blocker.Shared blocker = new Blocker.Shared();
-            try (Blocker.Callback cb = blocker.callback())
+
+            try (Blocker.Callback blocker = Blocker.callback())
             {
-                response.write(true, BufferUtil.toBuffer("Hello "), callback);
-                cb.block();
+                response.write(false, BufferUtil.toBuffer("Hello "), blocker);
+                blocker.block();
             }
-            try (Blocker.Callback cb = blocker.callback())
-            {
-                response.write(true, BufferUtil.toBuffer("World\n"), callback);
-                cb.block();
-            }
+
+            Content.Sink.write(response, true, BufferUtil.toBuffer("World\n"));
+
             callback.succeeded();
         }
     }

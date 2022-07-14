@@ -161,7 +161,8 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             boolean coreProvider = _deploymentManager.getAppProviders().stream()
                 .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
 
-            if (isWebapp)
+            // TODO review these heuristics... or even if we should have them at all
+            if (isWebapp || (Files.isDirectory(path) && _deploymentManager.getDefaultEnvironmentName() != null))
                 environmentName = _deploymentManager.getDefaultEnvironmentName();
             else if (coreProvider)
                 environmentName = Environment.CORE.getName();

@@ -167,6 +167,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 callback.block();
                 return;
             }
+            callback.succeeded(); // TODO this is wasteful making a blocker on every request, even if it is not used. At leasts should be shared... but better to detect if we might need to upgrade first?
         }
 
         // If we reach this point, it means we had an incoming request to upgrade
