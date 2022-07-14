@@ -75,9 +75,12 @@ public class DefaultServlet extends HttpServlet
     private boolean _welcomeExactServlets = false;
 
     private Resource.Mount _resourceBaseMount;
+    private Resource _baseResource;
     private Resource.Mount _stylesheetMount;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
+
+    private boolean _isPathInfoOnly = false;
 
     @Override
     public void init() throws ServletException
@@ -86,7 +89,7 @@ public class DefaultServlet extends HttpServlet
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        Resource baseResource = servletContextHandler.getResourceBase();
+        _baseResource = servletContextHandler.getResourceBase();
         String rb = getInitParameter("resourceBase");
         if (rb != null)
         {
@@ -94,7 +97,7 @@ public class DefaultServlet extends HttpServlet
             {
                 URI resourceUri = Resource.toURI(rb);
                 _resourceBaseMount = Resource.mountIfNeeded(resourceUri);
-                baseResource = Resource.newResource(resourceUri);
+                _baseResource = Resource.newResource(resourceUri);
             }
             catch (Exception e)
             {
@@ -109,7 +112,7 @@ public class DefaultServlet extends HttpServlet
         CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(baseResource, mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -145,8 +148,9 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
         _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
-        _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly", _resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
+
+        _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
 
         if ("exact".equals(getInitParameter("welcomeServlets")))
         {
@@ -216,7 +220,7 @@ public class DefaultServlet extends HttpServlet
         // TODO: remove? _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("base resource = {}", baseResource);
+            LOG.debug("base resource = {}", _baseResource);
     }
 
     @Override
@@ -302,10 +306,19 @@ public class DefaultServlet extends HttpServlet
             servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
     }
 
+    protected boolean isPathInfoOnly()
+    {
+        return _isPathInfoOnly;
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        String pathInContext = _resourceService.isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
+        // TODO: need special handling here for included if request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) is not null?
+        // Handling things like RequestDispatcher.INCLUDE_PATH_INFO?
+        // or is this handled elsewhere now?
+
+        String pathInContext = isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
         HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
         if (content == null)
         {
@@ -776,20 +789,23 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public String getWelcomeFile(String pathInContext) throws IOException
+        public String getWelcomeTarget(Request coreRequest) throws IOException
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
 
             if (welcomes == null)
                 return null;
 
-            // TODO this feels inefficient
-            Resource base = _servletContextHandler.getResourceBase().resolve(pathInContext);
+            HttpServletRequest request = getServletRequest(coreRequest);
+
+            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : coreRequest.getPathInContext();
+
+            Resource base = _baseResource.resolve(requestTarget);
             String welcomeServlet = null;
             for (String welcome : welcomes)
             {
                 Resource welcomePath = base.resolve(welcome);
-                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
 
                 if (welcomePath != null && welcomePath.exists())
                     return welcomeInContext;
@@ -806,81 +822,92 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean welcome(Request rq, Response rs, Callback callback) throws IOException
+        protected boolean welcome(Request coreRequest, Response coreResponse, Callback callback) throws IOException
         {
-            // TODO The contract of this method is very confused: it has a callback a return and throws?
-
-            // TODO, this unwrapping is fragile
-            HttpServletRequest request = ((ServletCoreRequest)rq)._request;
-            HttpServletResponse response = ((ServletCoreResponse)rs)._response;
-            String pathInContext = rq.getPathInContext();
-            WelcomeFactory welcomeFactory = getWelcomeFactory();
-            String welcome = welcomeFactory == null ? null : welcomeFactory.getWelcomeFile(pathInContext);
+            HttpServletRequest request = getServletRequest(coreRequest);
+            HttpServletResponse response = getServletResponse(coreResponse);
             boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
 
-            if (welcome == null)
+            WelcomeAction welcomeAction = super.processWelcome(coreRequest, coreResponse);
+            if (welcomeAction == null)
                 return false;
 
-            String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
-                : request.getServletPath();
-
-            if (isPathInfoOnly())
-                welcome = URIUtil.addPaths(servletPath, welcome);
+            String welcome = welcomeAction.target();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("welcome={}", welcome);
 
             ServletContext context = request.getServletContext();
-
-            if (isRedirectWelcome() || context == null)
+            switch (welcomeAction.type())
             {
-                // Redirect to the index
-                response.setContentLength(0);
-                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
-                HttpURI.Mutable uri = HttpURI.build(rq.getHttpURI());
-                String parameter = uri.getParam();
-                uri.path(URIUtil.addPaths(rq.getContext().getContextPath(), welcome));
-                uri.param(parameter);
-                response.sendRedirect(response.encodeRedirectURL(uri.getPathQuery()));
-                callback.succeeded();
-                return true;
-            }
-
-            RequestDispatcher dispatcher = context.getRequestDispatcher(URIUtil.encodePath(welcome));
-            if (dispatcher != null)
-            {
-                // Forward to the index
-                try
+                case REDIRECT ->
                 {
-                    if (included)
+                    if (isRedirectWelcome() || context == null)
                     {
-                        dispatcher.include(request, response);
+                        String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
+                            : request.getServletPath();
+
+                        if (isPathInfoOnly())
+                            welcome = URIUtil.addPaths(servletPath, welcome);
+
+                        response.setContentLength(0);
+                        response.sendRedirect(welcome);
+                        callback.succeeded();
+                        return true;
                     }
-                    else
-                    {
-                        request.setAttribute("org.eclipse.jetty.server.welcome", welcome);
-                        dispatcher.forward(request, response);
-                    }
-                    callback.succeeded();
                     return true;
                 }
-                catch (ServletException e)
+                case SERVE ->
                 {
-                    callback.failed(e);
+                    RequestDispatcher dispatcher = context.getRequestDispatcher(welcome);
+                    if (dispatcher != null)
+                    {
+                        // Forward to the index
+                        try
+                        {
+                            if (included)
+                            {
+                                dispatcher.include(request, response);
+                            }
+                            else
+                            {
+                                request.setAttribute("org.eclipse.jetty.server.welcome", welcomeAction.target());
+                                dispatcher.forward(request, response);
+                            }
+                            callback.succeeded();
+                            return true;
+                        }
+                        catch (ServletException e)
+                        {
+                            callback.failed(e);
+                            return true;
+                        }
+                    }
                     return true;
                 }
             }
-
             return false;
         }
 
         @Override
         protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
-            boolean included = ((ServletCoreRequest)request)._request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            boolean included = getServletRequest(request).getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
             if (included)
                 return true;
             return super.passConditionalHeaders(request, response, content, callback);
+        }
+
+        private HttpServletRequest getServletRequest(Request request)
+        {
+            // TODO, this unwrapping is fragile
+            return ((ServletCoreRequest)request)._request;
+        }
+
+        private HttpServletResponse getServletResponse(Response response)
+        {
+            // TODO, this unwrapping is fragile
+            return ((ServletCoreResponse)response)._response;
         }
     }
 }

@@ -19,7 +19,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -43,7 +42,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,6 @@ public class ResourceService
     private static final int NO_CONTENT_LENGTH = -1;
     private static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
     private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
@@ -392,7 +389,7 @@ public class ResourceService
             }
         }
 
-        // look for a welcome file
+        // process optional Welcome behaviors
         if (welcome(request, response, callback))
             return;
 
@@ -400,39 +397,79 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
+    public enum WelcomeActionType
+    {
+        REDIRECT,
+        SERVE
+    }
+
+    /**
+     * Behavior for a potential welcome action
+     * as determined by {@link ResourceService#processWelcome(Request, Response)}
+     *
+     * <p>
+     *     For {@link WelcomeActionType#REDIRECT} this is the resulting `Location` response header.
+     *     For {@link WelcomeActionType#SERVE} this is the resulting path to for welcome serve, note that
+     *     this is just a path, and can point to a real file, or a dynamic handler for
+     *     welcome processing (such as Jetty core Handler, or EE Servlet), it's up
+     *     to the implementation of {@link ResourceService#welcome(Request, Response, Callback)}
+     *     to handle the various action types.
+     * </p>
+     * @param type the type of action
+     * @param target The target URI path of the action.
+     */
+    public record WelcomeAction(WelcomeActionType type, String target) {}
+
     protected boolean welcome(Request request, Response response, Callback callback) throws IOException
     {
-        String pathInContext = request.getPathInContext();
-        String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
-        if (welcome != null)
+        WelcomeAction welcomeAction = processWelcome(request, response);
+        if (welcomeAction == null)
+            return false;
+
+        switch (welcomeAction.type)
         {
-            String contextPath = request.getContext().getContextPath();
-
-            if (_pathInfoOnly)
-                welcome = URIUtil.addPaths(contextPath, welcome);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("welcome={}", welcome);
-
-            if (_redirectWelcome)
+            case REDIRECT ->
             {
-                // Redirect to the index
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
-                HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
-                String parameter = uri.getParam();
-                uri.path(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
-                uri.param(parameter);
-                Response.sendRedirect(request, response, callback, uri.getPathQuery());
+                Response.sendRedirect(request, response, callback, welcomeAction.target);
                 return true;
             }
-
-            // Serve welcome file
-            HttpContent c = _contentFactory.getContent(welcome, 16 * 1024); // TODO output buffer size????
-            sendData(request, response, callback, c, null);
-            return true;
+            case SERVE ->
+            {
+                // TODO output buffer size????
+                HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
+                sendData(request, response, callback, c, null);
+                return true;
+            }
         }
         return false;
+    }
+
+    protected WelcomeAction processWelcome(Request request, Response response) throws IOException
+    {
+        String welcomeTarget = _welcomeFactory.getWelcomeTarget(request);
+        if (welcomeTarget == null)
+            return null;
+
+        String contextPath = request.getContext().getContextPath();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("welcome={}", welcomeTarget);
+
+        if (_redirectWelcome)
+        {
+            // Redirect to the index
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+            // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
+            HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
+            String parameter = uri.getParam();
+            uri.path(URIUtil.addPaths(request.getContext().getContextPath(), welcomeTarget));
+            uri.param(parameter);
+            return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());
+        }
+
+        // Serve welcome file
+        return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
     }
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
@@ -679,14 +716,6 @@ public class ResourceService
     }
 
     /**
-     * @return true, only the path info will be applied to the resourceBase
-     */
-    public boolean isPathInfoOnly()
-    {
-        return _pathInfoOnly;
-    }
-
-    /**
      * @return If true, welcome files are redirected rather than forwarded to.
      */
     public boolean isRedirectWelcome()
@@ -762,14 +791,6 @@ public class ResourceService
     }
 
     /**
-     * @param pathInfoOnly true, only the path info will be applied to the resourceBase
-     */
-    public void setPathInfoOnly(boolean pathInfoOnly)
-    {
-        _pathInfoOnly = pathInfoOnly;
-    }
-
-    /**
      * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
      * redirection is always used if the ResourceHandler is not scoped by
      * a ContextHandler
@@ -786,14 +807,14 @@ public class ResourceService
 
     public interface WelcomeFactory
     {
-
         /**
-         * Finds a matching welcome file for the supplied {@link Resource}.
-         * TODO would be better to pass back a URI or a Resource
-         * @param pathInContext the path of the request
-         * @return The path of the matching welcome file in context or null.
+         * Finds a matching welcome target URI path for the request.
+         *
+         * @param request the request to use to determine the matching welcome target from.
+         * @return The URI path of the matching welcome target in context or null
+         *    (null means no welcome target was found)
          */
-        String getWelcomeFile(String pathInContext) throws IOException;
+        String getWelcomeTarget(Request request) throws IOException;
     }
 
     private static class ContentWriterIteratingCallback extends IteratingCallback

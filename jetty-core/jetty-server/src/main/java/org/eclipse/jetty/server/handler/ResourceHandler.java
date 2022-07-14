@@ -81,15 +81,15 @@ public class ResourceHandler extends Handler.Wrapper
     {
         HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(_resourceBase, _mimeTypes, _resourceService.getPrecompressedFormats()));
         _resourceService.setContentFactory(contentFactory);
-        _resourceService.setWelcomeFactory(pathInContext ->
+        _resourceService.setWelcomeFactory(request ->
         {
             if (_welcomes == null)
                 return null;
 
             for (String welcome : _welcomes)
             {
-                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
+                String welcomeInContext = URIUtil.addPaths(request.getPathInContext(), welcome);
+                Resource welcomePath = _resourceBase.resolve(request.getPathInContext()).resolve(welcome);
                 if (welcomePath != null && welcomePath.exists())
                     return welcomeInContext;
             }
@@ -205,14 +205,6 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @return true, only the path info will be applied to the resourceBase
-     */
-    public boolean isPathInfoOnly()
-    {
-        return _resourceService.isPathInfoOnly();
-    }
-
-    /**
      * @return If true, welcome files are redirected rather than forwarded to.
      */
     public boolean isRedirectWelcome()
@@ -294,14 +286,6 @@ public class ResourceHandler extends Handler.Wrapper
     {
         _mimeTypes = mimeTypes;
         setupContentFactory();
-    }
-
-    /**
-     * @param pathInfoOnly true, only the path info will be applied to the resourceBase
-     */
-    public void setPathInfoOnly(boolean pathInfoOnly)
-    {
-        _resourceService.setPathInfoOnly(pathInfoOnly);
     }
 
     /**

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -153,7 +152,7 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-        createFile(file, "How now brown cow");
+        Files.writeString(file, "How now brown cow", UTF_8);
 
         rawResponse = connector.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -418,7 +417,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -710,7 +708,7 @@ public class DefaultServletTest
         /* create some content in the docroot */
 
         Path index = docRoot.resolve("index.html");
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         if (!OS.WINDOWS.isCurrentOs())
         {
@@ -725,7 +723,7 @@ public class DefaultServletTest
         Path sekret = workDir.getPath().resolve("sekret");
         FS.ensureDirExists(sekret);
         Path pass = sekret.resolve("pass");
-        createFile(pass, "Sssh, you shouldn't be seeing this");
+        Files.writeString(pass, "Sssh, you shouldn't be seeing this", UTF_8);
 
         /* At this point we have the following
          * testListingContextBreakout/
@@ -814,11 +812,11 @@ public class DefaultServletTest
         FS.ensureDirExists(two);
         FS.ensureDirExists(three);
 
-        createFile(one.resolve("index.htm"), "<h1>Hello Inde</h1>");
-        createFile(two.resolve("index.html"), "<h1>Hello Index</h1>");
+        Files.writeString(one.resolve("index.htm"), "<h1>Hello Inde</h1>", UTF_8);
+        Files.writeString(two.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
 
-        createFile(three.resolve("index.html"), "<h1>Three Index</h1>");
-        createFile(three.resolve("index.htm"), "<h1>Three Inde</h1>");
+        Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
+        Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -841,8 +839,7 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
-    public void testWelcomeMultipleBasesBase() throws Exception
+    public void testWelcomeMultipleDefaultServletsDifferentBases() throws Exception
     {
         Path dir = docRoot.resolve("dir");
         FS.ensureDirExists(dir);
@@ -892,9 +889,9 @@ public class DefaultServletTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
+        assertThat(response, containsHeaderValue("Location", "http://local/context/other/"));
 
-        // Test alt default
+        // Test alt default, should see no directory listing output (dirAllowed == false per config)
         rawResponse = connector.getResponse("""
             GET /context/alt/dir/ HTTP/1.1\r
             Host: local\r
@@ -904,7 +901,9 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
-        createFile(altIndex, "<h1>Alt Index</h1>");
+        // Test alt welcome file, there's no index.html here yet, so let's create it and try
+        // accessing it directly
+        Files.writeString(altIndex, "<h1>Alt Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/alt/dir/index.html HTTP/1.1\r
             Host: local\r
@@ -915,6 +914,8 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
+        // Test alt welcome file, there now exists an index.html, lets try accessing
+        // it via the welcome file behaviors
         rawResponse = connector.getResponse("""
             GET /context/alt/dir/ HTTP/1.1\r
             Host: local\r
@@ -925,7 +926,10 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
-        createFile(altInde, "<h1>Alt Inde</h1>");
+        // Let's create an index.htm (no 'l') and see if the welcome file logic holds,
+        // we should still see the original `index.html` as that's the first welcome
+        // file listed
+        Files.writeString(altInde, "<h1>Alt Inde</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/alt/dir/ HTTP/1.1\r
             Host: local\r
@@ -936,8 +940,12 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
+        // Let's try deleting the `index.html` and accesing the welcome file at `index.htm`
+        // We skip this section of the test if the OS or filesystem doesn't support instantaneous delete
+        // such as what happens on Microsoft Windows.
         if (deleteFile(altIndex))
         {
+            // Access welcome file `index.htm` via the directory request.
             rawResponse = connector.getResponse("""
                 GET /context/alt/dir/ HTTP/1.1\r
                 Host: local\r
@@ -948,6 +956,8 @@ public class DefaultServletTest
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("<h1>Alt Inde</h1>"));
 
+            // Delete the welcome file `index.htm`, and access the directory.
+            // We should see no directory listing output (dirAllowed == false per config)
             if (deleteFile(altInde))
             {
                 rawResponse = connector.getResponse("""
@@ -971,7 +981,7 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/dir/ HTTP/1.1\r
             Host: local\r
@@ -982,7 +992,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
-        createFile(inde, "<h1>Hello Inde</h1>");
+        Files.writeString(inde, "<h1>Hello Inde</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/dir/ HTTP/1.1\r
             Host: local\r
@@ -1060,7 +1070,7 @@ public class DefaultServletTest
         // should be used
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
-        createFile(altIndex, "<h1>Alt Index</h1>");
+        Files.writeString(altIndex, "<h1>Alt Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/gateway HTTP/1.1\r
             Host: local\r
@@ -1105,7 +1115,7 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/dir/ HTTP/1.1\r
             Host: local\r
@@ -1116,7 +1126,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, headerValue("Location", "http://local/context/dir/index.html"));
 
-        createFile(inde, "<h1>Hello Inde</h1>");
+        Files.writeString(inde, "<h1>Hello Inde</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/dir HTTP/1.1\r
             Host: local\r
@@ -1169,7 +1179,7 @@ public class DefaultServletTest
         Path dir = docRoot.resolve("dir");
         FS.ensureDirExists(dir);
         Path index = dir.resolve("index.html");
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         context.addAliasCheck((p, r) -> true);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
@@ -1228,7 +1238,7 @@ public class DefaultServletTest
         Path dir = assumeMkDirSupported(docRoot, "dir?");
 
         Path index = dir.resolve("index.html");
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1280,7 +1290,7 @@ public class DefaultServletTest
         Path dir = assumeMkDirSupported(docRoot, "dir;");
 
         Path index = dir.resolve("index.html");
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1299,7 +1309,7 @@ public class DefaultServletTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/"));
+        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/"));
 
         rawResponse = connector.getResponse("""
             GET /context/dir%3B/ HTTP/1.1\r
@@ -1309,7 +1319,7 @@ public class DefaultServletTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/index.html"));
+        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/index.html"));
     }
 
     @Test
@@ -1340,7 +1350,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContent(), containsString("JSP support not configured"));
 
-        createFile(index, "<h1>Hello Index</h1>");
+        Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
             Host: local\r
@@ -1351,7 +1361,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
 
-        createFile(inde, "<h1>Hello Inde</h1>");
+        Files.writeString(inde, "<h1>Hello Inde</h1>", UTF_8);
         rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
             Host: local\r
@@ -1401,7 +1411,7 @@ public class DefaultServletTest
         Path foobar = dir.resolve("foobar.txt");
         Path link = dir.resolve("link.txt");
         Path rLink = dir.resolve("rlink.txt");
-        createFile(foobar, "Foo Bar");
+        Files.writeString(foobar, "Foo Bar", UTF_8);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
 
         defholder.setInitParameter("gzip", "false");
@@ -1579,11 +1589,11 @@ public class DefaultServletTest
         FS.ensureDirExists(two);
         FS.ensureDirExists(three);
 
-        createFile(one.resolve("index.htm"), "<h1>Hello Inde</h1>");
-        createFile(two.resolve("index.html"), "<h1>Hello Index</h1>");
+        Files.writeString(one.resolve("index.htm"), "<h1>Hello Inde</h1>", UTF_8);
+        Files.writeString(two.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
 
-        createFile(three.resolve("index.html"), "<h1>Three Index</h1>");
-        createFile(three.resolve("index.htm"), "<h1>Three Inde</h1>");
+        Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
+        Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1607,7 +1617,7 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         Path index = docRoot.resolve("index.html");
-        createFile(index, "<h1>Hello World</h1>");
+        Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
@@ -1883,11 +1893,11 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         Path data = docRoot.resolve("data.txt");
-        createFile(data, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        Files.writeString(data, "01234567890123456789012345678901234567890123456789012345678901234567890123456789", UTF_8);
 
         // test a range request with a file with no suffix, therefore no mimetype
         Path nofilesuffix = docRoot.resolve("nofilesuffix");
-        createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        Files.writeString(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1909,9 +1919,9 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         Path file0 = docRoot.resolve("data0.txt");
-        createFile(file0, "Hello Text 0");
+        Files.writeString(file0, "Hello Text 0", UTF_8);
         Path image = docRoot.resolve("image.jpg");
-        createFile(image, "not an image");
+        Files.writeString(image, "not an image", UTF_8);
 
         server.stop();
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
@@ -1994,9 +2004,9 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         Path file0 = docRoot.resolve("data0.txt");
-        createFile(file0, "Hello Text 0");
+        Files.writeString(file0, "Hello Text 0", UTF_8);
         Path file0gz = docRoot.resolve("data0.txt.gz");
-        createFile(file0gz, "fake gzip");
+        Files.writeString(file0gz, "fake gzip", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -2147,9 +2157,9 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         Path file0 = docRoot.resolve("data0.txt");
-        createFile(file0, "Hello Text 0");
+        Files.writeString(file0, "Hello Text 0", UTF_8);
         Path file0gz = docRoot.resolve("data0.txt.gz");
-        createFile(file0gz, "fake gzip");
+        Files.writeString(file0gz, "fake gzip", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -2273,8 +2283,8 @@ public class DefaultServletTest
     @Disabled
     public void testBrotli() throws Exception
     {
-        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
-        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -2413,8 +2423,8 @@ public class DefaultServletTest
     @Disabled
     public void testCachedBrotli() throws Exception
     {
-        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
-        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -2538,9 +2548,9 @@ public class DefaultServletTest
     @Disabled
     public void testDefaultBrotliOverGzip() throws Exception
     {
-        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
-        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
-        createFile(docRoot.resolve("data0.txt.gz"), "fake gzip");
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "true");
@@ -2587,10 +2597,10 @@ public class DefaultServletTest
     @Disabled
     public void testCustomCompressionFormats() throws Exception
     {
-        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
-        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
-        createFile(docRoot.resolve("data0.txt.gz"), "fake gzip");
-        createFile(docRoot.resolve("data0.txt.bz2"), "fake bzip2");
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
@@ -2638,10 +2648,10 @@ public class DefaultServletTest
     @Disabled
     public void testProgrammaticCustomCompressionFormats() throws Exception
     {
-        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
-        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
-        createFile(docRoot.resolve("data0.txt.gz"), "fake gzip");
-        createFile(docRoot.resolve("data0.txt.bz2"), "fake bzip2");
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
         ResourceService resourceService = new ResourceService();
         resourceService.setPrecompressedFormats(new CompressedContentFormat[]{
@@ -2739,7 +2749,7 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-        createFile(file, content);
+        Files.writeString(file, content, UTF_8);
 
         rawResponse = connector.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2812,7 +2822,7 @@ public class DefaultServletTest
     @Disabled
     public void testIfETag(String content) throws Exception
     {
-        createFile(docRoot.resolve("file.txt"), content);
+        Files.writeString(docRoot.resolve("file.txt"), content, UTF_8);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
 
@@ -2927,7 +2937,7 @@ public class DefaultServletTest
 
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt";
-        createFile(docRoot.resolve(filename), "hi a-with-circle");
+        Files.writeString(docRoot.resolve(filename), "hi a-with-circle", UTF_8);
 
         // Using filesystem, attempt to access via NFD format
         Path nfdPath = docRoot.resolve("swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt");
@@ -2977,7 +2987,7 @@ public class DefaultServletTest
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt";
-        createFile(docRoot.resolve(filename), "hi a-with-circle");
+        Files.writeString(docRoot.resolve(filename), "hi a-with-circle", UTF_8);
 
         // Using filesystem, attempt to access via NFC format
         Path nfcPath = docRoot.resolve("swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt");
@@ -3054,15 +3064,6 @@ public class DefaultServletTest
         @Override
         public void destroy()
         {
-        }
-    }
-
-    private void createFile(Path path, String str) throws IOException
-    {
-        try (OutputStream out = Files.newOutputStream(path))
-        {
-            out.write(str.getBytes(UTF_8));
-            out.flush();
         }
     }
 

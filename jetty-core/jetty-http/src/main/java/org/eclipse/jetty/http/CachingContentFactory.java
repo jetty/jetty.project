@@ -177,6 +177,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             else
                 removeFromCache(cachingHttpContent);
         }
+
         HttpContent httpContent = _authority.getContent(path, maxBuffer);
         // Do not cache directories or files that are too big
         if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
