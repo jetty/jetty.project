@@ -124,7 +124,7 @@ public class TestQuickStart
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
         quickstart.setContextPath("/foo");
         server.setHandler(quickstart);
         server.setDryRun(true);
@@ -167,7 +167,7 @@ public class TestQuickStart
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
         quickstart.setContextPath("/foo");
         server.setHandler(quickstart);
         server.setDryRun(true);
@@ -237,10 +237,10 @@ public class TestQuickStart
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setWar(testDir.toURI().toURL().toExternalForm());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
 
         //apply the context xml file
-        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTestResourceFile("context.xml").toPath()));
+        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/context.xml").toPath()));
         xmlConfig.configure(quickstart);
 
         //generate the quickstart
@@ -258,7 +258,7 @@ public class TestQuickStart
         quickstart.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.quickstart.");
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setWar(testDir.toURI().toURL().toExternalForm());
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.AUTO);
         server.setHandler(quickstart);
         

@@ -6,14 +6,13 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee8-plus</artifactId>
-  <name>EE8 :: Jetty :: Plus</name>
-  <description>Jetty JavaEE style services</description>
+  <artifactId>jetty-ee8-quickstart</artifactId>
+  <name>EE8 :: Jetty :: Quick Start</name>
+  <description>Jetty Quick Start</description>
 
   <properties>
-    <ee9.module>jetty-ee9-plus</ee9.module>
-    <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
+    <ee9.module>jetty-ee9-quickstart</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.quickstart</bundle-symbolic-name>
   </properties>
 
   <build>
@@ -24,7 +23,6 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.transaction.*;version="2.0.0",*</Import-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
@@ -39,16 +37,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-webapp</artifactId>
+      <artifactId>jetty-ee8-plus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

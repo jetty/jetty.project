@@ -11,19 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.docs.programming.server;
+package org.eclipse.jetty.core.demo;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -37,9 +34,6 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 public class HandlerDocs
 {
-    // TODO this class has been temporarily moved to jetty-core/jetty-demo
-    //      move it back when documentation is re-enabled
-
     public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
@@ -48,7 +42,7 @@ public class HandlerDocs
             return (req, response, callback) ->
             {
                 response.setStatus(200);
-                response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
                 response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
             };
         }
@@ -65,8 +59,8 @@ public class HandlerDocs
         private void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            Content.Sink.write(response, true, "Hello World", callback);
         }
     }
 
@@ -76,29 +70,27 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
         }
     }
 
-    public static class HelloHandler3 extends Handler.Processor.NonBlocking
+    public static class HelloHandler3 extends Handler.Processor.Blocking
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-            Blocker.Shared blocker = new Blocker.Shared();
-            try (Blocker.Callback cb = blocker.callback())
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+
+            try (Blocker.Callback blocker = Blocker.callback())
             {
-                response.write(true, BufferUtil.toBuffer("Hello "), callback);
-                cb.block();
+                response.write(false, BufferUtil.toBuffer("Hello "), blocker);
+                blocker.block();
             }
-            try (Blocker.Callback cb = blocker.callback())
-            {
-                response.write(true, BufferUtil.toBuffer("World\n"), callback);
-                cb.block();
-            }
+
+            Content.Sink.write(response, true, BufferUtil.toBuffer("World\n"));
+
             callback.succeeded();
         }
     }
@@ -109,7 +101,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             try (PrintStream out = new PrintStream(Content.Sink.asOutputStream(response)))
             {
                 out.print("Hello ");
@@ -129,7 +121,7 @@ public class HandlerDocs
         public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
             new HelloWorldPublisher().subscribe(Content.Sink.asSubscriber(response, callback));
         }
     }
@@ -163,26 +155,6 @@ public class HandlerDocs
         }
     }
 
-    public static class DescriminatingGreeterHandler extends Handler.Processor.NonBlocking
-    {
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            if (HttpMethod.GET.is(request.getMethod()) &&
-                "greeting".equals(request.getPathInContext()))
-                return this;
-            return null;
-        }
-
-        @Override
-        public void process(Request request, Response response, Callback callback)
-        {
-            response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
-        }
-    }
-
     public static class EchoHandler extends Handler.Processor.NonBlocking
     {
         @Override
@@ -211,7 +183,7 @@ public class HandlerDocs
             {
                 String name = handler.getClass().getSimpleName().replace("Handler", "");
                 String path = "/" + name;
-                if (request.getPathInContext().equals(name))
+                if (request.getPathInContext().equals(path))
                 {
                     Request.Processor processor = handler.handle(request);
                     if (processor != null)

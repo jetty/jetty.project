@@ -43,7 +43,6 @@ public class App
      * @param manager the deployment manager
      * @param provider the app provider
      * @param path the path to the application directory, war file or XML descriptor
-     * @see App#getFilename()
      * @see App#getContextPath()
      */
     public App(DeploymentManager manager, AppProvider provider, Path path)

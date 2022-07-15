@@ -236,16 +236,16 @@
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>

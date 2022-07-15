@@ -22,6 +22,7 @@
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
+    <modify-sources-plugin.version>1.0.0-SNAPSHOT</modify-sources-plugin.version>
   </properties>
 
   <modules>
@@ -35,6 +36,7 @@
     <module>jetty-ee8-jndi</module>
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
+    <module>jetty-ee8-quickstart</module>
     <module>jetty-ee8-bom</module>
     <module>jetty-ee8-demos</module>
     <module>jetty-ee8-home</module>
@@ -48,7 +50,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-          <version>1.0.0-SNAPSHOT</version>
+          <version>${modify-sources-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -56,6 +58,38 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <nonFilteredFileExtensions>
+            <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+            <nonFilteredFileExtension>raw</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>war</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tga</nonFilteredFileExtension>
+            <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+            <nonFilteredFileExtension>gz</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tif</nonFilteredFileExtension>
+            <nonFilteredFileExtension>tiff</nonFilteredFileExtension>
+            <nonFilteredFileExtension>svgz</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jp2</nonFilteredFileExtension>
+            <nonFilteredFileExtension>rar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>bz2</nonFilteredFileExtension>
+            <nonFilteredFileExtension>br</nonFilteredFileExtension>
+            <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+          </nonFilteredFileExtensions>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-filtering</artifactId>
+            <version>3.3.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+            <version>${modify-sources-plugin.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>copy-ee8-resources</id>
@@ -72,6 +106,26 @@
               </resources>
             </configuration>
           </execution>
+          <!-- TODO this would be nice to reuse mod files from ee9 but the mod file name need to be changed as well as the content -->
+<!--          <execution>-->
+<!--            <id>copy-ee8-modules-resources</id>-->
+<!--            <phase>generate-resources</phase>-->
+<!--            <goals>-->
+<!--              <goal>copy-resources</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <mavenFilteringHints>-->
+<!--                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>-->
+<!--              </mavenFilteringHints>-->
+<!--              <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>-->
+<!--              <resources>-->
+<!--                <resource>-->
+<!--                  <filtering>true</filtering>-->
+<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/config</directory>-->
+<!--                </resource>-->
+<!--              </resources>-->
+<!--            </configuration>-->
+<!--          </execution>-->
           <execution>
             <id>copy-ee8-test-resources</id>
             <phase>generate-test-resources</phase>
@@ -79,9 +133,13 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
+              <mavenFilteringHints>
+                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
+              </mavenFilteringHints>
               <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
               <resources>
                 <resource>
+                  <filtering>true</filtering>
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
                 </resource>
               </resources>
