@@ -75,7 +75,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler3 extends Handler.Processor.NonBlocking
+    public static class HelloHandler3 extends Handler.Processor.Blocking
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws IOException
