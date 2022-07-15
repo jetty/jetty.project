@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
@@ -39,6 +40,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -357,6 +360,14 @@ public class DefaultServlet extends HttpServlet
                     content = new UnknownLengthHttpContent(content);
                 }
 
+                ServletContextResponse contextResponse = coreResponse.getServletContextResponse();
+                if (contextResponse != null)
+                {
+                    String characterEncoding = contextResponse.getRawCharacterEncoding();
+                    if (characterEncoding != null)
+                        content = new ForcedCharacterEncodingHttpContent(content, characterEncoding);
+                }
+
                 // serve content
                 try (Blocker.Callback callback = Blocker.callback())
                 {
@@ -574,6 +585,7 @@ public class DefaultServlet extends HttpServlet
             return new ListIterator<>()
             {
                 HttpField _last;
+
                 @Override
                 public boolean hasNext()
                 {
@@ -756,6 +768,16 @@ public class DefaultServlet extends HttpServlet
             return _httpFields;
         }
 
+        public ServletContextResponse getServletContextResponse()
+        {
+            if (_response instanceof ServletContextResponse.ServletApiResponse)
+            {
+                ServletContextResponse.ServletApiResponse apiResponse = (ServletContextResponse.ServletApiResponse)_response;
+                return apiResponse.getResponse();
+            }
+            return null;
+        }
+
         @Override
         public boolean isCommitted()
         {
@@ -769,7 +791,7 @@ public class DefaultServlet extends HttpServlet
          */
         public boolean isHttpServletResponseWrapped()
         {
-            return !(_response instanceof ServletContextResponse.ServletApiResponse);
+            return (_response instanceof HttpServletResponseWrapper);
         }
 
         /**
@@ -784,15 +806,39 @@ public class DefaultServlet extends HttpServlet
             return servletContextResponse.isWritingOrStreaming();
         }
 
+        public boolean isStreaming()
+        {
+            ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
+            return servletContextResponse.isStreaming();
+        }
+
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             try
             {
                 if (BufferUtil.hasContent(byteBuffer))
-                    BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
-                if (last)
-                    _response.getOutputStream().close();
+                {
+                    if (isStreaming())
+                    {
+                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
+                        if (last)
+                            _response.getOutputStream().close();
+                    }
+                    else
+                    {
+                        String characterEncoding = _response.getCharacterEncoding();
+                        try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
+                             InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
+                        {
+                            IO.copy(reader, _response.getWriter());
+                        }
+
+                        if (last)
+                            _response.getWriter().close();
+                    }
+                }
+
                 callback.succeeded();
             }
             catch (Throwable t)
@@ -903,22 +949,15 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean welcome(Request coreRequest, Response coreResponse, Callback callback) throws IOException
+        protected void welcomeActionProcess(Request coreRequest, Response coreResponse, Callback callback, WelcomeAction welcomeAction) throws IOException
         {
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
+            ServletContext context = request.getServletContext();
             boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
-
-            WelcomeAction welcomeAction = super.processWelcome(coreRequest, coreResponse);
-            if (welcomeAction == null)
-                return false;
 
             String welcome = welcomeAction.target();
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("welcome={}", welcome);
-
-            ServletContext context = request.getServletContext();
             switch (welcomeAction.type())
             {
                 case REDIRECT ->
@@ -934,9 +973,7 @@ public class DefaultServlet extends HttpServlet
                         response.setContentLength(0);
                         response.sendRedirect(welcome);
                         callback.succeeded();
-                        return true;
                     }
-                    return true;
                 }
                 case SERVE ->
                 {
@@ -956,18 +993,14 @@ public class DefaultServlet extends HttpServlet
                                 dispatcher.forward(request, response);
                             }
                             callback.succeeded();
-                            return true;
                         }
                         catch (ServletException e)
                         {
                             callback.failed(e);
-                            return true;
                         }
                     }
-                    return true;
                 }
             }
-            return false;
         }
 
         @Override
@@ -1012,6 +1045,41 @@ public class DefaultServlet extends HttpServlet
         public long getContentLengthValue()
         {
             return ResourceService.NO_CONTENT_LENGTH;
+        }
+    }
+
+    private static class ForcedCharacterEncodingHttpContent extends HttpContentWrapper
+    {
+        private final String characterEncoding;
+        private final String contentType;
+
+        public ForcedCharacterEncodingHttpContent(HttpContent content, String characterEncoding)
+        {
+            super(content);
+            this.characterEncoding = characterEncoding;
+            String mimeType = content.getContentTypeValue();
+            int idx = mimeType.indexOf(";charset");
+            if (idx >= 0)
+                mimeType = mimeType.substring(0, idx);
+            this.contentType = mimeType + ";charset=" + this.characterEncoding;
+        }
+
+        @Override
+        public HttpField getContentType()
+        {
+            return new HttpField(HttpHeader.CONTENT_TYPE, this.contentType);
+        }
+
+        @Override
+        public String getContentTypeValue()
+        {
+            return this.contentType;
+        }
+
+        @Override
+        public String getCharacterEncoding()
+        {
+            return this.characterEncoding;
         }
     }
 }

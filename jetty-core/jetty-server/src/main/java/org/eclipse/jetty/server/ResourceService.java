@@ -422,32 +422,36 @@ public class ResourceService
      */
     public record WelcomeAction(WelcomeActionType type, String target) {}
 
-    protected boolean welcome(Request request, Response response, Callback callback) throws IOException
+    private boolean welcome(Request request, Response response, Callback callback) throws IOException
     {
         WelcomeAction welcomeAction = processWelcome(request, response);
         if (welcomeAction == null)
             return false;
 
+        welcomeActionProcess(request, response, callback, welcomeAction);
+        return true;
+    }
+
+    // TODO: could use a better name
+    protected void welcomeActionProcess(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
+    {
         switch (welcomeAction.type)
         {
             case REDIRECT ->
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 Response.sendRedirect(request, response, callback, welcomeAction.target);
-                return true;
             }
             case SERVE ->
             {
                 // TODO output buffer size????
                 HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
                 sendData(request, response, callback, c, null);
-                return true;
             }
-        }
-        return false;
+        };
     }
 
-    protected WelcomeAction processWelcome(Request request, Response response) throws IOException
+    private WelcomeAction processWelcome(Request request, Response response) throws IOException
     {
         String welcomeTarget = _welcomeFactory.getWelcomeTarget(request);
         if (welcomeTarget == null)
@@ -465,7 +469,7 @@ public class ResourceService
             // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
             HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
             String parameter = uri.getParam();
-            uri.path(URIUtil.addPaths(request.getContext().getContextPath(), welcomeTarget));
+            uri.path(URIUtil.addPaths(contextPath, welcomeTarget));
             uri.param(parameter);
             return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());
         }
