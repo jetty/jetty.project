@@ -127,7 +127,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
 
         public void copyWebInf(String testResourceName) throws IOException
         {
-            File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
+            File testWebXml = MavenTestingUtils.getTargetFile("test-classes/" + testResourceName);
             Path webXml = webInf.resolve("web.xml");
             IO.copy(testWebXml, webXml.toFile());
         }
