@@ -330,7 +330,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("See ServletContextRequest.errorClose and softClose hack")
     public void testForwardSendError() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
@@ -549,7 +549,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
     public void testIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -568,7 +568,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -587,7 +587,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -606,7 +606,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
+    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -1053,6 +1053,8 @@ public class DispatcherTest
         @Override
         public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
         {
+            // TODO: the `/resource` is a jetty-core ContextHandler, and is not a ServletContextHandler so it cannot return a ServletContext.
+
             ServletContext targetContext = getServletConfig().getServletContext().getContext("/resource");
 
             RequestDispatcher dispatcher = targetContext.getRequestDispatcher(req.getPathInfo());
