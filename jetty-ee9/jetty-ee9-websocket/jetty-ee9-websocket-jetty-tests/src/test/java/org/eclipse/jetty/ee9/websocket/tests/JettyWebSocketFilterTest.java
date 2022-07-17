@@ -308,7 +308,7 @@ public class JettyWebSocketFilterTest
     {
         String defaultIdleTimeout = Long.toString(WebSocketConstants.DEFAULT_IDLE_TIMEOUT.toMillis());
         JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering1");
-        Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering1.xml");
+        Path webXml = MavenTestingUtils.getTargetPath("test-classes/wsuf-ordering1.xml");
         webApp.copyWebXml(webXml);
         webApp.copyClass(WebSocketEchoServletContextListener.class);
         webApp.copyClass(WebSocketEchoServletContextListener.EchoSocket.class);
@@ -342,7 +342,7 @@ public class JettyWebSocketFilterTest
     {
         String timeoutFromAltFilter = "5999";
         JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering2");
-        Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering2.xml");
+        Path webXml = MavenTestingUtils.getTargetPath("test-classes/wsuf-ordering2.xml");
         webApp.copyWebXml(webXml);
         webApp.copyClass(WebSocketEchoServletContextListener.class);
         webApp.copyClass(WebSocketEchoServletContextListener.EchoSocket.class);
