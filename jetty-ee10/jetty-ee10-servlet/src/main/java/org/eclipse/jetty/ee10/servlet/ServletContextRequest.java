@@ -52,6 +52,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
@@ -738,14 +739,21 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public Part getPart(String name) throws IOException, ServletException
         {
-            // TODO
+            // TODO NYI
             return null;
         }
 
         @Override
         public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
         {
-            // TODO
+            // TODO NYI
+            return null;
+        }
+
+        @Override
+        public PushBuilder newPushBuilder()
+        {
+            // TODO NYI
             return null;
         }
 
