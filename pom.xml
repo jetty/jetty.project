@@ -102,7 +102,7 @@
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <junit.version>5.8.2</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
-    <log4j2.version>2.17.2</log4j2.version>
+    <log4j2.version>2.18.0</log4j2.version>
     <logback.version>1.3.0-alpha16</logback.version>
     <mariadb.version>3.0.6</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
@@ -327,8 +327,6 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <exclude>**/org/eclipse/jetty/maven/**</exclude>
-            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
@@ -348,6 +346,17 @@
           <execution>
             <id>jacoco-initialize</id>
             <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-setup-m-invoker-p</id>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of maven-invoker-plugin -->
+              <propertyName>invoker.mavenOpts</propertyName>
+            </configuration>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
