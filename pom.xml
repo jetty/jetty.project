@@ -165,7 +165,7 @@
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.7.0.0</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.7.1.0</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.11.0</versions.maven.plugin.version>
 
     <!-- testing -->
