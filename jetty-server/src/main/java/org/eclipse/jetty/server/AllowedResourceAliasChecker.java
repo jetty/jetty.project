@@ -45,6 +45,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     private final ContextHandler _contextHandler;
     private final List<Path> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
+    private boolean _initialized;
     protected Path _base;
 
     /**
@@ -60,7 +61,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    protected void initialize()
+    private void extractBaseResourceFromContext()
     {
         _base = getPath(_contextHandler.getBaseResource());
         if (_base == null)
@@ -82,6 +83,12 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
             LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
             _base = null;
         }
+    }
+
+    protected void initialize()
+    {
+        extractBaseResourceFromContext();
+        _initialized = true;
     }
 
     @Override
@@ -106,6 +113,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        if (!_initialized)
+            extractBaseResourceFromContext();
         if (_base == null)
             return false;
 
