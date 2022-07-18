@@ -10,6 +10,11 @@
   <artifactId>http3-tests</artifactId>
   <name>Jetty Core :: HTTP3 :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
