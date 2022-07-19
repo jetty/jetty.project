@@ -83,6 +83,13 @@
       <plugin>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-slf4j-impl</artifactId>
+            <version>${jetty.version}</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <stopPort>@jetty.stopPort@</stopPort>
           <stopKey>@jetty.stopKey@</stopKey>
@@ -102,7 +109,7 @@
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
-              <modules>ee9-apache-jsp,ee9-glassfish-jstl,ee9-testmod</modules>
+              <modules>ee9-apache-jsp,ee9-glassfish-jstl,ee9-testmod,resources</modules>
               <jettyOptions>--debug</jettyOptions>
             </configuration>
           </execution>
