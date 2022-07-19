@@ -370,6 +370,8 @@ public class JettyHomeForker extends AbstractForker
             IO.copy(mavenXmlStream, fileStream);
         }
 
+        Files.writeString(webappPath.resolve("maven-ee9.properties"), "environment=ee9");
+
         //copy in the maven.mod file
         try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream("ee9-maven.mod");
              FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve("ee9-maven.mod").toFile()))

@@ -363,12 +363,14 @@ public class JettyHomeForker extends AbstractForker
             IO.copy(jarStream, fileStream);
         }
 
-        //copy in the maven.xml webapp file
+        // copy in the maven.xml webapp file
         try (InputStream mavenXmlStream = getClass().getClassLoader().getResourceAsStream("maven-ee10.xml");
              FileOutputStream fileStream = new FileOutputStream(webappPath.resolve("maven-ee10.xml").toFile()))
         {
             IO.copy(mavenXmlStream, fileStream);
         }
+
+        Files.writeString(webappPath.resolve("maven-ee10.properties"), "environment=ee10");
 
         //copy in the maven.mod file
         try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream("ee10-maven.mod");
