@@ -20,6 +20,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
