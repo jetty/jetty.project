@@ -213,9 +213,9 @@ public interface Response extends Content.Sink
 
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (!logger.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
-            logger.warn("{} {}", message, cause.getMessage());
+            logger.warn("writeError: status={}, message={}, cause={}", status, message, cause.getMessage());
         else
-            logger.warn("{} {}", message, response, cause);
+            logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);
 
         if (response.isCommitted())
         {
