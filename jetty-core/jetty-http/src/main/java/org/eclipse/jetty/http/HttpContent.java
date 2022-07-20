@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -61,6 +60,11 @@ public interface HttpContent
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
+    /**
+     * TODO: get rid of this, use the Resource instead
+     * @deprecated use {@link Resource} from {@link #getResource()} to access buffers instead
+     */
+    @Deprecated
     ByteBuffer getBuffer();
 
     void release();
