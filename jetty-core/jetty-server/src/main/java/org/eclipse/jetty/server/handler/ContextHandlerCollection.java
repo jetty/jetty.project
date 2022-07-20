@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -248,7 +247,7 @@ public class ContextHandlerCollection extends Handler.Collection
     private static final class Branch
     {
         private final Handler _handler;
-        private final ContextHandler[] _contexts;
+        private final List<ContextHandler> _contexts;
 
         Branch(Handler handler)
         {
@@ -256,16 +255,15 @@ public class ContextHandlerCollection extends Handler.Collection
 
             if (handler instanceof ContextHandler)
             {
-                _contexts = new ContextHandler[]{(ContextHandler)handler};
+                _contexts = List.of((ContextHandler)handler);
             }
             else if (handler instanceof Handler.Container)
             {
                 List<ContextHandler> contexts = ((Handler.Container)handler).getDescendants(ContextHandler.class);
-                _contexts = new ContextHandler[contexts.size()];
-                System.arraycopy(contexts, 0, _contexts, 0, contexts.size());
+                _contexts = new ArrayList<>(contexts);
             }
             else
-                _contexts = new ContextHandler[0];
+                _contexts = List.of();
         }
 
         Set<String> getContextPaths()
@@ -288,7 +286,7 @@ public class ContextHandlerCollection extends Handler.Collection
             return false;
         }
 
-        ContextHandler[] getContextHandlers()
+        List<ContextHandler> getContextHandlers()
         {
             return _contexts;
         }
@@ -301,7 +299,7 @@ public class ContextHandlerCollection extends Handler.Collection
         @Override
         public String toString()
         {
-            return String.format("{%s,%s}", _handler, Arrays.asList(_contexts));
+            return String.format("{%s,%s}", _handler, _contexts);
         }
     }
 

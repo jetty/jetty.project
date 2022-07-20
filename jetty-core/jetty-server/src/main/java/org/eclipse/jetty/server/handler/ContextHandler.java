@@ -253,14 +253,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
      * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
      * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * and none of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public List<String> getVirtualHosts()
     {
-        return _vhosts.stream().map(VHost::getVHost).collect(Collectors.toList());
+        return _vhosts.stream().map(VHost::getName).collect(Collectors.toList());
     }
 
     @Override
@@ -536,9 +536,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (_vhosts.isEmpty())
             return true;
 
-        // TODO is this correct?
-        String host = request.getHttpURI().getHost();
-
+        String host = normalizeHostname(request.getHttpURI().getHost());
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
@@ -750,11 +748,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');
-        b.append(getContextPath()).append(',').append(getResourceBase()).append(',').append(isAvailable());
+        b.append(getContextPath());
+        b.append(",b=").append(getResourceBase());
+        b.append(",a=").append(_availability.get());
 
-        for (String vh : vhosts)
+        if (!vhosts.isEmpty())
         {
-            b.append(',').append(vh);
+            b.append(",vh=[");
+            b.append(String.join(",", vhosts));
+            b.append(']');
+        }
+        Handler nestedHandler = getHandler();
+        if (nestedHandler != null)
+        {
+            b.append(",h=");
+            b.append(nestedHandler);
         }
         b.append('}');
 
@@ -1039,6 +1047,24 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         String getVHost()
         {
             return _vHost;
+        }
+
+        String getName()
+        {
+            if (_vConnector != null)
+                return '@' + _vConnector;
+            else
+                return _vHost;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "VHost{" +
+                "_vHost='" + _vHost + '\'' +
+                ", _wild=" + _wild +
+                ", _vConnector='" + _vConnector + '\'' +
+                '}';
         }
     }
 }
