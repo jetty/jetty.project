@@ -190,7 +190,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath());
+            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/keystore.p12").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                 "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
