@@ -15,6 +15,7 @@ package org.eclipse.jetty.logging;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -61,43 +62,32 @@ public class StacklessLogging implements AutoCloseable
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {
-        for (Class<?> clazz : classesToSquelch)
-        {
-            JettyLogger jettyLogger = loggerFactory.getJettyLogger(clazz.getName());
-            if (!jettyLogger.isDebugEnabled())
-            {
-                if (!jettyLogger.isHideStacks())
-                {
-                    jettyLogger.setHideStacks(true);
-                    squelched.add(jettyLogger);
-                }
-            }
-        }
+        this(Stream.of(classesToSquelch)
+            .map(Class::getName)
+            .toArray(String[]::new));
     }
 
     public StacklessLogging(Package... packagesToSquelch)
     {
-        for (Package pkg : packagesToSquelch)
-        {
-            JettyLogger jettyLogger = loggerFactory.getJettyLogger(pkg.getName());
-            if (!jettyLogger.isDebugEnabled())
-            {
-                if (!jettyLogger.isHideStacks())
-                {
-                    jettyLogger.setHideStacks(true);
-                    squelched.add(jettyLogger);
-                }
-            }
-        }
+        this(Stream.of(packagesToSquelch)
+            .map(Package::getName)
+            .toArray(String[]::new));
+    }
+
+    public StacklessLogging(String... loggerNames)
+    {
+        this(Stream.of(loggerNames)
+            .map(loggerFactory::getJettyLogger)
+            .toArray(Logger[]::new)
+        );
     }
 
     public StacklessLogging(Logger... logs)
     {
         for (Logger log : logs)
         {
-            if (log instanceof JettyLogger && !log.isDebugEnabled())
+            if (log instanceof JettyLogger jettyLogger && !jettyLogger.isDebugEnabled())
             {
-                JettyLogger jettyLogger = ((JettyLogger)log);
                 if (!jettyLogger.isHideStacks())
                 {
                     jettyLogger.setHideStacks(true);
