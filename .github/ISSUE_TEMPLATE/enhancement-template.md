@@ -7,7 +7,8 @@ labels: Enhancement
 
 ---
 
-**Target Jetty version(s)**
+**Jetty version(s)**
+_[Jetty 9.x is now at End of Community Support](https://github.com/eclipse/jetty.project/issues/7958)_
 
 **Enhancement Description**
 
