@@ -42,6 +42,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
     private static final String TOKEN_ENDPOINT = "token_endpoint";
+    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
     private static final String ISSUER = "issuer";
 
     private final HttpClient httpClient;
@@ -52,6 +53,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String authMethod;
     private String authEndpoint;
     private String tokenEndpoint;
+    private String endSessionEndpoint;
     private boolean authenticateNewUsers = false;
 
     /**
@@ -98,13 +100,37 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authMethod") String authMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
+        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authMethod, httpClient);
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param httpClient The {@link HttpClient} instance to use.
+     */
+    public OpenIdConfiguration(@Name("issuer") String issuer,
+                               @Name("authorizationEndpoint") String authorizationEndpoint,
+                               @Name("tokenEndpoint") String tokenEndpoint,
+                               @Name("endSessionEndpoint") String endSessionEndpoint,
+                               @Name("clientId") String clientId,
+                               @Name("clientSecret") String clientSecret,
+                               @Name("authMethod") String authMethod,
+                               @Name("httpClient") HttpClient httpClient)
+    {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authEndpoint = authorizationEndpoint;
+        this.endSessionEndpoint = endSessionEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
-        this.authMethod = authMethod;
+        this.authMethod = authMethod == null ? "client_secret_post" : authMethod;
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -139,6 +165,10 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         tokenEndpoint = (String)discoveryDocument.get(TOKEN_ENDPOINT);
         if (tokenEndpoint == null)
             throw new IllegalStateException(TOKEN_ENDPOINT);
+
+        // End session endpoint is optional.
+        if (endSessionEndpoint == null)
+            endSessionEndpoint = (String)discoveryDocument.get(END_SESSION_ENDPOINT);
 
         // We are lenient and not throw here as some major OIDC providers do not conform to this.
         if (!Objects.equals(discoveryDocument.get(ISSUER), issuer))
@@ -212,6 +242,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public String getTokenEndpoint()
     {
         return tokenEndpoint;
+    }
+    
+    public String getEndSessionEndpoint() 
+    {
+        return endSessionEndpoint;
     }
 
     public String getAuthMethod()

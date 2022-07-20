@@ -38,6 +38,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTH_PATH = "/auth";
     private static final String TOKEN_PATH = "/token";
+    private static final String END_SESSION_PATH = "/end_session";
     private final Map<String, User> issuedAuthCodes = new HashMap<>();
 
     protected final String clientId;
@@ -58,6 +60,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     private int port = 0;
     private String provider;
     private User preAuthedUser;
+    private final CounterStatistic loggedInUsers = new CounterStatistic();
 
     public static void main(String[] args) throws Exception
     {
@@ -91,9 +94,10 @@ public class OpenIdProvider extends ContainerLifeCycle
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new OpenIdConfigServlet()), CONFIG_PATH);
-        contextHandler.addServlet(new ServletHolder(new OpenIdAuthEndpoint()), AUTH_PATH);
-        contextHandler.addServlet(new ServletHolder(new OpenIdTokenEndpoint()), TOKEN_PATH);
+        contextHandler.addServlet(new ServletHolder(new ConfigServlet()), CONFIG_PATH);
+        contextHandler.addServlet(new ServletHolder(new AuthEndpoint()), AUTH_PATH);
+        contextHandler.addServlet(new ServletHolder(new TokenEndpoint()), TOKEN_PATH);
+        contextHandler.addServlet(new ServletHolder(new EndSessionEndpoint()), END_SESSION_PATH);
         server.setHandler(contextHandler);
 
         addBean(server);
@@ -110,6 +114,11 @@ public class OpenIdProvider extends ContainerLifeCycle
         String authEndpoint = provider + AUTH_PATH;
         String tokenEndpoint = provider + TOKEN_PATH;
         return new OpenIdConfiguration(provider, authEndpoint, tokenEndpoint, clientId, clientSecret, null);
+    }
+
+    public CounterStatistic getLoggedInUsers()
+    {
+        return loggedInUsers;
     }
 
     @Override
@@ -144,7 +153,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         redirectUris.add(uri);
     }
 
-    public class OpenIdAuthEndpoint extends HttpServlet
+    public class AuthEndpoint extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
@@ -252,7 +261,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
     }
 
-    public class OpenIdTokenEndpoint extends HttpServlet
+    private class TokenEndpoint extends HttpServlet
     {
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -285,12 +294,45 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"token_type\": \"Bearer\"" +
                 "}";
 
+            loggedInUsers.increment();
             resp.setContentType("text/plain");
             resp.getWriter().print(response);
         }
     }
 
-    public class OpenIdConfigServlet extends HttpServlet
+    private class EndSessionEndpoint extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            doPost(req, resp);
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            String idToken = req.getParameter("id_token_hint");
+            if (idToken == null)
+            {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "no id_token_hint");
+                return;
+            }
+
+            String logoutRedirect = req.getParameter("post_logout_redirect_uri");
+            if (logoutRedirect == null)
+            {
+                resp.setStatus(HttpServletResponse.SC_OK);
+                resp.getWriter().println("logout success on end_session_endpoint");
+                return;
+            }
+
+            loggedInUsers.decrement();
+            resp.setContentType("text/plain");
+            resp.sendRedirect(logoutRedirect);
+        }
+    }
+
+    private class ConfigServlet extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
@@ -299,6 +341,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"issuer\": \"" + provider + "\"," +
                 "\"authorization_endpoint\": \"" + provider + AUTH_PATH + "\"," +
                 "\"token_endpoint\": \"" + provider + TOKEN_PATH + "\"," +
+                "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
                 "}";
 
             resp.getWriter().write(discoveryDocument);
@@ -335,6 +378,14 @@ public class OpenIdProvider extends ContainerLifeCycle
         {
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
             return JwtEncoder.createIdToken(provider, clientId, subject, name, expiry);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (!(obj instanceof User))
+                return false;
+            return Objects.equals(subject, ((User)obj).subject) && Objects.equals(name, ((User)obj).name);
         }
     }
 }
