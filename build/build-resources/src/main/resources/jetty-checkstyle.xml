@@ -77,9 +77,11 @@
     </module>
 
     <!-- Indentation Rules -->
+    <!-- Disabled: does not support Java 17 new switch/case
     <module name="Indentation">
       <property name="arrayInitIndent" value="8"/>
     </module>
+    -->
 
     <!-- Interface Type Parameter Name -->
     <module name="InterfaceTypeParameterName">
