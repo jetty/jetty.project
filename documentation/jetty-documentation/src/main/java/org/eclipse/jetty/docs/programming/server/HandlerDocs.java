@@ -11,17 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.docs.programming.server;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -29,13 +32,15 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 public class HandlerDocs
 {
-    // Work in progress
+    // TODO this class has been temporarily moved to jetty-core/jetty-demo
+    //      move it back when documentation is re-enabled
 
-    public static class HelloHandler extends Handler.Abstract
+    public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
         public Request.Processor handle(Request request) throws Exception
@@ -49,7 +54,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler2 extends Handler.Abstract
+    public static class HelloHandler1 extends Handler.Abstract
     {
         @Override
         public Request.Processor handle(Request request) throws Exception
@@ -65,7 +70,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler3 extends Handler.Processor.NonBlocking
+    public static class HelloHandler2 extends Handler.Processor.NonBlocking
     {
         @Override
         public void process(Request request, Response response, Callback callback)
@@ -76,7 +81,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler35 extends Handler.Processor.NonBlocking
+    public static class HelloHandler3 extends Handler.Processor.NonBlocking
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws IOException
@@ -191,6 +196,41 @@ public class HandlerDocs
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
             Content.copy(request, response, callback);
+        }
+    }
+
+    public static class RootHandler extends Handler.Collection
+    {
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            final StringBuilder index = new StringBuilder();
+            index.append("<h2>Handler Demos</h2>\n<ul>\n");
+
+            for (Handler handler : getHandlers())
+            {
+                String name = handler.getClass().getSimpleName().replace("Handler", "");
+                String path = "/" + name;
+                if (request.getPathInContext().equals(name))
+                {
+                    Request.Processor processor = handler.handle(request);
+                    if (processor != null)
+                        return processor;
+                }
+                index.append("<li><a href=\"")
+                    .append(URIUtil.addPaths(request.getContext().getContextPath(), path))
+                    .append("\">")
+                    .append(name)
+                    .append("</a></li>\n");
+            }
+
+            index.append("</ul>");
+            return (req, res, callback) ->
+            {
+                res.setStatus(200);
+                res.getHeaders().add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_UTF_8.asString());
+                Content.Sink.write(res, true, index.toString(), callback);
+            };
         }
     }
 }

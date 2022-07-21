@@ -15,4 +15,4 @@ ee9-webapp
 
 [lib]
 lib/jetty-ee9-plus-${jetty.version}.jar
-lib/jakarta.transaction-api-2.0.0.jar
+lib/jakarta.transaction-api-2.0.1.jar

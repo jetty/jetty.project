@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrosp
 import org.eclipse.jetty.ee10.plus.annotation.Injection;
 import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -152,9 +153,18 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 //No injection has been specified, add it
                 try
                 {
+                    //try webapp scope first
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
+                    
+                    //try environment scope next
+                    if (!bound)
+                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.__environment.getName(), name, mappedName);
+                    
+                    //try Server scope next
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
+                    
+                    //try jvm scope next
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
                     if (!bound)
@@ -298,14 +308,18 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 try
                 {
                     //try binding name to environment
-                    //try the webapp's environment first
+                    //try the webapp's scope first
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
-
-                    //try the server's environment
+                    
+                    //try the environment's scope
+                    if (!bound)
+                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.__environment.getName(), name, mappedName);
+                    
+                    //try the server's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
 
-                    //try the jvm's environment
+                    //try the jvm's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
 

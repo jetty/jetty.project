@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,9 +176,10 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             else
                 removeFromCache(cachingHttpContent);
         }
+
         HttpContent httpContent = _authority.getContent(path, maxBuffer);
         // Do not cache directories or files that are too big
-        if (httpContent != null && !Files.isDirectory(httpContent.getPath()) && httpContent.getContentLengthValue() <= _maxCachedFileSize)
+        if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
         {
             httpContent = cachingHttpContent = new CachingHttpContent(path, null, httpContent);
             _cache.put(path, cachingHttpContent);
@@ -190,9 +189,8 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         return httpContent;
     }
 
-    private class CachingHttpContent implements HttpContent
+    private class CachingHttpContent extends HttpContentWrapper
     {
-        private final HttpContent _delegate;
         private final ByteBuffer _buffer;
         private final FileTime _lastModifiedValue;
         private final String _cacheKey;
@@ -203,21 +201,31 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
         private CachingHttpContent(String key, String precalculatedEtag, HttpContent httpContent) throws IOException
         {
+            super(httpContent);
             _etag = precalculatedEtag;
             _contentLengthValue = httpContent.getContentLengthValue(); // TODO getContentLengthValue() could return -1
-            ByteBuffer byteBuffer;
+            ByteBuffer byteBuffer = null;
 
             if (_useFileMappedBuffer)
             {
-                // mmap the content into memory
-                byteBuffer = BufferUtil.toMappedBuffer(httpContent.getPath(), 0, _contentLengthValue);
+                // map the content into memory
+                // TODO this is assuming the resource can be mapped! Inefficient to throw to test this
+                try
+                {
+                    byteBuffer = BufferUtil.toMappedBuffer(httpContent.getResource().getPath(), 0, _contentLengthValue);
+                }
+                catch (Throwable t)
+                {
+                    LOG.trace("ignored", t);
+                }
             }
-            else
+
+            if (byteBuffer == null)
             {
                 // TODO use pool & check length limit
                 // load the content into memory
                 byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
-                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getPath()))
+                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getResource().getPath()))
                 {
                     // fill buffer
                     int read = 0;
@@ -257,8 +265,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
             _cacheKey = key;
             _buffer = byteBuffer;
-            _lastModifiedValue = Files.getLastModifiedTime(httpContent.getPath());
-            _delegate = httpContent;
+            _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
             _lastAccessed = System.nanoTime();
         }
 
@@ -289,7 +296,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         {
             try
             {
-                FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getPath());
+                FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
                 if (lastModifiedTime.equals(_lastModifiedValue))
                 {
                     _lastAccessed = System.nanoTime();
@@ -311,66 +318,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public HttpField getContentType()
-        {
-            return _delegate.getContentType();
-        }
-
-        @Override
-        public String getContentTypeValue()
-        {
-            return _delegate.getContentTypeValue();
-        }
-
-        @Override
-        public String getCharacterEncoding()
-        {
-            return _delegate.getCharacterEncoding();
-        }
-
-        @Override
-        public MimeTypes.Type getMimeType()
-        {
-            return _delegate.getMimeType();
-        }
-
-        @Override
-        public HttpField getContentEncoding()
-        {
-            return _delegate.getContentEncoding();
-        }
-
-        @Override
-        public String getContentEncodingValue()
-        {
-            return _delegate.getContentEncodingValue();
-        }
-
-        @Override
-        public HttpField getContentLength()
-        {
-            return _delegate.getContentLength();
-        }
-
-        @Override
-        public long getContentLengthValue()
-        {
-            return _delegate.getContentLengthValue();
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return _delegate.getLastModified();
-        }
-
-        @Override
-        public String getLastModifiedValue()
-        {
-            return _delegate.getLastModifiedValue();
-        }
-
-        @Override
         public HttpField getETag()
         {
             String eTag = getETagValue();
@@ -384,18 +331,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 return _etag;
             else
                 return _delegate.getETagValue();
-        }
-
-        @Override
-        public Path getPath()
-        {
-            return _delegate.getPath();
-        }
-
-        @Override
-        public Resource getResource()
-        {
-            return _delegate.getResource();
         }
 
         @Override

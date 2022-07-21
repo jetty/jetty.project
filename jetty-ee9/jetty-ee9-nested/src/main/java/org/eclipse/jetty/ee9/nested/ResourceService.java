@@ -859,7 +859,7 @@ public class ResourceService
         }
 
         // Use a ranged writer
-        try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getPath())))
+        try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getResource().getPath())))
         {
             rangeWriter.writeTo(out, start, contentLength);
         }

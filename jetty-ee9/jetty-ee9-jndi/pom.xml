@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-jndi</artifactId>
   <name>EE9 :: Jetty :: JNDI</name>
-  <description>EE10 JNDI factories</description>
+  <description>EE9 JNDI factories</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>

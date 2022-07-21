@@ -14,6 +14,7 @@ webapp
 ee9-deploy
 ext
 jdbc
+ee9-jndi
 ee9-plus
 ee9-demo-mock-resources
 
@@ -21,4 +22,7 @@ ee9-demo-mock-resources
 basehome:modules/demo.d/ee9-demo-jndi.xml|webapps/ee9-demo-jndi.xml
 basehome:modules/demo.d/ee9-demo-jndi.properties|webapps/ee9-demo-jndi.properties
 maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-jndi-webapp/${jetty.version}/war|webapps/ee9-demo-jndi.war
-maven://jakarta.mail/jakarta.mail-api/2.0.0/jar|lib/ext/jakarta.mail-api-2.0.0.jar
+maven://jakarta.mail/jakarta.mail-api/2.0.0/jar|lib/ee9/jakarta.mail-api-2.0.0.jar
+
+[lib]
+lib/ee9/jakarta.mail-api-2.0.0.jar

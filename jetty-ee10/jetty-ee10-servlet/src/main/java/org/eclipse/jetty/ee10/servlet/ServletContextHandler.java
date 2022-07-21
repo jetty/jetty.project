@@ -117,7 +117,7 @@ import org.slf4j.LoggerFactory;
 public class ServletContextHandler extends ContextHandler implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    protected static final Environment __environment = Environment.ensure("ee10");
+    public static final Environment __environment = Environment.ensure("ee10");
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,

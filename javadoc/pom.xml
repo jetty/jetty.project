@@ -17,22 +17,11 @@
     <pmd.skip>true</pmd.skip>
     <spotbugs.skip>true</spotbugs.skip>
     <checkstyle.skip>true</checkstyle.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <build>
     <sourceDirectory>${sources-directory}</sourceDirectory>
-    <pluginManagement>
-      <plugins>
-        <!-- No point performing Deploying the javadoc project -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <configuration>
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

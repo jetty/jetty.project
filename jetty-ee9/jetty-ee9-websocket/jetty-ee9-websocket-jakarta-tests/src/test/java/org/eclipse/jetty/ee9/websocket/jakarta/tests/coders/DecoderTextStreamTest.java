@@ -51,7 +51,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
     {
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
 
-        Path quotesPath = MavenTestingUtils.getTestResourcePath("quotes-ben.txt");
+        Path quotesPath = MavenTestingUtils.getTargetPath("test-classes/quotes-ben.txt");
         try (Reader reader = Files.newBufferedReader(quotesPath))
         {
             Quotes quotes = decoder.decode(reader);

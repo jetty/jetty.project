@@ -25,10 +25,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO: review whether it needs to override these many methods, as it may be enough to override iterator().
 public class ResponseHttpFields implements HttpFields.Mutable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
 
@@ -39,7 +42,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
 
     public boolean commit()
     {
-        return _committed.compareAndSet(false, true);
+        boolean committed = _committed.compareAndSet(false, true);
+        if (committed && LOG.isDebugEnabled())
+            LOG.debug("{} committed", this);
+        return committed;
     }
 
     public boolean isCommitted()

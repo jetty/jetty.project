@@ -116,7 +116,7 @@ public class StreamTest
 
     private void upload(String filename) throws Exception
     {
-        File inputFile = MavenTestingUtils.getTestResourceFile("data/" + filename);
+        File inputFile = MavenTestingUtils.getTargetFile("test-classes/data/" + filename);
 
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         try
@@ -127,7 +127,7 @@ public class StreamTest
             socket.uploadFile(inputFile);
             socket.awaitClose();
 
-            File sha1File = MavenTestingUtils.getTestResourceFile("data/" + filename + ".sha");
+            File sha1File = MavenTestingUtils.getTargetFile("test-classes/data/" + filename + ".sha");
             assertFileUpload(new File(outputDir, filename), sha1File);
         }
         finally

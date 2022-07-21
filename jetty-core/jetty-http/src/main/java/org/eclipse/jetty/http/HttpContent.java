@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -31,8 +30,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
-// TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
-//  are available via the Path API
 public interface HttpContent
 {
     HttpField getContentType();
@@ -59,14 +56,15 @@ public interface HttpContent
 
     String getETagValue();
 
-    // TODO rename?
-    Path getPath();
-
-    // TODO getPath() is supposed to replace the following
     Resource getResource();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
+    /**
+     * TODO: get rid of this, use the Resource instead
+     * @deprecated use {@link Resource} from {@link #getResource()} to access buffers instead
+     */
+    @Deprecated
     ByteBuffer getBuffer();
 
     void release();

@@ -315,6 +315,20 @@ public class ServletContextResponse extends ContextResponse
         }
     }
 
+    /**
+     * Get the raw value of the Character Encoding field.
+     * <p>
+     *     This is only the value as set, not from any other discovered source
+     *     (eg: mimetypes, Content-Type, ServletContext, etc)
+     * </p>
+     *
+     * @return the raw character encoding
+     */
+    public String getRawCharacterEncoding()
+    {
+        return _characterEncoding;
+    }
+
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.

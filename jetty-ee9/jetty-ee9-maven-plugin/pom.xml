@@ -11,6 +11,8 @@
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
+    <jetty.stopKey>FREEBEER</jetty.stopKey>
+    <jetty.jvmArgs></jetty.jvmArgs>
   </properties>
   <build>
     <plugins>

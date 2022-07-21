@@ -34,10 +34,14 @@ public class Transaction extends NamingEntry
     private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
     public static final String USER_TRANSACTION = "UserTransaction";
 
-    public static void bindToENC()
+    /**
+     * @param scope the scope level, usually an environment eg ee9 or ee10
+     * @throws NamingException
+     */
+    public static void bindTransactionToENC(String scope)
         throws NamingException
     {
-        Transaction txEntry = (Transaction)NamingEntryUtil.lookupNamingEntry(null, Transaction.USER_TRANSACTION);
+        Transaction txEntry = (Transaction)NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
 
         if (txEntry != null)
         {
@@ -49,10 +53,15 @@ public class Transaction extends NamingEntry
         }
     }
 
-    public Transaction(UserTransaction userTransaction)
+    /**
+     * @param scope the scope, usually an environment like ee9, ee10
+     * @param userTransaction
+     * @throws NamingException
+     */
+    public Transaction(String scope, UserTransaction userTransaction)
         throws NamingException
     {
-        super(USER_TRANSACTION);
+        super(scope, USER_TRANSACTION);
         save(userTransaction);
     }
 

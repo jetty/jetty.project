@@ -11,23 +11,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.openid;
+package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
@@ -102,6 +104,7 @@ public class OpenIdAuthenticationTest
         server.addBean(new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET));
         securityHandler.setInitParameter(OpenIdAuthenticator.REDIRECT_PATH, "/redirect_path");
         securityHandler.setInitParameter(OpenIdAuthenticator.ERROR_PAGE, "/error");
+        securityHandler.setInitParameter(OpenIdAuthenticator.LOGOUT_REDIRECT_PATH, "/");
         context.setSecurityHandler(securityHandler);
 
         server.start();
@@ -155,6 +158,11 @@ public class OpenIdAuthenticationTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         content = response.getContentAsString();
         assertThat(content, containsString("not authenticated"));
+
+        // Test that the user was logged out successfully on the openid provider.
+        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(0L));
+        assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
+        assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
     }
 
     public static class LoginPage extends HttpServlet
@@ -171,10 +179,9 @@ public class OpenIdAuthenticationTest
     public static class LogoutPage extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            request.getSession().invalidate();
-            response.sendRedirect("/");
+            request.logout();
         }
     }
 

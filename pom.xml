@@ -20,6 +20,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
@@ -71,7 +72,7 @@
     <json-smart.version>2.4.7</json-smart.version>
     <junit.version>5.8.2</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
-    <log4j2.version>2.17.2</log4j2.version>
+    <log4j2.version>2.18.0</log4j2.version>
     <logback.version>1.3.0-alpha16</logback.version>
     <mariadb.version>3.0.6</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
@@ -107,8 +108,8 @@
     <jacoco.maven.plugin.version>0.8.7</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
-    <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
+    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
+    <maven.assembly.plugin.version>3.4.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.6</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
@@ -135,7 +136,7 @@
     <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.7.0.0</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.7.1.0</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.11.0</versions.maven.plugin.version>
 
     <!-- testing -->
@@ -193,7 +194,7 @@
     <module>jetty-home</module>
     <module>tests</module>
     <!-- <module>jetty-p2</module> -->
-    <!-- <module>documentation</module> -->
+    <!-- <module>documentation</module>-->
   </modules>
 
   <build>
@@ -268,8 +269,6 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <exclude>**/org/eclipse/jetty/maven/**</exclude>
-            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
@@ -289,6 +288,17 @@
           <execution>
             <id>jacoco-initialize</id>
             <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-setup-m-invoker-p</id>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of maven-invoker-plugin -->
+              <propertyName>invoker.mavenOpts</propertyName>
+            </configuration>
             <goals>
               <goal>prepare-agent</goal>
             </goals>

@@ -143,50 +143,62 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     protected App createApp(Path path)
     {
         App app = new App(_deploymentManager, this, path);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} creating {}", this, app);
 
         String environmentName = app.getEnvironmentName();
 
-        // If the app specifies the environment for this provider, then this deployer will deploy it.
-        if (Objects.equals(environmentName, getEnvironmentName()))
-            return app;
-
-        // If we are the default provider then we may take further action
-        if (Objects.equals(getEnvironmentName(), _deploymentManager.getDefaultEnvironmentName()))
+        if (StringUtil.isBlank(environmentName))
         {
-            // if the app specified an environment name, then produce warning if there is no provider for it.
+            // We may be able to default the environmentName
+            String basename = FileID.getBasename(path);
+            boolean isWebapp = FileID.isWebArchive(path) ||
+                Files.isDirectory(path) && Files.exists(path.resolve("WEB-INF")) ||
+                FileID.isXml(path) && (
+                    Files.exists(path.getParent().resolve(basename + ".war")) ||
+                        Files.exists(path.getParent().resolve(basename + ".WAR")) ||
+                        Files.exists(path.getParent().resolve(basename + "/WEB-INF")));
+            boolean coreProvider = _deploymentManager.getAppProviders().stream()
+                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
+
+            // TODO review these heuristics... or even if we should have them at all
+            if (isWebapp || (Files.isDirectory(path) && _deploymentManager.getDefaultEnvironmentName() != null))
+                environmentName = _deploymentManager.getDefaultEnvironmentName();
+            else if (coreProvider)
+                environmentName = Environment.CORE.getName();
+
             if (StringUtil.isNotBlank(environmentName))
             {
+                app.getProperties().put(Deployable.ENVIRONMENT, environmentName);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} default environment for {}", this, app);
+            }
+        }
+
+        if (StringUtil.isNotBlank(environmentName))
+        {
+            // If the app specifies the environment for this provider, then this deployer will deploy it.
+            if (Objects.equals(environmentName, getEnvironmentName()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} created {}", this, app);
+                return app;
+            }
+
+            // If we are the default provider then we may warn
+            if (Objects.equals(getEnvironmentName(), _deploymentManager.getDefaultEnvironmentName()))
+            {
+                // if the app specified an environment name, then produce warning if there is no provider for it.
                 boolean appProvider4env = _deploymentManager.getAppProviders().stream()
                     .map(AppProvider::getEnvironmentName).anyMatch(environmentName::equals);
                 if (!appProvider4env)
                     LOG.warn("No AppProvider with environment {} for {}", environmentName, app);
                 return null;
             }
-
-            // There was no environment specified. Should we default it?
-            boolean coreProvider = _deploymentManager.getAppProviders().stream()
-                .map(AppProvider::getEnvironmentName).anyMatch(Environment.CORE.getName()::equals);
-            String basename = FileID.getBasename(path);
-
-            // If there is no core provider, or the app is an EE web application,
-            if (!coreProvider ||
-                FileID.isWebArchive(path) ||
-                Files.isDirectory(path) && Files.exists(path.resolve("WEB-INF")) ||
-                FileID.isXml(path) && (
-                    Files.exists(path.getParent().resolve(basename + ".war")) ||
-                    Files.exists(path.getParent().resolve(basename + ".WAR")) ||
-                    Files.exists(path.getParent().resolve(basename + "/WEB-INF"))))
-            {
-                // use the default environment
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Defaulting env {} for app {} by {}", getEnvironmentName(), app, this);
-                app.getProperties().put(Deployable.ENVIRONMENT, getEnvironmentName());
-                return app;
-            }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("App {} ignored by {}", app, this);
+            LOG.debug("{} ignored {}", this, app);
         return null;
     }
 

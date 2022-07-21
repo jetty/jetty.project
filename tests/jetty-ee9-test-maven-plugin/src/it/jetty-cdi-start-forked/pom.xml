@@ -65,6 +65,13 @@
       <plugin>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-slf4j-impl</artifactId>
+              <version>${jetty.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>start-jetty</id>

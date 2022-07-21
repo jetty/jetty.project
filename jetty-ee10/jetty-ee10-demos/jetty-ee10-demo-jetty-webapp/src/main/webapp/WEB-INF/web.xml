@@ -6,7 +6,7 @@
    metadata-complete="false"
    version="5.0"> 
 
-  <display-name>Test WebApp</display-name>
+  <display-name>EE10 Demo Jetty WebApp</display-name>
   
   <context-param>
     <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>

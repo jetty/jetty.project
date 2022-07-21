@@ -99,6 +99,13 @@
       <plugin>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-slf4j-impl</artifactId>
+            <version>${jetty.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>start-jetty</id>
@@ -119,7 +126,7 @@
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
-              <modules>ee10-apache-jsp,ee10-glassfish-jstl,ee10-testmod</modules>
+              <modules>ee10-apache-jsp,ee10-glassfish-jstl,ee10-testmod,resources</modules>
             </configuration>
           </execution>
         </executions>

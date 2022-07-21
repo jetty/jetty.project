@@ -14,7 +14,7 @@ webapp
 ee9-deploy
 ee9-jaas
 jdbc
-jsp
+ee9-jsp
 ee9-annotations
 ext
 

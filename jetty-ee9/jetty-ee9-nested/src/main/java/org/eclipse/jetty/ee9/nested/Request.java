@@ -306,7 +306,10 @@ public class Request implements HttpServletRequest
             HttpHeader header = field.getHeader();
             if (header == HttpHeader.SET_COOKIE)
             {
-                HttpCookie cookie = ((SetCookieHttpField)field).getHttpCookie();
+                HttpCookie cookie = (field instanceof SetCookieHttpField)
+                    ? ((SetCookieHttpField)field).getHttpCookie()
+                    : new HttpCookie(field.getValue());
+
                 if (cookie.getMaxAge() > 0)
                     cookies.put(cookie.getName(), cookie.getValue());
                 else

@@ -41,7 +41,7 @@
           <Get name="properties">
             <Put name="jetty.deploy.containerScanJarPattern">
               <Property name="jetty.deploy.containerScanJarPattern">
-                <Default>.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                <Default>.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$</Default>
               </Property>
             </Put>
             <Put name="jetty.deploy.webInfScanJarPattern">

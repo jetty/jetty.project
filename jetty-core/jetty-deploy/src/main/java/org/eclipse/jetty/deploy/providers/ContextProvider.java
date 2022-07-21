@@ -15,13 +15,19 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.util.FileID;
@@ -87,45 +93,42 @@ public class ContextProvider extends ScanningAppProvider
             if (dir == null || !dir.canRead())
                 return false;
 
-            String lowerName = name.toLowerCase(Locale.ENGLISH);
-
-            Resource resource = Resource.newResource(new File(dir, name).toPath());
-            if (getMonitoredResources().stream().anyMatch(resource::isSame))
-                return false;
-
-            // ignore hidden files
-            if (lowerName.startsWith("."))
-                return false;
-
-            // ignore property files
-            if (lowerName.endsWith(".properties"))
-                return false;
-
-            // Ignore some directories
-            if (resource.isDirectory())
-            {
-                // is it a nominated config directory
-                if (lowerName.endsWith(".d"))
-                    return false;
-
-                // is it an unpacked directory for an existing war file?
-                if (exists(name + ".war") || exists(name + ".WAR"))
-                    return false;
-
-                // is it a directory for an existing xml file?
-                if (exists(name + ".xml") || exists(name + ".XML"))
-                    return false;
-
-                //is it a sccs dir?
-                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
-            }
-
-            // else is it a war file
-            if (lowerName.endsWith(".war"))
+            // Accept XML files and WARs
+            if (FileID.isXml(name) || FileID.isWebArchive(name))
                 return true;
 
-            // else is it a context XML file
-            return lowerName.endsWith(".xml");
+            Path path = dir.toPath().resolve(name);
+
+            // Ignore any other file that are not directories
+            if (!Files.isDirectory(path))
+                return false;
+
+            // Don't deploy monitored resources
+            if (getMonitoredResources().stream().map(Resource::getPath).anyMatch(path::equals))
+                return false;
+
+            // Ignore hidden directories
+            if (name.startsWith("."))
+                return false;
+
+            String lowerName = name.toLowerCase(Locale.ENGLISH);
+
+            // is it a nominated config directory
+            if (lowerName.endsWith(".d"))
+                return false;
+
+            // ignore source control directories
+            if ("cvs".equals(lowerName) || "cvsroot".equals(lowerName))
+                return false;
+
+            // ignore directories that have sibling war or XML file
+            if (Files.exists(dir.toPath().resolve(name + ".war")) ||
+                Files.exists(dir.toPath().resolve(name + ".WAR")) ||
+                Files.exists(dir.toPath().resolve(name + ".xml")) ||
+                Files.exists(dir.toPath().resolve(name + ".XML")))
+                return false;
+
+            return true;
         }
     }
 
@@ -284,6 +287,8 @@ public class ContextProvider extends ScanningAppProvider
 
     protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("initializeContextHandler {}", context);
         // find the ContextHandler
         ContextHandler contextHandler;
         if (context instanceof ContextHandler handler)
@@ -298,7 +303,6 @@ public class ContextProvider extends ScanningAppProvider
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Not a context {}", context);
-            
             return null;
         }
 
@@ -347,7 +351,6 @@ public class ContextProvider extends ScanningAppProvider
             if (!Files.exists(path))
                 throw new IllegalStateException("App resource does not exist " + path);
 
-
             // prepare properties
             Map<String, String> properties = new HashMap<>();
             properties.putAll(getProperties());
@@ -369,16 +372,32 @@ public class ContextProvider extends ScanningAppProvider
                 xmlc.getIdMap().put("Environment", environment);
                 xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
+                // If it is a core context environment, then look for a classloader
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
+                if (coreContextClassLoader != null)
+                    Thread.currentThread().setContextClassLoader(coreContextClassLoader);
+
+                // Create the context by running the configuration
                 Object context = xmlc.configure();
-                if (context instanceof ContextHandler contextHandler)
-                    return contextHandler;
-                if (context instanceof Supplier<?> supplier)
+
+                // Look for the contextHandler itself
+                ContextHandler contextHandler = null;
+                if (context instanceof ContextHandler c)
+                    contextHandler = c;
+                else if (context instanceof Supplier<?> supplier)
                 {
                     Object nestedContext = supplier.get();
-                    if (nestedContext instanceof ContextHandler contextHandler)
-                        return contextHandler;
+                    if (nestedContext instanceof ContextHandler c)
+                        contextHandler = c;
                 }
-                throw new IllegalStateException("Unknown context type of " + context);
+                if (contextHandler == null)
+                    throw new IllegalStateException("Unknown context type of " + context);
+
+                // Set the classloader if we have a coreContextClassLoader
+                if (coreContextClassLoader != null)
+                    contextHandler.setClassLoader(coreContextClassLoader);
+
+                return contextHandler;
             }
             // Otherwise it must be a directory or an archive
             else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
@@ -402,6 +421,54 @@ public class ContextProvider extends ScanningAppProvider
         {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
+
+    protected ClassLoader findCoreContextClassLoader(Path path) throws IOException
+    {
+        Path webapps = path.getParent();
+        String basename = FileID.getBasename(path);
+        List<URL> urls = new ArrayList<>();
+
+        // Is there a matching jar file?
+        Path contextJar = webapps.resolve(basename + ".jar");
+        if (!Files.exists(contextJar))
+            contextJar = webapps.resolve(basename + ".JAR");
+        if (Files.exists(contextJar))
+            urls.add(contextJar.toUri().toURL());
+
+        // Is there a matching lib directory?
+        Path libDir = webapps.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "lib");
+        if (Files.exists(libDir) && Files.isDirectory(libDir))
+        {
+            try (Stream<Path> paths = Files.list(libDir))
+            {
+                paths.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".jar"))
+                    .map(Path::toUri)
+                    .forEach(uri ->
+                    {
+                        try
+                        {
+                            urls.add(uri.toURL());
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            }
+        }
+
+        // Is there a matching lib directory?
+        Path classesDir = webapps.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "classes");
+        if (Files.exists(classesDir) && Files.isDirectory(libDir))
+            urls.add(classesDir.toUri().toURL());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Core classloader for {}", urls);
+
+        if (urls.isEmpty())
+            return null;
+        return new URLClassLoader(urls.toArray(new URL[0]), Environment.CORE.getClassLoader());
     }
 
     protected void initializeContextPath(ContextHandler context, Path path)
