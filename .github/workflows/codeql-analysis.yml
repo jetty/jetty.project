@@ -67,11 +67,8 @@ jobs:
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
-
-      # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-      # If this step fails, then you should remove it and run the build manually (see below)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+      - name: Clean install dependencies and build
+        run: mvn install -DskipTests        
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
