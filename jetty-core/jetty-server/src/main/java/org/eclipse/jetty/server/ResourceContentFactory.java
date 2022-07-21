@@ -16,7 +16,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
@@ -36,10 +38,11 @@ public class ResourceContentFactory implements ContentFactory
 {
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;
-    private final CompressedContentFormat[] _precompressedFormats;
+    private final List<CompressedContentFormat> _precompressedFormats;
 
-    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, CompressedContentFormat[] precompressedFormats)
+    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, List<CompressedContentFormat> precompressedFormats)
     {
+        Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
         _factory = factory;
         _mimeTypes = mimeTypes;
         _precompressedFormats = precompressedFormats;
@@ -80,10 +83,10 @@ public class ResourceContentFactory implements ContentFactory
 
         // Look for a precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
-        if (_precompressedFormats.length > 0)
+        if (_precompressedFormats.size() > 0)
         {
             // Is there a compressed resource?
-            Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>(_precompressedFormats.length);
+            Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>(_precompressedFormats.size());
             for (CompressedContentFormat format : _precompressedFormats)
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
