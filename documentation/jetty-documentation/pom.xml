@@ -70,6 +70,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <sourceDirectory>src/main/asciidoc</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html</outputDirectory>
@@ -82,6 +83,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <sourceDirectory>src/main/asciidoc/operations-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/operations-guide</outputDirectory>
@@ -94,6 +96,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
@@ -106,6 +109,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/programming-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/programming-guide</outputDirectory>
@@ -118,6 +122,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/old_docs</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/old_docs</outputDirectory>
@@ -128,6 +133,7 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
+          <skipAssembly>${skipTests}</skipAssembly>
           <descriptors>
             <descriptor>src/main/assembly/html.xml</descriptor>
           </descriptors>

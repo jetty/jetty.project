@@ -15,10 +15,8 @@ package org.eclipse.jetty.docs.programming.server;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Flow;
 
@@ -35,6 +33,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
+@SuppressWarnings("unused")
 public class HandlerDocs
 {
     // TODO this class has been temporarily moved to jetty-core/jetty-demo
