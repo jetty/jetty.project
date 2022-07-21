@@ -89,6 +89,28 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     /**
+     * Sorts values with equal quality according to given order.
+     *
+     * @param preferredOrder Array indicating the preferred order of known values
+     */
+    public QuotedQualityCSV(List<String> preferredOrder)
+    {
+        this((s) ->
+        {
+            for (int i = 0; i < preferredOrder.size(); ++i)
+            {
+                if (preferredOrder.get(i).equals(s))
+                    return preferredOrder.size() - i;
+            }
+
+            if ("*".equals(s))
+                return preferredOrder.size();
+
+            return 0;
+        });
+    }
+
+    /**
      * Orders values with equal quality with the given function.
      *
      * @param secondaryOrdering Function to apply an ordering other than specified by quality, highest values are sorted first.
