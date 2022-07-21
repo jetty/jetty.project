@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -288,6 +289,7 @@ public class HttpInputIntegrationTest
         assertTrue(response.contains("sum=" + sum));
     }
 
+    @Tag("stress")
     @ParameterizedTest(name = "[{index}] STRESS {0}")
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception
