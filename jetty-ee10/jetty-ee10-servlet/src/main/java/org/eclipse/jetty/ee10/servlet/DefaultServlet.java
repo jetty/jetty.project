@@ -115,7 +115,7 @@ public class DefaultServlet extends HttpServlet
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
         // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
-        CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
+        List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
         ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
@@ -237,7 +237,7 @@ public class DefaultServlet extends HttpServlet
         IO.close(_resourceBaseMount);
     }
 
-    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
+    private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
     {
         if (precompressed == null && gzip == null)
         {
@@ -269,7 +269,7 @@ public class DefaultServlet extends HttpServlet
             // gzip handling is for backwards compatibility with older Jetty
             ret.add(CompressedContentFormat.GZIP);
         }
-        return ret.toArray(new CompressedContentFormat[ret.size()]);
+        return ret;
     }
 
     private Boolean getInitBoolean(String name)
