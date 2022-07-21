@@ -136,6 +136,7 @@ public class AliasCheckerWebRootIsSymlinkTest
             }
         });
         _server.start();
+        assertThat(_context.getBaseResource().isAlias(), equalTo(false));
 
         // We can access web.xml with ServletContext.getResource().
         InputStream webXml = resource.get(5, TimeUnit.SECONDS);

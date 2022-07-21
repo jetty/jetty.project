@@ -859,8 +859,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             throw new IllegalStateException("Null contextPath");
 
         if (getBaseResource() != null && getBaseResource().isAlias())
+        {
+            // We may have symlink to baseResource, try to resolve symlink if possible.
+            File file = getBaseResource().getFile();
+            if (file != null)
+                _baseResource = Resource.newResource(file.toPath().toRealPath());
+
             LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
                 getBaseResource(), getBaseResource().getAlias(), this);
+        }
 
         _availability.set(Availability.STARTING);
 
