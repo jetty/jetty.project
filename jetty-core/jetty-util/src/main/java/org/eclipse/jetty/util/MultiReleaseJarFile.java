@@ -21,12 +21,16 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Utility class to handle a Multi Release Jar file</p>
  */
 public class MultiReleaseJarFile implements Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MultiReleaseJarFile.class);
+
     private final Path jarFile;
     private final Resource.Mount jarResource;
 
@@ -48,6 +52,8 @@ public class MultiReleaseJarFile implements Closeable
 
         this.jarFile = jarFile;
         this.jarResource = Resource.mountJar(jarFile);
+        if (LOG.isDebugEnabled())
+            LOG.debug("mounting {}", jarResource);
     }
 
     /**
@@ -69,21 +75,11 @@ public class MultiReleaseJarFile implements Closeable
         });
     }
 
-    /**
-     * Get a versioned resource entry by name
-     *
-     * @param name The name of the resource
-     * @return The entry of the resource
-     */
-    public Path getEntry(String name) throws IOException
-    {
-        Path rootPath = this.jarResource.root().getPath();
-        return rootPath.resolve(name);
-    }
-
     @Override
     public void close() throws IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closing {}", jarResource);
         this.jarResource.close();
     }
 

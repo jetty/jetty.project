@@ -877,12 +877,8 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
-            URI location;
-            try (Resource.Mount mount = Resource.mountIfNeeded(entry.toUri()))
-            {
-                location = mount.root().getURI();
-                addParsedClass(shortName, location);
-            }
+            URI location = entry.toUri();
+            addParsedClass(shortName, location);
 
             try (InputStream is = Files.newInputStream(entry))
             {

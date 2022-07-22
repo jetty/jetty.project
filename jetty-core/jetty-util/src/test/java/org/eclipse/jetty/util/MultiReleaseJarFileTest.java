@@ -19,8 +19,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
@@ -73,6 +76,40 @@ public class MultiReleaseJarFileTest
             assertThat(readFile(loader.getResource("WEB-INF/classes/App.class")), is("META-INF/versions/9/WEB-INF/classes/App.class"));
             assertThat(readFile(loader.getResource("WEB-INF/lib/depend.jar")), is("META-INF/versions/9/WEB-INF/lib/depend.jar"));
         }
+    }
+
+    @Test
+    public void testStreamForEachEntries() throws IOException
+    {
+        List<String> entries = new ArrayList<>();
+
+        try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(example);
+             Stream<Path> jarEntryStream = jarFile.stream())
+        {
+            jarEntryStream.forEach(e ->
+                entries.add(e.toString()));
+        }
+
+        String[] expected = {
+            // exists in base only
+            "/org/example/OnlyInBase.class",
+            "/org/example/InBoth$InnerBase.class",
+            // exists in versions/9
+            "/org/example/Nowhere$NoOuter.class",
+            "/org/example/InBoth$Inner9.class",
+            "/org/example/OnlyIn9.class",
+            "/org/example/onlyIn9/OnlyIn9.class",
+            // exists in versions/10
+            "/org/example/In10Only.class",
+            // exists in base and is overridden by version specific entry
+            "/org/example/InBoth.class",
+            "/org/example/InBoth$InnerBoth.class",
+            "/WEB-INF/web.xml",
+            "/WEB-INF/classes/App.class",
+            "/WEB-INF/lib/depend.jar"
+        };
+
+        assertThat(entries, Matchers.containsInAnyOrder(expected));
     }
 
     private String readFile(URL url) throws IOException
