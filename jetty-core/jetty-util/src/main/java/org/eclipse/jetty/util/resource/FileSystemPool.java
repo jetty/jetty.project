@@ -42,7 +42,7 @@ public class FileSystemPool
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
-    private static final Map<String,String> ENV_MULTIRELEASE_RUNTIME;
+    private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
 
     static
     {

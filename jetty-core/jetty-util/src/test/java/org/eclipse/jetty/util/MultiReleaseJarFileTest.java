@@ -77,7 +77,7 @@ public class MultiReleaseJarFileTest
 
     private String readFile(URL url) throws IOException
     {
-        try(InputStream in = url.openStream())
+        try (InputStream in = url.openStream())
         {
             return IO.toString(in, StandardCharsets.UTF_8);
         }
