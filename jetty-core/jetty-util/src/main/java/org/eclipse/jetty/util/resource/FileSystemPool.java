@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +41,15 @@ public class FileSystemPool
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
+
+    private static final Map<String,String> ENV_MULTIRELEASE_RUNTIME;
+
+    static
+    {
+        Map<String, String> env = new HashMap<>();
+        env.put("releaseVersion", "runtime");
+        ENV_MULTIRELEASE_RUNTIME = env;
+    }
 
     private final Map<URI, Bucket> pool = new HashMap<>();
     private final AutoLock poolLock = new AutoLock();
@@ -62,7 +70,7 @@ public class FileSystemPool
         {
             try
             {
-                fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                fileSystem = FileSystems.newFileSystem(uri, ENV_MULTIRELEASE_RUNTIME);
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
@@ -251,7 +259,7 @@ public class FileSystemPool
         private final URI uri;
         private final Resource root;
 
-        private Mount(URI uri) throws IOException
+        private Mount(URI uri)
         {
             this.uri = uri;
             this.root = Resource.newResource(uri);
