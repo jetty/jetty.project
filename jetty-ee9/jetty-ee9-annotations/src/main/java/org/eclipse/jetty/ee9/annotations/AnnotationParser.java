@@ -821,9 +821,13 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            // TODO is the jarResource's Path always convertible to File?
+
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
-                 Stream<Path> jarEntryStream = jarFile.stream())
+                 Stream<Path> jarEntryStream = jarFile.stream()
+                     .filter(Files::isRegularFile)
+                     .filter(MultiReleaseJarFile::notModuleInfoClass)
+                     .filter(MultiReleaseJarFile::notMetaInfVersions)
+                     .filter(MultiReleaseJarFile::isClassFile))
             {
                 jarEntryStream.forEach(e ->
                 {

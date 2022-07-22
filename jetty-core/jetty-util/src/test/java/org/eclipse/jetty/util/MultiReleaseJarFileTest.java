@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,11 +38,13 @@ public class MultiReleaseJarFileTest
     private final Path example = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
     @Test
-    public void testBase() throws Exception
+    public void testStreamAllFiles() throws Exception
     {
         try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(example))
         {
-            Set<String> actual = jarFile.stream().map(Path::toString).collect(Collectors.toSet());
+            Set<String> actual = jarFile.stream()
+                .filter(Files::isRegularFile)
+                .map(Path::toString).collect(Collectors.toSet());
             String[] expected = {
                 // exists in base only
                 "/org/example/OnlyInBase.class",
@@ -58,7 +61,8 @@ public class MultiReleaseJarFileTest
                 "/org/example/InBoth$InnerBoth.class",
                 "/WEB-INF/web.xml",
                 "/WEB-INF/classes/App.class",
-                "/WEB-INF/lib/depend.jar"
+                "/WEB-INF/lib/depend.jar",
+                "/META-INF/MANIFEST.MF"
             };
 
             assertThat(actual, Matchers.containsInAnyOrder(expected));
@@ -79,12 +83,13 @@ public class MultiReleaseJarFileTest
     }
 
     @Test
-    public void testStreamForEachEntries() throws IOException
+    public void testStreamAllFilesForEachEntries() throws IOException
     {
         List<String> entries = new ArrayList<>();
 
         try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(example);
-             Stream<Path> jarEntryStream = jarFile.stream())
+             Stream<Path> jarEntryStream = jarFile.stream()
+                 .filter(Files::isRegularFile))
         {
             jarEntryStream.forEach(e ->
                 entries.add(e.toString()));
@@ -106,7 +111,8 @@ public class MultiReleaseJarFileTest
             "/org/example/InBoth$InnerBoth.class",
             "/WEB-INF/web.xml",
             "/WEB-INF/classes/App.class",
-            "/WEB-INF/lib/depend.jar"
+            "/WEB-INF/lib/depend.jar",
+            "/META-INF/MANIFEST.MF"
         };
 
         assertThat(entries, Matchers.containsInAnyOrder(expected));

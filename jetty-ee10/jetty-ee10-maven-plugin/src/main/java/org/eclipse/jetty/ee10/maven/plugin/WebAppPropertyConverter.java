@@ -222,7 +222,8 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
-            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
+            List<Resource> resources = Resource.fromList(str, false);
+            ResourceCollection bases = new ResourceCollection(resources);
             webApp.setWar(null);
             webApp.setBaseResource(bases);
         }

@@ -38,11 +38,14 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -392,5 +395,58 @@ public class ResourceTest
         Resource same = resource.resolve(".");
         assertNotNull(same);
         assertTrue(same.isAlias());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "file:/opt/websites/webapps/company.war",
+        "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
+    })
+    public void testIsJarUriTrue(String rawUri)
+    {
+        assertTrue(Resource.isJar(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "jar:file:/home/user/project/with.jar/in/path/name",
+        "file:/home/user/project/directory/",
+        "file:/home/user/hello.ear",
+        "/home/user/hello.jar",
+        "/home/user/app.war"
+    })
+    public void testIsJarUriFalse(String rawUri)
+    {
+        assertFalse(Resource.isJar(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+    }
+
+    public static Stream<Arguments> toJarRootCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        String expected = "jar:file:/path/company-1.0.jar!/";
+        cases.add(Arguments.of("file:/path/company-1.0.jar", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected));
+
+        expected = "jar:file:/opt/jetty/webapps/app.war!/";
+        cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("toJarRootCases")
+    public void testToJarRootUri(String inputRawUri, String expectedRawUri)
+    {
+        URI actual = Resource.toJarRoot(URI.create(inputRawUri));
+        assertThat(actual.toASCIIString(), is(expectedRawUri));
     }
 }

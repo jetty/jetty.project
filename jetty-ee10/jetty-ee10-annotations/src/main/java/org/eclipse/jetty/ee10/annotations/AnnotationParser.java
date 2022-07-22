@@ -835,7 +835,11 @@ public class AnnotationParser
             MultiException me = new MultiException();
 
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
-                 Stream<Path> jarEntryStream = jarFile.stream())
+                 Stream<Path> jarEntryStream = jarFile.stream()
+                     .filter(Files::isRegularFile)
+                     .filter(MultiReleaseJarFile::notModuleInfoClass)
+                     .filter(MultiReleaseJarFile::isClassFile)
+            )
             {
                 jarEntryStream.forEach(e ->
                 {

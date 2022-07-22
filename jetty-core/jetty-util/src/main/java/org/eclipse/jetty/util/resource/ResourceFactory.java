@@ -18,6 +18,7 @@ import java.net.URI;
 
 /**
  * ResourceFactory.
+ * TODO: see if we can remove this entirely
  */
 public interface ResourceFactory
 {

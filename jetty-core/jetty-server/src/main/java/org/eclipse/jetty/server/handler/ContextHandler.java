@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -88,6 +89,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private String _displayName;
     private String _contextPath = "/";
     private Resource _resourceBase;
+    private Resource.Mount _resourceBaseMount;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
@@ -514,6 +516,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _availability.set(Availability.STARTING);
         try
         {
+            // Mount if needed
+            _resourceBaseMount = Resource.mountIfNeeded(getResourceBase());
+
             _context.call(super::doStart, null);
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
@@ -529,6 +534,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
+
+        IO.close(_resourceBaseMount);
     }
 
     public boolean checkVirtualHost(Request request)

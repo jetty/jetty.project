@@ -22,6 +22,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.HashMap;
@@ -75,6 +76,10 @@ public class FileSystemPool
             catch (FileSystemAlreadyExistsException fsaee)
             {
                 fileSystem = Paths.get(uri).getFileSystem();
+            }
+            catch (ProviderNotFoundException pnfe)
+            {
+                LOG.warn("Unable to mount URI: {}", uri, pnfe);
             }
             Mount mount = new Mount(uri);
             retain(uri, fileSystem, mount);

@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -23,6 +23,7 @@ import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -30,19 +31,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -185,6 +186,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (_mountedResources != null)
         {
             _mountedResources.forEach(IO::close);
+        }
+        Resource baseResource = context.getResourceBase();
+        if (baseResource instanceof Closeable closeableResource)
+        {
+            IO.close(closeableResource);
         }
         super.deconfigure(context);
     }
@@ -339,13 +345,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
         {
-            Resource[] collection = new Resource[resources.size() + 1];
-            int i = 0;
-            collection[i++] = context.getResourceBase();
-            for (Resource resource : resources)
-            {
-                collection[i++] = resource;
-            }
+            List<Resource> collection = new ArrayList<>();
+            collection.add(context.getResourceBase());
+            collection.addAll(resources);
             context.setBaseResource(new ResourceCollection(collection));
         }
     }
@@ -488,7 +490,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.mountIfNeeded(uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
                 if (_mountedResources == null)
                     _mountedResources = new ArrayList<>();
@@ -711,6 +713,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return tlds;
     }
 
+    public static boolean isTldFile(Path path)
+    {
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
+    }
+
     /**
      * Find all .tld files in the given jar.
      *
@@ -720,25 +728,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public Collection<URL> getTlds(URI uri) throws IOException
     {
-        HashSet<URL> tlds = new HashSet<URL>();
+        HashSet<URL> tlds = new HashSet<>();
 
-        URI jarUri = uriJarPrefix(uri, "!/");
-        URL url = jarUri.toURL();
-        JarURLConnection jarConn = (JarURLConnection)url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
-        JarFile jarFile = jarConn.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements())
+        Path path = Paths.get(uri);
+        try (MultiReleaseJarFile multiReleaseJarFile = new MultiReleaseJarFile(path);
+             Stream<Path> entries = multiReleaseJarFile.stream()
+                 .filter(Files::isRegularFile)
+                 .filter(MetaInfConfiguration::isTldFile))
         {
-            JarEntry e = entries.nextElement();
-            String name = e.getName();
-            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                tlds.add(new URL(jarUri + name));
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
         }
-        if (!Resource.getDefaultUseCaches())
-            jarFile.close();
         return tlds;
     }
 
@@ -891,15 +895,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private URI uriJarPrefix(URI uri, String suffix)
     {
-        String uriString = uri.toString();
-        if (uriString.startsWith("jar:"))
-        {
-            return URI.create(uriString + suffix);
-        }
-        else
-        {
-            return URI.create("jar:" + uriString + suffix);
-        }
+        return Resource.toJarURI(uri, suffix);
     }
 
     private boolean isFileSupported(Resource resource)

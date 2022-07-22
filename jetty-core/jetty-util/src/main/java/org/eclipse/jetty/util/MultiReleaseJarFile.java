@@ -17,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -57,22 +58,70 @@ public class MultiReleaseJarFile implements Closeable
     }
 
     /**
-     * @return A stream of versioned entries from the jar, excluded any that are not applicable
+     * Predicate to skip {@code module-info.class} files.
+     * @param path the path to test
+     * @return true if not a {@code module-info.class} file
+     */
+    public static boolean notModuleInfoClass(Path path)
+    {
+        return !path.getFileName().toString().equalsIgnoreCase("module-info.class");
+    }
+
+    /**
+     * Predicate to skip {@code META-INF/versions/*} tree from walk/stream results
+     * @param path the path to test
+     * @return true if not in {@code META-INF/versions/*} tree
+     */
+    public static boolean notMetaInfVersions(Path path)
+    {
+        if (path.getNameCount() < 2)
+            return false;
+        Path path0 = path.getName(0);
+        Path path1 = path.getName(1);
+
+        return !(path0.toString().equals("META-INF") &&
+            path1.toString().equals("versions"));
+    }
+
+    /**
+     * Predicate to select all class files
+     * @param path the path to test
+     * @return true if the filename ends with {@code .class}
+     */
+    public static boolean isClassFile(Path path)
+    {
+        return path.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".class");
+    }
+
+    /**
+     * @return A stream of versioned entries from the jar, excluding {@code META-INF/versions} entries.
      */
     @SuppressWarnings("resource")
     public Stream<Path> stream() throws IOException
     {
         Path rootPath = this.jarResource.root().getPath();
 
-        return Files.walk(rootPath).filter((e) ->
-        {
-            // Skip entries that are not files.
-            if (!Files.isRegularFile(e))
-                return false;
+        return Files.walk(rootPath)
+            // skip the entire META-INF/versions tree
+            .filter(MultiReleaseJarFile::notMetaInfVersions);
+    }
 
-            // Ignore META-INF
-            return !e.getName(0).toString().equals("META-INF");
-        });
+    /**
+     * @return A stream of versioned class file entries from the jar, excluding {@code META-INF/versions} entries.
+     */
+    public Stream<Path> streamClasses() throws IOException
+    {
+        Path rootPath = this.jarResource.root().getPath();
+
+        return Files.walk(rootPath)
+            // Only interested in files (not directories)
+            .filter(Files::isRegularFile)
+            // Skip module-info classes
+            .filter(MultiReleaseJarFile::notModuleInfoClass)
+            // skip the entire META-INF/versions tree
+            .filter(MultiReleaseJarFile::notMetaInfVersions)
+            // only class files
+            .filter(MultiReleaseJarFile::isClassFile);
     }
 
     @Override

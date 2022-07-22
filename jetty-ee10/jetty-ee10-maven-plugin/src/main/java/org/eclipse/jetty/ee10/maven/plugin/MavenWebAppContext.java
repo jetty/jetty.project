@@ -217,18 +217,18 @@ public class MavenWebAppContext extends WebAppContext
      * {@link ResourceCollection}. Each resource string may be a
      * comma separated list of resources
      */
-    public void setResourceBases(String[] resourceBases)
+    public void setResourceBases(String[] resourceBases) throws IOException
     {
-        List<String> resources = new ArrayList<String>();
+        List<Resource> resources = new ArrayList<>();
         for (String rl : resourceBases)
         {
             String[] rs = StringUtil.csvSplit(rl);
             for (String r : rs)
             {
-                resources.add(r);
+                resources.add(Resource.newResource(r));
             }
         }
-        setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
+        setBaseResource(new ResourceCollection(resources));
     }
 
     public List<File> getWebInfLib()

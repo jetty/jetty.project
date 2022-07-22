@@ -17,8 +17,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringTokenizer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
@@ -979,6 +982,36 @@ public class StringUtil
         if (s.length() == 2)
             return new String[]{};
         return csvSplit(s, 1, s.length() - 2);
+    }
+
+    /**
+     * Present the results of a {@link StringTokenizer} as an {@link Iterator} of type {@link String}
+     * @param input the StringTokenizer input
+     * @param delim the StringTokenizer delim
+     * @return the resulting iterator for the StringTokenizer
+     * @see StringTokenizer#StringTokenizer(java.lang.String, java.lang.String)
+     */
+    public static Iterator<String> tokenizerAsIterator(String input, String delim)
+    {
+        if (isBlank(input))
+            return Collections.emptyIterator();
+
+        return new Iterator<>()
+        {
+            StringTokenizer tokenizer = new StringTokenizer(input, delim);
+
+            @Override
+            public boolean hasNext()
+            {
+                return tokenizer.hasMoreTokens();
+            }
+
+            @Override
+            public String next()
+            {
+                return tokenizer.nextToken();
+            }
+        };
     }
 
     /**
