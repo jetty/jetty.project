@@ -140,23 +140,35 @@ public class HTTP2ServerDocs
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
+
+                // Demand for request data content.
+                stream.demand();
+
                 // Return a Stream.Listener to handle the request events.
                 return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
+                        Stream.Data data = stream.readData();
+
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+
                         // Get the content buffer.
-                        ByteBuffer buffer = frame.getData();
+                        ByteBuffer buffer = data.frame().getData();
 
                         // Consume the buffer, here - as an example - just log it.
                         System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
                         // Tell the implementation that the buffer has been consumed.
-                        callback.succeeded();
+                        data.release();
 
-                        // By returning from the method, implicitly tell the implementation
-                        // to deliver to this method more DATA frames when they are available.
+                        // Demand more DATA frames when they are available.
+                        stream.demand();
                     }
                 };
             }
@@ -181,15 +193,30 @@ public class HTTP2ServerDocs
                 }
                 else
                 {
+                    // Demand for request data.
+                    stream.demand();
+
+                    // Return a listener to handle the request events.
                     return new Stream.Listener()
                     {
                         @Override
-                        public void onData(Stream stream, DataFrame frame, Callback callback)
+                        public void onDataAvailable(Stream stream)
                         {
+                            Stream.Data data = stream.readData();
+
+                            if (data == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+
                             // Consume the request content.
-                            callback.succeeded();
-                            if (frame.isEndStream())
+                            data.release();
+
+                            if (data.frame().isEndStream())
                                 respond(stream, request);
+                            else
+                                stream.demand();
                         }
                     };
                 }

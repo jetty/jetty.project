@@ -157,7 +157,7 @@ public class HTTP3ServerDocs
                             System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
 
                             // Tell the implementation that the buffer has been consumed.
-                            data.complete();
+                            data.release();
 
                             if (!data.isLast())
                             {
@@ -204,7 +204,7 @@ public class HTTP3ServerDocs
                             else
                             {
                                 // Consume the request content.
-                                data.complete();
+                                data.release();
                                 if (data.isLast())
                                     respond(stream, request);
                             }

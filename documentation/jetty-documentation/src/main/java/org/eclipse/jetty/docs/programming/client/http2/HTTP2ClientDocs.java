@@ -227,6 +227,12 @@ public class HTTP2ClientDocs
                 {
                     MetaData.Response response = (MetaData.Response)metaData;
                     System.getLogger("http2").log(INFO, "Received response {0}", response);
+                    if (!frame.isEndStream())
+                    {
+                        // Demand for DATA frames, so that onDataAvailable()
+                        // below will be called when they are available.
+                        stream.demand();
+                    }
                 }
                 else
                 {
@@ -235,19 +241,29 @@ public class HTTP2ClientDocs
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
+                // Read a Data object.
+                Stream.Data data = stream.readData();
+
+                if (data == null)
+                {
+                    // Demand more DATA frames.
+                    stream.demand();
+                    return;
+                }
+
                 // Get the content buffer.
-                ByteBuffer buffer = frame.getData();
+                ByteBuffer buffer = data.frame().getData();
 
                 // Consume the buffer, here - as an example - just log it.
                 System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
                 // Tell the implementation that the buffer has been consumed.
-                callback.succeeded();
+                data.release();
 
-                // By returning from the method, implicitly tell the implementation
-                // to deliver to this method more DATA frames when they are available.
+                // Demand more DATA frames when they are available.
+                stream.demand();
             }
         });
         // end::responseListener[]
@@ -271,9 +287,12 @@ public class HTTP2ClientDocs
         CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 // The server reset this stream.
+
+                // Succeed the callback to signal that the reset event has been handled.
+                callback.succeeded();
             }
         });
         Stream stream = streamCF.get();
@@ -326,18 +345,29 @@ public class HTTP2ClientDocs
                         {
                             // The pushed "response" headers.
                             HttpFields pushedResponseHeaders = metaData.getFields();
+
+                            // Typically a pushed stream has data, so demand for data.
+                            stream.demand();
                         }
                     }
 
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
                         // Handle the pushed stream "response" content.
 
+                        Stream.Data data = stream.readData();
+
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+
                         // The pushed stream "response" content bytes.
-                        ByteBuffer buffer = frame.getData();
-                        // Consume the buffer and complete the callback.
-                        callback.succeeded();
+                        ByteBuffer buffer = data.frame().getData();
+                        // Consume the buffer and release the Data object.
+                        data.release();
                     }
                 };
             }
@@ -365,7 +395,7 @@ public class HTTP2ClientDocs
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
             {
-                // Reset the pushed stream to tell the server we are not interested.
+                // Reset the pushed stream to tell the server you are not interested.
                 pushedStream.reset(new ResetFrame(pushedStream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
 
                 // Not interested in listening to pushed response events.

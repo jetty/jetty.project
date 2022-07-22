@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 
@@ -48,7 +47,7 @@ public class HTTP2Docs
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
-        // tag::dataDemanded[]
+        // tag::dataUnwrap[]
         class Chunk
         {
             private final ByteBuffer buffer;
@@ -64,29 +63,39 @@ public class HTTP2Docs
         // A queue that consumers poll to consume content asynchronously.
         Queue<Chunk> dataQueue = new ConcurrentLinkedQueue<>();
 
-        // Implementation of Stream.Listener.onDataDemanded(...)
-        // in case of asynchronous content consumption and demand.
+        // Implementation of Stream.Listener.onDataAvailable(Stream stream)
+        // in case of unwrapping of the Data object for asynchronous content
+        // consumption and demand.
         Stream.Listener listener = new Stream.Listener()
         {
             @Override
-            public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                // Get the content buffer.
-                ByteBuffer buffer = frame.getData();
+                Stream.Data data = stream.readData();
 
-                // Store buffer to consume it asynchronously, and wrap the callback.
+                if (data == null)
+                {
+                    stream.demand();
+                    return;
+                }
+
+                // Get the content buffer.
+                ByteBuffer buffer = data.frame().getData();
+
+                // Unwrap the Data object, converting it to a Chunk.
+                // The Data.release() semantic is maintained in the completion of the Callback.
                 dataQueue.offer(new Chunk(buffer, Callback.from(() ->
                 {
                     // When the buffer has been consumed, then:
-                    // A) succeed the nested callback.
-                    callback.succeeded();
+                    // A) release the Data object.
+                    data.release();
                     // B) demand more DATA frames.
-                    stream.demand(1);
-                }, callback::failed)));
+                    stream.demand();
+                })));
 
-                // Do not demand more content here, to avoid to overflow the queue.
+                // Do not demand more data here, to avoid to overflow the queue.
             }
         };
-        // end::dataDemanded[]
+        // end::dataUnwrap[]
     }
 }

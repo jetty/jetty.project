@@ -212,7 +212,7 @@ public class HTTP3ClientDocs
                     process(data.getByteBuffer());
 
                     // Notify the implementation that the content has been consumed.
-                    data.complete();
+                    data.release();
 
                     if (!data.isLast())
                     {
