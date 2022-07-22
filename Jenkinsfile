@@ -144,7 +144,6 @@ pipeline {
           }
         }
          */
-        /*
         stage("Module : /documentation/") {
           steps {
             container('jetty-build') {
@@ -156,7 +155,6 @@ pipeline {
             }
           }
         }
-        */
       }
     }
   }

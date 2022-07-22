@@ -12,5 +12,5 @@ mvn clean install -f jetty-ee8
 mvn clean install -pl :jetty-home
 mvn clean install -f tests
 # mvn clean install -f jetty-p2
-# mvn clean install -f documentation
+mvn clean install -f documentation
 
