@@ -11,6 +11,7 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.openid.OpenIdAuthenticatorFactory;
 
 module org.eclipse.jetty.security.openid

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.security.openid;
 
-import org.eclipse.jetty.ee9.nested.ContextHandlerCollection;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
