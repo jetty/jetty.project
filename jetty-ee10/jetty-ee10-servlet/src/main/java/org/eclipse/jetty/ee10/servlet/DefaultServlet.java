@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -505,6 +506,12 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return _coreRequest.isPushSupported();
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             _coreRequest.push(request);
@@ -517,9 +524,14 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return _coreRequest.getTunnelSupport();
+        }
+
+        @Override
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
         {
-
         }
 
         @Override

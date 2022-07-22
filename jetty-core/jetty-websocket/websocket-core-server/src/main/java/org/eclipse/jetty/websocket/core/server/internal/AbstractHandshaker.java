@@ -137,7 +137,7 @@ public abstract class AbstractHandshaker implements Handshaker
 
         // We need to also manually set upgrade attribute because stream wrapper succeeded is run after
         // the decision is made to close the connection.
-        request.setAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        request.setAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override

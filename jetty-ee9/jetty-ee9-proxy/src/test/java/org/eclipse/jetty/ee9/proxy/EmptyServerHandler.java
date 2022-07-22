@@ -13,24 +13,15 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends AbstractHandler
+public class EmptyServerHandler extends Handler.Processor
 {
     @Override
-    public final void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        jettyRequest.setHandled(true);
-        service(target, jettyRequest, request, response);
-    }
-
-    protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void process(Request request, Response response, Callback callback)
     {
     }
 }

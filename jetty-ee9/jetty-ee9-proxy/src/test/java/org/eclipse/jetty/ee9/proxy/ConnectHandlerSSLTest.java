@@ -14,26 +14,26 @@
 package org.eclipse.jetty.ee9.proxy;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,23 +150,22 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         return sslSocket;
     }
 
-    private static class ServerHandler extends AbstractHandler
+    private static class ServerHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            request.setHandled(true);
-
-            String uri = httpRequest.getRequestURI();
+            String uri = request.getPathInContext();
             if ("/echo".equals(uri))
             {
                 StringBuilder builder = new StringBuilder();
-                builder.append(httpRequest.getMethod()).append(" ").append(uri);
-                if (httpRequest.getQueryString() != null)
-                    builder.append("?").append(httpRequest.getQueryString());
+                builder.append(request.getMethod()).append(" ").append(uri);
+                String query = request.getHttpURI().getQuery();
+                if (query != null)
+                    builder.append("?").append(query);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                InputStream input = httpRequest.getInputStream();
+                InputStream input = Content.Source.asInputStream(request);
                 int read;
                 while ((read = input.read()) >= 0)
                 {
@@ -175,12 +174,23 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 baos.close();
                 byte[] bytes = baos.toByteArray();
 
-                ServletOutputStream output = httpResponse.getOutputStream();
                 if (bytes.length == 0)
-                    output.print(builder.toString());
+                {
+                    Content.Sink.write(response, true, builder.toString(), callback);
+                }
                 else
-                    output.println(builder.toString());
-                output.write(bytes);
+                {
+                    builder.append("\r\n");
+                    Callback.Completable completable = new Callback.Completable();
+                    Content.Sink.write(response, false, builder.toString(), completable);
+                    completable.whenComplete((r, x) ->
+                    {
+                        if (x != null)
+                            callback.failed(x);
+                        else
+                            response.write(true, ByteBuffer.wrap(bytes), callback);
+                    });
+                }
             }
             else
             {
