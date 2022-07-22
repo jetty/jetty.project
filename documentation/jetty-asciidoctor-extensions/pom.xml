@@ -33,7 +33,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution</artifactId>
+      <artifactId>test-distribution-common</artifactId>
     </dependency>
   </dependencies>
 </project>

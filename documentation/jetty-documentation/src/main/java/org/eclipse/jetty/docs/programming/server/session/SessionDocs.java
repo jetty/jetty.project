@@ -16,8 +16,9 @@ package org.eclipse.jetty.docs.programming.server.session;
 import java.io.File;
 import java.net.InetSocketAddress;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
 import org.eclipse.jetty.server.Server;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.session.NullSessionCache;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionHandler;
 
 @SuppressWarnings("unused")
 public class SessionDocs
@@ -46,7 +46,7 @@ public class SessionDocs
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
         //you must set the workerName unless you set the env viable JETTY_WORKER_NAME
         idMgr.setWorkerName("server3");
-        server.setSessionIdManager(idMgr);
+        server.addBean(idMgr, true);
         //end::default[]
     }
 
@@ -58,7 +58,7 @@ public class SessionDocs
             Server server = new Server();
             DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
             idMgr.setWorkerName("server7");
-            server.setSessionIdManager(idMgr);
+            server.addBean(idMgr, true);
 
             HouseKeeper houseKeeper = new HouseKeeper();
             houseKeeper.setSessionIdManager(idMgr);
@@ -169,7 +169,9 @@ public class SessionDocs
         //Add a webapp that uses an explicit NullSessionCache instead
         WebAppContext app2 = new WebAppContext();
         app2.setContextPath("/app2");
-        NullSessionCache nullSessionCache = new NullSessionCache(app2.getSessionHandler());
+        // TODO
+//        NullSessionCache nullSessionCache = new NullSessionCache(app2.getSessionHandler());
+        NullSessionCache nullSessionCache = null;
         nullSessionCache.setFlushOnResponseCommit(true);
         nullSessionCache.setRemoveUnloadableSessions(true);
         nullSessionCache.setSaveOnCreate(true);
@@ -220,7 +222,9 @@ public class SessionDocs
         app1.setContextPath("/app1");
         
         //First, we create a DefaultSessionCache
-        DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
+        // TODO
+//        DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
+        DefaultSessionCache cache = null;
         cache.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cache.setFlushOnResponseCommit(true);
         cache.setInvalidateOnShutdown(false);

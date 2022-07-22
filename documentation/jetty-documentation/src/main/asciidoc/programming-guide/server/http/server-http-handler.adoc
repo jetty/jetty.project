@@ -41,12 +41,11 @@ The corresponding `Handler` tree structure looks like the following:
 
 [source,screen]
 ----
-HandlerCollection
-├── HandlerList
-│   ├── App1Handler
-│   └── HandlerWrapper
-│       └── App2Handler
+Server
 └── LoggingHandler
+    └── Handler.Collection
+        ├── App1Handler
+        └── App2Handler
 ----
 
 Server applications should rarely write custom ``Handler``s, preferring instead to use existing ``Handler``s provided by the Jetty Server Libraries for managing web application contexts, security, HTTP sessions and Servlet support.

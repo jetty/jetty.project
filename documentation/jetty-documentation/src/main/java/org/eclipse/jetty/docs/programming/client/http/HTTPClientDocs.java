@@ -341,7 +341,7 @@ public class HTTPClientDocs
 
                 // Offer the content, and release the ByteBuffer
                 // to the pool when the Callback is completed.
-                content.offer(buffer, Callback.from(() -> bufferPool.release(buffer)));
+                content.write(buffer, Callback.from(() -> bufferPool.release(buffer)));
 
                 // Close AsyncRequestContent when all the content is arrived.
                 if (lastContent)
@@ -489,7 +489,7 @@ public class HTTPClientDocs
             public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 // When response content is received from server1, forward it to server2.
-                content2.offer(content, Callback.from(() ->
+                content2.write(content, Callback.from(() ->
                 {
                     // When the request content to server2 is sent,
                     // succeed the callback to recycle the buffer.

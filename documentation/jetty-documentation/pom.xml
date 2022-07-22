@@ -11,7 +11,9 @@
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
   <properties>
-    <ee.version>ee9</ee.version>
+    <assembly.skipAssembly>${skipTests}</assembly.skipAssembly>
+    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
+    <ee.version>ee10</ee.version>
   </properties>
 
   <build>
@@ -159,10 +161,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
     </dependency>
@@ -236,16 +234,16 @@
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>
