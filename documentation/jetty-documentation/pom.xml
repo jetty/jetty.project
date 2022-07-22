@@ -11,7 +11,9 @@
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
   <properties>
-    <ee.version>ee9</ee.version>
+    <assembly.skipAssembly>${skipTests}</assembly.skipAssembly>
+    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
+    <ee.version>ee10</ee.version>
   </properties>
 
   <build>
@@ -70,7 +72,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <skip>${skipTests}</skip>
               <sourceDirectory>src/main/asciidoc</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html</outputDirectory>
@@ -83,7 +84,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <skip>${skipTests}</skip>
               <sourceDirectory>src/main/asciidoc/operations-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/operations-guide</outputDirectory>
@@ -96,7 +96,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
@@ -109,7 +108,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/programming-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/programming-guide</outputDirectory>
@@ -122,7 +120,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <skip>${skipTests}</skip>
               <sourceDirectory>${basedir}/src/main/asciidoc/old_docs</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/old_docs</outputDirectory>
@@ -133,7 +130,6 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <skipAssembly>${skipTests}</skipAssembly>
           <descriptors>
             <descriptor>src/main/assembly/html.xml</descriptor>
           </descriptors>
@@ -164,10 +160,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
@@ -242,16 +234,16 @@
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
+      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>
