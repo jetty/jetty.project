@@ -270,6 +270,9 @@ public class Content
          * continue to return a last chunk (although the instance may be different).</p>
          * <p>Chunks of content that have been consumed by the content reader code must
          * be {@link Chunk#release() released}.</p>
+         * <p>The content reader code may perform additional calls to {@link Chunk#retain()}
+         * on the returned {@link Chunk}, that must be matched by a correspondent number
+         * of calls to {@link Chunk#release()}.</p>
          * <p>Concurrent reads from different threads are not recommended, as they are
          * inherently in a race condition.</p>
          * <p>Reads performed outside the invocation context of a
