@@ -60,7 +60,7 @@ public abstract class ContentSourceTransformer implements Content.Source
 
             transformedChunk = process(rawChunk);
 
-            if (rawChunk != null)
+            if (rawChunk != null && rawChunk != transformedChunk)
                 rawChunk.release();
             rawChunk = null;
 
@@ -115,8 +115,6 @@ public abstract class ContentSourceTransformer implements Content.Source
         }
         catch (Throwable x)
         {
-            if (rawChunk != null)
-                rawChunk.release();
             fail(x);
             return Content.Chunk.from(x);
         }
