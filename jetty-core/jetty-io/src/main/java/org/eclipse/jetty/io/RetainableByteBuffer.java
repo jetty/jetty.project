@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
 
 /**
  * <p>A pooled ByteBuffer which maintains a reference count that is

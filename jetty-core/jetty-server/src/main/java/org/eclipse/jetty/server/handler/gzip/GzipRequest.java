@@ -133,7 +133,7 @@ public class GzipRequest extends Request.WrapperProcessor
             {
                 // The decoded ByteBuffer is a transformed "copy" of the
                 // compressed one, so it has its own reference counter.
-                return Content.Chunk.fromWithReferenceCount(decodedBuffer, _chunk.isLast() && !_chunk.hasRemaining(), _decoder::release);
+                return Content.Chunk.from(decodedBuffer, _chunk.isLast() && !_chunk.hasRemaining(), _decoder::release);
             }
             else
             {

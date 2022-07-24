@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
-import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.Retainable;
 
 /**
  * <p>Namespace class that contains the definitions of a {@link Source content source},
@@ -406,7 +404,8 @@ public class Content
         Content.Chunk EOF = ByteBufferChunk.EOF;
 
         /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         * <p>Creates a Chunk with the given ByteBuffer.</p>
+         * <p>The returned Chunk must be {@link #release() released}.</p>
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
@@ -414,11 +413,12 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return new ByteBufferChunk(byteBuffer, last);
+            return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
         }
 
         /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         * <p>Creates a Chunk with the given ByteBuffer.</p>
+         * <p>The returned Chunk must be {@link #release() released}.</p>
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
@@ -431,6 +431,7 @@ public class Content
 
         /**
          * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
+         * <p>The returned Chunk must be {@link #release() released}.</p>
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
@@ -454,36 +455,7 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
-            return new ByteBufferChunk.ReleasedByRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
-        }
-
-        /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer, with its own reference counter.</p>
-         * <p>This method should be used to create a Chunk that is not linked to other Retainable objects
-         * and may be passed to applications that may additionally retain/release this Chunk.</p>
-         * <p>A typical example are Chunks decoded (e.g. gzip) via {@link ContentSourceTransformer}:
-         * the decoded Chunk is not linked to the encoded Chunk, but needs its own reference counter
-         * as the decoded Chunk may in turn be {@link #slice(Chunk, int, int, boolean) sliced}.</p>
-         *
-         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
-         * @param last whether the Chunk is the last one
-         * @param releaser the code to run when this Chunk is released
-         * @return a new Chunk
-         */
-        static Chunk fromWithReferenceCount(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
-        {
-            Retainable.ReferenceCounter referenceCounter = new Retainable.ReferenceCounter()
-            {
-                @Override
-                public boolean release()
-                {
-                    boolean released = super.release();
-                    if (released && releaser != null)
-                        releaser.accept(byteBuffer);
-                    return released;
-                }
-            };
-            return from(byteBuffer, last, referenceCounter);
+            return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
         }
 
         /**
@@ -661,6 +633,18 @@ public class Content
 
             @Override
             public boolean isLast()
+            {
+                return true;
+            }
+
+            @Override
+            public void retain()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean release()
             {
                 return true;
             }

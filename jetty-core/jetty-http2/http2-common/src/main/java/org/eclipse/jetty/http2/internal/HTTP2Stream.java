@@ -47,7 +47,6 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -334,7 +333,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             if (dataQueue == null || dataQueue.isEmpty())
             {
                 if (dataEOF)
-                    return new Data(new DataFrame(getId(), BufferUtil.EMPTY_BUFFER, true));
+                    return Data.eof(getId());
                 else
                     return null;
             }

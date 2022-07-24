@@ -106,7 +106,7 @@ public class DataDemandTest extends AbstractTest
         Stream serverStream = serverStreamRef.get();
         assertNotNull(serverStream);
 
-        // Demand more DATA frames.
+        // Demand 1 more DATA frames.
         serverStream.demand();
         // The server should have received 1 more DATA frame.
         await().atMost(1, TimeUnit.SECONDS).until(serverQueue::size, is(2));
@@ -130,6 +130,9 @@ public class DataDemandTest extends AbstractTest
         int recvWindow = ((HTTP2Session)serverStream.getSession()).updateRecvWindow(0);
         assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE - length, recvWindow);
 
+        // Release them all.
+        serverQueue.forEach(Stream.Data::release);
+
         // Send a large DATA frame to the client.
         serverStream.data(new DataFrame(serverStream.getId(), ByteBuffer.allocate(length), true), Callback.NOOP);
 
@@ -138,7 +141,7 @@ public class DataDemandTest extends AbstractTest
         Thread.sleep(1000);
         assertEquals(1, clientQueue.size());
 
-        // Demand more DATA frames.
+        // Demand 1 more DATA frames.
         clientStream.demand();
         Thread.sleep(1000);
         // The client should have received 1 more DATA frame.
@@ -157,6 +160,9 @@ public class DataDemandTest extends AbstractTest
             if (sum == length)
                 break;
         }
+
+        // Release them all.
+        clientQueue.forEach(Stream.Data::release);
 
         // Both the client and server streams should be gone now.
         assertNull(clientStream.getSession().getStream(clientStream.getId()));

@@ -19,10 +19,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
 
-public class ByteBufferChunk implements Content.Chunk
+public abstract class ByteBufferChunk implements Content.Chunk
 {
     public static final ByteBufferChunk EMPTY = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, false)
     {
@@ -63,6 +63,18 @@ public class ByteBufferChunk implements Content.Chunk
     }
 
     @Override
+    public void retain()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return true;
+    }
+
+    @Override
     public String toString()
     {
         return "%s@%x[l=%b,b=%s]".formatted(
@@ -73,7 +85,29 @@ public class ByteBufferChunk implements Content.Chunk
         );
     }
 
-    public static class ReleasedByRunnable extends ByteBufferChunk
+    public static class WithReferenceCount extends ByteBufferChunk
+    {
+        private final ReferenceCounter references = new ReferenceCounter();
+
+        public WithReferenceCount(ByteBuffer byteBuffer, boolean last)
+        {
+            super(byteBuffer, last);
+        }
+
+        @Override
+        public void retain()
+        {
+            references.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return references.release();
+        }
+    }
+
+    public static class ReleasedByRunnable extends ByteBufferChunk.WithReferenceCount
     {
         private final AtomicReference<Runnable> releaser;
 
@@ -97,7 +131,7 @@ public class ByteBufferChunk implements Content.Chunk
         }
     }
 
-    public static class ReleasedByConsumer extends ByteBufferChunk
+    public static class ReleasedByConsumer extends ByteBufferChunk.WithReferenceCount
     {
         private final AtomicReference<Consumer<ByteBuffer>> releaser;
 
@@ -121,11 +155,11 @@ public class ByteBufferChunk implements Content.Chunk
         }
     }
 
-    public static class ReleasedByRetainable extends ByteBufferChunk
+    public static class WithRetainable extends ByteBufferChunk
     {
         private final Retainable retainable;
 
-        public ReleasedByRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        public WithRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
             super(byteBuffer, last);
             this.retainable = retainable;

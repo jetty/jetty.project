@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.io.Retainable;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -367,7 +367,7 @@ public interface Stream
      *
      * @see Stream#readData()
      */
-    public static class Data implements Retainable
+    public abstract static class Data implements Retainable
     {
         private final DataFrame frame;
 

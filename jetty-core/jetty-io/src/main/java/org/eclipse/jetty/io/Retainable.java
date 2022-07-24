@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.io;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,9 +29,7 @@ public interface Retainable
     /**
      * <p>Retains this resource, incrementing the reference count.</p>
      */
-    public default void retain()
-    {
-    }
+    void retain();
 
     /**
      * <p>Releases this resource, decrementing the reference count.</p>
@@ -40,12 +38,9 @@ public interface Retainable
      *
      * @return whether the invocation of this method decremented the reference count to zero
      */
-    public default boolean release()
-    {
-        return true;
-    }
+    boolean release();
 
-    public static class Wrapper implements Retainable
+    class Wrapper implements Retainable
     {
         private final Retainable wrapped;
 
@@ -88,7 +83,7 @@ public interface Retainable
      * When the resource is acquired from the pool, {@link #acquire()} should be
      * called to set the reference count to {@code 1}.</p>
      */
-    public static class ReferenceCounter implements Retainable
+    class ReferenceCounter implements Retainable
     {
         private final AtomicInteger references;
 

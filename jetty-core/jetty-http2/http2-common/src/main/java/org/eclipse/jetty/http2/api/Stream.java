@@ -19,9 +19,10 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.Retainable;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -392,8 +393,13 @@ public interface Stream
     /**
      * <p>A {@link Retainable} wrapper of a {@link DataFrame}.</p>
      */
-    public static class Data implements Retainable
+    public abstract static class Data implements Retainable
     {
+        public static Data eof(int streamId)
+        {
+            return new Data.EOF(streamId);
+        }
+
         private final DataFrame frame;
 
         public Data(DataFrame frame)
@@ -407,9 +413,29 @@ public interface Stream
         }
 
         @Override
+        public void retain()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return true;
+        }
+
+        @Override
         public String toString()
         {
             return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), frame());
+        }
+
+        private static class EOF extends Data
+        {
+            public EOF(int streamId)
+            {
+                super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
+            }
         }
     }
 }
