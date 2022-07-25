@@ -124,10 +124,10 @@ public class ProxyTest
 //        startClient();
 //
 //        CountDownLatch clientLatch = new CountDownLatch(1);
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
 //        {
 //            @Override
 //            public void onHeaders(Stream stream, HeadersFrame frame)
@@ -162,10 +162,10 @@ public class ProxyTest
 //        startClient();
 //
 //        CountDownLatch clientLatch = new CountDownLatch(1);
-//        Session session = newClient(new Session.Listener.Adapter());
+//        Session session = newClient(new Session.Listener() {});
 //        MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
 //        {
 //            @Override
 //            public void onData(Stream stream, DataFrame frame, Callback callback)

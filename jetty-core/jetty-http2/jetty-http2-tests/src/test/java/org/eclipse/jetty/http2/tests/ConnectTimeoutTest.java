@@ -39,12 +39,12 @@ public class ConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        start(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener() {});
         http2Client.setConnectTimeout(connectTimeout);
 
         InetSocketAddress address = new InetSocketAddress(host, port);
         final CountDownLatch latch = new CountDownLatch(1);
-        http2Client.connect(address, new Session.Listener.Adapter(), new Promise.Adapter<>()
+        http2Client.connect(address, new Session.Listener() {}, new Promise.Adapter<>()
         {
             @Override
             public void failed(Throwable x)

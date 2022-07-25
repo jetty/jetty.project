@@ -608,6 +608,7 @@ public class ServletChannel implements Runnable
         try
         {
             _servletContextApi.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
+            getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_request);
             dispatchable.dispatch();
         }

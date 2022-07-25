@@ -27,8 +27,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -40,6 +38,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -55,7 +54,7 @@ public class GoAwayTest extends AbstractTest
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -67,23 +66,25 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientLatch.countDown();
+                callback.succeeded();
             }
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -108,7 +109,7 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -126,15 +127,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -143,15 +145,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         MetaData.Request request1 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -162,7 +165,7 @@ public class GoAwayTest extends AbstractTest
                 // The client sends the second request and should eventually fail it
                 // locally since it has a larger streamId, and the server discarded it.
                 MetaData.Request request2 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
                 {
                     @Override
                     public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
@@ -190,7 +193,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -208,17 +211,18 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 if (!frame.isGraceful())
                     serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -230,15 +234,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 if (!frame.isGraceful())
                     clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -272,7 +277,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -294,17 +299,18 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 if (!frame.isGraceful())
                     serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -316,15 +322,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 if (!frame.isGraceful())
                     clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -372,7 +379,7 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
             {
                 @Override
                 public void onAccept(Session session)
@@ -383,14 +390,16 @@ public class GoAwayTest extends AbstractTest
                 @Override
                 public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
                 {
+                    stream.demand();
                     AtomicInteger dataFrames = new AtomicInteger();
-                    return new Stream.Listener.Adapter()
+                    return new Stream.Listener()
                     {
                         @Override
-                        public void onData(Stream stream, DataFrame frame, Callback callback)
+                        public void onDataAvailable(Stream stream)
                         {
-                            // Do not consume the data for this stream (i.e. don't succeed the callback).
-                            // Only send the response when receiving the first DATA frame.
+                            stream.readData();
+                            // Do not release the Data for this stream.
+                            // Only send the response after reading the first DATA frame.
                             if (dataFrames.incrementAndGet() == 1)
                             {
                                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
@@ -407,9 +416,10 @@ public class GoAwayTest extends AbstractTest
                 }
 
                 @Override
-                public void onClose(Session session, GoAwayFrame frame)
+                public void onClose(Session session, GoAwayFrame frame, Callback callback)
                 {
                     serverCloseLatch.countDown();
+                    callback.succeeded();
                 }
             }, h2 ->
             {
@@ -422,7 +432,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -437,9 +447,10 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -450,12 +461,12 @@ public class GoAwayTest extends AbstractTest
 
         // This is necessary because the server session window is smaller than the
         // default and the server cannot send a WINDOW_UPDATE with a negative value.
-        ((ISession)clientSession).updateSendWindow(flowControlWindow - FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        ((HTTP2Session)clientSession).updateSendWindow(flowControlWindow - FlowControlStrategy.DEFAULT_WINDOW_SIZE);
 
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
         DataFrame dataFrame1 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), false);
-        ((ISession)clientSession).newStream(new IStream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream clientStream1, HeadersFrame frame)
@@ -470,7 +481,7 @@ public class GoAwayTest extends AbstractTest
                 MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
                 HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
                 DataFrame dataFrame2 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), true);
-                ((ISession)clientStream1.getSession()).newStream(new IStream.FrameList(headersFrame2, dataFrame2, null), new Promise.Adapter<>()
+                ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(Stream clientStream2)
@@ -480,7 +491,7 @@ public class GoAwayTest extends AbstractTest
                         // the server and be able to complete this stream.
                         clientStream1.data(new DataFrame(clientStream1.getId(), ByteBuffer.allocate(flowControlWindow / 2), true), Callback.NOOP);
                     }
-                }, new Adapter());
+                }, new Stream.Listener() {});
             }
         });
 
@@ -500,7 +511,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -517,15 +528,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -534,15 +546,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -584,7 +597,7 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -599,15 +612,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -624,15 +638,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -669,25 +684,24 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverStreamRef.set(stream);
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        if (frame.isEndStream())
+                        Stream.Data data = stream.readData();
+                        data.release();
+                        if (data.frame().isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), callback);
-                        }
-                        else
-                        {
-                            callback.succeeded();
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
                 };
@@ -708,16 +722,17 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -729,14 +744,15 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        clientSession.newStream(new HeadersFrame(request, null, false), promise, new Stream.Listener.Adapter());
+        clientSession.newStream(new HeadersFrame(request, null, false), promise, null);
         Stream clientStream = promise.get(5, TimeUnit.SECONDS);
 
         // Send a graceful GOAWAY from the client.
@@ -763,17 +779,18 @@ public class GoAwayTest extends AbstractTest
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverSessionRef.set(session);
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
-        Session clientSession = newClientSession(new Session.Listener.Adapter());
+        Session clientSession = newClientSession(new Session.Listener() {});
         // TODO: get rid of sleep!
         // Wait for the SETTINGS frames to be exchanged.
         Thread.sleep(500);
@@ -789,7 +806,7 @@ public class GoAwayTest extends AbstractTest
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -798,13 +815,14 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
-        newClientSession(new Session.Listener.Adapter()
+        newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -833,7 +851,7 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -850,15 +868,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -868,9 +887,10 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -892,7 +912,7 @@ public class GoAwayTest extends AbstractTest
 
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -911,16 +931,17 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -932,20 +953,22 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
         CountDownLatch clientResetLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         // Send request headers but not data.
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 clientResetLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -968,7 +991,7 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -992,15 +1015,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -1009,19 +1033,21 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch streamResetLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 streamResetLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -1043,7 +1069,7 @@ public class GoAwayTest extends AbstractTest
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -1055,15 +1081,16 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 serverCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener.Adapter()
+        Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
@@ -1072,20 +1099,22 @@ public class GoAwayTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 clientCloseLatch.countDown();
+                callback.succeeded();
             }
         });
 
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch clientResetLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 clientResetLatch.countDown();
+                callback.succeeded();
             }
         });
 

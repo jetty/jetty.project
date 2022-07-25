@@ -24,13 +24,15 @@ import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
- * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}</p>
+ * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}.</p>
  */
 public class PathContentSource implements Content.Source
 {
@@ -38,8 +40,8 @@ public class PathContentSource implements Content.Source
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
+    private final RetainableByteBufferPool byteBufferPool;
     private int bufferSize = 4096;
-    private ByteBufferPool byteBufferPool;
     private boolean useDirectByteBuffers = true;
     private ReadableByteChannel channel;
     private long totalRead;
@@ -48,12 +50,23 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path) throws IOException
     {
+        this(path, (ByteBufferPool)null);
+    }
+
+    public PathContentSource(Path path, ByteBufferPool byteBufferPool) throws IOException
+    {
+        this(path, (byteBufferPool == null ? ByteBufferPool.NOOP : byteBufferPool).asRetainableByteBufferPool());
+    }
+
+    public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool) throws IOException
+    {
         if (!Files.isRegularFile(path))
             throw new NoSuchFileException(path.toString());
         if (!Files.isReadable(path))
             throw new AccessDeniedException(path.toString());
         this.path = path;
         this.length = Files.size(path);
+        this.byteBufferPool = byteBufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : byteBufferPool;
     }
 
     public Path getPath()
@@ -75,16 +88,6 @@ public class PathContentSource implements Content.Source
     public void setBufferSize(int bufferSize)
     {
         this.bufferSize = bufferSize;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
-    }
-
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        this.byteBufferPool = byteBufferPool;
     }
 
     public boolean isUseDirectByteBuffers()
@@ -123,9 +126,8 @@ public class PathContentSource implements Content.Source
         if (!channel.isOpen())
             return Content.Chunk.EOF;
 
-        ByteBuffer byteBuffer = byteBufferPool == null
-            ? BufferUtil.allocate(getBufferSize(), isUseDirectByteBuffers())
-            : byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
+        RetainableByteBuffer retainableBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
+        ByteBuffer byteBuffer = retainableBuffer.getBuffer();
 
         int read;
         try
@@ -146,7 +148,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, this::release);
+        return Content.Chunk.from(byteBuffer, last, retainableBuffer);
     }
 
     @Override
@@ -202,12 +204,6 @@ public class PathContentSource implements Content.Source
             }
             return errorChunk;
         }
-    }
-
-    private void release(ByteBuffer byteBuffer)
-    {
-        if (byteBufferPool != null)
-            byteBufferPool.release(byteBuffer);
     }
 
     protected boolean rewind()

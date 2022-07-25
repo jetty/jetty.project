@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -81,7 +80,7 @@ public class ResponseTrailerTest extends AbstractTest
             int port = connector.getLocalPort();
             InetSocketAddress address = new InetSocketAddress(host, port);
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
-            http2Client.connect(address, new Session.Listener.Adapter(), sessionPromise);
+            http2Client.connect(address, new Session.Listener() {}, sessionPromise);
             Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
             HttpURI uri = HttpURI.from("http://" + host + ":" + port + "/");
@@ -89,7 +88,7 @@ public class ResponseTrailerTest extends AbstractTest
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);
-            session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+            session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
             {
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)
@@ -97,13 +96,15 @@ public class ResponseTrailerTest extends AbstractTest
                     headers.offer(frame);
                     if (frame.isEndStream())
                         latch.countDown();
+                    stream.demand();
                 }
 
                 @Override
-                public void onData(Stream stream, DataFrame frame, Callback callback)
+                public void onDataAvailable(Stream stream)
                 {
-                    super.onData(stream, frame, callback);
-                    if (frame.isEndStream())
+                    Stream.Data data = stream.readData();
+                    data.release();
+                    if (data.frame().isEndStream())
                         latch.countDown();
                 }
             });

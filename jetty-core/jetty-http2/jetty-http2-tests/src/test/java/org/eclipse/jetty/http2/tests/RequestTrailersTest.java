@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
@@ -54,7 +53,7 @@ public class RequestTrailersTest extends AbstractTest
     private void testEmptyTrailers(String content) throws Exception
     {
         CountDownLatch trailersLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -62,7 +61,7 @@ public class RequestTrailersTest extends AbstractTest
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
@@ -89,20 +88,23 @@ public class RequestTrailersTest extends AbstractTest
     @Test
     public void testEmptyTrailersWithAsyncContent() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame dataFrame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        callback.succeeded();
+                        Stream.Data data = stream.readData();
+                        data.release();
+                        stream.demand();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
-                        if (dataFrame.isEndStream())
+                        if (data.frame().isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
@@ -138,20 +140,22 @@ public class RequestTrailersTest extends AbstractTest
     @Test
     public void testEmptyTrailersWithEmptyAsyncContent() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame dataFrame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        callback.succeeded();
+                        Stream.Data data = stream.readData();
+                        data.release();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
-                        if (dataFrame.isEndStream())
+                        if (data.frame().isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);

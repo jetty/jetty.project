@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -36,7 +35,7 @@ import org.eclipse.jetty.util.Promise;
  * Session session = ...;
  * HeadersFrame frame = ...;
  * Promise&lt;Stream&gt; promise = ...
- * session.newStream(frame, promise, new Stream.Listener.Adapter()
+ * session.newStream(frame, promise, new Stream.Listener()
  * {
  *     public void onHeaders(Stream stream, HeadersFrame frame)
  *     {
@@ -123,6 +122,11 @@ public interface Session
     public boolean isClosed();
 
     /**
+     * @return whether the push functionality is enabled
+     */
+    public boolean isPushEnabled();
+
+    /**
      * @return a snapshot of all the streams currently belonging to this session
      */
     public Collection<Stream> getStreams();
@@ -170,6 +174,16 @@ public interface Session
     }
 
     /**
+     * <p>Gracefully closes the session, returning a {@code CompletableFuture} that
+     * is completed when all the streams currently being processed are completed.</p>
+     * <p>Implementation is idempotent, i.e. calling this method a second time
+     * or concurrently results in a no-operation.</p>
+     *
+     * @return a {@code CompletableFuture} that is completed when all the streams are completed
+     */
+    public CompletableFuture<Void> shutdown();
+
+    /**
      * <p>A {@link Listener} is the passive counterpart of a {@link Session} and
      * receives events happening on an HTTP/2 connection.</p>
      *
@@ -191,7 +205,10 @@ public interface Session
          * @return a (possibly empty or null) map containing SETTINGS configuration
          * options to send.
          */
-        public Map<Integer, Integer> onPreface(Session session);
+        public default Map<Integer, Integer> onPreface(Session session)
+        {
+            return null;
+        }
 
         /**
          * <p>Callback method invoked when a new stream is being created upon
@@ -201,15 +218,19 @@ public interface Session
          * {@link Stream#headers(HeadersFrame, Callback)}.</p>
          * <p>Applications can detect whether request DATA frames will be arriving
          * by testing {@link HeadersFrame#isEndStream()}. If the application is
-         * interested in processing the DATA frames, it must return a
+         * interested in processing the DATA frames, it must demand for DATA
+         * frames using {@link Stream#demand()} and return a
          * {@link Stream.Listener} implementation that overrides
-         * {@link Stream.Listener#onData(Stream, DataFrame, Callback)}.</p>
+         * {@link Stream.Listener#onDataAvailable(Stream)}.</p>
          *
          * @param stream the newly created stream
          * @param frame the HEADERS frame received
          * @return a {@link Stream.Listener} that will be notified of stream events
          */
-        public Stream.Listener onNewStream(Stream stream, HeadersFrame frame);
+        public default Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+        {
+            return null;
+        }
 
         /**
          * <p>Callback method invoked when a SETTINGS frame has been received.</p>
@@ -217,7 +238,9 @@ public interface Session
          * @param session the session
          * @param frame the SETTINGS frame received
          */
-        public void onSettings(Session session, SettingsFrame frame);
+        public default void onSettings(Session session, SettingsFrame frame)
+        {
+        }
 
         /**
          * <p>Callback method invoked when a PING frame has been received.</p>
@@ -225,16 +248,20 @@ public interface Session
          * @param session the session
          * @param frame the PING frame received
          */
-        public void onPing(Session session, PingFrame frame);
+        public default void onPing(Session session, PingFrame frame)
+        {
+        }
 
         /**
          * <p>Callback method invoked when a RST_STREAM frame has been received for an unknown stream.</p>
          *
          * @param session the session
          * @param frame the RST_STREAM frame received
-         * @see Stream.Listener#onReset(Stream, ResetFrame)
+         * @see Stream.Listener#onReset(Stream, ResetFrame, Callback)
          */
-        public void onReset(Session session, ResetFrame frame);
+        public default void onReset(Session session, ResetFrame frame)
+        {
+        }
 
         /**
          * <p>Callback method invoked when a GOAWAY frame has been received.</p>
@@ -255,18 +282,8 @@ public interface Session
          */
         public default void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
-            try
-            {
-                onClose(session, frame);
-                callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
+            callback.succeeded();
         }
-
-        public void onClose(Session session, GoAwayFrame frame);
 
         /**
          * <p>Callback method invoked when the idle timeout expired.</p>
@@ -274,7 +291,10 @@ public interface Session
          * @param session the session
          * @return whether the session should be closed
          */
-        public boolean onIdleTimeout(Session session);
+        public default boolean onIdleTimeout(Session session)
+        {
+            return true;
+        }
 
         /**
          * <p>Callback method invoked when a failure has been detected for this session.</p>
@@ -285,66 +305,7 @@ public interface Session
          */
         public default void onFailure(Session session, Throwable failure, Callback callback)
         {
-            try
-            {
-                onFailure(session, failure);
-                callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-        }
-
-        public void onFailure(Session session, Throwable failure);
-
-        /**
-         * <p>Empty implementation of {@link Stream.Listener}.</p>
-         */
-        public static class Adapter implements Session.Listener
-        {
-            @Override
-            public Map<Integer, Integer> onPreface(Session session)
-            {
-                return null;
-            }
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                return null;
-            }
-
-            @Override
-            public void onSettings(Session session, SettingsFrame frame)
-            {
-            }
-
-            @Override
-            public void onPing(Session session, PingFrame frame)
-            {
-            }
-
-            @Override
-            public void onReset(Session session, ResetFrame frame)
-            {
-            }
-
-            @Override
-            public void onClose(Session session, GoAwayFrame frame)
-            {
-            }
-
-            @Override
-            public boolean onIdleTimeout(Session session)
-            {
-                return true;
-            }
-
-            @Override
-            public void onFailure(Session session, Throwable failure)
-            {
-            }
+            callback.succeeded();
         }
     }
 }

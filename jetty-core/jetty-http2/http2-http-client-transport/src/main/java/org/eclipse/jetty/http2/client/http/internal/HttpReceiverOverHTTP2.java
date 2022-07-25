@@ -15,9 +15,8 @@ package org.eclipse.jetty.http2.client.http.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -33,18 +32,16 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +49,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
-    private final ContentNotifier contentNotifier = new ContentNotifier(this);
+    private final AtomicBoolean notifySuccess = new AtomicBoolean();
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
@@ -68,81 +65,91 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     protected void receive()
     {
-        contentNotifier.process(true);
-    }
+        // Called when the application resumes demand of content.
+        if (LOG.isDebugEnabled())
+            LOG.debug("Resuming response processing on {}", this);
 
-    @Override
-    protected void reset()
-    {
-        super.reset();
-        contentNotifier.reset();
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
+
+        if (notifySuccess.get())
+            responseSuccess(exchange);
+        else
+            getHttpChannel().getStream().demand();
     }
 
     void onHeaders(Stream stream, HeadersFrame frame)
+    {
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isResponse())
+            onResponse(stream, frame);
+        else
+            onTrailer(frame);
+    }
+
+    private void onResponse(Stream stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return;
 
+        MetaData.Response response = (MetaData.Response)frame.getMetaData();
         HttpResponse httpResponse = exchange.getResponse();
-        MetaData metaData = frame.getMetaData();
-        if (metaData.isResponse())
+        httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
+
+        if (responseBegin(exchange))
         {
-            MetaData.Response response = (MetaData.Response)frame.getMetaData();
-            httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
-
-            if (responseBegin(exchange))
+            HttpFields headers = response.getFields();
+            for (HttpField header : headers)
             {
-                HttpFields headers = response.getFields();
-                for (HttpField header : headers)
-                {
-                    if (!responseHeader(exchange, header))
-                        return;
-                }
+                if (!responseHeader(exchange, header))
+                    return;
+            }
 
-                HttpRequest httpRequest = exchange.getRequest();
-                if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
-                {
-                    ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((IStream)stream);
-                    long idleTimeout = httpRequest.getIdleTimeout();
-                    if (idleTimeout > 0)
-                        endPoint.setIdleTimeout(idleTimeout);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
-                    ((IStream)stream).setAttachment(endPoint);
-                    HttpConversation conversation = httpRequest.getConversation();
-                    conversation.setAttribute(EndPoint.class.getName(), endPoint);
-                    HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
-                    if (upgrader != null)
-                        upgrade(upgrader, httpResponse, endPoint);
-                }
+            HttpRequest httpRequest = exchange.getRequest();
+            if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
+            {
+                ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
+                long idleTimeout = httpRequest.getIdleTimeout();
+                if (idleTimeout > 0)
+                    endPoint.setIdleTimeout(idleTimeout);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
+                ((HTTP2Stream)stream).setAttachment(endPoint);
+                HttpConversation conversation = httpRequest.getConversation();
+                conversation.setAttribute(EndPoint.class.getName(), endPoint);
+                HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+                if (upgrader != null)
+                    upgrade(upgrader, httpResponse, endPoint);
+            }
 
-                if (responseHeaders(exchange))
-                {
-                    int status = response.getStatus();
-                    if (frame.isEndStream() || HttpStatus.isInterim(status))
-                        responseSuccess(exchange);
-                }
+            notifySuccess.set(frame.isEndStream());
+            if (responseHeaders(exchange))
+            {
+                int status = response.getStatus();
+                if (frame.isEndStream() || HttpStatus.isInterim(status))
+                    responseSuccess(exchange);
                 else
-                {
-                    if (frame.isEndStream())
-                    {
-                        // There is no demand to trigger response success, so add
-                        // a poison pill to trigger it when there will be demand.
-                        notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-                    }
-                }
+                    stream.demand();
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Stalling response processing, no demand after headers on {}", this);
             }
         }
-        else // Response trailers.
-        {
-            HttpFields trailers = metaData.getFields();
-            trailers.forEach(httpResponse::trailer);
-            // Previous DataFrames had endStream=false, so
-            // add a poison pill to trigger response success
-            // after all normal DataFrames have been consumed.
-            notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-        }
+    }
+
+    private void onTrailer(HeadersFrame frame)
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
+
+        HttpFields trailers = frame.getMetaData().getFields();
+        trailers.forEach(exchange.getResponse()::trailer);
+        responseSuccess(exchange);
     }
 
     private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
@@ -190,20 +197,59 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    public void onData(DataFrame frame, Callback callback)
+    public void onDataAvailable()
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
+            return;
+
+        Stream stream = getHttpChannel().getStream();
+        if (stream == null)
+            return;
+
+        Stream.Data data = stream.readData();
+        if (data != null)
         {
-            callback.failed(new IOException("terminated"));
+            ByteBuffer byteBuffer = data.frame().getData();
+            if (byteBuffer.hasRemaining())
+            {
+                notifySuccess.set(data.frame().isEndStream());
+                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
+                {
+                    data.release();
+                    if (responseFailure(x))
+                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                });
+                boolean proceed = responseContent(exchange, byteBuffer, callback);
+                if (proceed)
+                {
+                    if (data.frame().isEndStream())
+                        responseSuccess(exchange);
+                    else
+                        stream.demand();
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling response processing, no demand after {} on {}", data, this);
+                }
+            }
+            else
+            {
+                data.release();
+                if (data.frame().isEndStream())
+                    responseSuccess(exchange);
+                else
+                    stream.demand();
+            }
         }
         else
         {
-            notifyContent(exchange, frame, callback);
+            stream.demand();
         }
     }
 
-    void onReset(Stream stream, ResetFrame frame)
+    void onReset(ResetFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -226,202 +272,5 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     {
         responseFailure(failure);
         callback.succeeded();
-    }
-
-    private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
-    {
-        contentNotifier.offer(exchange, frame, callback);
-    }
-
-    private class ContentNotifier
-    {
-        private final AutoLock lock = new AutoLock();
-        private final Queue<DataInfo> queue = new ArrayDeque<>();
-        private final HttpReceiverOverHTTP2 receiver;
-        private DataInfo dataInfo;
-        private boolean active;
-        private boolean resume;
-        private boolean stalled;
-
-        private ContentNotifier(HttpReceiverOverHTTP2 receiver)
-        {
-            this.receiver = receiver;
-        }
-
-        private void offer(HttpExchange exchange, DataFrame frame, Callback callback)
-        {
-            DataInfo dataInfo = new DataInfo(exchange, frame, callback);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queueing content {}", dataInfo);
-            enqueue(dataInfo);
-            process(false);
-        }
-
-        private void enqueue(DataInfo dataInfo)
-        {
-            try (AutoLock l = lock.lock())
-            {
-                queue.offer(dataInfo);
-            }
-        }
-
-        private void process(boolean resume)
-        {
-            // Allow only one thread at a time.
-            boolean busy = active(resume);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Resuming({}) processing({}) of content", resume, !busy);
-            if (busy)
-                return;
-
-            // Process only if there is demand.
-            try (AutoLock l = lock.lock())
-            {
-                if (!resume && demand() <= 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Stalling processing, content available but no demand");
-                    active = false;
-                    stalled = true;
-                    return;
-                }
-            }
-
-            while (true)
-            {
-                if (dataInfo != null)
-                {
-                    if (dataInfo.frame.isEndStream())
-                    {
-                        receiver.responseSuccess(dataInfo.exchange);
-                        // Return even if active, as reset() will be called later.
-                        return;
-                    }
-                }
-
-                try (AutoLock l = lock.lock())
-                {
-                    dataInfo = queue.poll();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Processing content {}", dataInfo);
-                    if (dataInfo == null)
-                    {
-                        active = false;
-                        return;
-                    }
-                }
-
-                ByteBuffer buffer = dataInfo.frame.getData();
-                Callback callback = dataInfo.callback;
-                if (buffer.hasRemaining())
-                {
-                    boolean proceed = receiver.responseContent(dataInfo.exchange, buffer, Callback.from(callback::succeeded, x -> fail(callback, x)));
-                    if (!proceed)
-                    {
-                        // The call to responseContent() said we should
-                        // stall, but another thread may have just resumed.
-                        boolean stall = stall();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Stalling({}) processing", stall);
-                        if (stall)
-                            return;
-                    }
-                }
-                else
-                {
-                    callback.succeeded();
-                }
-            }
-        }
-
-        private boolean active(boolean resume)
-        {
-            try (AutoLock l = lock.lock())
-            {
-                if (active)
-                {
-                    // There is a thread in process(),
-                    // but it may be about to exit, so
-                    // remember "resume" to signal the
-                    // processing thread to continue.
-                    if (resume)
-                        this.resume = true;
-                    return true;
-                }
-
-                // If there is no demand (i.e. stalled
-                // and not resuming) then don't process.
-                if (stalled && !resume)
-                    return true;
-
-                // Start processing.
-                active = true;
-                stalled = false;
-                return false;
-            }
-        }
-
-        /**
-         * Called when there is no demand, this method checks whether
-         * the processing should really stop or it should continue.
-         *
-         * @return true to stop processing, false to continue processing
-         */
-        private boolean stall()
-        {
-            try (AutoLock l = lock.lock())
-            {
-                if (resume)
-                {
-                    // There was no demand, but another thread
-                    // just demanded, continue processing.
-                    resume = false;
-                    return false;
-                }
-
-                // There is no demand, stop processing.
-                active = false;
-                stalled = true;
-                return true;
-            }
-        }
-
-        private void reset()
-        {
-            dataInfo = null;
-            try (AutoLock l = lock.lock())
-            {
-                queue.clear();
-                active = false;
-                resume = false;
-                stalled = false;
-            }
-        }
-
-        private void fail(Callback callback, Throwable failure)
-        {
-            callback.failed(failure);
-            receiver.responseFailure(failure);
-        }
-
-        private class DataInfo
-        {
-            private final HttpExchange exchange;
-            private final DataFrame frame;
-            private final Callback callback;
-
-            private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
-            {
-                this.exchange = exchange;
-                this.frame = frame;
-                this.callback = callback;
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), frame);
-            }
-        }
     }
 }

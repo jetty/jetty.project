@@ -209,7 +209,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         // Release the network buffer here (if empty), since the application may
                         // not be reading more bytes, to avoid to keep around a consumed buffer.
                         tryReleaseBuffer(false);
-                        return new Stream.Data(frame, () -> completeReadData(current));
+                        return new StreamData(frame, current);
                     }
                     else
                     {
@@ -249,13 +249,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             // Rethrow so the application has a chance to handle it.
             throw x;
         }
-    }
-
-    private void completeReadData(RetainableByteBuffer buffer)
-    {
-        buffer.release();
-        if (LOG.isDebugEnabled())
-            LOG.debug("released retained {}", buffer);
     }
 
     public void demand()
@@ -450,6 +443,29 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public String toConnectionString()
     {
         return String.format("%s[demand=%b,stalled=%b,parserDataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), parserDataMode);
+    }
+
+    private static class StreamData extends Stream.Data
+    {
+        private final RetainableByteBuffer retainable;
+
+        public StreamData(DataFrame frame, RetainableByteBuffer retainable)
+        {
+            super(frame);
+            this.retainable = retainable;
+        }
+
+        @Override
+        public void retain()
+        {
+            retainable.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return retainable.release();
+        }
     }
 
     private class MessageListener extends ParserListener.Wrapper

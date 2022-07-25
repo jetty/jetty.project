@@ -193,7 +193,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorGeneratesError()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false, contentSucceededCount::incrementAndGet))));
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> Content.Chunk.from(new Throwable("testBlockingContentProducerInterceptorGeneratesError interceptor error")));
@@ -215,7 +215,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorGeneratesEof()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false, contentSucceededCount::incrementAndGet))));
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> Content.Chunk.EOF);
@@ -237,7 +237,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorThrows()
     {
         AtomicInteger contentFailedCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false, contentFailedCount::incrementAndGet))));
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->
@@ -262,7 +262,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorDoesNotConsume()
     {
         AtomicInteger contentFailedCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false, contentFailedCount::incrementAndGet))));
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(1), false))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content -> null);
@@ -284,7 +284,7 @@ public class BlockingContentProducerTest
         AtomicInteger contentSucceededCount = new AtomicInteger();
         AtomicInteger specialContentInterceptedCount = new AtomicInteger();
         AtomicInteger nullContentInterceptedCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(0), false, contentSucceededCount::incrementAndGet))));
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(Content.Chunk.from(ByteBuffer.allocate(0), false))));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->

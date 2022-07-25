@@ -443,6 +443,7 @@ public class ResourceService
             }
             case SERVE ->
             {
+                // TODO : check conditional headers.
                 // TODO output buffer size????
                 HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
                 sendData(request, response, callback, c, null);

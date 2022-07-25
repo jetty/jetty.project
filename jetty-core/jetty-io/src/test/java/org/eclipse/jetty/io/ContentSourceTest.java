@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
+import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -69,7 +70,7 @@ public class ContentSourceTest
 
         ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
 
-        Content.Source.Transformer transformerSource = new Content.Source.Transformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
+        ContentSourceTransformer transformerSource = new ContentSourceTransformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
         {
             @Override
             protected Content.Chunk transform(Content.Chunk rawChunk)
@@ -80,7 +81,7 @@ public class ContentSourceTest
             @Override
             public String toString()
             {
-                return "Content.Source.Transformer@%x".formatted(hashCode());
+                return "%s@%x".formatted(ContentSourceTransformer.class.getSimpleName(), hashCode());
             }
         };
 

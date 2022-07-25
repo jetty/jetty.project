@@ -24,13 +24,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -84,22 +84,22 @@ public class FlowControlWindowsTest
             server.stop();
     }
 
-    protected ISession newClient(Session.Listener listener) throws Exception
+    protected HTTP2Session newClient(Session.Listener listener) throws Exception
     {
         String host = "localhost";
         int port = connector.getLocalPort();
         InetSocketAddress address = new InetSocketAddress(host, port);
         FuturePromise<Session> promise = new FuturePromise<>();
         client.connect(address, listener, promise);
-        return (ISession)promise.get(5, TimeUnit.SECONDS);
+        return (HTTP2Session)promise.get(5, TimeUnit.SECONDS);
     }
 
     @Test
     public void testClientFlowControlWindows() throws Exception
     {
-        start(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener() {});
 
-        ISession clientSession = newClient(new Session.Listener.Adapter());
+        HTTP2Session clientSession = newClient(new Session.Listener() {});
         // Wait while client and server exchange SETTINGS and WINDOW_UPDATE frames.
         Thread.sleep(1000);
 
@@ -112,8 +112,8 @@ public class FlowControlWindowsTest
         MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP.asString(), hostPort, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(request, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        clientSession.newStream(frame, promise, new Stream.Listener.Adapter());
-        IStream clientStream = (IStream)promise.get(5, TimeUnit.SECONDS);
+        clientSession.newStream(frame, promise, null);
+        HTTP2Stream clientStream = (HTTP2Stream)promise.get(5, TimeUnit.SECONDS);
 
         int streamSendWindow = clientStream.updateSendWindow(0);
         assertEquals(serverStreamRecvWindow, streamSendWindow);
@@ -124,32 +124,32 @@ public class FlowControlWindowsTest
     @Test
     public void testServerFlowControlWindows() throws Exception
     {
-        AtomicReference<ISession> sessionRef = new AtomicReference<>();
+        AtomicReference<HTTP2Session> sessionRef = new AtomicReference<>();
         CountDownLatch sessionLatch = new CountDownLatch(1);
-        AtomicReference<IStream> streamRef = new AtomicReference<>();
+        AtomicReference<HTTP2Stream> streamRef = new AtomicReference<>();
         CountDownLatch streamLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
             {
-                sessionRef.set((ISession)session);
+                sessionRef.set((HTTP2Session)session);
                 sessionLatch.countDown();
             }
 
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                streamRef.set((IStream)stream);
+                streamRef.set((HTTP2Stream)stream);
                 streamLatch.countDown();
                 return null;
             }
         });
 
-        ISession clientSession = newClient(new Session.Listener.Adapter());
+        HTTP2Session clientSession = newClient(new Session.Listener() {});
 
         assertTrue(sessionLatch.await(5, TimeUnit.SECONDS));
-        ISession serverSession = sessionRef.get();
+        HTTP2Session serverSession = sessionRef.get();
         // Wait while client and server exchange SETTINGS and WINDOW_UPDATE frames.
         Thread.sleep(1000);
 
@@ -161,10 +161,10 @@ public class FlowControlWindowsTest
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
         MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP.asString(), hostPort, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(request, null, true);
-        clientSession.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter());
+        clientSession.newStream(frame, new Promise.Adapter<>(), null);
 
         assertTrue(streamLatch.await(5, TimeUnit.SECONDS));
-        IStream serverStream = streamRef.get();
+        HTTP2Stream serverStream = streamRef.get();
 
         int streamSendWindow = serverStream.updateSendWindow(0);
         assertEquals(clientStreamRecvWindow, streamSendWindow);

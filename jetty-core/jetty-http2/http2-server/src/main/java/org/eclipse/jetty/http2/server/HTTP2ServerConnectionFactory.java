@@ -17,16 +17,15 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http2.HTTP2Cipher;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -70,7 +69,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return acceptable;
     }
 
-    protected class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
+    protected class HTTPServerSessionListener implements ServerSessionListener, Stream.Listener
     {
         private final EndPoint endPoint;
 
@@ -93,26 +92,17 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            getConnection().onNewStream((IStream)stream, frame);
-            return this;
-        }
-
-        @Override
-        public void onBeforeData(Stream stream)
-        {
-            // Do not notify DATA frame listeners until demanded.
+            getConnection().onNewStream((HTTP2Stream)stream, frame);
+            // Do not demand for DATA frames.
             // This allows CONNECT requests with pseudo header :protocol
             // (e.g. WebSocket over HTTP/2) to buffer DATA frames
             // until they upgrade and are ready to process them.
+            return this;
         }
 
         @Override
         public boolean onIdleTimeout(Session session)
         {
-            boolean close = super.onIdleTimeout(session);
-            if (!close)
-                return false;
-
             long idleTimeout = getConnection().getEndPoint().getIdleTimeout();
             return getConnection().onSessionTimeout(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
         }
@@ -137,7 +127,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
             if (frame.isEndStream())
-                getConnection().onTrailers((IStream)stream, frame);
+                getConnection().onTrailers(stream, frame);
             else
                 close(stream, "invalid_trailers");
         }
@@ -151,9 +141,9 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
+        public void onDataAvailable(Stream stream)
         {
-            getConnection().onData((IStream)stream, frame, callback);
+            getConnection().onDataAvailable(stream);
         }
 
         @Override
@@ -173,13 +163,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
         private void onFailure(Stream stream, Throwable failure, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, failure, callback);
+            getConnection().onStreamFailure(stream, failure, callback);
         }
 
         @Override
         public boolean onIdleTimeout(Stream stream, Throwable x)
         {
-            return getConnection().onStreamTimeout((IStream)stream, x);
+            return getConnection().onStreamTimeout(stream, x);
         }
 
         private void close(Stream stream, String reason)
