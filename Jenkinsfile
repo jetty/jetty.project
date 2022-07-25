@@ -149,7 +149,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f documentation", "maven3")
+                  mavenBuild("jdk17", "clean install -rf :documentation", "maven3")
                 }
               }
             }
