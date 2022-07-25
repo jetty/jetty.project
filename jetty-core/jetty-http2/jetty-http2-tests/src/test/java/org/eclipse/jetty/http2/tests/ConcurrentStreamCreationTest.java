@@ -45,7 +45,7 @@ public class ConcurrentStreamCreationTest extends AbstractTest
         int iterations = 1024;
         int total = threads * runs * iterations;
         CountDownLatch serverLatch = new CountDownLatch(total);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -58,7 +58,7 @@ public class ConcurrentStreamCreationTest extends AbstractTest
             }
         }, h2 -> h2.setMaxConcurrentStreams(total));
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         CyclicBarrier barrier = new CyclicBarrier(threads);
         CountDownLatch clientLatch = new CountDownLatch(total);
@@ -81,7 +81,7 @@ public class ConcurrentStreamCreationTest extends AbstractTest
                         {
                             MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
                             HeadersFrame requestFrame = new HeadersFrame(request, null, true);
-                            session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+                            session.newStream(requestFrame, promise, new Stream.Listener()
                             {
                                 @Override
                                 public void onHeaders(Stream stream, HeadersFrame frame)

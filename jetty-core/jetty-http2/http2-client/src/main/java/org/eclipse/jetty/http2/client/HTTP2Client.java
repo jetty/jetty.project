@@ -54,13 +54,13 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * int port = 443;
  *
  * FuturePromise&lt;Session&gt; sessionPromise = new FuturePromise&lt;&gt;();
- * client.connect(sslContextFactory, new InetSocketAddress(host, port), new ServerSessionListener.Adapter(), sessionPromise);
+ * client.connect(sslContextFactory, new InetSocketAddress(host, port), new ServerSessionListener() {}, sessionPromise);
  *
  * // Obtain the client Session object.
  * Session session = sessionPromise.get(5, TimeUnit.SECONDS);
  *
  * // Prepare the HTTP request headers.
- * HttpFields requestFields = new HttpFields();
+ * HttpFields requestFields = HttpFields.build();
  * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
  * // Prepare the HTTP request object.
  * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *
  * // Prepare the listener to receive the HTTP response frames.
- * Stream.Listener responseListener = new new Stream.Listener.Adapter()
+ * Stream.Listener responseListener = new new Stream.Listener()
  * {
  *      &#64;Override
  *      public void onHeaders(Stream stream, HeadersFrame frame)

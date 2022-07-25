@@ -18,9 +18,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
-    private final Map<IStream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();
+    private final Map<Stream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();
     private float bufferRatio;
 
     public BufferingFlowControlStrategy(float bufferRatio)
@@ -92,21 +93,21 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     }
 
     @Override
-    public void onStreamCreated(IStream stream)
+    public void onStreamCreated(Stream stream)
     {
         super.onStreamCreated(stream);
         streamLevels.put(stream, new AtomicInteger());
     }
 
     @Override
-    public void onStreamDestroyed(IStream stream)
+    public void onStreamDestroyed(Stream stream)
     {
         streamLevels.remove(stream);
         super.onStreamDestroyed(stream);
     }
 
     @Override
-    public void onDataConsumed(ISession session, IStream stream, int length)
+    public void onDataConsumed(Session session, Stream stream, int length)
     {
         if (length <= 0)
             return;
@@ -119,10 +120,10 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         {
             if (sessionLevel.compareAndSet(level, 0))
             {
-                session.updateRecvWindow(level);
+                updateRecvWindow(session, level);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
-                sendWindowUpdate(null, session, new WindowUpdateFrame(0, level));
+                sendWindowUpdate(session, null, List.of(new WindowUpdateFrame(0, level)));
             }
             else
             {
@@ -153,10 +154,10 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                     if (level > maxLevel)
                     {
                         level = streamLevel.getAndSet(0);
-                        stream.updateRecvWindow(level);
+                        updateRecvWindow(stream, level);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Data consumed, {} bytes, updated stream recv window by {}/{} for {}", length, level, maxLevel, stream);
-                        sendWindowUpdate(stream, session, new WindowUpdateFrame(stream.getId(), level));
+                        sendWindowUpdate(session, stream, List.of(new WindowUpdateFrame(stream.getId(), level)));
                     }
                     else
                     {
@@ -168,13 +169,8 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         }
     }
 
-    protected void sendWindowUpdate(IStream stream, ISession session, WindowUpdateFrame frame)
-    {
-        session.frames(stream, List.of(frame), Callback.NOOP);
-    }
-
     @Override
-    public void windowUpdate(ISession session, IStream stream, WindowUpdateFrame frame)
+    public void windowUpdate(Session session, Stream stream, WindowUpdateFrame frame)
     {
         super.windowUpdate(session, stream, frame);
 
@@ -207,7 +203,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
         if (frame.getStreamId() == 0)
         {
-            int sessionWindow = session.updateRecvWindow(0);
+            int sessionWindow = updateRecvWindow(session, 0);
             Atomics.updateMax(maxSessionRecvWindow, sessionWindow);
         }
     }

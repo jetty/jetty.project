@@ -14,10 +14,17 @@
 package org.eclipse.jetty.http2.tests;
 
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * HTTP/2 server to run the 'h2spec' tool against.
@@ -38,6 +45,18 @@ public class H2SpecServer
         ServerConnector connector = new ServerConnector(server, http, h2c);
         connector.setPort(port);
         server.addConnector(connector);
+
+        // H2Spec requires the server to read the request
+        // content and respond with 200 and some content.
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                Content.Source.consumeAll(request, Callback.NOOP);
+                response.write(true, UTF_8.encode("hello"), callback);
+            }
+        });
 
         server.start();
     }

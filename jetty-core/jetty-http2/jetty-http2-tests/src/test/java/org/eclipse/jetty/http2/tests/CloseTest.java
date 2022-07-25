@@ -53,7 +53,7 @@ public class CloseTest extends AbstractServerTest
     {
         final CountDownLatch closeLatch = new CountDownLatch(1);
         final AtomicReference<Session> sessionRef = new AtomicReference<>();
-        startServer(new ServerSessionListener.Adapter()
+        startServer(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -123,7 +123,7 @@ public class CloseTest extends AbstractServerTest
     public void testClientSendsGoAwayButDoesNotCloseConnectionServerCloses() throws Exception
     {
         final AtomicReference<Session> sessionRef = new AtomicReference<>();
-        startServer(new ServerSessionListener.Adapter()
+        startServer(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -187,7 +187,7 @@ public class CloseTest extends AbstractServerTest
     {
         final long idleTimeout = 1000;
         final AtomicReference<Session> sessionRef = new AtomicReference<>();
-        startServer(new ServerSessionListener.Adapter()
+        startServer(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)

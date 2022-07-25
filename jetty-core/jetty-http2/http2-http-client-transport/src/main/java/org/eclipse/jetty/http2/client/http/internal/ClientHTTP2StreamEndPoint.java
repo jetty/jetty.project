@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.http2.client.http.internal;
 
-import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.HTTP2StreamEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
@@ -26,15 +25,15 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientHTTP2StreamEndPoint.class);
 
-    public ClientHTTP2StreamEndPoint(IStream stream)
+    public ClientHTTP2StreamEndPoint(HTTP2Stream stream)
     {
         super(stream);
     }
 
     @Override
-    public void onData(DataFrame frame, Callback callback)
+    public void onDataAvailable()
     {
-        offerData(frame, callback);
+        processDataAvailable();
     }
 
     @Override

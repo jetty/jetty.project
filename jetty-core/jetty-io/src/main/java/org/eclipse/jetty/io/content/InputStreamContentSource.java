@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -37,7 +39,7 @@ public class InputStreamContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final InputStream inputStream;
-    private final ByteBufferPool bufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private int bufferSize = 4096;
     private Runnable demandCallback;
     private Content.Chunk.Error errorChunk;
@@ -45,13 +47,18 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream)
     {
-        this(inputStream, null);
+        this(inputStream, (ByteBufferPool)null);
     }
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
+        this(inputStream, (bufferPool == null ? ByteBufferPool.NOOP : bufferPool).asRetainableByteBufferPool());
+    }
+
+    public InputStreamContentSource(InputStream inputStream, RetainableByteBufferPool bufferPool)
+    {
         this.inputStream = inputStream;
-        this.bufferPool = bufferPool == null ? ByteBufferPool.NOOP : bufferPool;
+        this.bufferPool = bufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : bufferPool;
     }
 
     public int getBufferSize()
@@ -77,7 +84,8 @@ public class InputStreamContentSource implements Content.Source
 
         try
         {
-            ByteBuffer buffer = bufferPool.acquire(getBufferSize(), false);
+            RetainableByteBuffer streamBuffer = bufferPool.acquire(getBufferSize(), false);
+            ByteBuffer buffer = streamBuffer.getBuffer();
             int read = inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
             if (read < 0)
             {
@@ -87,7 +95,7 @@ public class InputStreamContentSource implements Content.Source
             else
             {
                 buffer.limit(read);
-                return Content.Chunk.from(buffer, false, bufferPool::release);
+                return Content.Chunk.from(buffer, false, streamBuffer);
             }
         }
         catch (Throwable x)

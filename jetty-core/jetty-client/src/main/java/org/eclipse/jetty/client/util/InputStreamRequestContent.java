@@ -16,7 +16,7 @@ package org.eclipse.jetty.client.util;
 import java.io.InputStream;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 
 /**
@@ -33,7 +33,7 @@ public class InputStreamRequestContent extends InputStreamContentSource implemen
 
     public InputStreamRequestContent(InputStream stream)
     {
-        this("application/octet-stream", stream, null);
+        this(stream, 4096);
     }
 
     public InputStreamRequestContent(InputStream stream, int bufferSize)
@@ -43,7 +43,7 @@ public class InputStreamRequestContent extends InputStreamContentSource implemen
 
     public InputStreamRequestContent(String contentType, InputStream stream, int bufferSize)
     {
-        this(contentType, stream, null);
+        this(contentType, stream);
         setBufferSize(bufferSize);
     }
 
@@ -52,7 +52,7 @@ public class InputStreamRequestContent extends InputStreamContentSource implemen
         this(contentType, stream, null);
     }
 
-    public InputStreamRequestContent(String contentType, InputStream stream, ByteBufferPool bufferPool)
+    public InputStreamRequestContent(String contentType, InputStream stream, RetainableByteBufferPool bufferPool)
     {
         super(stream, bufferPool);
         this.contentType = contentType;

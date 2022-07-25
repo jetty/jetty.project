@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -60,7 +59,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeout() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -74,13 +73,14 @@ public class IdleTimeoutTest extends AbstractTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter()
+        CountDownLatch latch = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 latch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -93,7 +93,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter());
+        }, null);
 
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -101,7 +101,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -112,13 +112,14 @@ public class IdleTimeoutTest extends AbstractTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter()
+        CountDownLatch latch = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 latch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -132,7 +133,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter());
+        }, null);
 
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -140,7 +141,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -159,17 +160,18 @@ public class IdleTimeoutTest extends AbstractTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClientSession(new ServerSessionListener.Adapter()
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        Session session = newClientSession(new ServerSessionListener()
         {
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
 
-        final CountDownLatch replyLatch = new CountDownLatch(1);
+        CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>()
@@ -179,7 +181,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter()
+        }, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -197,8 +199,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testClientEnforcingIdleTimeout() throws Exception
     {
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -211,14 +213,15 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
         http2Client.setIdleTimeout(idleTimeout);
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>()
@@ -228,7 +231,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter());
+        }, null);
 
         assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(session.isClosed());
@@ -237,8 +240,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testClientEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -248,14 +251,15 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
         http2Client.setIdleTimeout(idleTimeout);
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>()
@@ -265,7 +269,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter());
+        }, null);
 
         assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -273,8 +277,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testClientNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -287,16 +291,17 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onClose(Session session, GoAwayFrame frame)
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
             {
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
         http2Client.setIdleTimeout(idleTimeout);
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
-        final CountDownLatch replyLatch = new CountDownLatch(1);
+        CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>()
@@ -306,7 +311,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener.Adapter()
+        }, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -326,7 +331,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testClientEnforcingStreamIdleTimeout() throws Exception
     {
-        final int idleTimeout = 1000;
+        int idleTimeout = 1000;
         start(new Handler.Processor()
         {
             @Override
@@ -337,10 +342,10 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        final CountDownLatch timeoutLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch timeoutLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>()
@@ -350,12 +355,13 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(idleTimeout);
             }
-        }, new Stream.Listener.Adapter()
+        }, new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callback.succeeded();
+                Stream.Data data = stream.readData();
+                data.release();
                 dataLatch.countDown();
             }
 
@@ -381,14 +387,14 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingStreamIdleTimeout() throws Exception
     {
-        final CountDownLatch timeoutLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch timeoutLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 stream.setIdleTimeout(idleTimeout);
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
                     public boolean onIdleTimeout(Stream stream, Throwable x)
@@ -400,17 +406,18 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        final CountDownLatch resetLatch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter());
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         // Stream does not end here, but we won't send any DATA frame.
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 resetLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -426,14 +433,15 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerStreamIdleTimeoutIsNotEnforcedWhenReceiving() throws Exception
     {
-        final CountDownLatch timeoutLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch timeoutLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 stream.setIdleTimeout(idleTimeout);
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
                     public boolean onIdleTimeout(Stream stream, Throwable x)
@@ -445,15 +453,15 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
-        final Stream stream = promise.get(5, TimeUnit.SECONDS);
+        session.newStream(requestFrame, promise, null);
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         sleep(idleTimeout / 2);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback()
         {
             private int sends;
@@ -462,21 +470,21 @@ public class IdleTimeoutTest extends AbstractTest
             public void succeeded()
             {
                 sleep(idleTimeout / 2);
-                final boolean last = ++sends == 2;
+                boolean last = ++sends == 2;
                 stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback()
                 {
-                    @Override
-                    public InvocationType getInvocationType()
-                    {
-                        return InvocationType.NON_BLOCKING;
-                    }
-
                     @Override
                     public void succeeded()
                     {
                         // Idle timeout should not fire while the server is receiving.
                         assertEquals(1, timeoutLatch.getCount());
                         dataLatch.countDown();
+                    }
+
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return InvocationType.NON_BLOCKING;
                     }
                 });
             }
@@ -490,8 +498,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testClientStreamIdleTimeoutIsNotEnforcedWhenSending() throws Exception
     {
-        final CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -508,7 +516,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>()
@@ -520,8 +528,8 @@ public class IdleTimeoutTest extends AbstractTest
                 super.succeeded(stream);
             }
         };
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
-        final Stream stream = promise.get(5, TimeUnit.SECONDS);
+        session.newStream(requestFrame, promise, null);
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         Callback.Completable completable1 = new Callback.Completable();
         sleep(idleTimeout / 2);
@@ -589,12 +597,12 @@ public class IdleTimeoutTest extends AbstractTest
         // to make sure it does not fire spuriously.
         connector.setIdleTimeout(3 * delay);
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -649,7 +657,7 @@ public class IdleTimeoutTest extends AbstractTest
         prepareClient();
         http2Client.start();
 
-        Session client = newClientSession(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener() {});
 
         // Send requests until one is queued on the server but not dispatched.
         int count = 0;
@@ -661,7 +669,7 @@ public class IdleTimeoutTest extends AbstractTest
             MetaData.Request request = newRequest("GET", "/" + count, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();
-            client.newStream(frame, promise, new Stream.Listener.Adapter());
+            client.newStream(frame, promise, null);
             Stream stream = promise.get(5, TimeUnit.SECONDS);
             ByteBuffer data = ByteBuffer.allocate(10);
             stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
@@ -675,16 +683,17 @@ public class IdleTimeoutTest extends AbstractTest
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(frame, promise, new Stream.Listener.Adapter()
+        client.newStream(frame, promise, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
+                callback.succeeded();
                 resetLatch.countDown();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(((ISession)client).updateSendWindow(0));
+        ByteBuffer data = ByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0));
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
         assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -692,7 +701,7 @@ public class IdleTimeoutTest extends AbstractTest
         // Wait for WINDOW_UPDATEs to be processed by the client.
         sleep(1000);
 
-        assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+        assertThat(((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 
     private void sleep(long value)

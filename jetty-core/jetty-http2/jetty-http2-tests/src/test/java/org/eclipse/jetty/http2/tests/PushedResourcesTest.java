@@ -51,7 +51,7 @@ public class PushedResourcesTest extends AbstractTest
     {
         String pushPath = "/secondary";
         CountDownLatch latch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -67,12 +67,13 @@ public class PushedResourcesTest extends AbstractTest
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
-                }, new Stream.Listener.Adapter()
+                }, new Stream.Listener()
                 {
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
                     {
                         latch.countDown();
+                        callback.succeeded();
                     }
                 });
                 return null;

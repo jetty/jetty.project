@@ -38,7 +38,7 @@ public class PriorityTest extends AbstractTest
     @Test
     public void testPriorityBeforeHeaders() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -50,7 +50,7 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         int streamId = session.priority(new PriorityFrame(0, 13, false), Callback.NOOP);
         assertTrue(streamId > 0);
 
@@ -65,7 +65,7 @@ public class PriorityTest extends AbstractTest
                 assertEquals(streamId, result.getId());
                 latch.countDown();
             }
-        }, new Stream.Listener.Adapter()
+        }, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -83,7 +83,7 @@ public class PriorityTest extends AbstractTest
     {
         CountDownLatch beforeRequests = new CountDownLatch(1);
         CountDownLatch afterRequests = new CountDownLatch(2);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -106,7 +106,7 @@ public class PriorityTest extends AbstractTest
         });
 
         CountDownLatch responses = new CountDownLatch(2);
-        Stream.Listener.Adapter listener = new Stream.Listener.Adapter()
+        Stream.Listener listener = new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -116,7 +116,7 @@ public class PriorityTest extends AbstractTest
             }
         };
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData metaData1 = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(metaData1, null, true);
         FuturePromise<Stream> promise1 = new FuturePromise<>();
@@ -145,7 +145,7 @@ public class PriorityTest extends AbstractTest
     {
         PriorityFrame priorityFrame = new PriorityFrame(13, 200, true);
         CountDownLatch latch = new CountDownLatch(2);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -164,10 +164,10 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData metaData = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(metaData, priorityFrame, true);
-        session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

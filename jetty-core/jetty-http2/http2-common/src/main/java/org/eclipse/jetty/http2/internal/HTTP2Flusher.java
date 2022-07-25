@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -69,10 +68,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return invocationType;
     }
 
-    public void window(IStream stream, WindowUpdateFrame frame)
+    public void window(HTTP2Stream stream, WindowUpdateFrame frame)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -86,7 +85,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean prepend(Entry entry)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -105,7 +104,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean append(Entry entry)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -124,7 +123,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean append(List<Entry> list)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -142,7 +141,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private int getWindowQueueSize()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return windows.size();
         }
@@ -150,7 +149,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     public int getFrameQueueSize()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return entries.size();
         }
@@ -162,7 +161,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Flushing {}", session);
 
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 throw terminated;
@@ -354,7 +353,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         Throwable closed;
         Set<Entry> allEntries;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             terminated = x;
@@ -383,7 +382,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     void terminate(Throwable cause)
     {
         Throwable closed;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             terminated = cause;
@@ -425,9 +424,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public abstract static class Entry extends Callback.Nested
     {
         protected final Frame frame;
-        protected final IStream stream;
+        protected final HTTP2Stream stream;
 
-        protected Entry(Frame frame, IStream stream, Callback callback)
+        protected Entry(Frame frame, HTTP2Stream stream, Callback callback)
         {
             super(callback);
             this.frame = frame;
@@ -514,10 +513,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private class WindowEntry
     {
-        private final IStream stream;
+        private final HTTP2Stream stream;
         private final WindowUpdateFrame frame;
 
-        public WindowEntry(IStream stream, WindowUpdateFrame frame)
+        public WindowEntry(HTTP2Stream stream, WindowUpdateFrame frame)
         {
             this.stream = stream;
             this.frame = frame;

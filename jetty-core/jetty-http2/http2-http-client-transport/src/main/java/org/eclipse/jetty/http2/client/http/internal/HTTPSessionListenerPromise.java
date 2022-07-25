@@ -25,9 +25,10 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
-public class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
+public class HTTPSessionListenerPromise implements Session.Listener, Promise<Session>
 {
     private final AtomicMarkableReference<HttpConnectionOverHTTP2> connection = new AtomicMarkableReference<>(null, false);
     private final Map<String, Object> context;
@@ -82,13 +83,15 @@ public class HTTPSessionListenerPromise extends Session.Listener.Adapter impleme
     }
 
     @Override
-    public void onClose(Session session, GoAwayFrame frame)
+    public void onClose(Session session, GoAwayFrame frame, Callback callback)
     {
-        if (failConnectionPromise(new ClosedChannelException()))
-            return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
-        if (connection != null)
-            onClose(connection, frame);
+        if (!failConnectionPromise(new ClosedChannelException()))
+        {
+            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            if (connection != null)
+                onClose(connection, frame);
+        }
+        callback.succeeded();
     }
 
     public void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
@@ -110,13 +113,15 @@ public class HTTPSessionListenerPromise extends Session.Listener.Adapter impleme
     }
 
     @Override
-    public void onFailure(Session session, Throwable failure)
+    public void onFailure(Session session, Throwable failure, Callback callback)
     {
-        if (failConnectionPromise(failure))
-            return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
-        if (connection != null)
-            connection.close(failure);
+        if (!failConnectionPromise(failure))
+        {
+            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            if (connection != null)
+                connection.close(failure);
+        }
+        callback.succeeded();
     }
 
     private boolean failConnectionPromise(Throwable failure)
