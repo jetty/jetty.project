@@ -5,21 +5,21 @@ Enables the Jetty Proxy service.
 Allows the server to act as a non-transparent proxy for browsers.
 
 [depend]
-ee9-servlet
+ee8-servlet
 client
 
 [environment]
-ee9
+ee8
 
 [lib]
-lib/jetty-ee9-proxy-${jetty.version}.jar
+lib/jetty-ee8-proxy-${jetty.version}.jar
 
 [xml]
-etc/jetty-ee9-proxy.xml
+etc/jetty-ee8-proxy.xml
 
 [ini-template]
 ## Proxy Configuration
-# jetty.proxy.servletClass=org.eclipse.jetty.ee9.proxy.ProxyServlet
+# jetty.proxy.servletClass=org.eclipse.jetty.ee8.proxy.ProxyServlet
 # jetty.proxy.servletMapping=/*
 # jetty.proxy.maxThreads=128
 # jetty.proxy.maxConnections=256

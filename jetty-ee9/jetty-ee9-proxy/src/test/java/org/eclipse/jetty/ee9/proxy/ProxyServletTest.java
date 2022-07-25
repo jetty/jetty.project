@@ -140,7 +140,7 @@ public class ProxyServletTest
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
