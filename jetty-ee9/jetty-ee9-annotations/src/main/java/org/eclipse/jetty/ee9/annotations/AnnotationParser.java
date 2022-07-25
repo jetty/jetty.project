@@ -815,6 +815,7 @@ public class AnnotationParser
         if (jarResource == null)
             return;
 
+        // TODO: what if the input is "FOO.JAR" or "Bar.Jar" ?
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled())
