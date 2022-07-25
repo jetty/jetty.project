@@ -696,7 +696,7 @@ public abstract class Resource implements ResourceFactory
      * {@link IOException} was thrown while building the filename list.
      * Note: The resource names are not URL encoded.
      */
-    public List<String> list()
+    public List<String> list() // TODO: should return Path's
     {
         try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
         {
@@ -813,7 +813,7 @@ public abstract class Resource implements ResourceFactory
      * @return String of HTML
      * @throws IOException on failure to generate a list.
      */
-    public String getListHTML(String base, boolean parent, String query) throws IOException
+    public String getListHTML(String base, boolean parent, String query) throws IOException // TODO: move to helper class
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.canonicalPath(base);
