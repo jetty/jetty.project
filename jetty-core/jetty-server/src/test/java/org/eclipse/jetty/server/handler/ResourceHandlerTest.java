@@ -3261,7 +3261,7 @@ public class ResourceHandlerTest
         ContextHandler altContext = new ContextHandler("/context/alt");
         altContext.setHandler(altResourceHandler);
         _contextHandlerCollection.addHandler(altContext);
-        altContext.start(); // TODO: do we really need to start this on our own?
+        altContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         ResourceHandler otherResourceHandler = new ResourceHandler();
         otherResourceHandler.setBaseResource(Resource.newResource(altRoot));
@@ -3271,7 +3271,7 @@ public class ResourceHandlerTest
         ContextHandler otherContext = new ContextHandler("/context/other");
         otherContext.setHandler(otherResourceHandler);
         _contextHandlerCollection.addHandler(otherContext);
-        otherContext.start(); // TODO: do we really need to start this on our own?
+        otherContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         _rootResourceHandler.setDirAllowed(false);
         _rootResourceHandler.setRedirectWelcome(false);

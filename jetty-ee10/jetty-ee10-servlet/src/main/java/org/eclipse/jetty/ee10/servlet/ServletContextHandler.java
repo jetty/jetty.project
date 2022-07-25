@@ -2938,6 +2938,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public ServletContext getContext(String uripath)
         {
+            // TODO: should we throw UnsupportedOperationException here?
+            // This is a change in API from Jetty 10 and Jetty 11, as the older Jetty versions goes down to ContextHandler.
+            // Also, how do we handle cross context across EE environments?
             List<ServletContextHandler> contexts = new ArrayList<>();
             List<ServletContextHandler> handlers = getServer().getDescendants(ServletContextHandler.class);
             String matchedPath = null;
