@@ -385,6 +385,7 @@ public class ResourceService
                 uri.path(uri.getCanonicalPath() + "/");
                 uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 Response.sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
