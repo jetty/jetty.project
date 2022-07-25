@@ -507,6 +507,16 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
+     * Checks if the resource supports being loaded as a memory-mapped ByteBuffer.
+     *
+     * @return true if the resource supports memory-mapped ByteBuffer, false otherwise.
+     */
+    public boolean isMemoryMappable()
+    {
+        return false;
+    }
+
+    /**
      * Deletes the given resource
      * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
      * {@link #getPath()}.

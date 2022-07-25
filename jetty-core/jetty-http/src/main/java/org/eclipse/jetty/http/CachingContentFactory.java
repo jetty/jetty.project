@@ -209,15 +209,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             if (_useFileMappedBuffer)
             {
                 // map the content into memory
-                // TODO this is assuming the resource can be mapped! Inefficient to throw to test this
-                try
-                {
-                    byteBuffer = BufferUtil.toMappedBuffer(httpContent.getResource().getPath(), 0, _contentLengthValue);
-                }
-                catch (Throwable t)
-                {
-                    LOG.trace("ignored", t);
-                }
+                byteBuffer = BufferUtil.toMappedBuffer(httpContent.getResource(), 0, _contentLengthValue);
             }
 
             if (byteBuffer == null)

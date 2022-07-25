@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -1055,11 +1054,6 @@ public class BufferUtil
         return buf;
     }
 
-    public static ByteBuffer toMappedBuffer(File file) throws IOException
-    {
-        return toMappedBuffer(file.toPath(), 0, file.length());
-    }
-
     public static ByteBuffer toMappedBuffer(Path path) throws IOException
     {
         return toMappedBuffer(path, 0, Files.size(path));
@@ -1071,6 +1065,20 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, pos, len);
         }
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
+    {
+        if (!resource.isMemoryMappable())
+            return null;
+        return toMappedBuffer(resource.getPath());
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
+    {
+        if (!resource.isMemoryMappable())
+            return null;
+        return toMappedBuffer(resource.getPath(), pos, len);
     }
 
     public static String toSummaryString(ByteBuffer buffer)
