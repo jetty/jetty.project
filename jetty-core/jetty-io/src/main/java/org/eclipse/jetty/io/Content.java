@@ -268,11 +268,11 @@ public class Content
          * will continue to return the same error instance.</p>
          * <p>Once a read returns a {@link Chunk#isLast() last chunk}, further reads will
          * continue to return a last chunk (although the instance may be different).</p>
-         * <p>Chunks of content that have been consumed by the content reader code must
-         * be {@link Chunk#release() released}.</p>
-         * <p>The content reader code may perform additional calls to {@link Chunk#retain()}
-         * on the returned {@link Chunk}, that must be matched by a correspondent number
-         * of calls to {@link Chunk#release()}.</p>
+         * <p>The content reader code must ultimately arrange for a call to
+         * {@link Chunk#release()} on the returned {@link Chunk}.</p>
+         * <p>Additionally, prior to the ultimate call to {@link Chunk#release()}, the reader
+         * code may make additional calls to {@link Chunk#retain()}, that must ultimately
+         * be matched by a correspondent number of calls to {@link Chunk#release()}.</p>
          * <p>Concurrent reads from different threads are not recommended, as they are
          * inherently in a race condition.</p>
          * <p>Reads performed outside the invocation context of a
@@ -283,6 +283,7 @@ public class Content
          *
          * @return a chunk of content, possibly an error instance, or {@code null}
          * @see #demand(Runnable)
+         * @see Retainable
          */
         Chunk read();
 
