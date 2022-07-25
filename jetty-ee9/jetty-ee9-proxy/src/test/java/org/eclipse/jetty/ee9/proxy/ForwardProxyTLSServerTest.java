@@ -144,7 +144,7 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
@@ -153,7 +153,7 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newProxySslContextFactory()
     {
         SslContextFactory.Server proxyTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("proxy_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/proxy_keystore.p12").getAbsolutePath();
         proxyTLS.setKeyStorePath(keyStorePath);
         proxyTLS.setKeyStorePassword("storepwd");
         return proxyTLS;
@@ -692,7 +692,7 @@ public class ForwardProxyTLSServerTest
                 return keyManagers;
             }
         };
-        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_keystore.p12").getAbsolutePath());
+        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_keystore.p12").getAbsolutePath());
         clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -747,7 +747,7 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
+        clientTLS.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_server_keystore.p12").getAbsolutePath());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -765,7 +765,7 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12").getAbsolutePath());
+        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_proxy_keystore.p12").getAbsolutePath());
         proxyClientTLS.setKeyStorePassword("storepwd");
         proxyClientTLS.setEndpointIdentificationAlgorithm(null);
         proxyClientTLS.start();

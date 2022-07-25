@@ -72,7 +72,7 @@ public class ForwardProxyServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         serverTLS.setKeyStorePath(keyStorePath);
         serverTLS.setKeyStorePassword("storepwd");
         return serverTLS;
