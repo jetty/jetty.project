@@ -622,6 +622,19 @@ public class TypeUtil
     }
 
     /**
+     * Decorate a Throwable with the suppressed errors and return it.
+     * @param t the throwable
+     * @param errors the list of errors
+     * @return the original throwable with suppressed errors
+     * @param <T> of type Throwable
+     */
+    public static <T extends Throwable> T withSuppressed(T t, List<Throwable> errors)
+    {
+        errors.forEach(t::addSuppressed);
+        return t;
+    }
+
+    /**
      * @param o Object to test for true
      * @return True if passed object is not null and is either a Boolean with value true or evaluates to a string that evaluates to true.
      */

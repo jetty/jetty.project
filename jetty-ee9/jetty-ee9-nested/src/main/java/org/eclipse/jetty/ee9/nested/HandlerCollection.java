@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,7 +23,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -130,7 +131,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             if (handlers == null)
                 return;
 
-            MultiException mex = null;
+            List<Throwable> errors = null;
             for (Handler handler : handlers._handlers)
             {
                 try
@@ -143,17 +144,18 @@ public class HandlerCollection extends AbstractHandlerContainer
                 }
                 catch (Exception e)
                 {
-                    if (mex == null)
-                        mex = new MultiException();
-                    mex.add(e);
+                    if (errors == null)
+                        errors = new ArrayList<>();
+                    errors.add(e);
                 }
             }
-            if (mex != null)
+            if (errors != null)
             {
-                if (mex.size() == 1)
-                    throw new ServletException(mex.getThrowable(0));
-                else
-                    throw new ServletException(mex);
+                if (errors.get(0) instanceof ServletException se)
+                    throw se;
+                if (errors.get(0) instanceof IOException ioe)
+                    throw ioe;
+                throw TypeUtil.withSuppressed(new ServletException("Unhandled exception"), errors);
             }
         }
     }
