@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -223,7 +222,7 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
-            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
+            ResourceCollection bases = new ResourceCollection(str);
             webApp.setWar(null);
             webApp.setBaseResource(bases);
         }

@@ -15,10 +15,10 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -42,42 +42,27 @@ public class ResourceCollectionTest
     public WorkDir workdir;
 
     @Test
-    public void testUnsetCollectionThrowsISE()
+    public void testUnsetCollectionThrowsIAE()
     {
-        ResourceCollection coll = new ResourceCollection();
-
-        assertThrowIllegalStateException(coll);
+        assertThrows(IllegalArgumentException.class, () ->
+            new ResourceCollection());
     }
 
     @Test
-    public void testEmptyResourceArrayThrowsISE()
+    public void testEmptyResourceArrayThrowsIAE()
     {
-        ResourceCollection coll = new ResourceCollection(new Resource[0]);
-
-        assertThrowIllegalStateException(coll);
+        assertThrows(IllegalArgumentException.class, () ->
+            new ResourceCollection(new Resource[0]));
     }
 
     @Test
-    public void testResourceArrayWithNullThrowsISE()
+    public void testResourceArrayWithNullThrowsNPE()
     {
-        ResourceCollection coll = new ResourceCollection(new Resource[]{null});
-
-        assertThrowIllegalStateException(coll);
-    }
-
-    @Test
-    public void testEmptyStringArrayThrowsISE()
-    {
-        ResourceCollection coll = new ResourceCollection(new String[0]);
-
-        assertThrowIllegalStateException(coll);
-    }
-
-    @Test
-    public void testStringArrayWithNullThrowsIAE()
-    {
-        assertThrows(IllegalArgumentException.class,
-            () -> new ResourceCollection(new String[]{null}));
+        assertThrows(NullPointerException.class, () ->
+        {
+            Resource[] col = new Resource[]{null};
+            new ResourceCollection(col); // throws NPE
+        });
     }
 
     @Test
@@ -188,11 +173,11 @@ public class ResourceCollectionTest
     @Test
     public void testMultipleSources1() throws Exception
     {
-        ResourceCollection rc1 = new ResourceCollection(new String[]{
+        ResourceCollection rc1 = new ResourceCollection(Resource.fromList(List.of(
             "src/test/resources/org/eclipse/jetty/util/resource/one/",
             "src/test/resources/org/eclipse/jetty/util/resource/two/",
-            "src/test/resources/org/eclipse/jetty/util/resource/three/"
-        });
+            "src/test/resources/org/eclipse/jetty/util/resource/three/"),
+            false));
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");
         assertEquals(getContent(rc1, "3.txt"), "3 - three");
@@ -210,11 +195,11 @@ public class ResourceCollectionTest
     @Test
     public void testMergedDir() throws Exception
     {
-        ResourceCollection rc = new ResourceCollection(new String[]{
-            "src/test/resources/org/eclipse/jetty/util/resource/one/",
-            "src/test/resources/org/eclipse/jetty/util/resource/two/",
-            "src/test/resources/org/eclipse/jetty/util/resource/three/"
-        });
+        ResourceCollection rc = new ResourceCollection(Resource.fromList(List.of(
+                "src/test/resources/org/eclipse/jetty/util/resource/one/",
+                "src/test/resources/org/eclipse/jetty/util/resource/two/",
+                "src/test/resources/org/eclipse/jetty/util/resource/three/"),
+            false));
 
         Resource r = rc.resolve("dir");
         assertTrue(r instanceof ResourceCollection);
@@ -227,11 +212,11 @@ public class ResourceCollectionTest
     @Test
     public void testCopyTo() throws Exception
     {
-        ResourceCollection rc = new ResourceCollection(new String[]{
-            "src/test/resources/org/eclipse/jetty/util/resource/one/",
-            "src/test/resources/org/eclipse/jetty/util/resource/two/",
-            "src/test/resources/org/eclipse/jetty/util/resource/three/"
-        });
+        ResourceCollection rc = new ResourceCollection(Resource.fromList(List.of(
+                "src/test/resources/org/eclipse/jetty/util/resource/one/",
+                "src/test/resources/org/eclipse/jetty/util/resource/two/",
+                "src/test/resources/org/eclipse/jetty/util/resource/three/"),
+            false));
 
         File dest = MavenTestingUtils.getTargetTestingDir("copyto");
         FS.ensureDirExists(dest);
@@ -253,9 +238,7 @@ public class ResourceCollectionTest
     {
         Resource resource = r.resolve(path);
         StringBuilder buffer = new StringBuilder();
-        try (InputStream in = resource.getInputStream();
-             InputStreamReader reader = new InputStreamReader(in);
-             BufferedReader br = new BufferedReader(reader))
+        try (BufferedReader br = Files.newBufferedReader(resource.getPath(), StandardCharsets.UTF_8))
         {
             String line;
             while ((line = br.readLine()) != null)

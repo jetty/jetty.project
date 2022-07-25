@@ -21,7 +21,6 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -30,27 +29,23 @@ import java.util.List;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A collection of resources (dirs).
- * Allows webapps to have multiple (static) sources.
+ * A collection of Resources.
+ * Allows webapps to have multiple sources.
  * The first resource in the collection is the main resource.
  * If a resource is not found in the main resource, it looks it up in
- * the order the resources were constructed.
+ * the order the provided in the constructors
  */
-public class ResourceCollection extends Resource
+public class ResourceCollection extends Resource implements AutoCloseable
 {
-    private List<Resource> _resources;
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceCollection.class);
 
-    /**
-     * Instantiates an empty resource collection.
-     * <p>
-     * This constructor is used when configuring jetty-maven-plugin.
-     */
-    public ResourceCollection()
-    {
-        _resources = new ArrayList<>();
-    }
+    // TODO: This should be final, this collection should be immutable
+    private List<Resource> _resources;
+    private final List<Mount> _mounted = new ArrayList<>();
 
     /**
      * Instantiates a new resource collection.
@@ -59,7 +54,7 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
-        this(Arrays.asList(resources));
+        this(List.of(resources));
     }
 
     /**
@@ -70,6 +65,9 @@ public class ResourceCollection extends Resource
     public ResourceCollection(Collection<Resource> resources)
     {
         _resources = new ArrayList<>();
+
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("Empty ResourceCollection");
 
         for (Resource r : resources)
         {
@@ -83,51 +81,35 @@ public class ResourceCollection extends Resource
             }
             else
             {
-                assertResourceValid(r);
-                _resources.add(r);
-            }
-        }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resource strings to be added to collection
-     */
-    public ResourceCollection(String[] resources)
-    {
-        _resources = new ArrayList<>();
-
-        if (resources == null || resources.length == 0)
-        {
-            return;
-        }
-
-        try
-        {
-            for (String strResource : resources)
-            {
-                if (strResource == null || strResource.length() == 0)
+                if (_resources.contains(r))
                 {
-                    throw new IllegalArgumentException("empty/null resource path not supported");
+                    // skip, already seen
+                    continue;
                 }
-                Resource resource = Resource.newResource(strResource);
-                assertResourceValid(resource);
-                _resources.add(resource);
-            }
 
-            if (_resources.isEmpty())
-            {
-                throw new IllegalArgumentException("resources cannot be empty or null");
+                try
+                {
+                    Resource.Mount mount = Resource.mountIfNeeded(r);
+                    if (mount != null)
+                    {
+                        _mounted.add(mount);
+                        // add mounted resource, so that Resource.getPath().getFileSystem() is sane.
+                        _resources.add(mount.root());
+                    }
+                    else
+                    {
+                        if (!r.exists() || !r.isDirectory())
+                        {
+                            throw new IllegalArgumentException(r + " is not an existing directory.");
+                        }
+                        _resources.add(r);
+                    }
+                }
+                catch (IllegalStateException | IOException e)
+                {
+                    LOG.warn("Unable to process resource {}", r, e);
+                }
             }
-        }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
         }
     }
 
@@ -139,7 +121,13 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(String csvResources) throws IOException
     {
-        setResources(csvResources);
+        this(Resource.fromList(csvResources, false));
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        _mounted.forEach(IO::close);
     }
 
     /**
@@ -156,7 +144,9 @@ public class ResourceCollection extends Resource
      * Sets the resource collection's resources.
      *
      * @param res the resources to set
+     * @deprecated ResourceCollection should be immutable, set at Constructor only.
      */
+    @Deprecated
     public void setResources(List<Resource> res)
     {
         _resources = new ArrayList<>();
@@ -172,7 +162,9 @@ public class ResourceCollection extends Resource
      * Sets the resource collection's resources.
      *
      * @param resources the new resource array
+     * @deprecated ResourceCollection should be immutable, set at Constructor only.
      */
+    @Deprecated
     public void setResources(Resource[] resources)
     {
         if (resources == null || resources.length == 0)
@@ -199,7 +191,9 @@ public class ResourceCollection extends Resource
      * one or more resource strings.
      * @throws IOException if unable resource declared is not valid
      * @see Resource#fromList(String, boolean)
+     * @deprecated ResourceCollection should be immutable, set at Constructor only.
      */
+    @Deprecated
     public void setResources(String resources) throws IOException
     {
         if (StringUtil.isBlank(resources))

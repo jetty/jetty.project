@@ -219,16 +219,15 @@ public class MavenWebAppContext extends WebAppContext
      */
     public void setResourceBases(String[] resourceBases)
     {
-        List<String> resources = new ArrayList<String>();
-        for (String rl : resourceBases)
+        try
         {
-            String[] rs = StringUtil.csvSplit(rl);
-            for (String r : rs)
-            {
-                resources.add(r);
-            }
+            List<Resource> resources = Resource.fromList(List.of(resourceBases), false);
+            setBaseResource(new ResourceCollection(resources));
         }
-        setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Bad resourceBases: [" + String.join(", ", resourceBases) + "]", e);
+        }
     }
 
     public List<File> getWebInfLib()

@@ -37,12 +37,12 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
-import java.util.StringTokenizer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
@@ -100,6 +100,7 @@ public abstract class Resource implements ResourceFactory
 
     /**
      * <p>Mount a URI if it is needed.</p>
+     *
      * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
      * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
      * they no longer require any resources from a mounted resource.
@@ -108,16 +109,40 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountIfNeeded(URI uri)
     {
-        if (uri == null || uri.getScheme() == null)
+        if (uri == null)
+            return null;
+        String scheme = uri.getScheme();
+        if (scheme == null)
+            return null;
+        if (!isArchive(uri))
             return null;
         try
         {
-            return (uri.getScheme().equalsIgnoreCase("jar")) ? FileSystemPool.INSTANCE.mount(uri) : null;
+            if (scheme.equalsIgnoreCase("jar") || scheme.equalsIgnoreCase("file"))
+            {
+                URI jarURI = toJarRoot(uri);
+                if (jarURI == null)
+                    throw new IllegalArgumentException("Not a jar or file URI: " + uri);
+                return FileSystemPool.INSTANCE.mount(jarURI);
+            }
+            return null;
         }
         catch (IOException ioe)
         {
             throw new IllegalArgumentException(ioe);
         }
+    }
+
+    /**
+     * @param resourceBase the base resource that might need to be mounted.
+     * @return the {@link Mount} if a mount is needed, null if one is not needed.
+     * @see #mountIfNeeded(URI)
+     */
+    public static Mount mountIfNeeded(Resource resourceBase)
+    {
+        if (resourceBase == null)
+            return null;
+        return mountIfNeeded(resourceBase.getURI());
     }
 
     /**
@@ -130,6 +155,8 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mount(URI uri) throws IOException
     {
+        if (!isArchive(uri))
+            throw new IllegalArgumentException("URI is not a JAR: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
         return FileSystemPool.INSTANCE.mount(uri);
@@ -143,18 +170,117 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountJar(Path path) throws IOException
     {
+        if (!isArchive(path))
+            throw new IllegalArgumentException("Path is not a JAR: " + path);
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("not an allowed path: " + path);
-        URI jarUri = URI.create(toJarRoot(pathUri.toString()));
+            throw new IllegalArgumentException("Not an allowed path: " + path);
+        URI jarUri = toJarRoot(pathUri);
+        if (jarUri == null)
+            throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
     }
 
-    public static String toJarRoot(String jarFile)
+    /**
+     * Test if Path is a Java Archive (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     *
+     * @param path the path to test
+     * @return true if path is a {@link Files#isRegularFile(Path, LinkOption...)} and name ends with {@code .jar}, {@code .war}, or {@code .zip}
+     */
+    public static boolean isArchive(Path path)
     {
-        return "jar:" + jarFile + "!/";
+        if (path == null)
+            return false;
+        if (!Files.isRegularFile(path))
+            return false;
+        String filename = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
+        return (filename.endsWith(".jar") || filename.endsWith(".war") || filename.endsWith(".zip"));
     }
 
+    /**
+     * Test if URI is a Java Archive. (ends with {@code .jar}, {@code .war}, or {@code .zip}).
+     *
+     * @param uri the URI to test
+     * @return true if the URI has a path that seems to point to a ({@code .jar}, {@code .war}, or {@code .zip}).
+     */
+    public static boolean isArchive(URI uri)
+    {
+        if (uri == null)
+            return false;
+        if (uri.getScheme() == null)
+            return false;
+        String path = uri.getPath();
+        int idxEnd = path == null ? -1 : path.length();
+        if (uri.getScheme().equalsIgnoreCase("jar"))
+        {
+            String ssp = uri.getSchemeSpecificPart();
+            path = URI.create(ssp).getPath();
+            idxEnd = path.length();
+            // look for `!/` split
+            int jarEnd = path.indexOf("!/");
+            if (jarEnd >= 0)
+                idxEnd = jarEnd;
+        }
+        if (path == null)
+            return false;
+        int idxLastSlash = path.lastIndexOf('/', idxEnd);
+        if (idxLastSlash < 0)
+            return false; // no last slash, can't possibly be a valid jar/war/zip
+        // look for filename suffix
+        int idxSuffix = path.lastIndexOf('.', idxEnd);
+        if (idxSuffix < 0)
+            return false; // no suffix found, can't possibly be a jar/war/zip
+        if (idxSuffix < idxLastSlash)
+            return false; // last dot is before last slash, eg ("/path.to/something")
+        String suffix = path.substring(idxSuffix, idxEnd).toLowerCase(Locale.ENGLISH);
+        return suffix.equals(".jar") || suffix.equals(".war") || suffix.equals(".zip");
+    }
+
+    /**
+     * Take an arbitrary URI and provide a URI that is suitable for mounting to root of that URI.
+     *
+     * The resulting URI will point to the {@code jar:file://foo.jar!/} root of said Java Archive (jar or war)
+     *
+     * @param uri the URI to mutate
+     * @return the <code>jar:${uri_to_jar_or_war}!/</code> URI or null if not a Java Archive.
+     * @see #isArchive(URI)
+     */
+    public static URI toJarRoot(URI uri)
+    {
+        Objects.requireNonNull(uri, "URI");
+        String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
+
+        if (!isArchive(uri))
+            return null;
+
+        if (scheme.equalsIgnoreCase("jar"))
+        {
+            String rawUri = uri.toASCIIString();
+            int idx = rawUri.indexOf("!/");
+            if (idx >= 0)
+            {
+                rawUri = rawUri.substring(0, idx + 2);
+                return URI.create(rawUri); // strip extra
+            }
+            return URI.create(rawUri + "!/");
+        }
+        else if (scheme.equalsIgnoreCase("file"))
+        {
+            String rawUri = uri.toASCIIString();
+            int idx = rawUri.indexOf("!/");
+            if (idx >= 0)
+                rawUri = rawUri.substring(0, idx + 2); // strip extra
+            else
+                rawUri += "!/";
+            return URI.create("jar:" + rawUri); // return prefixed `jar:file://`
+        }
+
+        // shouldn't be possible to reach this point
+        throw new IllegalArgumentException("Cannot make %s into jar: URI".formatted(uri));
+    }
+
+    // TODO: will be removed in MultiReleaseJarFile PR, as AnnotationParser is the only thing using this,
+    // and it doesn't need to recreate the URI that it will already have.
     public static String toJarPath(String jarFile, String pathInJar)
     {
         return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
@@ -162,8 +288,9 @@ public abstract class Resource implements ResourceFactory
 
     /**
      * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     *
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     *                 representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
      */
     public static URI toURI(String resource)
@@ -369,6 +496,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Return true if the Resource r is contained in the Resource containingResource, either because
      * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
+     *
      * @param r the contained resource
      * @param containingResource the containing resource
      * @return true if the Resource is contained, false otherwise
@@ -381,6 +509,7 @@ public abstract class Resource implements ResourceFactory
 
     /**
      * Return the Path corresponding to this resource.
+     *
      * @return the path.
      */
     public abstract Path getPath();
@@ -388,6 +517,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Return true if this resource is contained in the Resource r, either because
      * r is a folder or a jar file or any form of resource capable of containing other resources.
+     *
      * @param r the containing resource
      * @return true if this Resource is contained, false otherwise
      * @throws IOException Problem accessing resource
@@ -398,6 +528,7 @@ public abstract class Resource implements ResourceFactory
      * Return true if the passed Resource represents the same resource as the Resource.
      * For many resource types, this is equivalent to {@link #equals(Object)}, however
      * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
+     *
      * @param resource The resource to check
      * @return true if the passed resource represents the same resource.
      */
@@ -409,6 +540,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:
      * {@link #getPath()} and {@link LinkOption#NOFOLLOW_LINKS}.
+     *
      * @return true if the represented resource exists.
      */
     public boolean exists()
@@ -419,6 +551,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return true if the represented resource is a container/directory.
      */
     public boolean isDirectory()
@@ -430,6 +563,7 @@ public abstract class Resource implements ResourceFactory
      * Time resource was last modified.
      * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
      * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     *
      * @return the last modified time as milliseconds since unix epoch or
      * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
      */
@@ -451,6 +585,7 @@ public abstract class Resource implements ResourceFactory
      * Length of the resource.
      * Equivalent to {@link Files#size(Path)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
      */
     public long length()
@@ -510,6 +645,7 @@ public abstract class Resource implements ResourceFactory
      * Deletes the given resource
      * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
      * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
      */
@@ -531,6 +667,7 @@ public abstract class Resource implements ResourceFactory
      * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
      * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
      * on the {@code Path} returned by {@code move()}.
+     *
      * @param dest the destination name for the resource
      * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
      */
@@ -607,7 +744,9 @@ public abstract class Resource implements ResourceFactory
         // where default resolve behavior would be to treat
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
+        {
             subUriPath = subUriPath.substring(1);
+        }
 
         URI uri = getURI();
         URI resolvedUri;
@@ -1143,22 +1282,92 @@ public abstract class Resource implements ResourceFactory
      * @param resources the comma {@code ,} or semicolon {@code ;} delimited
      * String of resource references.
      * @param globDirs true to return directories in addition to files at the level of the glob
-     * @param resourceFactory the ResourceFactory used to create new Resource references
+     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
      * @return the list of resources parsed from input string.
      */
     public static List<Resource> fromList(String resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
     {
-        if (StringUtil.isBlank(resources))
-        {
-            return Collections.emptyList();
-        }
+        return fromList(StringUtil.tokenizerAsIterator(resources, StringUtil.DEFAULT_DELIMS), globDirs, resourceFactory);
+    }
 
+    /**
+     * Parse a collection of String resource references and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the collection of string references
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(Collection<String> resources, boolean globDirs) throws IOException
+    {
+        return fromList(resources, globDirs, Resource::newResource);
+    }
+
+    /**
+     * Parse a collection of String resource references and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the collection of string references
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(Collection<String> resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
+    {
+        Objects.requireNonNull(resources, "Collection cannot be null");
+        return fromList(resources.iterator(), globDirs, resourceFactory);
+    }
+
+    /**
+     * Parse an Iterator of String resource references and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the iterator of string references
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(Iterator<String> resources, boolean globDirs) throws IOException
+    {
+        Objects.requireNonNull(resources, "Iterator cannot be null");
+        return fromList(resources, globDirs, Resource::newResource);
+    }
+
+    /**
+     * Parse an Iterator of String resource references and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the iterator of string references
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(Iterator<String> resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
+    {
         List<Resource> returnedResources = new ArrayList<>();
 
-        StringTokenizer tokenizer = new StringTokenizer(resources, StringUtil.DEFAULT_DELIMS);
-        while (tokenizer.hasMoreTokens())
+        while (resources.hasNext())
         {
-            String token = tokenizer.nextToken().trim();
+            String token = resources.next();
 
             // Is this a glob reference?
             if (token.endsWith("/*") || token.endsWith("\\*"))
@@ -1210,6 +1419,7 @@ public abstract class Resource implements ResourceFactory
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
+     *
      * @see #mount(URI)
      * @see #mountJar(Path)
      */
@@ -1217,6 +1427,7 @@ public abstract class Resource implements ResourceFactory
     {
         /**
          * Return the root {@link Resource} made available by this mount.
+         *
          * @return the resource.
          * @throws IOException Problem accessing resource
          */
