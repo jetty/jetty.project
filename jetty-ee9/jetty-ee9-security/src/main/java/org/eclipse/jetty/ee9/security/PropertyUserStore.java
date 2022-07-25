@@ -225,7 +225,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             throw new IllegalStateException("Config does not exist: " + config);
 
         Properties properties = new Properties();
-        try (InputStream inputStream = config.getInputStream())
+        try (InputStream inputStream = config.newInputStream())
         {
             properties.load(inputStream);
         }

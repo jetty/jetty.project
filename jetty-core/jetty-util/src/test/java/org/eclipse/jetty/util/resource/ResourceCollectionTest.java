@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -158,8 +157,8 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, () -> coll.resolve("foo"));
         assertThrows(IllegalStateException.class, coll::exists);
         assertThrows(IllegalStateException.class, coll::getPath);
-        assertThrows(IllegalStateException.class, coll::getInputStream);
-        assertThrows(IllegalStateException.class, coll::getReadableByteChannel);
+        assertThrows(IllegalStateException.class, coll::newInputStream);
+        assertThrows(IllegalStateException.class, coll::newReadableByteChannel);
         assertThrows(IllegalStateException.class, coll::getURI);
         assertThrows(IllegalStateException.class, coll::getName);
         assertThrows(IllegalStateException.class, coll::isDirectory);
@@ -253,7 +252,7 @@ public class ResourceCollectionTest
     {
         Resource resource = r.resolve(path);
         StringBuilder buffer = new StringBuilder();
-        try (InputStream in = resource.getInputStream();
+        try (InputStream in = resource.newInputStream();
              InputStreamReader reader = new InputStreamReader(in);
              BufferedReader br = new BufferedReader(reader))
         {

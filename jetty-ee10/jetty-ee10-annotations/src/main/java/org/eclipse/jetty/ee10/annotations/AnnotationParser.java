@@ -581,7 +581,7 @@ public class AnnotationParser
         {
             Resource r = Resource.newResource(resource);
             addParsedClass(className, r.toString());
-            try (InputStream is = r.getInputStream())
+            try (InputStream is = r.newInputStream())
             {
                 scanClass(handlers, null, is);
             }
@@ -607,7 +607,7 @@ public class AnnotationParser
             {
                 Resource r = Resource.newResource(resource);
                 addParsedClass(clazz.getName(), r.toString());
-                try (InputStream is = r.getInputStream())
+                try (InputStream is = r.newInputStream())
                 {
                     scanClass(handlers, null, is);
                 }
@@ -656,7 +656,7 @@ public class AnnotationParser
                 {
                     Resource r = Resource.newResource(resource);
                     addParsedClass(className, r.toString());
-                    try (InputStream is = r.getInputStream())
+                    try (InputStream is = r.newInputStream())
                     {
                         scanClass(handlers, null, is);
                     }
@@ -740,7 +740,7 @@ public class AnnotationParser
 
         if (fullname.endsWith(".class"))
         {
-            try (InputStream is = r.getInputStream())
+            try (InputStream is = r.newInputStream())
             {
                 scanClass(handlers, null, is);
                 return;
@@ -790,7 +790,7 @@ public class AnnotationParser
                         if (LOG.isDebugEnabled())
                             LOG.debug("Scanning class {}", r);
                         addParsedClass(str, r.toString());
-                        try (InputStream is = r.getInputStream())
+                        try (InputStream is = r.newInputStream())
                         {
                             scanClass(handlers, Resource.newResource(path.getParent()), is);
                         }

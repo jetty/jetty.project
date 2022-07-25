@@ -71,13 +71,13 @@ public class OrderingTest
         }
 
         @Override
-        public InputStream getInputStream() throws IOException
+        public InputStream newInputStream() throws IOException
         {
             return null;
         }
 
         @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
+        public ReadableByteChannel newReadableByteChannel() throws IOException
         {
             return null;
         }

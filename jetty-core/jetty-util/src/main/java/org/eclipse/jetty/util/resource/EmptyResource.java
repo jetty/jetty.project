@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.List;
@@ -29,6 +30,35 @@ import java.util.List;
 public class EmptyResource extends Resource
 {
     public static final Resource INSTANCE = new EmptyResource();
+
+    private static final ReadableByteChannel EOF_READABLE_BYTE_CHANNEL = new ReadableByteChannel()
+    {
+        @Override
+        public int read(ByteBuffer dst)
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    private static final InputStream EOF_INPUT_STREAM = new InputStream()
+    {
+        @Override
+        public int read()
+        {
+            return -1;
+        }
+    };
 
     private EmptyResource()
     {
@@ -83,15 +113,15 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
+    public InputStream newInputStream() throws IOException
     {
-        return null;
+        return EOF_INPUT_STREAM;
     }
 
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
-        return null;
+        return EOF_READABLE_BYTE_CHANNEL;
     }
 
     @Override
