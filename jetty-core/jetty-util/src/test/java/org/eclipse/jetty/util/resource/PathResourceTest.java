@@ -54,7 +54,7 @@ public class PathResourceTest
 
             PathResource resource = (PathResource)Resource.newResource(manifestPath);
 
-            try (InputStream inputStream = resource.getInputStream())
+            try (InputStream inputStream = resource.newInputStream())
             {
                 assertThat("InputStream", inputStream, is(not(nullValue())));
             }
@@ -78,7 +78,7 @@ public class PathResourceTest
 
             PathResource resource = (PathResource)Resource.newResource(manifestPath);
 
-            try (ReadableByteChannel channel = resource.getReadableByteChannel())
+            try (ReadableByteChannel channel = resource.newReadableByteChannel())
             {
                 assertThat("ReadableByteChannel", channel, is(not(nullValue())));
             }

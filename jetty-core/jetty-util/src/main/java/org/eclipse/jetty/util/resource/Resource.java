@@ -481,14 +481,12 @@ public abstract class Resource implements ResourceFactory
     public abstract String getName();
 
     /**
-     * Input stream to the resource
+     * Creates a new input stream to the resource.
      *
      * @return an input stream to the resource
      * @throws IOException if unable to open the input stream
-     * @deprecated Replace with {@link #getPath()} and {@link Files#newInputStream(Path, OpenOption...)}.
      */
-    @Deprecated(forRemoval = true)
-    public InputStream getInputStream() throws IOException
+    public InputStream newInputStream() throws IOException
     {
         return Files.newInputStream(getPath(), StandardOpenOption.READ);
     }
@@ -498,10 +496,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @return an readable bytechannel to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
-     * @deprecated Replace with {@link #getPath()} and {@link Files#newByteChannel(Path, OpenOption...)}.
      */
-    @Deprecated(forRemoval = true)
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
@@ -1047,7 +1043,7 @@ public abstract class Resource implements ResourceFactory
         }
 
         // use old school stream based copy
-        try (InputStream in = getInputStream();
+        try (InputStream in = newInputStream();
              OutputStream out = Files.newOutputStream(destination))
         {
             IO.copy(in, out);
