@@ -330,7 +330,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("See ServletContextRequest.errorClose and softClose hack")
     public void testForwardSendError() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
@@ -549,7 +548,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
+    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -568,7 +567,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
+    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -587,7 +586,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
+    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -606,7 +605,7 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("References to ResourceHandler, a jetty-core ContextHandler cannot be referenced for a ServletContext")
+    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -675,17 +674,14 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDispatchMapping() throws Exception
     {
         _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
-        _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatch2TestServlet.class), "/DispatchServlet");
-        _contextHandler.addServlet(new ServletHolder("DispatchServlet2", AsyncDispatch2TestServlet.class), "/DispatchServlet2");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatchTestServlet.class), "/DispatchServlet");
 
         HttpTester.Response response;
         String rawResponse;
 
-        // TODO Test TCK hack for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
         rawResponse = _connector.getResponse("""
             GET /context/DispatchServlet HTTP/1.1\r
             Host: local\r
@@ -693,17 +689,31 @@ public class DispatcherTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
+        assertThat(response.getContent(), containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
+    }
 
-        // TODO Test how it should work after fix for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+    @Test
+    public void testDispatchMapping404() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatchTestServlet.class), "/DispatchServlet");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        _contextHandler.setErrorProcessor(errorPageErrorHandler);
+        errorPageErrorHandler.addErrorPage(404, "/TestServlet");
+
+        HttpTester.Response response;
+        String rawResponse;
+
+        // Test not found
         rawResponse = _connector.getResponse("""
-            GET /context/DispatchServlet2 HTTP/1.1\r
+            GET /context/DispatchServlet?target=/DoesNotExist HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
+        assertThat(response.getContent(), containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter
@@ -1335,14 +1345,16 @@ public class DispatcherTest
         }
     }
 
-    public static class AsyncDispatch2TestServlet extends HttpServlet
+    public static class AsyncDispatchTestServlet extends HttpServlet
     {
         public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException
         {
             AsyncContext asyncContext = req.startAsync();
             asyncContext.setTimeout(0);
-            asyncContext.dispatch("/TestServlet");
+            String target = req.getParameter("target");
+            target = StringUtil.isBlank(target) ? "/TestServlet" : target;
+            asyncContext.dispatch(target);
         }
     }
 }

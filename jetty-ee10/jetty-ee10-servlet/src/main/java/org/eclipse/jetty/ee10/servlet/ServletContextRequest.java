@@ -183,8 +183,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public void errorClose()
     {
         // TODO Actually make the response status and headers immutable temporarily
-        // TODO: This soft close breaks ErrorPageTest, AsyncContextTest
-        // _response.getHttpOutput().softClose();
+        _response.getHttpOutput().softClose();
     }
 
     public boolean isHead()

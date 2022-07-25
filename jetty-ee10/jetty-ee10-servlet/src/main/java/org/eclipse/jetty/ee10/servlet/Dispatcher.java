@@ -125,8 +125,16 @@ public class Dispatcher implements RequestDispatcher
     {
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
+        ServletContextResponse baseResponse = ServletContextResponse.getBaseResponse(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+        try
+        {
+            _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+        }
+        finally
+        {
+            baseResponse.included();
+        }
     }
 
     public void async(ServletRequest request, ServletResponse response) throws ServletException, IOException
@@ -501,6 +509,7 @@ public class Dispatcher implements RequestDispatcher
         {
             super(httpRequest);
             _httpServletRequest = httpRequest;
+            Objects.requireNonNull(_servletPathMapping);
         }
 
         @Override
@@ -512,13 +521,22 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping).getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping).getServletPath();
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping);
         }
 
         @Override
