@@ -106,24 +106,6 @@ public class MultiReleaseJarFile implements Closeable
             .filter(MultiReleaseJarFile::notMetaInfVersions);
     }
 
-    /**
-     * @return A stream of versioned class file entries from the jar, excluding {@code META-INF/versions} entries.
-     */
-    public Stream<Path> streamClasses() throws IOException
-    {
-        Path rootPath = this.jarResource.root().getPath();
-
-        return Files.walk(rootPath)
-            // Only interested in files (not directories)
-            .filter(Files::isRegularFile)
-            // Skip module-info classes
-            .filter(MultiReleaseJarFile::notModuleInfoClass)
-            // skip the entire META-INF/versions tree
-            .filter(MultiReleaseJarFile::notMetaInfVersions)
-            // only class files
-            .filter(MultiReleaseJarFile::isClassFile);
-    }
-
     @Override
     public void close() throws IOException
     {

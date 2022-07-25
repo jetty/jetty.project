@@ -48,6 +48,7 @@ public class FileSystemPool
     static
     {
         Map<String, String> env = new HashMap<>();
+        // Key and Value documented at https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html
         env.put("releaseVersion", "runtime");
         ENV_MULTIRELEASE_RUNTIME = env;
     }
