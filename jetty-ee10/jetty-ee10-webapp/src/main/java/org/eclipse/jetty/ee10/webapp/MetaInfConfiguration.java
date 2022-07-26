@@ -20,12 +20,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -676,6 +673,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_TLDS, null);
     }
 
+    public static boolean isTldFile(Path path)
+    {
+        if (path.getNameCount() < 2)
+            return false;
+        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
+            return false;
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
+    }
+
     /**
      * Find all .tld files in all subdirs of the given dir.
      *
@@ -688,35 +695,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<>();
+        Set<URL> tlds = new HashSet<>();
 
-        final Path rootDir = dir;
-        Files.walkFileTree(dir, new SimpleFileVisitor<>()
+        try (Stream<Path> entries = Files.walk(dir)
+            .filter(Files::isRegularFile)
+            .filter(MetaInfConfiguration::isTldFile))
         {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                if (!Files.isSameFile(rootDir, dir))
-                    tlds.addAll(getTlds(dir));
-                return FileVisitResult.SKIP_SUBTREE;
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
-
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
-            {
-                String name = f.normalize().toString();
-                if (name.contains("META-INF") && name.endsWith(".tld"))
-                    tlds.add(f.toUri().toURL());
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        }
         return tlds;
-    }
-
-    public static boolean isTldFile(Path path)
-    {
-        String filename = path.getFileName().toString();
-        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
     }
 
     /**

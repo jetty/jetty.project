@@ -15,34 +15,31 @@ package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -668,6 +665,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_TLDS, null);
     }
 
+    public static boolean isTldFile(Path path)
+    {
+        if (path.getNameCount() < 2)
+            return false;
+        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
+            return false;
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
+    }
+
     /**
      * Find all .tld files in all subdirs of the given dir.
      *
@@ -680,28 +687,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<>();
+        Set<URL> tlds = new HashSet<>();
 
-        final Path rootDir = dir;
-        Files.walkFileTree(dir, new SimpleFileVisitor<>()
+        try (Stream<Path> entries = Files.walk(dir)
+            .filter(Files::isRegularFile)
+            .filter(MetaInfConfiguration::isTldFile))
         {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                if (!Files.isSameFile(rootDir, dir))
-                    tlds.addAll(getTlds(dir));
-                return FileVisitResult.SKIP_SUBTREE;
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
+        }
 
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
-            {
-                String name = f.normalize().toString();
-                if (name.contains("META-INF") && name.endsWith(".tld"))
-                    tlds.add(f.toUri().toURL());
-                return FileVisitResult.CONTINUE;
-            }
-        });
         return tlds;
     }
 
@@ -714,25 +713,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public Collection<URL> getTlds(URI uri) throws IOException
     {
-        HashSet<URL> tlds = new HashSet<URL>();
+        HashSet<URL> tlds = new HashSet<>();
 
-        URI jarUri = uriJarPrefix(uri, "!/");
-        URL url = jarUri.toURL();
-        JarURLConnection jarConn = (JarURLConnection)url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
-        JarFile jarFile = jarConn.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements())
+        Path path = Paths.get(uri);
+        try (MultiReleaseJarFile multiReleaseJarFile = new MultiReleaseJarFile(path);
+             Stream<Path> entries = multiReleaseJarFile.stream()
+                 .filter(Files::isRegularFile)
+                 .filter(MetaInfConfiguration::isTldFile))
         {
-            JarEntry e = entries.nextElement();
-            String name = e.getName();
-            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                tlds.add(new URL(jarUri + name));
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
         }
-        if (!Resource.getDefaultUseCaches())
-            jarFile.close();
         return tlds;
     }
 
