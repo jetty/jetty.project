@@ -740,7 +740,7 @@ public class URIUtil
         {
             Utf8StringBuilder builder = null;
             int end = offset + length;
-            boolean slash = false;
+            boolean slash = true;
             boolean normal = true;
             for (int i = offset; i < end; i++)
             {

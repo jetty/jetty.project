@@ -596,6 +596,7 @@ public abstract class Resource implements ResourceFactory
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
+        // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
         if (URIUtil.normalizePath(subUriPath) == null)
             throw new IOException(subUriPath);
 
