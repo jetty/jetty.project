@@ -21,7 +21,6 @@ import java.util.List;
 import org.acme.webapp.TestAnnotation;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,7 +169,7 @@ public class TestMetaData
         assertThat(list, hasSize(1));
 
         //test an annotation that didn't have an associated resource
-        list = wac.getMetaData()._annotations.get(EmptyResource.INSTANCE);
+        list = wac.getMetaData()._annotations.get(null);
         assertThat(list, contains(annotationC));
         assertThat(list, hasSize(1));
 
