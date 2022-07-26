@@ -138,6 +138,7 @@ public class URIUtilTest
         arguments.add(Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"));
 
         // Canonical paths are also normalized
+        arguments.add(Arguments.of("./bar", "bar", "./bar"));
         arguments.add(Arguments.of("/foo/./bar", "/foo/bar", "/foo/./bar"));
         arguments.add(Arguments.of("/foo/../bar", "/bar", "/foo/../bar"));
         arguments.add(Arguments.of("/foo/.../bar", "/foo/.../bar", "/foo/.../bar"));
