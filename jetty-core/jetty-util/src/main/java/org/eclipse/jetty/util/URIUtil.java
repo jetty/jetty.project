@@ -45,7 +45,7 @@ public class URIUtil
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
     /**
-     * The characters that are supported by the URI class and that can be decoded by {@link #canonicalEncodedPath(String)}
+     * The characters that are supported by the URI class and that can be decoded by {@link #canonicalPath(String)}
      */
     public static final boolean[] __uriSupportedCharacters = new boolean[]
     {
@@ -576,7 +576,7 @@ public class URIUtil
 
     /**
      * Decode a URI path and strip parameters
-     * @see #canonicalEncodedPath(String)
+     * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path)
@@ -586,7 +586,7 @@ public class URIUtil
 
     /**
      * Decode a URI path and strip parameters of UTF-8 path
-     * @see #canonicalEncodedPath(String, int, int)
+     * @see #canonicalPath(String, int, int)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path, int offset, int length)
@@ -705,7 +705,7 @@ public class URIUtil
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
      * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
-     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
      * <p>
      * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
@@ -714,9 +714,9 @@ public class URIUtil
      * @see #normalizePath(String)
      * @see URI
      */
-    public static String canonicalEncodedPath(String path)
+    public static String canonicalPath(String path)
     {
-        return canonicalEncodedPath(path, 0, path.length());
+        return canonicalPath(path, 0, path.length());
     }
 
     /**
@@ -725,8 +725,7 @@ public class URIUtil
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
      * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
-     * The resulting URI path is also normalized, then it may be used in string comparisons with other canonical and
-     * normal paths.
+     * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
      * <p>
      * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
@@ -735,12 +734,14 @@ public class URIUtil
      * @see #normalizePath(String)
      * @see URI
      */
-    public static String canonicalEncodedPath(String path, int offset, int length)
+    public static String canonicalPath(String path, int offset, int length)
     {
         try
         {
             Utf8StringBuilder builder = null;
             int end = offset + length;
+            boolean slash = false;
+            boolean normal = true;
             for (int i = offset; i < end; i++)
             {
                 char c = path.charAt(i);
@@ -763,7 +764,12 @@ public class URIUtil
                                 {
                                     char[] chars = Character.toChars(code);
                                     for (char ch : chars)
+                                    {
                                         builder.append(ch);
+                                        if (slash && ch == '.')
+                                            normal = false;
+                                        slash = false;
+                                    }
                                 }
                                 i += 5;
                             }
@@ -771,7 +777,11 @@ public class URIUtil
                             {
                                 int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2));
                                 if (isSafeElseEncode(code, builder))
+                                {
                                     builder.append((byte)(0xff & code));
+                                    if (slash && code == '.')
+                                        normal = false;
+                                }
                                 i += 2;
                             }
                         }
@@ -803,6 +813,13 @@ public class URIUtil
                             builder.append(c);
                         break;
 
+                    case '.':
+                        if (slash)
+                            normal = false;
+                        if (builder != null)
+                            builder.append(c);
+                        break;
+
                     default:
                         if (builder == null && !isSafe(c))
                         {
@@ -814,13 +831,15 @@ public class URIUtil
                             builder.append(c);
                         break;
                 }
+
+                slash = c == '/';
             }
 
-            if (builder != null)
-                return builder.toString();
-            if (offset == 0 && length == path.length())
-                return path;
-            return path.substring(offset, end);
+            String canonical = (builder != null)
+                ? builder.toString()
+                : (offset == 0 && length == path.length()) ? path : path.substring(offset, end);
+
+            return normal ? canonical : normalizePath(canonical);
         }
         catch (NotUtf8Exception e)
         {
@@ -1195,7 +1214,7 @@ public class URIUtil
      * the path segments.
      * @return the canonical path, or null if path traversal above root.
      * @see #normalizePathQuery(String)
-     * @see #canonicalEncodedPath(String)
+     * @see #canonicalPath(String)
      * @see #decodePath(String)
      */
     public static String normalizePath(String path)

@@ -381,7 +381,7 @@ public interface HttpURI
         public String getCanonicalPath()
         {
             if (_canonicalPath == null && _path != null)
-                _canonicalPath = URIUtil.normalizePath(URIUtil.canonicalEncodedPath(_path));
+                _canonicalPath = URIUtil.canonicalPath(_path);
             return _canonicalPath;
         }
 
@@ -750,7 +750,7 @@ public interface HttpURI
         public String getCanonicalPath()
         {
             if (_canonicalPath == null && _path != null)
-                _canonicalPath = URIUtil.normalizePath(URIUtil.canonicalEncodedPath(_path));
+                _canonicalPath = URIUtil.canonicalPath(_path);
             return _canonicalPath;
         }
 
@@ -1412,8 +1412,7 @@ public interface HttpURI
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
-                String decodedNonCanonical = URIUtil.canonicalEncodedPath(_path);
-                _canonicalPath = URIUtil.normalizePath(decodedNonCanonical);
+                _canonicalPath = URIUtil.canonicalPath(_path);
                 if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
