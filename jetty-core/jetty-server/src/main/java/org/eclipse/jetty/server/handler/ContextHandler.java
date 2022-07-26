@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -669,7 +670,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _contextPath = contextPath;
+        _contextPath = URIUtil.normalizePath(contextPath);
     }
 
     /**
