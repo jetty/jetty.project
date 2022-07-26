@@ -36,7 +36,7 @@ public abstract class Descriptor
     {
         _xml = Objects.requireNonNull(xml);
         if (!_xml.exists())
-            throw new IllegalArgumentException("Descriptor: " + xml);
+            throw new IllegalArgumentException("Descriptor does not exist: " + xml);
         if (_xml.isDirectory())
             throw new IllegalArgumentException("Descriptor is not a file: " + xml);
     }
