@@ -68,14 +68,13 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Handler.Nested;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -817,6 +816,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             }
             _programmaticListeners.clear();
+
+            // cleanup any Mounts associated with the ContextHandler on stop.
+            // TODO: but what if the context is restarted? how do we remount? do we care?
+            getBeans(Resource.Mount.class).forEach(IO::close);
         }
         finally
         {

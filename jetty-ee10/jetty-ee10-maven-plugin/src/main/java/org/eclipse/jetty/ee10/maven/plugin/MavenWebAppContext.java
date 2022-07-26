@@ -222,7 +222,10 @@ public class MavenWebAppContext extends WebAppContext
         try
         {
             List<Resource> resources = Resource.fromList(List.of(resourceBases), false);
-            setBaseResource(new ResourceCollection(resources));
+            // TODO: need a better place to close/release this mount.
+            Resource.Mount mount = Resource.mountCollection(resources);
+            addBean(mount); // let context clean it up
+            setBaseResource(mount.root());
         }
         catch (IOException e)
         {

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
@@ -28,7 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -450,10 +450,13 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath());
 
-            ResourceCollection rc = new ResourceCollection(webInf, webApp);
+            // TODO: need a better place to close/release this mount.
+            Resource.Mount resourceMount = Resource.mountCollection(List.of(webInf, webApp));
+            context.addBean(resourceMount); // let context clean it up
+            Resource rc = resourceMount.root();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("context.resourcebase={}", rc);
+                LOG.debug("context.baseResource={}", rc);
 
             context.setBaseResource(rc);
         }

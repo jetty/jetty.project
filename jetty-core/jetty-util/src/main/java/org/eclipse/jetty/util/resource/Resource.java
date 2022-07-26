@@ -98,6 +98,38 @@ public abstract class Resource implements ResourceFactory
         return __defaultUseCaches;
     }
 
+    public static Resource.Mount mountCollection(Collection<Resource> resources)
+    {
+        List<Resource.Mount> mounts = new ArrayList<>();
+        resources.forEach(res ->
+        {
+            Resource.Mount mount = Resource.mountIfNeeded(res);
+            if (mount != null)
+                mounts.add(mount);
+        });
+
+        try
+        {
+            return new ResourceCollection.Mount(resources, mounts);
+        }
+        catch (Throwable t)
+        {
+            // can't create ResourceCollection.Mount, unmount and rethrow.
+            mounts.forEach(IO::close);
+            throw t;
+        }
+    }
+
+    public static Resource.Mount mountCollectionURIs(Collection<URI> uris)
+    {
+        return mountCollection(uris.stream().map(Resource::newResource).toList());
+    }
+
+    public static Resource.Mount mountCollection(String csvResources) throws IOException
+    {
+        return mountCollection(Resource.fromList(csvResources, false));
+    }
+
     /**
      * <p>Mount a URI if it is needed.</p>
      *

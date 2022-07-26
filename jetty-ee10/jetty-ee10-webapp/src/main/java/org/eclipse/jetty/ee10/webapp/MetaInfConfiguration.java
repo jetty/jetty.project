@@ -47,7 +47,6 @@ import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -342,7 +341,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getResourceBase());
             collection.addAll(resources);
-            context.setBaseResource(new ResourceCollection(collection));
+            // TODO: need a better place to close/release this mount.
+            Resource.Mount baseMount = Resource.mountCollection(collection);
+            context.addBean(baseMount); // let context clean it up
+            // TODO: Perhaps BaseResource can be a Resource.Mount?
+            context.setBaseResource(baseMount.root());
         }
     }
 

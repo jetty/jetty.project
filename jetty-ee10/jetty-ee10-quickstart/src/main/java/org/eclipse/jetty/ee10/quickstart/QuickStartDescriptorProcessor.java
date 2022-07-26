@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -266,7 +266,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         context.addServletContainerInitializer(sciHolder);
     }
 
-    public void visitMetaInfResource(WebAppContext context, Resource dir)
+    public void visitMetaInfResource(WebAppContext context, Resource dir) throws IOException
     {
         Collection<Resource> metaInfResources = (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
         if (metaInfResources == null)
@@ -280,6 +280,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getResourceBase());
         collection.addAll(metaInfResources);
-        context.setBaseResource(new ResourceCollection(collection));
+
+        // TODO: need a better place to close/release this mount.
+        Resource.Mount baseMount = Resource.mountCollection(collection);
+        context.addBean(baseMount); // let context clean it up
+        // TODO: Perhaps BaseResource can be a Resource.Mount?
+        context.setBaseResource(baseMount.root());
     }
 }

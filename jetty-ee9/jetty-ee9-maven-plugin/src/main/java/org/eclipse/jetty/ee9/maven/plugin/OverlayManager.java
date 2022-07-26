@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 
 /**
  * OverlayManager
@@ -63,8 +62,11 @@ public class OverlayManager
             else
                 resourceBases.add(webApp.getBaseResource());
         }
-        
-        webApp.setBaseResource(new ResourceCollection(resourceBases));
+
+        // TODO: need a better place to close/release this mount.
+        Resource.Mount mount = Resource.mountCollection(resourceBases);
+        webApp.addBean(mount); // let context clean it up
+        webApp.setBaseResource(mount.root());
     }
     
     /**

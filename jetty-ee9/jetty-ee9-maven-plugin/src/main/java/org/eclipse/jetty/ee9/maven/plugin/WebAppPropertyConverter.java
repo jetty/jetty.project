@@ -222,9 +222,11 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
-            ResourceCollection bases = new ResourceCollection(str);
+            // TODO: need a better place to close/release this mount.
+            Resource.Mount mount = Resource.mountCollection(str);
+            webApp.addBean(mount); // let context clean it up
             webApp.setWar(null);
-            webApp.setBaseResource(bases);
+            webApp.setBaseResource(mount.root());
         }
 
         str = webAppProperties.getProperty(WAR_FILE);

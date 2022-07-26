@@ -40,29 +40,42 @@ import org.slf4j.LoggerFactory;
  * If a resource is not found in the main resource, it looks it up in
  * the order the provided in the constructors
  */
-public class ResourceCollection extends Resource implements AutoCloseable
+public class ResourceCollection extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceCollection.class);
 
-    private final List<Resource> _resources;
-    private final List<Mount> _mounted = new ArrayList<>();
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Resource... resources)
+    public static class Mount implements Resource.Mount
     {
-        this(List.of(resources));
+        private final List<Resource.Mount> _mounts;
+        private final ResourceCollection _resourceCollection;
+
+        Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
+        {
+            _resourceCollection = new ResourceCollection(resources);
+            _mounts = mounts;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            _mounts.forEach(IO::close);
+        }
+
+        @Override
+        public Resource root() throws IOException
+        {
+            return _resourceCollection;
+        }
     }
 
+    private final List<Resource> _resources;
+
     /**
      * Instantiates a new resource collection.
      *
      * @param resources the resources to be added to collection
      */
-    public ResourceCollection(Collection<Resource> resources)
+    private ResourceCollection(Collection<Resource> resources)
     {
         List<Resource> res = new ArrayList<>();
 
@@ -77,7 +90,7 @@ public class ResourceCollection extends Resource implements AutoCloseable
             }
             if (r instanceof ResourceCollection)
             {
-                res.addAll(((ResourceCollection)r).getResources());
+                throw new IllegalArgumentException("ResourceCollection cannot contain another nested ResourceCollection");
             }
             else
             {
@@ -87,48 +100,14 @@ public class ResourceCollection extends Resource implements AutoCloseable
                     continue;
                 }
 
-                try
+                if (!r.exists() || !r.isDirectory())
                 {
-                    Resource.Mount mount = Resource.mountIfNeeded(r);
-                    if (mount != null)
-                    {
-                        _mounted.add(mount);
-                        // add mounted resource, so that Resource.getPath().getFileSystem() is sane.
-                        res.add(mount.root());
-                    }
-                    else
-                    {
-                        if (!r.exists() || !r.isDirectory())
-                        {
-                            throw new IllegalArgumentException(r + " is not an existing directory.");
-                        }
-                        res.add(r);
-                    }
+                    throw new IllegalArgumentException("Not an existing directory: " + r);
                 }
-                catch (IllegalStateException | IOException e)
-                {
-                    LOG.warn("Unable to process resource {}", r, e);
-                }
+                res.add(r);
             }
         }
         _resources = Collections.unmodifiableList(res);
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param csvResources the string containing comma-separated resource strings
-     * @throws IOException if any listed resource is not valid
-     */
-    public ResourceCollection(String csvResources) throws IOException
-    {
-        this(Resource.fromList(csvResources, false));
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        _mounted.forEach(IO::close);
     }
 
     /**
