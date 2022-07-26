@@ -120,7 +120,7 @@ public abstract class Resource implements ResourceFactory
         {
             if (scheme.equalsIgnoreCase("jar") || scheme.equalsIgnoreCase("file"))
             {
-                URI jarURI = toJarRoot(uri);
+                URI jarURI = toJarFileUri(uri);
                 if (jarURI == null)
                     throw new IllegalArgumentException("Not a jar or file URI: " + uri);
                 return FileSystemPool.INSTANCE.mount(jarURI);
@@ -175,7 +175,7 @@ public abstract class Resource implements ResourceFactory
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + path);
-        URI jarUri = toJarRoot(pathUri);
+        URI jarUri = toJarFileUri(pathUri);
         if (jarUri == null)
             throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
@@ -237,15 +237,15 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Take an arbitrary URI and provide a URI that is suitable for mounting to root of that URI.
+     * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
      *
-     * The resulting URI will point to the {@code jar:file://foo.jar!/} root of said Java Archive (jar or war)
+     * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
      *
-     * @param uri the URI to mutate
-     * @return the <code>jar:${uri_to_jar_or_war}!/</code> URI or null if not a Java Archive.
+     * @param uri the URI to mutate to a {@code jar:file:...} URI.
+     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
      * @see #isArchive(URI)
      */
-    public static URI toJarRoot(URI uri)
+    public static URI toJarFileUri(URI uri)
     {
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
@@ -253,30 +253,31 @@ public abstract class Resource implements ResourceFactory
         if (!isArchive(uri))
             return null;
 
+        boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
+
         if (scheme.equalsIgnoreCase("jar"))
         {
-            String rawUri = uri.toASCIIString();
-            int idx = rawUri.indexOf("!/");
-            if (idx >= 0)
+            if (uri.getRawSchemeSpecificPart().startsWith("file:"))
             {
-                rawUri = rawUri.substring(0, idx + 2);
-                return URI.create(rawUri); // strip extra
+                // Looking good as a jar:file: URI
+                if (hasInternalReference)
+                    return uri; // is all good, no changes needed.
+                else
+                    // add the internal reference indicator to the root of the archive
+                    return URI.create(uri.toASCIIString() + "!/");
             }
-            return URI.create(rawUri + "!/");
         }
         else if (scheme.equalsIgnoreCase("file"))
         {
             String rawUri = uri.toASCIIString();
-            int idx = rawUri.indexOf("!/");
-            if (idx >= 0)
-                rawUri = rawUri.substring(0, idx + 2); // strip extra
+            if (hasInternalReference)
+                return URI.create("jar:" + rawUri);
             else
-                rawUri += "!/";
-            return URI.create("jar:" + rawUri); // return prefixed `jar:file://`
+                return URI.create("jar:" + rawUri + "!/");
         }
 
         // shouldn't be possible to reach this point
-        throw new IllegalArgumentException("Cannot make %s into jar: URI".formatted(uri));
+        throw new IllegalArgumentException("Cannot make %s into `jar:file:` URI".formatted(uri));
     }
 
     // TODO: will be removed in MultiReleaseJarFile PR, as AnnotationParser is the only thing using this,

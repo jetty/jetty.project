@@ -251,7 +251,7 @@ public class FileSystemPool
         private final URI uri;
         private final Resource root;
 
-        private Mount(URI uri) throws IOException
+        private Mount(URI uri)
         {
             this.uri = uri;
             this.root = Resource.newResource(uri);
@@ -276,7 +276,7 @@ public class FileSystemPool
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + " uri=" + uri;
+            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), uri, root);
         }
     }
 }

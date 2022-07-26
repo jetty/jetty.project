@@ -424,7 +424,7 @@ public class ResourceTest
         assertFalse(Resource.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
     }
 
-    public static Stream<Arguments> toJarRootCases()
+    public static Stream<Arguments> toJarFileUri()
     {
         List<Arguments> cases = new ArrayList<>();
 
@@ -432,22 +432,23 @@ public class ResourceTest
         cases.add(Arguments.of("file:/path/company-1.0.jar", expected));
         cases.add(Arguments.of("jar:file:/path/company-1.0.jar", expected));
         cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/", expected));
-        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected + "META-INF/services"));
 
         expected = "jar:file:/opt/jetty/webapps/app.war!/";
         cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", expected));
         cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war", expected));
         cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/", expected));
-        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected + "WEB-INF/classes"));
 
         return cases.stream();
     }
 
     @ParameterizedTest
-    @MethodSource("toJarRootCases")
-    public void testToJarRootUri(String inputRawUri, String expectedRawUri)
+    @MethodSource("toJarFileUri")
+    public void testToJarFileUri(String inputRawUri, String expectedRawUri)
     {
-        URI actual = Resource.toJarRoot(URI.create(inputRawUri));
+        URI actual = Resource.toJarFileUri(URI.create(inputRawUri));
+        assertNotNull(actual);
         assertThat(actual.toASCIIString(), is(expectedRawUri));
     }
 }
