@@ -61,7 +61,7 @@ public class OrderingTest
         @Override
         public boolean exists()
         {
-            return false;
+            return true;
         }
 
         @Override
@@ -743,12 +743,12 @@ public class OrderingTest
     public void testRelativeOrderingWithPlainJars()
         throws Exception
     {
-        //B,A,C other jars with no fragments
+        // B,A,C other jars with no fragments
         List<Resource> resources = new ArrayList<Resource>();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
-        //A: after others, before C
+        // A: after others, before C
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
