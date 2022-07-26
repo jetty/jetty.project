@@ -381,7 +381,7 @@ public interface HttpURI
         public String getCanonicalPath()
         {
             if (_canonicalPath == null && _path != null)
-                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+                _canonicalPath = URIUtil.canonicalPath(_path);
             return _canonicalPath;
         }
 
@@ -532,7 +532,7 @@ public interface HttpURI
          * <a href="https://tools.ietf.org/html/rfc3986#section-5.2.4">Remove Dot Segments</a>
          * algorithm.  This results in some ambiguity as dot segments can result from later
          * parameter removal or % encoding expansion, that are not removed from the URI
-         * by {@link URIUtil#canonicalPath(String)}.  Thus this class flags such ambiguous
+         * by {@link URIUtil#normalizePath(String)}.  Thus this class flags such ambiguous
          * path segments, so that they may be rejected by the server if so configured.
          */
         private static final Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
@@ -750,7 +750,7 @@ public interface HttpURI
         public String getCanonicalPath()
         {
             if (_canonicalPath == null && _path != null)
-                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+                _canonicalPath = URIUtil.canonicalPath(_path);
             return _canonicalPath;
         }
 
@@ -1412,8 +1412,7 @@ public interface HttpURI
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
-                String decodedNonCanonical = URIUtil.normalizePath(_path);
-                _canonicalPath = URIUtil.canonicalPath(decodedNonCanonical);
+                _canonicalPath = URIUtil.canonicalPath(_path);
                 if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
