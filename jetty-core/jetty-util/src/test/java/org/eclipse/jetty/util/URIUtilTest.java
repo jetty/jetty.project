@@ -141,15 +141,15 @@ public class URIUtilTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testNormalizePath(String encodedPath, String safePath, String decodedPath)
+    public void testCanonicalEncodedPath(String encodedPath, String canonicalPath, String decodedPath)
     {
-        String path = URIUtil.normalizePath(encodedPath);
-        assertEquals(safePath, path);
+        String path = URIUtil.canonicalEncodedPath(encodedPath);
+        assertEquals(canonicalPath, path);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testDecodePath(String encodedPath, String safePath, String decodedPath)
+    public void testDecodePath(String encodedPath, String canonicalPath, String decodedPath)
     {
         String path = URIUtil.decodePath(encodedPath);
         assertEquals(decodedPath, path);

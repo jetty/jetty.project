@@ -3066,10 +3066,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may have arbitrary non normal paths passed
+            // Thus we normalize here, to avoid the enforcement of only normal paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // TODO should we also canonicalize here?
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -3098,10 +3099,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may have arbitrary non normal paths passed
+            // Thus we normalize here, to avoid the enforcement of only normal paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // TODO should we also canonicalize
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             Resource resource = ServletContextHandler.this.getResource(path);
@@ -3134,10 +3136,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may have arbitrary non normal paths passed
+            // Thus we normalize here, to avoid the enforcement of only normal paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // TODO should we also canonicalize
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ServletContextHandler.this.getResourcePaths(path);

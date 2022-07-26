@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -165,7 +162,7 @@ public class SelectiveJarResource extends Resource
 
                 LOG.debug("Looking at {}", entryName);
                 // make sure no access out of the root entry is present
-                String dotCheck = URIUtil.canonicalPath(entryName);
+                String dotCheck = URIUtil.normalizePath(entryName);
                 if (dotCheck == null)
                 {
                     LOG.info("Invalid entry: {}", entryName);

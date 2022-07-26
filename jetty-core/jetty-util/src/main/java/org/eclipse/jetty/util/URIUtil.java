@@ -45,7 +45,7 @@ public class URIUtil
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
     /**
-     * The characters that are supported by the URI class and that can be decoded by {@link #normalizePath(String)}
+     * The characters that are supported by the URI class and that can be decoded by {@link #canonicalEncodedPath(String)}
      */
     public static final boolean[] __uriSupportedCharacters = new boolean[]
     {
@@ -576,8 +576,8 @@ public class URIUtil
 
     /**
      * Decode a URI path and strip parameters
+     * @see #canonicalEncodedPath(String)
      * @see #normalizePath(String)
-     * @see #canonicalPath(String)
      */
     public static String decodePath(String path)
     {
@@ -586,8 +586,8 @@ public class URIUtil
 
     /**
      * Decode a URI path and strip parameters of UTF-8 path
-     * @see #normalizePath(String, int, int)
-     * @see #canonicalPath(String)
+     * @see #canonicalEncodedPath(String, int, int)
+     * @see #normalizePath(String)
      */
     public static String decodePath(String path, int offset, int length)
     {
@@ -700,7 +700,7 @@ public class URIUtil
     }
 
     /**
-     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
      * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
@@ -711,30 +711,31 @@ public class URIUtil
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
      *
      * @see #decodePath(String)
-     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
      * @see URI
      */
-    public static String normalizePath(String path)
+    public static String canonicalEncodedPath(String path)
     {
-        return normalizePath(path, 0, path.length());
+        return canonicalEncodedPath(path, 0, path.length());
     }
 
     /**
-     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
      * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
      * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
-     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * The resulting URI path is also normalized, then it may be used in string comparisons with other canonical and
+     * normal paths.
      * <p>
      * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
      *
      * @see #decodePath(String, int, int)
-     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
      * @see URI
      */
-    public static String normalizePath(String path, int offset, int length)
+    public static String canonicalEncodedPath(String path, int offset, int length)
     {
         try
         {
@@ -1078,29 +1079,28 @@ public class URIUtil
     }
 
     /**
-     * Convert a partial URI to a canonical form.
-     * <p>
-     * All segments of "." and ".." are factored out.
-     * Null is returned if the path tries to .. above its root.
+     * <p>Normalize a URI path and query by factoring out all segments of "." and ".."
+     * up until any query or fragment.
+     * Null is returned if the path is normalized above its root.
      * </p>
      *
-     * @param uri the encoded URI from the path onwards, which may contain query strings and/or fragments
+     * @param pathQuery the encoded URI from the path onwards, which may contain query strings and/or fragments
      * @return the canonical path, or null if path traversal above root.
-     * @see #canonicalPath(String)
+     * @see #normalizePath(String)
      */
-    public static String canonicalURI(String uri)
+    public static String normalizePathQuery(String pathQuery)
     {
-        if (uri == null || uri.isEmpty())
-            return uri;
+        if (pathQuery == null || pathQuery.isEmpty())
+            return pathQuery;
 
         boolean slash = true;
-        int end = uri.length();
+        int end = pathQuery.length();
         int i = 0;
 
         // Initially just loop looking if we may need to normalize
         loop: while (i < end)
         {
-            char c = uri.charAt(i);
+            char c = pathQuery.charAt(i);
             switch (c)
             {
                 case '/':
@@ -1116,7 +1116,7 @@ public class URIUtil
                 case '?':
                 case '#':
                     // Nothing to normalize so return original path
-                    return uri;
+                    return pathQuery;
 
                 default:
                     slash = false;
@@ -1127,18 +1127,18 @@ public class URIUtil
 
         // Nothing to normalize so return original path
         if (i == end)
-            return uri;
+            return pathQuery;
 
         // We probably need to normalize, so copy to path so far into builder
-        StringBuilder canonical = new StringBuilder(uri.length());
-        canonical.append(uri, 0, i);
+        StringBuilder canonical = new StringBuilder(pathQuery.length());
+        canonical.append(pathQuery, 0, i);
 
         // Loop looking for single and double dot segments
         int dots = 1;
         i++;
         loop : while (i < end)
         {
-            char c = uri.charAt(i);
+            char c = pathQuery.charAt(i);
             switch (c)
             {
                 case '/':
@@ -1181,37 +1181,24 @@ public class URIUtil
 
         // append any query
         if (i < end)
-            canonical.append(uri, i, end);
+            canonical.append(pathQuery, i, end);
 
         return canonical.toString();
     }
 
     /**
-     * @param path the encoded URI from the path onwards, which may contain query strings and/or fragments
-     * @return the canonical path, or null if path traversal above root.
-     * @deprecated Use {@link #canonicalURI(String)}
-     */
-    @Deprecated
-    public static String canonicalEncodedPath(String path)
-    {
-        return canonicalURI(path);
-    }
-
-    /**
-     * Convert a decoded URI path to a canonical form.
-     * <p>
-     * All segments of "." and ".." are factored out.
-     * Null is returned if the path tries to .. above its root.
+     * <p>Normalize a URI path by factoring out all segments of "." and "..".
+     * Null is returned if the path is normalized above its root.
      * </p>
      *
      * @param path the decoded URI path to convert. Any special characters (e.g. '?', "#") are assumed to be part of
      * the path segments.
      * @return the canonical path, or null if path traversal above root.
-     * @see #canonicalURI(String)
-     * @see #normalizePath(String)
+     * @see #normalizePathQuery(String)
+     * @see #canonicalEncodedPath(String)
      * @see #decodePath(String)
      */
-    public static String canonicalPath(String path)
+    public static String normalizePath(String path)
     {
         if (path == null || path.isEmpty())
             return path;
