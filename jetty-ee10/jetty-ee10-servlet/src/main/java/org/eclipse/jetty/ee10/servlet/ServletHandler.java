@@ -45,7 +45,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -56,6 +55,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -775,7 +775,7 @@ public class ServletHandler extends Handler.Wrapper
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
-            mapping.setPathSpec(pathSpec);
+            mapping.setPathSpec(URIUtil.normalizePath(pathSpec));
             setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
         }
         catch (RuntimeException e)
@@ -887,7 +887,7 @@ public class ServletHandler extends Handler.Wrapper
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
-            mapping.setPathSpec(pathSpec);
+            mapping.setPathSpec(URIUtil.normalizePath(pathSpec));
             mapping.setDispatcherTypes(dispatches);
             addFilterMapping(mapping);
         }
