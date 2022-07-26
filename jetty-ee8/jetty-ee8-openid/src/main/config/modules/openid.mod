@@ -8,11 +8,11 @@ security
 client
 
 [lib]
-lib/jetty-ee9-openid-${jetty.version}.jar
+lib/jetty-ee8-openid-${jetty.version}.jar
 lib/jetty-util-ajax-${jetty.version}.jar
 
 [files]
-basehome:modules/openid/jetty-ee9-openid-baseloginservice.xml|etc/openid-baseloginservice.xml
+basehome:modules/openid/jetty-ee8-openid-baseloginservice.xml|etc/openid-baseloginservice.xml
 
 [xml]
 etc/openid-baseloginservice.xml

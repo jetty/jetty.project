@@ -38,6 +38,7 @@
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
     <module>jetty-ee8-quickstart</module>
+    <module>jetty-ee8-openid</module>
     <module>jetty-ee8-bom</module>
     <module>jetty-ee8-demos</module>
     <module>jetty-ee8-home</module>
