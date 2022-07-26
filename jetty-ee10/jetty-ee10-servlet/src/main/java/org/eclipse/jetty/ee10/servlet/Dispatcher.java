@@ -204,11 +204,19 @@ public class Dispatcher implements RequestDispatcher
     private class ForwardRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
-        private final MultiMap<String> _params = new MultiMap<>();
+        private MultiMap<String> _params;
 
         public ForwardRequest(HttpServletRequest httpRequest)
         {
             super(httpRequest);
+            _httpServletRequest = httpRequest;
+        }
+
+        private MultiMap<String> getParams()
+        {
+            if (_params != null)
+                return _params;
+            _params = new MultiMap<>();
 
             String targetQuery = (_uri == null) ? null : _uri.getQuery();
             if (targetQuery != null)
@@ -217,16 +225,15 @@ public class Dispatcher implements RequestDispatcher
                 UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
             }
 
-            Enumeration<String> parameterNames = httpRequest.getParameterNames();
+            Enumeration<String> parameterNames = _httpServletRequest.getParameterNames();
             while (parameterNames.hasMoreElements())
             {
                 String name = parameterNames.nextElement();
-                String[] parameterValues = httpRequest.getParameterValues(name);
+                String[] parameterValues = _httpServletRequest.getParameterValues(name);
                 if (parameterValues != null)
                     _params.addValues(name, parameterValues);
             }
-
-            _httpServletRequest = httpRequest;
+            return _params;
         }
 
         @Override
@@ -272,25 +279,25 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getParameter(String name)
         {
-            return _params.getValue(name);
+            return getParams().getValue(name);
         }
 
         @Override
         public Map<String, String[]> getParameterMap()
         {
-            return Collections.unmodifiableMap(_params.toStringArrayMap());
+            return Collections.unmodifiableMap(getParams().toStringArrayMap());
         }
 
         @Override
         public Enumeration<String> getParameterNames()
         {
-            return Collections.enumeration(_params.keySet());
+            return Collections.enumeration(getParams().keySet());
         }
 
         @Override
         public String[] getParameterValues(String name)
         {
-            List<String> vals = _params.getValues(name);
+            List<String> vals = getParams().getValues(name);
             if (vals == null)
                 return null;
             return vals.toArray(new String[0]);
