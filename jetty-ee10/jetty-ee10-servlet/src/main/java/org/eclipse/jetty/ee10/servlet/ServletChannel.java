@@ -419,7 +419,7 @@ public class ServletChannel implements Runnable
                             }
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
-                            dispatcher.async(_request.getHttpServletRequest(), getResponse().getHttpServletResponse());
+                            dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
                         });
                         break;
                     }
