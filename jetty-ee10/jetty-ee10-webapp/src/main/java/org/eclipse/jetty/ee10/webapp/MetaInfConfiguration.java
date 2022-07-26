@@ -737,6 +737,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isTldFile(Path path)
     {
+        if (!Files.isRegularFile(path))
+            return false;
         if (path.getNameCount() < 2)
             return false;
         if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
