@@ -81,12 +81,12 @@ public class URIUtil
         false, // 0x1d is illegal
         false, // 0x1e is illegal
         false, // 0x1f is illegal
-        false, // 0x20 is illegal
+        false, // 0x20 space is illegal
         true,  // 0x21
-        false, // 0x22 is illegal
-        false, // # is special
+        false, // 0x22 " is illegal
+        false, // 0x23 # is special
         true,  // 0x24
-        false, // % must remain encoded
+        false, // 0x25 % must remain encoded
         true,  // 0x26
         true,  // 0x27
         true,  // 0x28
@@ -96,7 +96,7 @@ public class URIUtil
         true,  // 0x2c
         true,  // 0x2d
         true,  // 0x2e
-        false, // / is a delimiter
+        false, // 0x2f / is a delimiter
         true,  // 0x30
         true,  // 0x31
         true,  // 0x32
@@ -108,11 +108,11 @@ public class URIUtil
         true,  // 0x38
         true,  // 0x39
         true,  // 0x3a
-        false, // ; is path parameter
-        false, // 0x3c is illegal
+        false, // 0x3b ; is path parameter
+        false, // 0x3c < is illegal
         true,  // 0x3d
-        false, // 0x3e is illegal
-        false, // ? is special
+        false, // 0x3e > is illegal
+        false, // 0x3f ? is special
         true,  // 0x40
         true,  // 0x41
         true,  // 0x42
@@ -140,12 +140,12 @@ public class URIUtil
         true,  // 0x58
         true,  // 0x59
         true,  // 0x5a
-        false, // 0x5b is illegal
-        false, // 0x5c is illegal
-        false, // 0x5d is illegal
-        false, // 0x5e is illegal
+        false, // 0x5b [ is illegal
+        false, // 0x5c \ is illegal
+        false, // 0x5d ] is illegal
+        false, // 0x5e ^ is illegal
         true,  // 0x5f
-        false, // 0x60 is illegal
+        false, // 0x60 ` is illegal
         true,  // 0x61
         true,  // 0x62
         true,  // 0x63
@@ -172,11 +172,11 @@ public class URIUtil
         true,  // 0x78
         true,  // 0x79
         true,  // 0x7a
-        false, // 0x7b is illegal
-        false, // 0x7c is illegal
-        false, // 0x7d is illegal
+        false, // 0x7b { is illegal
+        false, // 0x7c | is illegal
+        false, // 0x7d } is illegal
         true,  // 0x7e
-        false, // 0x7f is illegal
+        false, // 0x7f DEL is illegal
     };
 
     private URIUtil()
