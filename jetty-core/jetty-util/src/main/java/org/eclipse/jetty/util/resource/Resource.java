@@ -213,7 +213,7 @@ public abstract class Resource implements ResourceFactory
         int idxEnd = path == null ? -1 : path.length();
         if (uri.getScheme().equalsIgnoreCase("jar"))
         {
-            String ssp = uri.getSchemeSpecificPart();
+            String ssp = uri.getRawSchemeSpecificPart();
             path = URI.create(ssp).getPath();
             idxEnd = path.length();
             // look for `!/` split
