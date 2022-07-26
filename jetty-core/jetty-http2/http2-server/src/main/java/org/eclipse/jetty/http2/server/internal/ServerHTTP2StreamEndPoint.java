@@ -15,10 +15,9 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.HTTP2StreamEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
@@ -29,15 +28,15 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerHTTP2StreamEndPoint.class);
 
-    public ServerHTTP2StreamEndPoint(IStream stream)
+    public ServerHTTP2StreamEndPoint(HTTP2Stream stream)
     {
         super(stream);
     }
 
     @Override
-    public Runnable onData(DataFrame frame, Callback callback)
+    public Runnable onDataAvailable()
     {
-        offerData(frame, callback);
+        processDataAvailable();
         return null;
     }
 
@@ -59,7 +58,7 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
             result = connection.onIdleExpired();
         if (result)
         {
-            offerFailure(failure);
+            processFailure(failure);
             consumer.accept(() -> close(failure));
         }
         return result;
@@ -70,7 +69,7 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failure on {}: {}", this, failure);
-        offerFailure(failure);
+        processFailure(failure);
         close(failure);
         return callback::succeeded;
     }

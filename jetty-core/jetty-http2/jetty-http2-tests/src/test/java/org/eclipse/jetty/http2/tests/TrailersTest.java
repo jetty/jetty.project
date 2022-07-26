@@ -60,7 +60,7 @@ public class TrailersTest extends AbstractTest
     public void testTrailersSentByClient() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -68,7 +68,7 @@ public class TrailersTest extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 assertFalse(frame.isEndStream());
                 assertTrue(request.getFields().contains("X-Request"));
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
@@ -82,14 +82,14 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         HttpFields.Mutable requestFields = HttpFields.build();
         requestFields.put("X-Request", "true");
         MetaData.Request request = newRequest("GET", requestFields);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
+        session.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Send the trailers.
@@ -151,7 +151,7 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         HttpFields.Mutable requestFields = HttpFields.build();
         requestFields.put("X-Request", "true");
@@ -159,7 +159,7 @@ public class TrailersTest extends AbstractTest
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, streamPromise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -194,7 +194,7 @@ public class TrailersTest extends AbstractTest
     @Test
     public void testTrailersSentByServer() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -219,11 +219,11 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
             private boolean responded;
 
@@ -269,12 +269,12 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         List<Frame> frames = new ArrayList<>();
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -282,13 +282,15 @@ public class TrailersTest extends AbstractTest
                 frames.add(frame);
                 if (frame.isEndStream())
                     latch.countDown();
+                stream.demand();
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                frames.add(frame);
-                callback.succeeded();
+                Stream.Data data = stream.readData();
+                frames.add(data.frame());
+                data.release();
             }
         });
 
@@ -318,11 +320,11 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        session.newStream(requestFrame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         Callback.Completable completable = new Callback.Completable();
@@ -362,16 +364,17 @@ public class TrailersTest extends AbstractTest
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, promise, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 clientLatch.countDown();
+                callback.succeeded();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -409,11 +412,11 @@ public class TrailersTest extends AbstractTest
         AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
         AtomicReference<MetaData> trailersRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(2);
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        session.newStream(requestFrame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -57,7 +57,7 @@ public class InterleavingTest extends AbstractTest
     {
         CountDownLatch serverStreamsLatch = new CountDownLatch(2);
         List<Stream> serverStreams = new ArrayList<>();
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -69,7 +69,7 @@ public class InterleavingTest extends AbstractTest
         });
 
         int maxFrameSize = Frame.DEFAULT_MAX_LENGTH + 1;
-        Session session = newClientSession(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -80,13 +80,16 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        BlockingQueue<DataFrameCallback> dataFrames = new LinkedBlockingDeque<>();
-        Stream.Listener streamListener = new Stream.Listener.Adapter()
+        BlockingQueue<Stream.Data> dataQueue = new LinkedBlockingDeque<>();
+        Stream.Listener streamListener = new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                dataFrames.offer(new DataFrameCallback(frame, callback));
+                Stream.Data data = stream.readData();
+                // Do not release.
+                dataQueue.offer(data);
+                stream.demand();
             }
         };
 
@@ -110,9 +113,9 @@ public class InterleavingTest extends AbstractTest
         serverStream1.headers(new HeadersFrame(serverStream1.getId(), response1, null, false), Callback.NOOP);
 
         Random random = new Random();
-        byte[] content1 = new byte[2 * ((ISession)serverStream1.getSession()).updateSendWindow(0)];
+        byte[] content1 = new byte[2 * ((HTTP2Session)serverStream1.getSession()).updateSendWindow(0)];
         random.nextBytes(content1);
-        byte[] content2 = new byte[2 * ((ISession)serverStream2.getSession()).updateSendWindow(0)];
+        byte[] content2 = new byte[2 * ((HTTP2Session)serverStream2.getSession()).updateSendWindow(0)];
         random.nextBytes(content2);
 
         MetaData.Response response2 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
@@ -143,11 +146,11 @@ public class InterleavingTest extends AbstractTest
         int finished = 0;
         while (finished < 2)
         {
-            DataFrameCallback dataFrameCallback = dataFrames.poll(5, TimeUnit.SECONDS);
-            if (dataFrameCallback == null)
+            Stream.Data data = dataQueue.poll(5, TimeUnit.SECONDS);
+            if (data == null)
                 fail();
 
-            DataFrame dataFrame = dataFrameCallback.frame;
+            DataFrame dataFrame = data.frame();
             int streamId = dataFrame.getStreamId();
             int length = dataFrame.remaining();
             streamLengths.add(new StreamLength(streamId, length));
@@ -156,7 +159,7 @@ public class InterleavingTest extends AbstractTest
 
             BufferUtil.writeTo(dataFrame.getData(), contents.get(streamId));
 
-            dataFrameCallback.callback.succeeded();
+            data.release();
         }
 
         // Verify that the content has been sent properly.
@@ -194,18 +197,6 @@ public class InterleavingTest extends AbstractTest
                 assertThat(length, lessThanOrEqualTo(maxFrameSize));
             }
         });
-    }
-
-    private static class DataFrameCallback
-    {
-        private final DataFrame frame;
-        private final Callback callback;
-
-        private DataFrameCallback(DataFrame frame, Callback callback)
-        {
-            this.frame = frame;
-            this.callback = callback;
-        }
     }
 
     private static class StreamLength

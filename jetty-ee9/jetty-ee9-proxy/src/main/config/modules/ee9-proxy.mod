@@ -19,7 +19,7 @@ etc/jetty-ee9-proxy.xml
 
 [ini-template]
 ## Proxy Configuration
-# jetty.proxy.servletClass=org.eclipse.jetty.proxy.ProxyServlet
+# jetty.proxy.servletClass=org.eclipse.jetty.ee9.proxy.ProxyServlet
 # jetty.proxy.servletMapping=/*
 # jetty.proxy.maxThreads=128
 # jetty.proxy.maxConnections=256

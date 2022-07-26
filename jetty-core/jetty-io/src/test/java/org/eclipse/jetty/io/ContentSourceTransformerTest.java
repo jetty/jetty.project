@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.api.Test;
@@ -247,7 +248,7 @@ public class ContentSourceTransformerTest
         assertInstanceOf(Content.Chunk.Error.class, chunk);
     }
 
-    private static class WordSplitLowCaseTransformer extends Content.Source.Transformer
+    private static class WordSplitLowCaseTransformer extends ContentSourceTransformer
     {
         private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
 

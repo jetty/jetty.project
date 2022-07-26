@@ -13,29 +13,31 @@
 
 package org.eclipse.jetty.http2;
 
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
 public interface FlowControlStrategy
 {
     public static int DEFAULT_WINDOW_SIZE = 65535;
 
-    public void onStreamCreated(IStream stream);
+    public void onStreamCreated(Stream stream);
 
-    public void onStreamDestroyed(IStream stream);
+    public void onStreamDestroyed(Stream stream);
 
-    public void updateInitialStreamWindow(ISession session, int initialStreamWindow, boolean local);
+    public void updateInitialStreamWindow(Session session, int initialStreamWindow, boolean local);
 
-    public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
+    public void onWindowUpdate(Session session, Stream stream, WindowUpdateFrame frame);
 
-    public void onDataReceived(ISession session, IStream stream, int length);
+    public void onDataReceived(Session session, Stream stream, int length);
 
-    public void onDataConsumed(ISession session, IStream stream, int length);
+    public void onDataConsumed(Session session, Stream stream, int length);
 
-    public void windowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
+    public void windowUpdate(Session session, Stream stream, WindowUpdateFrame frame);
 
-    public void onDataSending(IStream stream, int length);
+    public void onDataSending(Stream stream, int length);
 
-    public void onDataSent(IStream stream, int length);
+    public void onDataSent(Stream stream, int length);
 
     public interface Factory
     {

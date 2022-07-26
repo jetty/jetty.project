@@ -555,7 +555,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<ByteBufferPool.Lease> frames) throws Exception
     {
         final CountDownLatch serverLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        startServer(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)

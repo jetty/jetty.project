@@ -100,14 +100,14 @@ public class ProxyProtocolTest
         channel.write(ByteBuffer.wrap(request1.getBytes(StandardCharsets.UTF_8)));
 
         FuturePromise<Session> promise = new FuturePromise<>();
-        client.accept(null, channel, new Session.Listener.Adapter(), promise);
+        client.accept(null, channel, new Session.Listener() {}, promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_2, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -149,14 +149,14 @@ public class ProxyProtocolTest
         channel.write(ByteBuffer.wrap(StringUtil.fromHexString(request1)));
 
         FuturePromise<Session> promise = new FuturePromise<>();
-        client.accept(null, channel, new Session.Listener.Adapter(), promise);
+        client.accept(null, channel, new Session.Listener() {}, promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_2, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

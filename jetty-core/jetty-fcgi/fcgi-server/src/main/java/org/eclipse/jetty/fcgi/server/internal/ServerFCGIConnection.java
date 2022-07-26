@@ -372,7 +372,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (stream != null)
             {
                 networkBuffer.retain();
-                stream.onContent(Content.Chunk.from(buffer, false, networkBuffer::release));
+                stream.onContent(Content.Chunk.from(buffer, false, networkBuffer));
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }

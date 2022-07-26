@@ -34,6 +34,7 @@
     <module>jetty-ee8-jaas</module>
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-jndi</module>
+    <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
     <module>jetty-ee8-quickstart</module>

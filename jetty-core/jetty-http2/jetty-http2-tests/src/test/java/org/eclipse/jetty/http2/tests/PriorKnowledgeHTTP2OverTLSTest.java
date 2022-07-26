@@ -139,13 +139,13 @@ public class PriorKnowledgeHTTP2OverTLSTest
         });
 
         int port = connector.getLocalPort();
-        MetaData.Response response = http2Client.connect(http2Client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener.Adapter())
+        MetaData.Response response = http2Client.connect(http2Client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener() {})
             .thenCompose(session ->
             {
                 CompletableFuture<MetaData.Response> responsePromise = new CompletableFuture<>();
                 HttpURI.Mutable uri = HttpURI.build("https://localhost:" + port + "/path");
                 MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                return session.newStream(new HeadersFrame(request, null, true), new Stream.Listener.Adapter()
+                return session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)

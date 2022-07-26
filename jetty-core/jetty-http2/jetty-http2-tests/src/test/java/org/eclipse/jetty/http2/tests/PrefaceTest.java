@@ -72,7 +72,7 @@ public class PrefaceTest extends AbstractTest
     @Test
     public void testServerPrefaceReplySentAfterClientPreface() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public void onAccept(Session session)
@@ -91,7 +91,7 @@ public class PrefaceTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -114,7 +114,7 @@ public class PrefaceTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -130,7 +130,7 @@ public class PrefaceTest extends AbstractTest
     @Test
     public void testClientPrefaceReplySentAfterServerPreface() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -197,8 +197,10 @@ public class PrefaceTest extends AbstractTest
 
             assertEquals(2, settings.size());
             SettingsFrame frame1 = settings.poll();
+            assertNotNull(frame1);
             assertFalse(frame1.isReply());
             SettingsFrame frame2 = settings.poll();
+            assertNotNull(frame2);
             assertTrue(frame2.isReply());
         }
     }
@@ -215,7 +217,7 @@ public class PrefaceTest extends AbstractTest
             @Override
             protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
             {
-                return new ServerSessionListener.Adapter()
+                return new ServerSessionListener()
                 {
                     @Override
                     public Map<Integer, Integer> onPreface(Session session)
@@ -249,13 +251,14 @@ public class PrefaceTest extends AbstractTest
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            String upgradeRequest =
-                "GET /one HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: Upgrade, HTTP2-Settings\r\n" +
-                    "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: \r\n" +
-                    "\r\n";
+            String upgradeRequest = """
+                GET /one HTTP/1.1\r
+                Host: localhost\r
+                Connection: Upgrade, HTTP2-Settings\r
+                Upgrade: h2c\r
+                HTTP2-Settings: \r
+                \r
+                """;
             ByteBuffer upgradeBuffer = ByteBuffer.wrap(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
             socket.write(upgradeBuffer);
 
@@ -355,12 +358,13 @@ public class PrefaceTest extends AbstractTest
             CountDownLatch failureLatch = new CountDownLatch(1);
             Promise.Completable<Session> promise = new Promise.Completable<>();
             InetSocketAddress address = new InetSocketAddress("localhost", server.getLocalPort());
-            http2Client.connect(address, new Session.Listener.Adapter()
+            http2Client.connect(address, new Session.Listener()
             {
                 @Override
-                public void onFailure(Session session, Throwable failure)
+                public void onFailure(Session session, Throwable failure, Callback callback)
                 {
                     failureLatch.countDown();
+                    callback.succeeded();
                 }
             }, promise);
 
@@ -389,7 +393,7 @@ public class PrefaceTest extends AbstractTest
     @Test
     public void testInvalidClientPreface() throws Exception
     {
-        start(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener() {});
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {

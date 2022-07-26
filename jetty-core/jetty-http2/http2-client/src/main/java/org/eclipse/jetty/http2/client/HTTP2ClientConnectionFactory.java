@@ -19,13 +19,13 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.internal.HTTP2ClientSession;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Connection;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -85,7 +84,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, Parser parser, HTTP2Session session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
             super(retainableByteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
@@ -109,7 +108,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-            ISession session = getSession();
+            HTTP2Session session = getSession();
 
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             session.updateRecvWindow(windowDelta);
@@ -150,7 +149,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         public void onOpened(Connection connection)
         {
             HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.addManaged((LifeCycle)http2Connection.getSession());
+            http2Connection.client.addManaged(http2Connection.getSession());
         }
 
         @Override

@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
@@ -50,14 +50,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
-    private final IStream _stream;
+    private final HTTP2Stream _stream;
     private final long _nanoTimeStamp;
     private Content.Chunk _chunk;
     private MetaData.Response _metaData;
     private boolean committed;
     private boolean _demand;
 
-    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, IStream stream)
+    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, HTTP2Stream stream)
     {
         _connection = connection;
         _httpChannel = httpChannel;
@@ -139,13 +139,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (chunk != null)
                 return chunk;
 
-            IStream.Data data = _stream.readData();
+            Stream.Data data = _stream.readData();
             if (data == null)
                 return null;
 
+            chunk = createChunk(data);
+            data.release();
+
             try (AutoLock ignored = lock.lock())
             {
-                _chunk = newChunk(data.frame(), data::complete);
+                _chunk = chunk;
             }
         }
     }
@@ -172,27 +175,23 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
-            _stream.demand(1);
+            _stream.demand();
         }
     }
 
     @Override
-    public Runnable onData(DataFrame frame, Callback callback)
+    public Runnable onDataAvailable()
     {
-        Content.Chunk chunk = newChunk(frame, callback::succeeded);
         try (AutoLock ignored = lock.lock())
         {
             _demand = false;
-            _chunk = chunk;
         }
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content",
+            LOG.debug("HTTP2 Request #{}/{}: data available",
                 _stream.getId(),
-                Integer.toHexString(_stream.getSession().hashCode()),
-                frame.remaining(),
-                frame.isEndStream() ? "last" : "some");
+                Integer.toHexString(_stream.getSession().hashCode()));
         }
 
         return _httpChannel.onContentAvailable();
@@ -218,9 +217,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         return _httpChannel.onContentAvailable();
     }
 
-    private Content.Chunk newChunk(DataFrame frame, Runnable complete)
+    private Content.Chunk createChunk(Stream.Data data)
     {
-        return Content.Chunk.from(frame.getData(), frame.isEndStream(), complete);
+        // As we are passing the ByteBuffer to the Chunk we need to retain.
+        data.retain();
+        DataFrame frame = data.frame();
+        return Content.Chunk.from(frame.getData(), frame.isEndStream(), data);
     }
 
     @Override
@@ -342,7 +344,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 System.lineSeparator(), HttpVersion.HTTP_2, _metaData.getStatus(),
                 System.lineSeparator(), _metaData.getFields());
         }
-        _stream.send(new IStream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
+        _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
     }
 
     private void sendContent(MetaData.Request request, ByteBuffer content, boolean last, Callback callback)
@@ -422,7 +424,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             @Override
             public void succeeded(Stream pushStream)
             {
-                _connection.push((IStream)pushStream, request);
+                _connection.push((HTTP2Stream)pushStream, request);
             }
 
             @Override
@@ -431,7 +433,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not HTTP/2 push {}", request, x);
             }
-        }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
+        }, null); // TODO: handle reset from the client ?
     }
 
     public Runnable onPushRequest(MetaData.Request request)

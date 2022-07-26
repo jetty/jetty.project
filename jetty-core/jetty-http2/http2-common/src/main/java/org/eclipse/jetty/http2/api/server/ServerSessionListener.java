@@ -25,16 +25,7 @@ public interface ServerSessionListener extends Session.Listener
      *
      * @param session the session
      */
-    public void onAccept(Session session);
-
-    /**
-     * <p>Empty implementation of {@link ServerSessionListener}</p>
-     */
-    public static class Adapter extends Session.Listener.Adapter implements ServerSessionListener
+    public default void onAccept(Session session)
     {
-        @Override
-        public void onAccept(Session session)
-        {
-        }
     }
 }

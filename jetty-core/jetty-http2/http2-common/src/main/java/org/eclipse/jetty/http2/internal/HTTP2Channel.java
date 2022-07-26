@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.internal;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 
@@ -32,7 +31,7 @@ public interface HTTP2Channel
      */
     public interface Client
     {
-        public void onData(DataFrame frame, Callback callback);
+        public void onDataAvailable();
 
         public boolean onTimeout(Throwable failure);
 
@@ -47,7 +46,7 @@ public interface HTTP2Channel
      */
     public interface Server
     {
-        public Runnable onData(DataFrame frame, Callback callback);
+        public Runnable onDataAvailable();
 
         public Runnable onTrailer(HeadersFrame frame);
 

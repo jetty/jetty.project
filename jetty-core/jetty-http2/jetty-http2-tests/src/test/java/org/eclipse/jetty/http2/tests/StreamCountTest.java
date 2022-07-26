@@ -48,7 +48,7 @@ public class StreamCountTest extends AbstractTest
     @Test
     public void testServerAllowsOneStreamEnforcedByClient() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -61,19 +61,18 @@ public class StreamCountTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        if (frame.isEndStream())
+                        Stream.Data data = stream.readData();
+                        data.release();
+                        if (data.frame().isEndStream())
                         {
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
-                        }
-                        else
-                        {
-                            callback.succeeded();
+                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
                         }
                     }
                 };
@@ -81,7 +80,7 @@ public class StreamCountTest extends AbstractTest
         });
 
         CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -96,7 +95,7 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(frame1, streamPromise1, new Stream.Listener.Adapter()
+        session.newStream(frame1, streamPromise1, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -109,7 +108,7 @@ public class StreamCountTest extends AbstractTest
 
         HeadersFrame frame2 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
-        session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter());
+        session.newStream(frame2, streamPromise2, null);
 
         assertThrows(ExecutionException.class,
             () -> streamPromise2.get(5, TimeUnit.SECONDS));
@@ -121,27 +120,25 @@ public class StreamCountTest extends AbstractTest
     @Test
     public void testServerAllowsOneStreamEnforcedByServer() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 HTTP2Session session = (HTTP2Session)stream.getSession();
                 session.setMaxRemoteStreams(1);
-
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        if (frame.isEndStream())
+                        Stream.Data data = stream.readData();
+                        data.release();
+                        if (data.frame().isEndStream())
                         {
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
-                        }
-                        else
-                        {
-                            callback.succeeded();
+                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
                         }
                     }
                 };
@@ -149,7 +146,7 @@ public class StreamCountTest extends AbstractTest
         });
 
         CountDownLatch sessionResetLatch = new CountDownLatch(2);
-        Session session = newClientSession(new Session.Listener.Adapter()
+        Session session = newClientSession(new Session.Listener()
         {
             @Override
             public void onReset(Session session, ResetFrame frame)
@@ -162,7 +159,7 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(frame1, streamPromise1, new Stream.Listener.Adapter()
+        session.newStream(frame1, streamPromise1, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -177,12 +174,13 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame2 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         AtomicReference<CountDownLatch> resetLatch = new AtomicReference<>(new CountDownLatch(1));
-        session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter()
+        session.newStream(frame2, streamPromise2, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 resetLatch.get().countDown();
+                callback.succeeded();
             }
         });
 

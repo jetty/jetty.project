@@ -212,7 +212,7 @@ public class HTTP3ClientDocs
                     process(data.getByteBuffer());
 
                     // Notify the implementation that the content has been consumed.
-                    data.complete();
+                    data.release();
 
                     if (!data.isLast())
                     {
@@ -266,7 +266,7 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client();
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session> sessionCF = http3Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http3Client.connect(serverAddress, new Session.Listener());
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -276,7 +276,7 @@ public class HTTP3ClientDocs
 
         // tag::push[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter()
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
@@ -328,7 +328,7 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client();
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session> sessionCF = http3Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http3Client.connect(serverAddress, new Session.Listener());
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -338,7 +338,7 @@ public class HTTP3ClientDocs
 
         // tag::pushReset[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter()
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)

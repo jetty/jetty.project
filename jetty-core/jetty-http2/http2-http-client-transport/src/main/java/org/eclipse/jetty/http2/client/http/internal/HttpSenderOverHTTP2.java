@@ -25,11 +25,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -123,8 +123,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
 
         HttpChannelOverHTTP2 channel = getHttpChannel();
-        IStream.FrameList frameList = new IStream.FrameList(headersFrame, dataFrame, trailersFrame);
-        ((ISession)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        HTTP2Stream.FrameList frameList = new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame);
+        ((HTTP2Session)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
     }
 
     private HttpFields retrieveTrailers(HttpRequest request)

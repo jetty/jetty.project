@@ -53,13 +53,13 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, new Stream.Listener.Adapter()
+        session.newStream(frame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -87,13 +87,13 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, new Stream.Listener.Adapter()
+        session.newStream(frame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -145,13 +145,13 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter());
+        Session session = newClient(new Session.Listener() {});
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, new Stream.Listener.Adapter()
+        session.newStream(frame, promise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -212,7 +212,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClient(new Session.Listener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -227,7 +227,7 @@ public class AsyncIOTest extends AbstractTest
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, new Stream.Listener.Adapter()
+        session.newStream(frame, promise, new Stream.Listener()
         {
             @Override
             public void onClosed(Stream stream)

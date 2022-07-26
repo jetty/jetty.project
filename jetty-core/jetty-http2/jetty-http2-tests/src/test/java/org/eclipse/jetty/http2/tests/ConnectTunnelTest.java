@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -44,7 +45,7 @@ public class ConnectTunnelTest extends AbstractTest
     @Test
     public void testCONNECT() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -56,18 +57,21 @@ public class ConnectTunnelTest extends AbstractTest
                 assertNull(uri.getScheme());
                 assertNull(uri.getPath());
                 assertNotNull(uri.getAuthority());
-                return new Stream.Listener.Adapter()
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(stream::demand));
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        stream.data(frame, callback);
+                        Stream.Data data = stream.readData();
+                        stream.data(data.frame(), Callback.from(data::release));
                     }
                 };
             }
         });
 
-        Session client = newClientSession(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener() {});
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "HELLO".getBytes(StandardCharsets.UTF_8);
@@ -76,12 +80,14 @@ public class ConnectTunnelTest extends AbstractTest
         String authority = host + ":" + port;
         MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
+        client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                if (frame.isEndStream())
+                Stream.Data data = stream.readData();
+                data.release();
+                if (data.frame().isEndStream())
                     latch.countDown();
             }
         });
@@ -95,7 +101,7 @@ public class ConnectTunnelTest extends AbstractTest
     @Test
     public void testCONNECTWithProtocol() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -108,18 +114,21 @@ public class ConnectTunnelTest extends AbstractTest
                 assertNotNull(uri.getPath());
                 assertNotNull(uri.getAuthority());
                 assertNotNull(request.getProtocol());
-                return new Stream.Listener.Adapter()
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(stream::demand));
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
-                        stream.data(frame, callback);
+                        Stream.Data data = stream.readData();
+                        stream.data(data.frame(), Callback.from(data::release));
                     }
                 };
             }
         });
 
-        Session client = newClientSession(new Session.Listener.Adapter());
+        Session client = newClientSession(new Session.Listener() {});
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "HELLO".getBytes(StandardCharsets.UTF_8);
@@ -128,12 +137,14 @@ public class ConnectTunnelTest extends AbstractTest
         String authority = host + ":" + port;
         MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpFields.EMPTY, "websocket");
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
+        client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                if (frame.isEndStream())
+                Stream.Data data = stream.readData();
+                data.release();
+                if (data.frame().isEndStream())
                     latch.countDown();
             }
         });

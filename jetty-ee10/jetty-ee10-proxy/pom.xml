@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.proxy.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.proxy.*</spotbugs.onlyAnalyze>
   </properties>
 
 

@@ -20,19 +20,17 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +39,17 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2StreamEndPoint.class);
 
-    private final AutoLock lock = new AutoLock();
-    private final Deque<Entry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
     private final long created = System.currentTimeMillis();
+    private final HTTP2Stream stream;
     private final AtomicBoolean eof = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final IStream stream;
+    private final AtomicReference<Throwable> failure = new AtomicReference<>();
+    private Stream.Data data;
     private Connection connection;
 
-    public HTTP2StreamEndPoint(IStream stream)
+    public HTTP2StreamEndPoint(HTTP2Stream stream)
     {
         this.stream = stream;
     }
@@ -188,31 +186,31 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public int fill(ByteBuffer sink) throws IOException
     {
-        Entry entry;
-        try (AutoLock l = lock.lock())
-        {
-            entry = dataQueue.poll();
-        }
+        if (data != null)
+            return fillFromData(sink);
+
+        Throwable failure = this.failure.get();
+        if (failure != null)
+            throw IO.rethrow(failure);
+
+        if (eof.get())
+            return -1;
+
+        Stream.Data data = this.data = stream.readData();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("filled {} on {}", entry, this);
+            LOG.debug("filled {} on {}", data, this);
 
-        if (entry == null)
+        if (data == null)
             return 0;
-        if (entry.isEOF())
-        {
-            entry.succeed();
-            return shutdownInput();
-        }
-        IOException failure = entry.ioFailure();
-        if (failure != null)
-        {
-            entry.fail(failure);
-            throw failure;
-        }
 
+        return fillFromData(sink);
+    }
+
+    private int fillFromData(ByteBuffer sink)
+    {
         int sinkPosition = BufferUtil.flipToFill(sink);
-        ByteBuffer source = entry.buffer;
+        ByteBuffer source = data.frame().getData();
         int sourceLength = source.remaining();
         int length = Math.min(sourceLength, sink.remaining());
         int sourceLimit = source.limit();
@@ -221,27 +219,15 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         source.limit(sourceLimit);
         BufferUtil.flipToFlush(sink, sinkPosition);
 
-        if (source.hasRemaining())
+        if (!source.hasRemaining())
         {
-            try (AutoLock l = lock.lock())
-            {
-                dataQueue.offerFirst(entry);
-            }
+            eof.set(data.frame().isEndStream());
+            data.release();
+            data = null;
+            stream.demand();
         }
-        else
-        {
-            entry.succeed();
-            // WebSocket does not have a backpressure API so you must always demand
-            // the next frame after succeeding the previous one.
-            stream.demand(1);
-        }
-        return length;
-    }
 
-    private int shutdownInput()
-    {
-        eof.set(true);
-        return -1;
+        return length;
     }
 
     @Override
@@ -394,24 +380,19 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                 WriteState current = writeState.get();
                 switch (current.state)
                 {
-                    case IDLE:
+                    case IDLE ->
+                    {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
-                            break;
+                            continue;
                         // TODO: we really need a Stream primitive to write multiple frames.
                         ByteBuffer result = coalesce(buffers, false);
                         stream.data(new DataFrame(stream.getId(), result, false), Callback.from(() -> writeSuccess(callback), x -> writeFailure(x, callback)));
-                        return;
-                    case PENDING:
-                        callback.failed(new WritePendingException());
-                        return;
-                    case OSHUTTING:
-                    case OSHUT:
-                        callback.failed(new EofException("Output shutdown"));
-                        return;
-                    case FAILED:
-                        callback.failed(current.failure);
-                        return;
+                    }
+                    case PENDING -> callback.failed(new WritePendingException());
+                    case OSHUTTING, OSHUT -> callback.failed(new EofException("Output shutdown"));
+                    case FAILED -> callback.failed(current.failure);
                 }
+                return;
             }
         }
     }
@@ -423,23 +404,21 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
             WriteState current = writeState.get();
             switch (current.state)
             {
-                case IDLE:
-                case OSHUT:
-                    callback.failed(new IllegalStateException());
-                    return;
-                case PENDING:
+                case IDLE, OSHUT -> callback.failed(new IllegalStateException());
+                case PENDING ->
+                {
                     if (!writeState.compareAndSet(current, WriteState.IDLE))
-                        break;
+                        continue;
                     callback.succeeded();
-                    return;
-                case OSHUTTING:
+                }
+                case OSHUTTING ->
+                {
                     callback.succeeded();
                     shutdownOutput();
-                    return;
-                case FAILED:
-                    callback.failed(current.failure);
-                    return;
+                }
+                case FAILED -> callback.failed(current.failure);
             }
+            return;
         }
     }
 
@@ -539,54 +518,22 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         newConnection.onOpen();
     }
 
-    protected void offerData(DataFrame frame, Callback callback)
+    protected void processDataAvailable()
     {
-        ByteBuffer buffer = frame.getData();
-        if (LOG.isDebugEnabled())
-            LOG.debug("offering {} on {}", frame, this);
-        if (frame.isEndStream())
-        {
-            if (buffer.hasRemaining())
-                offer(buffer, Callback.from(Callback.NOOP::succeeded, callback::failed), null);
-            offer(BufferUtil.EMPTY_BUFFER, callback, Entry.EOF);
-        }
-        else
-        {
-            if (buffer.hasRemaining())
-                offer(buffer, callback, null);
-            else
-                callback.succeeded();
-        }
         process();
     }
 
-    protected void offerFailure(Throwable failure)
+    protected void processFailure(Throwable failure)
     {
-        offer(BufferUtil.EMPTY_BUFFER, Callback.NOOP, failure);
-        process();
+        if (this.failure.compareAndSet(null, failure))
+            process();
     }
 
-    private void offer(ByteBuffer buffer, Callback callback, Throwable failure)
+    private void process()
     {
-        try (AutoLock l = lock.lock())
-        {
-            dataQueue.offer(new Entry(buffer, callback, failure));
-        }
-    }
-
-    protected void process()
-    {
-        boolean empty;
-        try (AutoLock l = lock.lock())
-        {
-            empty = dataQueue.isEmpty();
-        }
-        if (!empty)
-        {
-            Callback callback = readCallback.getAndSet(null);
-            if (callback != null)
-                callback.succeeded();
-        }
+        Callback callback = readCallback.getAndSet(null);
+        if (callback != null)
+            callback.succeeded();
     }
 
     @Override
@@ -597,51 +544,6 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         return String.format("%s@%x[%s@%x#%d][w=%s]", getClass().getSimpleName(), hashCode(),
             stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
             writeState);
-    }
-
-    private static class Entry
-    {
-        private static final Throwable EOF = new Throwable();
-
-        private final ByteBuffer buffer;
-        private final Callback callback;
-        private final Throwable failure;
-
-        private Entry(ByteBuffer buffer, Callback callback, Throwable failure)
-        {
-            this.buffer = buffer;
-            this.callback = callback;
-            this.failure = failure;
-        }
-
-        private boolean isEOF()
-        {
-            return failure == EOF;
-        }
-
-        private IOException ioFailure()
-        {
-            if (failure == null || isEOF())
-                return null;
-            return failure instanceof IOException ? (IOException)failure : new IOException(failure);
-        }
-
-        private void succeed()
-        {
-            callback.succeeded();
-        }
-
-        private void fail(Throwable failure)
-        {
-            callback.failed(failure);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[b=%s,eof=%b,f=%s]", getClass().getSimpleName(), hashCode(),
-                BufferUtil.toDetailString(buffer), isEOF(), isEOF() ? null : failure);
-        }
     }
 
     private static class WriteState

@@ -80,7 +80,7 @@ public class HTTP1Servlet extends HttpServlet
         String contextPath = request.getContextPath();
         ServletOutputStream output = response.getOutputStream();
         AsyncContext asyncContext = request.startAsync();
-        http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), new Promise<Session>()
+        http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener(), new Promise<Session>()
         {
             @Override
             public void succeeded(Session session)
@@ -97,7 +97,7 @@ public class HTTP1Servlet extends HttpServlet
                         response.setHeader("X-Failure", "stream");
                         asyncContext.complete();
                     }
-                }, new Stream.Listener.Adapter()
+                }, new Stream.Listener()
                 {
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)

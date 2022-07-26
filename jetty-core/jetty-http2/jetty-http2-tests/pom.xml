@@ -15,7 +15,7 @@
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>h2spec-maven-plugin</artifactId>
-        <version>1.0.10-SNAPSHOT</version>
+        <version>1.0.10</version>
         <configuration>
           <mainClass>org.eclipse.jetty.http2.tests.H2SpecServer</mainClass>
           <skip>${skipTests}</skip>
@@ -24,7 +24,6 @@
           <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>
           <excludeSpecs>
             <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
-            <excludeSpec>8.1.2.3 - 8.1.2.6. Malformed Requests and Responses</excludeSpec>
           </excludeSpecs>
         </configuration>
         <executions>

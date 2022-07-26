@@ -20,7 +20,6 @@ import java.util.Map;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
@@ -82,7 +82,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             return;
         }
 
-        IStream stream = getStream(streamId);
+        HTTP2Stream stream = getStream(streamId);
 
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
@@ -169,19 +169,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     {
         switch (frame.getType())
         {
-            case PREFACE:
-                onPreface();
-                break;
-            case SETTINGS:
+            case PREFACE -> onPreface();
+            case SETTINGS ->
                 // SPEC: the required reply to this SETTINGS frame is the 101 response.
                 onSettings((SettingsFrame)frame, false);
-                break;
-            case HEADERS:
-                onHeaders((HeadersFrame)frame);
-                break;
-            default:
-                super.onFrame(frame);
-                break;
+            case HEADERS -> onHeaders((HeadersFrame)frame);
+            default -> super.onFrame(frame);
         }
     }
 }
