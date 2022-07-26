@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
@@ -175,7 +176,7 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                Response.sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
+                sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
                 return;
             }
 
@@ -214,14 +215,19 @@ public class ResourceService
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            writeHttpError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         catch (IllegalArgumentException e)
         {
             LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, e);
+                writeHttpError(request, response, callback, e);
         }
+    }
+
+    protected void sendRedirect(Request request, Response response, Callback callback, String target)
+    {
+        Response.sendRedirect(request, response, callback, target);
     }
 
     private List<String> getPreferredEncodingOrder(Request request)
@@ -345,7 +351,7 @@ public class ResourceService
 
                     if (!match)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                        writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                         return true;
                     }
                 }
@@ -355,7 +361,7 @@ public class ResourceService
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                        writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                         return true;
                     }
 
@@ -365,7 +371,7 @@ public class ResourceService
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                            writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                             return true;
                         }
                     }
@@ -382,14 +388,14 @@ public class ResourceService
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
             }
@@ -397,14 +403,14 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
             {
-                Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return true;
             }
         }
         catch (IllegalArgumentException iae)
         {
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, null, iae);
+                writeHttpError(request, response, callback, HttpStatus.BAD_REQUEST_400, null, iae);
             throw iae;
         }
 
@@ -425,7 +431,7 @@ public class ResourceService
                 uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
-                Response.sendRedirect(request, response, callback, uri.getPathQuery());
+                sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
         }
@@ -480,7 +486,7 @@ public class ResourceService
             case REDIRECT ->
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                Response.sendRedirect(request, response, callback, welcomeAction.target);
+                sendRedirect(request, response, callback, welcomeAction.target);
             }
             case SERVE ->
             {
@@ -522,7 +528,7 @@ public class ResourceService
     {
         if (!_dirAllowed)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -530,7 +536,7 @@ public class ResourceService
         String listing = ResourceListing.getAsHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 

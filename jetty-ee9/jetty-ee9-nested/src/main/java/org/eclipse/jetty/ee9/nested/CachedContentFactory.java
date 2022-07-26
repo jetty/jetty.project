@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtil;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -403,7 +404,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
             _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
+            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtil.calcWeakEtag(resource.getPath())) : null;
 
             if (precompressedResources != null)
             {
@@ -603,7 +604,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtil.calcWeakEtag(_content.getResource().getPath(), format.getEtagSuffix())) : null;
         }
 
         public boolean isValid()

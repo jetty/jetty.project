@@ -119,7 +119,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return _resource.getWeakETag();
+        return EtagUtil.calcWeakEtag(_resource.getPath());
     }
 
     @Override

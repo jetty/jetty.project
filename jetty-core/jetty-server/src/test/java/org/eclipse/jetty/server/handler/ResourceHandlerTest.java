@@ -37,6 +37,7 @@ import java.util.zip.ZipOutputStream;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtil;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -750,8 +751,35 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
-    public void testBrotli() throws Exception
+    public void testBrotliInitialCompressed() throws Exception
+    {
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
+
+        _rootResourceHandler.setDirAllowed(false);
+        _rootResourceHandler.setRedirectWelcome(false);
+        _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR);
+        _rootResourceHandler.setEtags(true);
+
+        String rawResponse = _local.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding:gzip;q=0.9,br\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        String body = response.getContent();
+        assertThat(body, containsString("fake br"));
+    }
+
+    @Test
+    public void testBrotliWithEtags() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
@@ -782,7 +810,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = EtagUtil.rewriteWithSuffix(etag, "-br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -920,7 +948,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = EtagUtil.rewriteWithSuffix(etag, "-br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -1042,7 +1070,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = EtagUtil.rewriteWithSuffix(etag, "-gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2149,7 +2177,7 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = EtagUtil.rewriteWithSuffix(etag, "-gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2205,7 +2233,7 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        String badEtagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2X--gzip\"");
+        String badEtagGzip = EtagUtil.rewriteWithSuffix(etag, "-gzip");
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r

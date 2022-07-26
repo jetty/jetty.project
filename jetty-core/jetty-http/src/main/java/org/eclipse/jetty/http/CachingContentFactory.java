@@ -205,15 +205,29 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         private CachingHttpContent(String key, String precalculatedEtag, HttpContent httpContent) throws IOException
         {
             super(httpContent);
+
+            if (httpContent.getResource() == null)
+                throw new IllegalArgumentException("Null Resource");
+            if (!httpContent.getResource().exists())
+                throw new IllegalArgumentException("Resource doesn't exist: " + httpContent.getResource());
+            if (httpContent.getResource().isDirectory())
+                throw new IllegalArgumentException("Directory Resources not supported: " + httpContent.getResource());
+
+            // Resources with negative length cannot be cached.
+            // But allow resources with zero length.
+            long resourceSize = httpContent.getResource().length();
+            if (resourceSize < 0)
+                throw new IllegalArgumentException("Resource with negative size: " + httpContent.getResource());
+
             _etag = precalculatedEtag;
-            _contentLengthValue = httpContent.getContentLengthValue(); // TODO getContentLengthValue() could return -1
+            _contentLengthValue = resourceSize;
 
             // map the content into memory if possible
             ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(httpContent.getResource(), 0, _contentLengthValue) : null;
 
             if (byteBuffer == null)
             {
-                // TODO use pool & check length limit
+                // TODO use pool?
                 // load the content into memory
                 byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
                 try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getResource().getPath()))
@@ -234,17 +248,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 for (Map.Entry<CompressedContentFormat, ? extends HttpContent> entry : precompressedContents.entrySet())
                 {
                     CompressedContentFormat format = entry.getKey();
-
-                    // Rewrite the etag to be the content's one with the required suffix all within quotes.
-                    String precompressedEtag = httpContent.getETagValue();
-                    boolean weak = false;
-                    if (precompressedEtag.startsWith("W/"))
-                    {
-                        weak = true;
-                        precompressedEtag = precompressedEtag.substring(2);
-                    }
-                    precompressedEtag = (weak ? "W/\"" : "\"") + QuotedStringTokenizer.unquote(precompressedEtag) + format.getEtagSuffix() + '"';
-
+                    String precompressedEtag = EtagUtil.rewriteWithSuffix(httpContent.getETagValue(), format.getEtagSuffix());
                     // The etag of the precompressed content must be the one of the non-compressed content, with the etag suffix appended.
                     _precompressedContents.put(format, new CachingHttpContent(key, precompressedEtag, entry.getValue()));
                 }

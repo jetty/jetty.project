@@ -1015,6 +1015,25 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String message, Throwable cause)
+        {
+            HttpServletRequest request = getServletRequest(coreRequest);
+            HttpServletResponse response = getServletResponse(coreResponse);
+            try
+            {
+                // TODO: not sure if this is allowed here.
+                if (cause != null)
+                    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
+                response.sendError(statusCode, message);
+            }
+            catch (IOException e)
+            {
+                // TODO: Need a better exception?
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
         protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
             boolean included = getServletRequest(request).getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
