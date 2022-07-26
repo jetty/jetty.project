@@ -713,21 +713,29 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        URI jarUri = uriJarPrefix(uri, "!/");
-        try (Resource.Mount mount = Resource.mount(jarUri);
+        try (Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/"));
              Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
-            Iterator<String> it = stream
-                .map(Path::toString)
-                .filter(filename -> filename.startsWith("META-INF") && filename.endsWith(".tld"))
+            Iterator<Path> it = stream
+                .filter(MetaInfConfiguration::isTldFile)
                 .iterator();
-            String prefix = jarUri.toString();
             while (it.hasNext())
             {
-                tlds.add(new URL(prefix + it.next()));
+                Path entry = it.next();
+                tlds.add(entry.toUri().toURL());
             }
         }
         return tlds;
+    }
+
+    private static boolean isTldFile(Path path)
+    {
+        if (path.getNameCount() < 2)
+            return false;
+        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
+            return false;
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
