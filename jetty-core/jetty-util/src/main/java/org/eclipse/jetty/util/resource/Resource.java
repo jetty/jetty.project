@@ -77,27 +77,6 @@ public abstract class Resource implements ResourceFactory
         .with("jar:")
         .build();
 
-    // TODO remove
-    public static boolean __defaultUseCaches = true;
-
-    /**
-     * Change the default setting for url connection caches.
-     * Subsequent URLConnections will use this default.
-     *
-     * @param useCaches true to enable URL connection caches, false otherwise.
-     * TODO remove
-     */
-    public static void setDefaultUseCaches(boolean useCaches)
-    {
-        __defaultUseCaches = useCaches;
-    }
-
-    // TODO remove
-    public static boolean getDefaultUseCaches()
-    {
-        return __defaultUseCaches;
-    }
-
     /**
      * <p>Mount a URI if it is needed.</p>
      * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")

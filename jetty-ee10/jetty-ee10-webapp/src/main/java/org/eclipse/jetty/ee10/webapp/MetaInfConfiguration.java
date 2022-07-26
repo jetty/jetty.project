@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -30,17 +29,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
@@ -720,25 +718,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public Collection<URL> getTlds(URI uri) throws IOException
     {
-        HashSet<URL> tlds = new HashSet<URL>();
-
+        HashSet<URL> tlds = new HashSet<>();
         URI jarUri = uriJarPrefix(uri, "!/");
-        URL url = jarUri.toURL();
-        JarURLConnection jarConn = (JarURLConnection)url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
-        JarFile jarFile = jarConn.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements())
+        try (Resource.Mount mount = Resource.mount(jarUri);
+             Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
-            JarEntry e = entries.nextElement();
-            String name = e.getName();
-            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            Iterator<String> it = stream
+                .map(Path::toString)
+                .filter(filename -> filename.startsWith("META-INF") && filename.endsWith(".tld"))
+                .iterator();
+            String prefix = jarUri.toString();
+            while (it.hasNext())
             {
-                tlds.add(new URL(jarUri + name));
+                tlds.add(new URL(prefix + it.next()));
             }
         }
-        if (!Resource.getDefaultUseCaches())
-            jarFile.close();
         return tlds;
     }
 

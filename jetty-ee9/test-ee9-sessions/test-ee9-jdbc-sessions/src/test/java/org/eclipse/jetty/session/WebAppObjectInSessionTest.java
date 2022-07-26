@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.ee9.session.AbstractWebAppObjectInSessionTest;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        Resource.setDefaultUseCaches(false);
         return JdbcTestHelper.newSessionDataStoreFactory();
     }
 

@@ -28,7 +28,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -55,7 +54,6 @@ public class ReloadedSessionMissingClassTest
     @Test
     public void testSessionReloadWithMissingClass() throws Exception
     {
-        Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 
         File unpackedWarDir = testdir.getEmptyPathDir().toFile();
