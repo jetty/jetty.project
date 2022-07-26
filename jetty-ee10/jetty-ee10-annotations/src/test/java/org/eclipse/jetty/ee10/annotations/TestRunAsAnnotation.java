@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestRunAsAnnotation
 {
     public WorkDir workDir;
+
     @Test
     public void testRunAsAnnotation() throws Exception
     {
