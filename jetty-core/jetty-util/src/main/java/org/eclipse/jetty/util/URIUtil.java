@@ -586,7 +586,7 @@ public class URIUtil
 
     /**
      * Decode a URI path and strip parameters of UTF-8 path
-     * @see #canonicalPath(String, int, int)
+     * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path, int offset, int length)
@@ -709,40 +709,23 @@ public class URIUtil
      * <p>
      * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
      * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
-     *
+     * @return the canonical path or null if it is non-normal
      * @see #decodePath(String)
      * @see #normalizePath(String)
      * @see URI
      */
     public static String canonicalPath(String path)
     {
-        return canonicalPath(path, 0, path.length());
-    }
-
-    /**
-     * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
-     * <p>
-     * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
-     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
-     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
-     * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
-     * <p>
-     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
-     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
-     *
-     * @see #decodePath(String, int, int)
-     * @see #normalizePath(String)
-     * @see URI
-     */
-    public static String canonicalPath(String path, int offset, int length)
-    {
+        if (path == null)
+            return null;
         try
         {
+
             Utf8StringBuilder builder = null;
-            int end = offset + length;
+            int end = path.length();
             boolean slash = true;
             boolean normal = true;
-            for (int i = offset; i < end; i++)
+            for (int i = 0; i < end; i++)
             {
                 char c = path.charAt(i);
                 switch (c)
@@ -751,7 +734,7 @@ public class URIUtil
                         if (builder == null)
                         {
                             builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, offset, i - offset);
+                            builder.append(path, 0, i);
                         }
                         if ((i + 2) < end)
                         {
@@ -795,7 +778,7 @@ public class URIUtil
                         if (builder == null)
                         {
                             builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, offset, i - offset);
+                            builder.append(path, 0, i);
                         }
 
                         while (++i < end)
@@ -824,7 +807,7 @@ public class URIUtil
                         if (builder == null && !isSafe(c))
                         {
                             builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, offset, i - offset);
+                            builder.append(path, 0, i);
                         }
 
                         if (builder != null && isSafeElseEncode(c, builder))
@@ -835,16 +818,13 @@ public class URIUtil
                 slash = c == '/';
             }
 
-            String canonical = (builder != null)
-                ? builder.toString()
-                : (offset == 0 && length == path.length()) ? path : path.substring(offset, end);
-
+            String canonical = (builder != null) ? builder.toString() : path;
             return normal ? canonical : normalizePath(canonical);
         }
         catch (NotUtf8Exception e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
+                LOG.debug("{} {}", path, e.toString());
             throw e;
         }
         catch (IllegalArgumentException e)
@@ -1104,7 +1084,7 @@ public class URIUtil
      * </p>
      *
      * @param pathQuery the encoded URI from the path onwards, which may contain query strings and/or fragments
-     * @return the canonical path, or null if path traversal above root.
+     * @return the normalized path, or null if path traversal above root.
      * @see #normalizePath(String)
      */
     public static String normalizePathQuery(String pathQuery)
@@ -1212,7 +1192,7 @@ public class URIUtil
      *
      * @param path the decoded URI path to convert. Any special characters (e.g. '?', "#") are assumed to be part of
      * the path segments.
-     * @return the canonical path, or null if path traversal above root.
+     * @return the normalized path, or null if path traversal above root.
      * @see #normalizePathQuery(String)
      * @see #canonicalPath(String)
      * @see #decodePath(String)
