@@ -983,7 +983,7 @@ public class DefaultServlet extends HttpServlet
                             welcome = URIUtil.addPaths(servletPath, welcome);
 
                         response.setContentLength(0);
-                        response.sendRedirect(welcome);
+                        response.sendRedirect(welcome); // Call API (might be overridden)
                         callback.succeeded();
                     }
                 }
