@@ -264,11 +264,7 @@ public class ResourceCollection extends Resource
         }
 
         if (resources == null)
-        {
-            if (addedResource != null)
-                return addedResource; // This will not exist
-            return EmptyResource.INSTANCE;
-        }
+            return addedResource; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
