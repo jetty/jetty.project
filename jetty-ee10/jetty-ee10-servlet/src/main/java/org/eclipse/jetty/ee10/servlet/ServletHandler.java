@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -775,7 +774,7 @@ public class ServletHandler extends Handler.Wrapper
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
-            mapping.setPathSpec(URIUtil.canonicalPath(pathSpec));
+            mapping.setPathSpec(pathSpec);
             setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
         }
         catch (RuntimeException e)
@@ -887,7 +886,7 @@ public class ServletHandler extends Handler.Wrapper
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
-            mapping.setPathSpec(URIUtil.canonicalPath(pathSpec));
+            mapping.setPathSpec(pathSpec);
             mapping.setDispatcherTypes(dispatches);
             addFilterMapping(mapping);
         }

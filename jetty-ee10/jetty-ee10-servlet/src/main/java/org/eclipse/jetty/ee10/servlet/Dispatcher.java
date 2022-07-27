@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -204,26 +205,35 @@ public class Dispatcher implements RequestDispatcher
     private class ForwardRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
-        private MultiMap<String> _params;
+        private final MultiMap<String> _params = new MultiMap<>();
+        private boolean decodedParams = false;
 
         public ForwardRequest(HttpServletRequest httpRequest)
         {
             super(httpRequest);
             _httpServletRequest = httpRequest;
+
+            String targetQuery = (_uri == null) ? null : _uri.getQuery();
+            if (targetQuery != null)
+                UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
+
+            try
+            {
+                String sourceQuery = _httpServletRequest.getQueryString();
+                if (sourceQuery != null)
+                    UrlEncoded.decodeTo(sourceQuery, _params, UrlEncoded.ENCODING);
+            }
+            catch (Throwable t)
+            {
+                throw new BadMessageException(400, "Unable to parse URI query", t);
+            }
         }
 
         private MultiMap<String> getParams()
         {
-            if (_params != null)
+            if (decodedParams)
                 return _params;
-            _params = new MultiMap<>();
-
-            String targetQuery = (_uri == null) ? null : _uri.getQuery();
-            if (targetQuery != null)
-            {
-                // Have to assume ENCODING because we can't know otherwise.
-                UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
-            }
+            decodedParams = true;
 
             Enumeration<String> parameterNames = _httpServletRequest.getParameterNames();
             while (parameterNames.hasMoreElements())
