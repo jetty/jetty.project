@@ -26,7 +26,6 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
@@ -1341,34 +1340,41 @@ public abstract class Resource implements ResourceFactory
         while (tokenizer.hasMoreTokens())
         {
             String reference = tokenizer.nextToken();
-            // Is this a glob reference?
-            if (reference.endsWith("/*") || reference.endsWith("\\*"))
+            try
             {
-                String dir = reference.substring(0, reference.length() - 2);
-                Path pathDir = Paths.get(dir);
-                // Use directory
-                if (Files.exists(pathDir) && Files.isDirectory(pathDir))
+                // Is this a glob reference?
+                if (reference.endsWith("/*") || reference.endsWith("\\*"))
                 {
-                    // To obtain the list of entries
-                    try (Stream<Path> listStream = Files.list(pathDir))
+                    String dir = reference.substring(0, reference.length() - 2);
+                    Path pathDir = Paths.get(dir);
+                    // Use directory
+                    if (Files.exists(pathDir) && Files.isDirectory(pathDir))
                     {
-                        listStream
-                            .filter(Files::isRegularFile)
-                            .filter(Resource::isArchive)
-                            .sorted(Comparator.naturalOrder())
-                            .forEach(path -> uris.add(toJarFileUri(path.toUri())));
-                    }
-                    catch (IOException e)
-                    {
-                        throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
+                        // To obtain the list of entries
+                        try (Stream<Path> listStream = Files.list(pathDir))
+                        {
+                            listStream
+                                .filter(Files::isRegularFile)
+                                .filter(Resource::isArchive)
+                                .sorted(Comparator.naturalOrder())
+                                .forEach(path -> uris.add(toJarFileUri(path.toUri())));
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
+                        }
                     }
                 }
+                else
+                {
+                    // Simple reference, add as-is
+                    uris.add(toURI(reference));
+                }
             }
-            else
+            catch (Exception e)
             {
-                // Simple reference, add as-is
-                Path path = Paths.get(reference);
-                uris.add(path.toUri());
+                LOG.warn("Invalid Resource Reference: " + reference);
+                throw e;
             }
         }
         return uris;

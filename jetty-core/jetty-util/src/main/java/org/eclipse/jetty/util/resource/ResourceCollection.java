@@ -102,9 +102,14 @@ public class ResourceCollection extends Resource
                     continue;
                 }
 
-                if (!r.exists() || !r.isDirectory())
+                if (!r.exists())
                 {
-                    throw new IllegalArgumentException("Not an existing directory: " + r);
+                    throw new IllegalArgumentException("Does not exist: " + r);
+                }
+
+                if (!r.isDirectory())
+                {
+                    throw new IllegalArgumentException("Not a directory: " + r);
                 }
                 unique.add(r);
             }
