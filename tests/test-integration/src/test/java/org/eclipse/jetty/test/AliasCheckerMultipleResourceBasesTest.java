@@ -32,8 +32,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,13 +42,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AliasCheckerMultipleResourceBasesTest
 {
-    private static Server _server;
-    private static ServerConnector _connector;
-    private static HttpClient _client;
-    private static ServletContextHandler _context;
-    private static Path _webRootPath;
-    private static Path _altDir1Symlink;
-    private static Path _altDir2Symlink;
+    private Server _server;
+    private ServerConnector _connector;
+    private HttpClient _client;
+    private ServletContextHandler _context;
+    private Path _webRootPath;
+    private Path _altDir1Symlink;
+    private Path _altDir2Symlink;
 
     private static Path getResource(String path) throws Exception
     {
@@ -62,7 +62,7 @@ public class AliasCheckerMultipleResourceBasesTest
         IO.delete(path.toFile());
     }
 
-    private static void setAliasCheckers(ContextHandler.AliasCheck... aliasChecks)
+    private void setAliasCheckers(ContextHandler.AliasCheck... aliasChecks)
     {
         _context.clearAliasChecks();
         if (aliasChecks != null)
@@ -74,8 +74,8 @@ public class AliasCheckerMultipleResourceBasesTest
         }
     }
 
-    @BeforeAll
-    public static void beforeAll() throws Exception
+    @BeforeEach
+    public void before() throws Exception
     {
         _webRootPath = getResource("webroot");
 
@@ -106,8 +106,8 @@ public class AliasCheckerMultipleResourceBasesTest
         _client.start();
     }
 
-    @AfterAll
-    public static void afterAll() throws Exception
+    @AfterEach
+    public void after() throws Exception
     {
         Files.delete(_altDir1Symlink);
         Files.delete(_altDir2Symlink);
@@ -119,8 +119,6 @@ public class AliasCheckerMultipleResourceBasesTest
     @Test
     public void test() throws Exception
     {
-        System.err.println(_webRootPath.toAbsolutePath());
-
         ServletHolder servletHolder;
         servletHolder = _context.addServlet(DefaultServlet.class, "/defaultServlet1/*");
         servletHolder.setInitParameter("resourceBase", _altDir1Symlink.toString());

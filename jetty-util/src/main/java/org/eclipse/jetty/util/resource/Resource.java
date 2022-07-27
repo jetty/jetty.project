@@ -77,6 +77,26 @@ public abstract class Resource implements ResourceFactory, Closeable
         return __defaultUseCaches;
     }
 
+    public static Resource resolveAlias(Resource resource)
+    {
+        if (!resource.isAlias())
+            return resource;
+
+        try
+        {
+            File file = resource.getFile();
+            if (file != null)
+                return Resource.newResource(file.toPath().toRealPath());
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("resolve alias failed", e);
+        }
+
+        return resource;
+    }
+
     /**
      * Construct a resource from a uri.
      *

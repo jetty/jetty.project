@@ -35,8 +35,8 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,11 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AliasCheckerWebRootIsSymlinkTest
 {
-    private static Server _server;
-    private static ServerConnector _connector;
-    private static HttpClient _client;
-    private static ServletContextHandler _context;
-    private static Path _webrootSymlink;
+    private Server _server;
+    private ServerConnector _connector;
+    private HttpClient _client;
+    private ServletContextHandler _context;
+    private Path _webrootSymlink;
 
     private static Path getResource(String path) throws Exception
     {
@@ -66,15 +66,15 @@ public class AliasCheckerWebRootIsSymlinkTest
         IO.delete(path.toFile());
     }
 
-    private static void setAliasChecker(ContextHandler.AliasCheck aliasChecker)
+    private void setAliasChecker(ContextHandler.AliasCheck aliasChecker)
     {
         _context.clearAliasChecks();
         if (aliasChecker != null)
             _context.addAliasCheck(aliasChecker);
     }
 
-    @BeforeAll
-    public static void beforeAll() throws Exception
+    @BeforeEach
+    public void before() throws Exception
     {
         Path webRootPath = getResource("webroot");
 
@@ -101,8 +101,8 @@ public class AliasCheckerWebRootIsSymlinkTest
         _client.start();
     }
 
-    @AfterAll
-    public static void afterAll() throws Exception
+    @AfterEach
+    public void after() throws Exception
     {
         // Try to delete all files now so that the symlinks do not confuse other tests.
         Files.delete(_webrootSymlink);
