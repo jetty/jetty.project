@@ -21,14 +21,12 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -43,182 +41,38 @@ public class ResourceCollection extends Resource
     private List<Resource> _resources;
 
     /**
-     * Instantiates an empty resource collection.
-     * <p>
-     * This constructor is used when configuring jetty-maven-plugin.
-     */
-    public ResourceCollection()
-    {
-        _resources = new ArrayList<>();
-    }
-
-    /**
      * Instantiates a new resource collection.
      *
      * @param resources the resources to be added to collection
      */
-    public ResourceCollection(Resource... resources)
+    ResourceCollection(Collection<Resource> resources)
     {
-        this(Arrays.asList(resources));
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Collection<Resource> resources)
-    {
-        _resources = new ArrayList<>();
-
+        List<Resource> tmp = new ArrayList<>();
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No Resources");
         for (Resource r : resources)
         {
-            if (r == null)
-            {
-                continue;
-            }
             if (r instanceof ResourceCollection)
             {
-                _resources.addAll(((ResourceCollection)r).getResources());
+                tmp.addAll(((ResourceCollection)r).getResources());
             }
             else
             {
                 assertResourceValid(r);
-                _resources.add(r);
+                tmp.add(r);
             }
         }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resource strings to be added to collection
-     */
-    public ResourceCollection(String[] resources)
-    {
-        _resources = new ArrayList<>();
-
-        if (resources == null || resources.length == 0)
-        {
-            return;
-        }
-
-        try
-        {
-            for (String strResource : resources)
-            {
-                if (strResource == null || strResource.length() == 0)
-                {
-                    throw new IllegalArgumentException("empty/null resource path not supported");
-                }
-                Resource resource = Resource.newResource(strResource);
-                assertResourceValid(resource);
-                _resources.add(resource);
-            }
-
-            if (_resources.isEmpty())
-            {
-                throw new IllegalArgumentException("resources cannot be empty or null");
-            }
-        }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param csvResources the string containing comma-separated resource strings
-     * @throws IOException if any listed resource is not valid
-     */
-    public ResourceCollection(String csvResources) throws IOException
-    {
-        setResources(csvResources);
+        _resources = Collections.unmodifiableList(tmp);
     }
 
     /**
      * Retrieves the resource collection's resources.
      *
-     * @return the resource collection
+     * @return the resource collection as immutable list
      */
     public List<Resource> getResources()
     {
         return _resources;
-    }
-
-    /**
-     * Sets the resource collection's resources.
-     *
-     * @param res the resources to set
-     */
-    public void setResources(List<Resource> res)
-    {
-        _resources = new ArrayList<>();
-        if (res.isEmpty())
-        {
-            return;
-        }
-
-        _resources.addAll(res);
-    }
-
-    /**
-     * Sets the resource collection's resources.
-     *
-     * @param resources the new resource array
-     */
-    public void setResources(Resource[] resources)
-    {
-        if (resources == null || resources.length == 0)
-        {
-            _resources = null;
-            return;
-        }
-
-        List<Resource> res = new ArrayList<>();
-        for (Resource resource : resources)
-        {
-            assertResourceValid(resource);
-            res.add(resource);
-        }
-
-        setResources(res);
-    }
-
-    /**
-     * Sets the resources as string of comma-separated values.
-     * This method should be used when configuring jetty-maven-plugin.
-     *
-     * @param resources the comma-separated string containing
-     * one or more resource strings.
-     * @throws IOException if unable resource declared is not valid
-     * @see Resource#fromList(String, boolean)
-     */
-    public void setResources(String resources) throws IOException
-    {
-        if (StringUtil.isBlank(resources))
-        {
-            throw new IllegalArgumentException("String is blank");
-        }
-
-        List<Resource> list = Resource.fromList(resources, false);
-        if (list.isEmpty())
-        {
-            throw new IllegalArgumentException("String contains no entries");
-        }
-        List<Resource> ret = new ArrayList<>();
-        for (Resource resource : list)
-        {
-            assertResourceValid(resource);
-            ret.add(resource);
-        }
-        setResources(ret);
     }
 
     /**
@@ -254,6 +108,8 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
+            if (res == null)
+                continue;
             addedResource = res.resolve(subUriPath);
             if (!addedResource.exists())
                 continue;
@@ -290,7 +146,7 @@ public class ResourceCollection extends Resource
 
         for (Resource r : _resources)
         {
-            if (r.exists())
+            if (r != null && r.exists())
             {
                 return true;
             }
@@ -305,6 +161,7 @@ public class ResourceCollection extends Resource
         assertResourcesSet();
         for (Resource r : _resources)
         {
+
             Path p = r.getPath();
             if (p != null)
                 return p;
@@ -480,9 +337,10 @@ public class ResourceCollection extends Resource
 
     private void assertResourceValid(Resource resource)
     {
+
         if (resource == null)
         {
-            throw new IllegalStateException("Null resource not supported");
+            throw new IllegalArgumentException("Null resource not supported");
         }
 
         if (!resource.exists() || !resource.isDirectory())

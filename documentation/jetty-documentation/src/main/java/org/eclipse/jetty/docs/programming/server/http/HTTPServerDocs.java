@@ -69,7 +69,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -779,10 +778,10 @@ public class HTTPServerDocs
         ResourceHandler handler = new ResourceHandler();
 
         // For multiple directories, use ResourceCollection.
-        ResourceCollection directories = new ResourceCollection();
-        // TODO: how to add paths to ResourceCollection?
-//        directories.addPath("/path/to/static/resources/");
-//        directories.addPath("/another/path/to/static/resources/");
+        Resource directories = Resource.of(
+            Resource.newResource("/path/to/static/resources/"),
+            Resource.newResource("/another/path/to/static/resources/")
+        );
 
         handler.setBaseResource(directories);
         // end::multipleResourcesHandler[]

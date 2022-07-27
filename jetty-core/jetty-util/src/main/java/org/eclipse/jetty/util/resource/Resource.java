@@ -35,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -1232,5 +1233,83 @@ public abstract class Resource implements ResourceFactory
          * @throws IOException Problem accessing resource
          */
         Resource root() throws IOException;
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(List<Resource> resources)
+    {
+        if (resources == null)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(Resource... resources)
+    {
+        if (resources == null)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(Arrays.asList(resources));
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resourceAsStrings multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources or null if no resources passed.
+     * @see ResourceCollection
+     * @throws IllegalArgumentException if a string cannot be converted to resource
+     */
+    public static ResourceCollection of(String... resourceAsStrings)
+    {
+        if (resourceAsStrings == null || resourceAsStrings.length == 0)
+            throw new IllegalArgumentException("No resources");
+
+        List<Resource> resources = new ArrayList<>();
+        for (String r : resourceAsStrings)
+        {
+            if (r == null)
+                continue;
+            r = r.trim();
+            if (StringUtil.isBlank(r))
+                continue;
+            try
+            {
+                resources.add(Resource.newResource(r));
+            }
+            catch (IOException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        if (resources.size() == 0)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param csvResources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources or null if no resources passed.
+     * @see ResourceCollection
+     * @throws IllegalArgumentException if a string cannot be converted to resource
+     */
+    public static ResourceCollection of(String csvResources)
+    {
+        if (StringUtil.isBlank(csvResources))
+            throw new IllegalArgumentException("No resources");
+
+        return of(StringUtil.csvSplit(csvResources));
     }
 }

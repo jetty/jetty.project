@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -452,7 +451,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath());
 
-            ResourceCollection rc = new ResourceCollection(webInf, webApp);
+            Resource rc = Resource.of(webInf, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.resourcebase={}", rc);
