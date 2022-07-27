@@ -51,9 +51,9 @@ import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -535,30 +535,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
         final Semaphore task_limit = (isUseMultiThreading(context) ? new Semaphore(ProcessorUtils.availableProcessors()) : new Semaphore(1));
         final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
-        final MultiException me = new MultiException();
+        final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
         for (final ParserTask p : _parserTasks)
         {
             task_limit.acquire();
-            context.getServer().getThreadPool().execute(new Runnable()
+            context.getServer().getThreadPool().execute(() ->
             {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        p.call();
-                    }
-                    catch (Exception e)
-                    {
-                        me.add(e);
-                    }
-                    finally
-                    {
-                        task_limit.release();
-                        latch.countDown();
-                    }
-                }
+                multiException.callAndCatch(p::call);
+                task_limit.release();
+                latch.countDown();
             });
         }
 
@@ -583,8 +569,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
 
         if (timeout)
-            me.add(new Exception("Timeout scanning annotations"));
-        me.ifExceptionThrow();
+            multiException.add(new Exception("Timeout scanning annotations"));
+        multiException.ifExceptionThrow();
     }
 
     /**

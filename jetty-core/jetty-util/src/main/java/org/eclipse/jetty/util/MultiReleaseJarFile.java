@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 /**
  * <p>Utility class to handle a Multi Release Jar file</p>
  */
-public class MultiReleaseJarFile implements Closeable
+public class MultiReleaseJarFile implements Closeable, Iterable<MultiReleaseJarFile.VersionedJarEntry>
 {
     private static final String META_INF_VERSIONS = "META-INF/versions/";
 
@@ -117,6 +117,12 @@ public class MultiReleaseJarFile implements Closeable
     public Stream<VersionedJarEntry> stream()
     {
         return entries.values().stream();
+    }
+
+    @Override
+    public Iterator<VersionedJarEntry> iterator()
+    {
+        return entries.values().iterator();
     }
 
     /**

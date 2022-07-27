@@ -39,7 +39,7 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -456,7 +456,7 @@ public class MultiPartFormInputStream
 
     private void delete()
     {
-        MultiException err = null;
+        Throwable err = null;
         for (List<Part> parts : _parts.values())
         {
             for (Part p : parts)
@@ -467,16 +467,12 @@ public class MultiPartFormInputStream
                 }
                 catch (Exception e)
                 {
-                    if (err == null)
-                        err = new MultiException();
-                    err.add(e);
+                    err = ExceptionUtil.combine(err, e);
                 }
             }
         }
         _parts.clear();
-
-        if (err != null)
-            err.ifExceptionThrowRuntime();
+        ExceptionUtil.ifExceptionThrowRuntime(err);
     }
 
     /**

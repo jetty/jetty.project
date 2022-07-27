@@ -232,34 +232,6 @@ public class TypeUtil
     }
 
     /**
-     * @param e1 An exception
-     * @param e2 Another exception
-     * @return true iff the exceptions are associated by being the same instance, sharing a cause or one suppressing the other.
-     */
-    public static boolean isAssociated(Throwable e1, Throwable e2)
-    {
-        while (e1 != null)
-        {
-            while (e2 != null)
-            {
-                if (e1 == e2)
-                    return true;
-                if (e1.getCause() == e2)
-                    return true;
-                if (Arrays.asList(e1.getSuppressed()).contains(e2))
-                    return true;
-                if (Arrays.asList(e2.getSuppressed()).contains(e1))
-                    return true;
-
-                e2 = e2.getCause();
-            }
-            e1 = e1.getCause();
-        }
-
-        return false;
-    }
-
-    /**
      * Canonical name for a type.
      *
      * @param type A class , which may be a primitive TYPE field.

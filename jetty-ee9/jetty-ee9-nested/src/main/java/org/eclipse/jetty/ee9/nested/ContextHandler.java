@@ -74,9 +74,9 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -731,7 +731,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 try
                 {
                     //Call context listeners
-                    MultiException ex = new MultiException();
+                    Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(_apiContext);
                     Collections.reverse(_destroyServletContextListeners);
                     for (ServletContextListener listener : _destroyServletContextListeners)
@@ -742,10 +742,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                         }
                         catch (Exception x)
                         {
-                            ex.add(x);
+                            multiException = ExceptionUtil.combine(multiException, x);
                         }
                     }
-                    ex.ifExceptionThrow();
+                    ExceptionUtil.ifExceptionThrow(multiException);
                 }
                 finally
                 {

@@ -35,7 +35,7 @@ import org.eclipse.jetty.deploy.graph.Route;
 import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -120,7 +120,7 @@ public class DeploymentManager extends ContainerLifeCycle
     }
 
     private final AutoLock _lock = new AutoLock();
-    private MultiException _onStartupErrors;
+    private Throwable _onStartupErrors;
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
@@ -262,8 +262,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
         try (AutoLock l = _lock.lock())
         {
-            if (_onStartupErrors != null)
-                _onStartupErrors.ifExceptionThrow();
+            ExceptionUtil.ifExceptionThrow(_onStartupErrors);
         }
 
         super.doStart();
@@ -550,10 +549,7 @@ public class DeploymentManager extends ContainerLifeCycle
     {
         try (AutoLock l = _lock.lock())
         {
-            if (_onStartupErrors == null)
-                _onStartupErrors = new MultiException();
-            
-            _onStartupErrors.add(cause);
+            _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
         }
     }
 

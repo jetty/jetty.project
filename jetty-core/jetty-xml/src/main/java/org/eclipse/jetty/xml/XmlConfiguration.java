@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.xml;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -51,9 +50,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -577,7 +576,7 @@ public class XmlConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("XML {}.{} ({})", (obj != null ? obj.toString() : oClass.getName()), setter, value);
 
-            MultiException me = new MultiException();
+            List<Throwable> errors = new ArrayList<>();
 
             String types = null;
             Object setValue = value;
@@ -593,7 +592,7 @@ public class XmlConfiguration
                 catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
                     LOG.trace("IGNORED", e);
-                    me.add(e);
+                    errors.add(e);
                 }
 
                 // Try for native match
@@ -608,7 +607,7 @@ public class XmlConfiguration
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
                     LOG.trace("IGNORED", e);
-                    me.add(e);
+                    errors.add(e);
                 }
 
                 // Try a field
@@ -645,7 +644,7 @@ public class XmlConfiguration
                 catch (NoSuchFieldException e)
                 {
                     LOG.trace("IGNORED", e);
-                    me.add(e);
+                    errors.add(e);
                 }
 
                 // Search for a match by trying all the set methods
@@ -669,7 +668,7 @@ public class XmlConfiguration
                         catch (IllegalArgumentException | IllegalAccessException e)
                         {
                             LOG.trace("IGNORED", e);
-                            me.add(e);
+                            errors.add(e);
                         }
 
                         try
@@ -687,7 +686,7 @@ public class XmlConfiguration
                         catch (IllegalAccessException e)
                         {
                             LOG.trace("IGNORED", e);
-                            me.add(e);
+                            errors.add(e);
                         }
                     }
                 }
@@ -719,7 +718,7 @@ public class XmlConfiguration
                     catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                     {
                         LOG.trace("IGNORED", e);
-                        me.add(e);
+                        errors.add(e);
                     }
                 }
 
@@ -735,12 +734,8 @@ public class XmlConfiguration
             String message = oClass + "." + setter + "(" + vClass[0] + ")";
             if (types != null)
                 message += ". Found setters for " + types;
-            NoSuchMethodException failure = new NoSuchMethodException(message);
-            for (int i = 0; i < me.size(); i++)
-            {
-                failure.addSuppressed(me.getThrowable(i));
-            }
-            throw failure;
+
+            throw ExceptionUtil.withSuppressed(new NoSuchMethodException(message), errors);
         }
 
         private Object invokeConstructor(Constructor<?> constructor, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException

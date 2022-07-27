@@ -28,9 +28,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -644,7 +644,7 @@ public class AnnotationParser
      */
     public void parse(Set<? extends Handler> handlers, List<String> classNames) throws Exception
     {
-        MultiException me = new MultiException();
+        Throwable multiException = null;
 
         for (String className : classNames)
         {
@@ -664,10 +664,10 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                me.add(new RuntimeException("Error scanning class " + className, e));
+                multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning class " + className, e));
             }
         }
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -682,7 +682,7 @@ public class AnnotationParser
         if (uris == null)
             return;
 
-        MultiException me = new MultiException();
+        Throwable multiException = null;
 
         for (URI uri : uris)
         {
@@ -692,10 +692,10 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                me.add(new RuntimeException("Problem parsing classes from " + uri, e));
+                multiException = ExceptionUtil.combine(multiException, new RuntimeException("Problem parsing classes from " + uri, e));
             }
         }
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -768,7 +768,7 @@ public class AnnotationParser
 
         Path rootPath = root.getPath();
 
-        MultiException me = new MultiException();
+        Throwable multiException = null;
         Collection<Resource> resources = root.getAllResources();
         if (resources != null)
         {
@@ -799,7 +799,7 @@ public class AnnotationParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Error scanning file {}", path, ex);
-                        me.add(new RuntimeException("Error scanning file " + path, ex));
+                        multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning file " + path, ex));
                     }
                 }
                 else
@@ -810,7 +810,7 @@ public class AnnotationParser
             }
         }
 
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -830,11 +830,11 @@ public class AnnotationParser
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning jar {}", jarResource);
 
-            MultiException me = new MultiException();
+            Throwable multiException = null;
             // TODO is the jarResource's Path always convertible to File?
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath().toFile(), _javaPlatform, false))
             {
-                jarFile.stream().forEach(e ->
+                for (MultiReleaseJarFile.VersionedJarEntry e : jarFile)
                 {
                     try
                     {
@@ -842,11 +842,11 @@ public class AnnotationParser
                     }
                     catch (Exception ex)
                     {
-                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                        multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
                     }
-                });
+                }
             }
-            me.ifExceptionThrow();
+            ExceptionUtil.ifExceptionThrow(multiException);
         }
     }
 
