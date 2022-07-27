@@ -377,8 +377,8 @@ public class MavenWebAppContext extends WebAppContext
         // /WEB-INF/classes
         if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
         {
-            // Canonicalize again to look for the resource inside /WEB-INF subdirectories.
-            String uri = URIUtil.canonicalPath(pathInContext);
+            // Normalize again to look for the resource inside /WEB-INF subdirectories.
+            String uri = URIUtil.normalizePath(pathInContext);
             if (uri == null)
                 return null;
 

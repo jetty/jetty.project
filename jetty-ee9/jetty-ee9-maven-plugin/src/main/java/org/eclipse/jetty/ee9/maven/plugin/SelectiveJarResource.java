@@ -162,7 +162,7 @@ public class SelectiveJarResource extends Resource
 
                 LOG.debug("Looking at {}", entryName);
                 // make sure no access out of the root entry is present
-                String dotCheck = URIUtil.canonicalPath(entryName);
+                String dotCheck = URIUtil.normalizePath(entryName);
                 if (dotCheck == null)
                 {
                     LOG.info("Invalid entry: {}", entryName);

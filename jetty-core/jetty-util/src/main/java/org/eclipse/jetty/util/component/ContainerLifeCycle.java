@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.slf4j.Logger;
@@ -192,7 +192,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         super.doStop();
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
-        MultiException mex = new MultiException();
+        Throwable multiException = null;
         for (Bean b : reverse)
         {
             if (!isStopping())
@@ -206,11 +206,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 }
                 catch (Throwable th)
                 {
-                    mex.add(th);
+                    multiException = ExceptionUtil.combine(multiException, th);
                 }
             }
         }
-        mex.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**

@@ -708,6 +708,16 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
+     * Checks if the resource supports being loaded as a memory-mapped ByteBuffer.
+     *
+     * @return true if the resource supports memory-mapped ByteBuffer, false otherwise.
+     */
+    public boolean isMemoryMappable()
+    {
+        return false;
+    }
+
+    /**
      * Deletes the given resource
      * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
      * {@link #getPath()}.
@@ -799,7 +809,8 @@ public abstract class Resource implements ResourceFactory
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        if (URIUtil.canonicalPath(subUriPath) == null)
+        // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
+        if (URIUtil.normalizePath(subUriPath) == null)
             throw new IOException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))
@@ -882,7 +893,7 @@ public abstract class Resource implements ResourceFactory
     public String getListHTML(String base, boolean parent, String query) throws IOException // TODO: move to helper class
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
-        base = URIUtil.canonicalPath(base);
+        base = URIUtil.normalizePath(base);
         if (base == null || !isDirectory())
             return null;
 

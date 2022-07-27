@@ -41,7 +41,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -285,7 +285,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
 
         // Notify the listener which may change the headers directly.
-        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
         if (listenerError != null)
         {
             abort(listenerError);
@@ -305,9 +305,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         }
     }
 
-    private Exception notifyUpgradeListeners(Consumer<UpgradeListener> action)
+    private Throwable notifyUpgradeListeners(Consumer<UpgradeListener> action)
     {
-        MultiException multiException = null;
+        Throwable multiException = null;
         for (UpgradeListener listener : upgradeListeners)
         {
             try
@@ -317,9 +317,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             catch (Throwable t)
             {
                 LOG.info("Exception while invoking listener {}", listener, t);
-                if (multiException == null)
-                     multiException = new MultiException();
-                multiException.add(t);
+                multiException = ExceptionUtil.combine(multiException, t);
             }
         }
 
@@ -444,7 +442,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
 
