@@ -3066,8 +3066,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -3098,8 +3098,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -3134,8 +3134,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)

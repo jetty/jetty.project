@@ -204,21 +204,9 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             super(httpContent);
             _etag = precalculatedEtag;
             _contentLengthValue = httpContent.getContentLengthValue(); // TODO getContentLengthValue() could return -1
-            ByteBuffer byteBuffer = null;
 
-            if (_useFileMappedBuffer)
-            {
-                // map the content into memory
-                // TODO this is assuming the resource can be mapped! Inefficient to throw to test this
-                try
-                {
-                    byteBuffer = BufferUtil.toMappedBuffer(httpContent.getResource().getPath(), 0, _contentLengthValue);
-                }
-                catch (Throwable t)
-                {
-                    LOG.trace("ignored", t);
-                }
-            }
+            // map the content into memory if possible
+            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(httpContent.getResource(), 0, _contentLengthValue) : null;
 
             if (byteBuffer == null)
             {

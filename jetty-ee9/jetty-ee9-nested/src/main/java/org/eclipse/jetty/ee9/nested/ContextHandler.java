@@ -68,12 +68,10 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Handler.Nested;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -1660,7 +1658,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                         : URIUtil.encodePath(servletContext.getContextPath());
                     if (!StringUtil.isEmpty(encodedContextPath))
                     {
-                        encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
                             throw new BadMessageException(500, "Bad dispatch path");
                     }
@@ -1832,8 +1830,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -1864,8 +1862,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -1900,8 +1898,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)

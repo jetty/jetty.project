@@ -136,20 +136,31 @@ public class URIUtilTest
 
         // Deprecated Microsoft Percent-U encoding
         arguments.add(Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"));
+
+        // Canonical paths are also normalized
+        arguments.add(Arguments.of("./bar", "bar", "./bar"));
+        arguments.add(Arguments.of("/foo/./bar", "/foo/bar", "/foo/./bar"));
+        arguments.add(Arguments.of("/foo/../bar", "/bar", "/foo/../bar"));
+        arguments.add(Arguments.of("/foo/.../bar", "/foo/.../bar", "/foo/.../bar"));
+        arguments.add(Arguments.of("/foo/%2e/bar", "/foo/bar", "/foo/./bar")); // Not by the RFC, but safer
+        arguments.add(Arguments.of("/foo/%2e%2e/bar", "/bar", "/foo/../bar")); // Not by the RFC, but safer
+        arguments.add(Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar", "/foo/.../bar"));
+
         return arguments.stream();
+
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testNormalizePath(String encodedPath, String safePath, String decodedPath)
+    public void testCanonicalEncodedPath(String encodedPath, String canonicalPath, String decodedPath)
     {
-        String path = URIUtil.normalizePath(encodedPath);
-        assertEquals(safePath, path);
+        String path = URIUtil.canonicalPath(encodedPath);
+        assertEquals(canonicalPath, path);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testDecodePath(String encodedPath, String safePath, String decodedPath)
+    public void testDecodePath(String encodedPath, String canonicalPath, String decodedPath)
     {
         String path = URIUtil.decodePath(encodedPath);
         assertEquals(decodedPath, path);
