@@ -71,7 +71,7 @@ public class ResourceCollection extends Resource
      *
      * @param resources the resources to be added to collection
      */
-    public ResourceCollection(Collection<Resource> resources)
+    ResourceCollection(Collection<Resource> resources)
     {
         List<Resource> res = new ArrayList<>();
         gatherUniqueFlatResourceList(res, resources);

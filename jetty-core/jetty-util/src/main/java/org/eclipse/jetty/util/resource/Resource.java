@@ -174,6 +174,7 @@ public abstract class Resource implements ResourceFactory
             {
                 return FileSystemPool.INSTANCE.mount(uri);
             }
+            // TODO: review contract, should this be null, or an empty mount?
             return null;
         }
         catch (IOException ioe)

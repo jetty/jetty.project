@@ -227,6 +227,7 @@ public class WebAppPropertyConverter
             List<URI> uris = Resource.split(str);
             // TODO: need a better place to close/release this mount.
             Resource.Mount mount = Resource.mountCollection(uris);
+            webApp.addBean(mount); // let ee9 ContextHandler.doStop() release mount
             webApp.setWar(null);
             webApp.setBaseResource(mount.root());
         }

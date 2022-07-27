@@ -819,7 +819,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // cleanup any Mounts associated with the ContextHandler on stop.
             // TODO: but what if the context is restarted? how do we remount? do we care?
-            getBeans(Resource.Mount.class).forEach(IO::close);
+            java.util.Collection<Resource.Mount> mounts = getBeans(Resource.Mount.class);
+            mounts.forEach((mount) ->
+            {
+                IO.close(mount);
+                removeBean(mount);
+            });
         }
         finally
         {

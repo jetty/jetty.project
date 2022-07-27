@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -129,7 +130,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private List<Resource> _extraClasspath;
+    private ResourceCollection _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -1225,7 +1226,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public List<Resource> getExtraClasspath()
+    public ResourceCollection getExtraClasspath()
     {
         return _extraClasspath;
     }
@@ -1233,21 +1234,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the Extra ClassPath via delimited String.
      * <p>
-     * This is a convenience method for {@link #setExtraClasspath(List)}
+     * This is a convenience method for {@link #setExtraClasspath(ResourceCollection)}
      * </p>
      *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
      * @throws IOException if unable to resolve the resources referenced
-     * @see #setExtraClasspath(List)
+     * @see #setExtraClasspath(ResourceCollection)
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        setExtraClasspath(Resource.globAwareSplit(extraClasspath, false, this::newResource));
+        List<URI> uris = Resource.split(extraClasspath);
+        _mountedExtraClasspath = Resource.mountCollection(uris);
+        setExtraClasspath((ResourceCollection)_mountedExtraClasspath.root());
     }
 
-    public void setExtraClasspath(List<Resource> extraClasspath)
+    public void setExtraClasspath(ResourceCollection extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }

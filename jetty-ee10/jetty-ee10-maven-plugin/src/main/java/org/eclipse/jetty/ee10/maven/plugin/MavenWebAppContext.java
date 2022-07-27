@@ -230,6 +230,8 @@ public class MavenWebAppContext extends WebAppContext
     {
         try
         {
+            // TODO: what happens if this is called more than once?
+
             // This is a user provided list of configurations.
             // We have to assume that mounting can happen.
             List<URI> uris = Stream.of(resourceBases)

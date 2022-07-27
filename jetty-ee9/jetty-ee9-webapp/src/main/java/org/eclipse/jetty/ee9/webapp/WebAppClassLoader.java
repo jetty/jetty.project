@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -77,6 +78,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private final Set<String> _extensions = new HashSet<String>();
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
+    private Resource.Mount _mountedExtraClassPath;
 
     /**
      * The Context in which the classloader operates.
@@ -107,7 +109,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        List<Resource> getExtraClasspath();
+        ResourceCollection getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -189,7 +191,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         if (context.getExtraClasspath() != null)
         {
-            for (Resource resource : context.getExtraClasspath())
+            for (Resource resource : context.getExtraClasspath().getResources())
             {
                 addClassPath(resource);
             }
@@ -267,10 +269,15 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        for (Resource resource : Resource.globAwareSplit(classPath, false, _context::newResource))
+        List<URI> uris = Resource.split(classPath);
+        _mountedExtraClassPath = Resource.mountCollection(uris);
+
+        ResourceCollection rc = (ResourceCollection)_mountedExtraClassPath.root();
+        for (Resource resource : rc.getResources())
         {
             addClassPath(resource);
         }
+
     }
 
     /**
@@ -636,6 +643,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public void close() throws IOException
     {
         super.close();
+        IO.close(_mountedExtraClassPath);
     }
 
     @Override
