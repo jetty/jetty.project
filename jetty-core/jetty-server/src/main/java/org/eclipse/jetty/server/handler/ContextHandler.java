@@ -670,7 +670,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _contextPath = URIUtil.normalizePath(contextPath);
+        _contextPath = URIUtil.canonicalPath(contextPath);
     }
 
     /**

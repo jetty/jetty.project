@@ -775,7 +775,7 @@ public class ServletHandler extends Handler.Wrapper
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
-            mapping.setPathSpec(URIUtil.normalizePath(pathSpec));
+            mapping.setPathSpec(URIUtil.canonicalPath(pathSpec));
             setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
         }
         catch (RuntimeException e)
@@ -887,7 +887,7 @@ public class ServletHandler extends Handler.Wrapper
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
-            mapping.setPathSpec(URIUtil.normalizePath(pathSpec));
+            mapping.setPathSpec(URIUtil.canonicalPath(pathSpec));
             mapping.setDispatcherTypes(dispatches);
             addFilterMapping(mapping);
         }
