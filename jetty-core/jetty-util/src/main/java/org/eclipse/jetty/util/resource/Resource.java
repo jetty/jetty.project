@@ -353,6 +353,29 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
+     * Unwrap a URI to expose its container path reference.
+     *
+     * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
+     *
+     * @param uri the input URI
+     * @return the container String if a {@code jar} scheme, or just the URI untouched.
+     */
+    public static URI unwrapContainer(URI uri)
+    {
+        Objects.requireNonNull(uri);
+
+        String scheme = uri.getScheme();
+        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
+            return uri;
+
+        String spec = uri.getRawSchemeSpecificPart();
+        int sep = spec.indexOf("!/");
+        if (sep != -1)
+            spec = spec.substring(0, sep);
+        return URI.create(spec);
+    }
+
+    /**
      * <p>Convert a String into a URI suitable for use as a Resource.</p>
      *
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
@@ -1329,8 +1352,12 @@ public abstract class Resource implements ResourceFactory
      * <p>
      *     Each part of the input string could be path references (unix or windows style), or string URI references.
      * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
+     * </p>
      *
      * @param str the input string of references
+     * @see #toJarFileUri(URI)
      */
     public static List<URI> split(String str)
     {
@@ -1367,8 +1394,17 @@ public abstract class Resource implements ResourceFactory
                 }
                 else
                 {
-                    // Simple reference, add as-is
-                    uris.add(toURI(reference));
+                    // Simple reference
+                    URI refUri = toURI(reference);
+                    // Is this a Java Archive that can be mounted?
+                    URI jarFileUri = toJarFileUri(refUri);
+                    if (jarFileUri != null)
+                        // add as mountable URI
+                        uris.add(jarFileUri);
+                    else
+                        // add as normal URI
+                        uris.add(refUri);
+
                 }
             }
             catch (Exception e)

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -455,13 +456,10 @@ public class MetaData
         {
             orderedWebInfJars = getWebInfResources(true);
             List<String> orderedLibs = new ArrayList<>();
-            for (Resource webInfJar : orderedWebInfJars)
+            for (Resource jar: orderedWebInfJars)
             {
-                //get just the name of the jar file
-                String fullname = webInfJar.getName();
-                int i = fullname.indexOf(".jar");
-                int j = fullname.lastIndexOf("/", i);
-                orderedLibs.add(fullname.substring(j + 1, i + 4));
+                URI uri = Resource.unwrapContainer(jar.getURI());
+                orderedLibs.add(uri.getPath());
             }
             context.setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));
         }

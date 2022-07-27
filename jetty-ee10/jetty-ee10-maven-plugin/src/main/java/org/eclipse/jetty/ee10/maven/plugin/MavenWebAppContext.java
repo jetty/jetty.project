@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -72,7 +73,7 @@ public class MavenWebAppContext extends WebAppContext
 
     private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
 
-    private List<File> _classpathFiles; // webInfClasses+testClasses+webInfJars
+    private List<URI> _classpathUris; // webInfClasses+testClasses+webInfJars
 
     private String _jettyEnvXml;
 
@@ -132,9 +133,9 @@ public class MavenWebAppContext extends WebAppContext
         _webInfIncludeJarPattern = pattern;
     }
 
-    public List<File> getClassPathFiles()
+    public List<URI> getClassPathUris()
     {
-        return this._classpathFiles;
+        return this._classpathUris;
     }
 
     public void setJettyEnvXml(String jettyEnvXml)
@@ -282,15 +283,21 @@ public class MavenWebAppContext extends WebAppContext
 
         // Set up the classes dirs that comprises the equivalent of
         // WEB-INF/classes
-        if (_testClasses != null)
+        if (_testClasses != null && _testClasses.exists())
             _webInfClasses.add(_testClasses);
-        if (_classes != null)
+        if (_classes != null && _classes.exists())
             _webInfClasses.add(_classes);
 
         // Set up the classpath
-        _classpathFiles = new ArrayList<>();
-        _classpathFiles.addAll(_webInfClasses);
-        _classpathFiles.addAll(_webInfJars);
+        _classpathUris = new ArrayList<>();
+        _webInfClasses.forEach(f -> _classpathUris.add(f.toURI()));
+        _webInfJars.forEach(f ->
+        {
+            // ensure our JAR file references are `jar:file:...` URI references
+            URI jarFileUri = Resource.toJarFileUri(f.toURI());
+            // else use file uri as-is
+            _classpathUris.add(Objects.requireNonNullElseGet(jarFileUri, f::toURI));
+        });
 
         // Initialize map containing all jars in /WEB-INF/lib
         _webInfJarMap.clear();
@@ -336,9 +343,9 @@ public class MavenWebAppContext extends WebAppContext
     @Override
     public void doStop() throws Exception
     {
-        if (_classpathFiles != null)
-            _classpathFiles.clear();
-        _classpathFiles = null;
+        if (_classpathUris != null)
+            _classpathUris.clear();
+        _classpathUris = null;
 
         _classes = null;
         _testClasses = null;

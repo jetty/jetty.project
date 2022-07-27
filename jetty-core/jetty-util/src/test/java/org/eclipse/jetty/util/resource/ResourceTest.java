@@ -468,13 +468,42 @@ public class ResourceTest
         assertThat(actual.toASCIIString(), is(expectedRawUri));
     }
 
+    public static Stream<Arguments> unwrapContainerCases()
+    {
+        return Stream.of(
+            Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"),
+            Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"),
+            Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"),
+            Arguments.of("jar:file:///path/to/bar.jar!/internal.txt", "file:///path/to/bar.jar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unwrapContainerCases")
+    public void testUnwrapContainer(String inputRawUri, String expected)
+    {
+        URI input = Resource.toURI(inputRawUri);
+        URI actual = Resource.unwrapContainer(input);
+        assertThat(actual.toASCIIString(), is(expected));
+    }
+
     @Test
-    public void testSplitSingle()
+    public void testSplitSingleJar()
     {
         // Bad java file.uri syntax
         String input = "file:/home/user/lib/acme.jar";
         List<URI> uris = Resource.split(input);
-        assertThat(uris.get(0).toString(), is(input));
+        String expected = String.format("jar:%s!/", input);
+        assertThat(uris.get(0).toString(), is(expected));
+    }
+
+    @Test
+    public void testSplitSinglePath()
+    {
+        String input = "/home/user/lib/acme.jar";
+        List<URI> uris = Resource.split(input);
+        String expected = String.format("jar:file://%s!/", input);
+        assertThat(uris.get(0).toString(), is(expected));
     }
 
     @Test
