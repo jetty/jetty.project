@@ -3119,7 +3119,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.getInputStream();
+                return r.newInputStream();
             }
             catch (Exception e)
             {

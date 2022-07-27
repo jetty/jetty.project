@@ -164,11 +164,7 @@ public class ResourceCollection extends Resource
         }
 
         if (resources == null)
-        {
-            if (addedResource != null)
-                return addedResource; // This will not exist
-            return EmptyResource.INSTANCE;
-        }
+            return addedResource; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -209,7 +205,7 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
+    public InputStream newInputStream() throws IOException
     {
         for (Resource r : _resources)
         {
@@ -218,7 +214,7 @@ public class ResourceCollection extends Resource
                 // Skip, cannot open anyway
                 continue;
             }
-            InputStream is = r.getInputStream();
+            InputStream is = r.newInputStream();
             if (is != null)
             {
                 return is;
@@ -229,11 +225,11 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         for (Resource r : _resources)
         {
-            ReadableByteChannel channel = r.getReadableByteChannel();
+            ReadableByteChannel channel = r.newReadableByteChannel();
             if (channel != null)
             {
                 return channel;

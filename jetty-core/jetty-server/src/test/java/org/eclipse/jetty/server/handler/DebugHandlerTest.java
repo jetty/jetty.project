@@ -103,7 +103,7 @@ public class DebugHandlerTest
         secureServerURI = URI.create(String.format("https://%s:%d/", host, sslConnector.getLocalPort()));
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
+        try (InputStream stream = sslContextFactory.getKeyStoreResource().newInputStream())
         {
             keystore.load(stream, "storepwd".toCharArray());
         }

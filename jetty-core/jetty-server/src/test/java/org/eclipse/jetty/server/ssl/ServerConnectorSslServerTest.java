@@ -85,7 +85,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         initServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
+        try (InputStream stream = sslContextFactory.getKeyStoreResource().newInputStream())
         {
             keystore.load(stream, "storepwd".toCharArray());
         }

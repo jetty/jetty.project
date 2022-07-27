@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -453,7 +452,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (cache != null && cache.containsKey(target))
         {
             resourcesDir = cache.get(target);
-            if (resourcesDir == EmptyResource.INSTANCE)
+            if (isEmptyResource(resourcesDir))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} cached as containing no META-INF/resources", target);
@@ -483,11 +482,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 _mountedResources.add(mount);
             }
 
-            if (!resourcesDir.exists() || !resourcesDir.isDirectory())
-            {
-                resourcesDir = EmptyResource.INSTANCE;
-            }
-
             if (cache != null)
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
@@ -497,7 +491,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("{} META-INF/resources cache updated", target);
             }
 
-            if (resourcesDir == EmptyResource.INSTANCE)
+            if (isEmptyResource(resourcesDir))
             {
                 return;
             }
@@ -516,6 +510,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         dirs.add(resourcesDir);
     }
 
+    private static boolean isEmptyResource(Resource resourcesDir)
+    {
+        return !resourcesDir.exists() || !resourcesDir.isDirectory();
+    }
+
     /**
      * Scan for META-INF/web-fragment.xml file in the given jar.
      *
@@ -531,7 +530,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (cache != null && cache.containsKey(jar))
         {
             webFrag = cache.get(jar);
-            if (webFrag == EmptyResource.INSTANCE)
+            if (isEmptyFragment(webFrag))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} cached as containing no META-INF/web-fragment.xml", jar);
@@ -554,14 +553,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 URI uri = jar.getURI();
                 webFrag = Resource.newResource(uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
-            if (!webFrag.exists() || webFrag.isDirectory())
-            {
-                webFrag = EmptyResource.INSTANCE;
-            }
 
             if (cache != null)
             {
-                //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar               
+                //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
                 Resource old = cache.putIfAbsent(jar, webFrag);
                 if (old != null)
                     webFrag = old;
@@ -569,7 +564,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("{} META-INF/web-fragment.xml cache updated", jar);
             }
 
-            if (webFrag == EmptyResource.INSTANCE)
+            if (isEmptyFragment(webFrag))
                 return;
         }
 
@@ -582,6 +577,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         fragments.put(jar, webFrag);
         if (LOG.isDebugEnabled())
             LOG.debug("{} added to context", webFrag);
+    }
+
+    private static boolean isEmptyFragment(Resource webFrag)
+    {
+        return !webFrag.exists() || webFrag.isDirectory();
     }
 
     /**

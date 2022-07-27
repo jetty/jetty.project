@@ -438,7 +438,7 @@ public class FileSystemResourceTest
 
         Resource base = Resource.newResource(dir);
         Resource foo = base.resolve("foo");
-        try (InputStream stream = foo.getInputStream();
+        try (InputStream stream = foo.newInputStream();
              InputStreamReader reader = new InputStreamReader(stream);
              StringWriter writer = new StringWriter())
         {
@@ -464,7 +464,7 @@ public class FileSystemResourceTest
 
         Resource base = Resource.newResource(dir);
         Resource foo = base.resolve("foo");
-        try (ReadableByteChannel channel = foo.getReadableByteChannel())
+        try (ReadableByteChannel channel = foo.newReadableByteChannel())
         {
             ByteBuffer buf = ByteBuffer.allocate(256);
             channel.read(buf);
@@ -1296,7 +1296,7 @@ public class FileSystemResourceTest
 
     private String toString(Resource resource) throws IOException
     {
-        try (InputStream inputStream = resource.getInputStream();
+        try (InputStream inputStream = resource.newInputStream();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
         {
             IO.copy(inputStream, outputStream);

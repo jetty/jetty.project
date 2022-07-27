@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import java.nio.file.Path;
+
 import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.Source;
@@ -20,7 +22,7 @@ import org.eclipse.jetty.ee9.webapp.MetaData;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.resource.EmptyResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +38,7 @@ public class TestAnnotationDecorator
     {
         public TestWebDescriptor(MetaData.Complete metadata)
         {
-            super(EmptyResource.INSTANCE);
+            super(Resource.newResource(Path.of(".")));
             _metaDataComplete = metadata;
         }
 

@@ -1896,7 +1896,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.getInputStream();
+                return r.newInputStream();
             }
             catch (Exception e)
             {
