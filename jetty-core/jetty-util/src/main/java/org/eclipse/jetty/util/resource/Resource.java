@@ -194,7 +194,7 @@ public abstract class Resource implements ResourceFactory
     public static Resource.Mount mount(URI uri) throws IOException
     {
         if (!isArchive(uri))
-            throw new IllegalArgumentException("URI is not a JAR: " + uri);
+            throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
         return FileSystemPool.INSTANCE.mount(uri);
@@ -209,7 +209,7 @@ public abstract class Resource implements ResourceFactory
     public static Resource.Mount mountJar(Path path) throws IOException
     {
         if (!isArchive(path))
-            throw new IllegalArgumentException("Path is not a JAR: " + path);
+            throw new IllegalArgumentException("Path is not a Java Archive: " + path);
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + path);
