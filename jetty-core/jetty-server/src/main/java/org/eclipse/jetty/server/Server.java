@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -648,7 +649,9 @@ public class Server extends Handler.Wrapper implements Attributes
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new ClassLoaderDump(this.getClass().getClassLoader()), new DumpableCollection("environments", Environment.getAll()));
+        dumpObjects(out, indent, new org.eclipse.jetty.util.component.ClassLoaderDump(this.getClass().getClassLoader()),
+            new DumpableCollection("environments", Environment.getAll()),
+            FileSystemPool.INSTANCE);
     }
 
     public static void main(String... args)
