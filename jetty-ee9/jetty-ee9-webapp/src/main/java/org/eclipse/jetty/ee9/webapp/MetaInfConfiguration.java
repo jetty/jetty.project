@@ -713,8 +713,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        try (Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/"));
-             Stream<Path> stream = Files.walk(mount.root().getPath()))
+        Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/"));
+        if (_mountedResources == null)
+            _mountedResources = new ArrayList<>();
+        _mountedResources.add(mount);
+        try (Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
             Iterator<Path> it = stream
                 .filter(MetaInfConfiguration::isTldFile)
