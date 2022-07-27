@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -266,7 +265,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         context.addServletContainerInitializer(sciHolder);
     }
 
-    public void visitMetaInfResource(WebAppContext context, Resource dir) throws IOException
+    public void visitMetaInfResource(WebAppContext context, Resource dir)
     {
         Collection<Resource> metaInfResources = (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
         if (metaInfResources == null)

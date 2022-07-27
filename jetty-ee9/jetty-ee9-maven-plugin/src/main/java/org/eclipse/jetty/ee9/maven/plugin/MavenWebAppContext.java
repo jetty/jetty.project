@@ -223,8 +223,7 @@ public class MavenWebAppContext extends WebAppContext
      * configuration
      *
      * @param resourceBases Array of resources strings to set as a
-     * {@link ResourceCollection}. Each resource string may be a
-     * comma {@code ,} or pipe {@code |} separated list of resource references
+     * {@link ResourceCollection}.
      */
     public void setResourceBases(String[] resourceBases)
     {
