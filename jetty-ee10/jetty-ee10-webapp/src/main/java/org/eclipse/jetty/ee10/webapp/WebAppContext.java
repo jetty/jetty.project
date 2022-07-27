@@ -1240,14 +1240,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
-     * @throws IOException if unable to resolve the resources referenced
      * @see #setExtraClasspath(ResourceCollection)
      */
-    public void setExtraClasspath(String extraClasspath) throws IOException
+    public void setExtraClasspath(String extraClasspath)
     {
         List<URI> uris = Resource.split(extraClasspath);
-        _mountedExtraClasspath = Resource.mountCollection(uris);
-        setExtraClasspath((ResourceCollection)_mountedExtraClasspath.root());
+        Resource.Mount mount = Resource.mountCollection(uris);
+        addBean(mount); // let doStop() cleanup mount
+        setExtraClasspath((ResourceCollection)mount.root());
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)

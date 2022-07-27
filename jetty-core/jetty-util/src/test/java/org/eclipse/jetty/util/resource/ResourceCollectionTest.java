@@ -121,7 +121,7 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = new ResourceCollection(
+        ResourceCollection rc1 = Resource.of(
             List.of(
                 Resource.newResource(one),
                 Resource.newResource(two),
@@ -129,7 +129,7 @@ public class ResourceCollectionTest
             )
         );
 
-        ResourceCollection rc2 = new ResourceCollection(
+        ResourceCollection rc2 = Resource.of(
             List.of(
                 // the original ResourceCollection
                 rc1,

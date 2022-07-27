@@ -110,7 +110,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        List<Resource> getExtraClasspath();
+        ResourceCollection getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -192,7 +192,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         if (context.getExtraClasspath() != null)
         {
-            for (Resource resource : context.getExtraClasspath())
+            for (Resource resource : context.getExtraClasspath().getResources())
             {
                 addClassPath(resource);
             }

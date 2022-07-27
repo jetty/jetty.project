@@ -834,6 +834,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
@@ -879,6 +880,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
@@ -899,24 +901,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private boolean isFileSupported(Resource resource)
     {
-        try
-        {
-            if (resource.isDirectory())
-                return false;
-
-            if (resource.getPath() == null)
-                return false;
-        }
-        catch (Throwable t)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Bad Resource reference: {}", resource, t);
-            return false;
-        }
-
-        String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
-        int dot = filenameLowercase.lastIndexOf('.');
-        String extension = (dot < 0 ? null : filenameLowercase.substring(dot));
-        return (extension != null && (extension.equals(".jar") || extension.equals(".zip")));
+        return Resource.isArchive(resource.getURI());
     }
 }
