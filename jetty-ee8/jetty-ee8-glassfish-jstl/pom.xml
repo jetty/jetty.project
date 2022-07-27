@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee8</groupId>
+    <artifactId>jetty-ee8</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee8-glassfish-jstl</artifactId>
+  <name>EE8 :: Glassfish :: JSTL module</name>
+  <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
+  <packaging>jar</packaging>
+  <properties>
+    <ee9.module>jetty-ee9-glassfish-jstl</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.glassfish.jstl</bundle-symbolic-name>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <useSystemClassLoader>false</useSystemClassLoader>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <!-- JSTL Api -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-apache-jsp</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>
