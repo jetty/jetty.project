@@ -31,10 +31,13 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -129,10 +132,29 @@ public class EncodedURITest
     {
         String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
-        assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
+        assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%2520info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
         assertThat(response, Matchers.containsString("servletPath=/test%20servlet"));
-        assertThat(response, Matchers.containsString("pathInfo=/path%20info"));
+        assertThat(response, Matchers.containsString("pathInfo=/path%2520info"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"%2F", "%3F"})
+    public void testCanonicallyEncodedUris(String separator) throws Exception
+    {
+        _server.stop();
+        ServletContextHandler context2 = new ServletContextHandler();
+        context2.setContextPath("/context_path".replace("_", separator));
+        _contextCollection.addHandler(context2);
+        context2.addServlet(TestServlet.class, "/test_servlet/*".replace("_", separator));
+        _server.start();
+
+        String response = _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
+        assertThat(response, startsWith("HTTP/1.1 200 "));
+        assertThat(response, Matchers.containsString("requestURI=/context_path/test_servlet/path_info".replace("_", separator)));
+        assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));
+        assertThat(response, Matchers.containsString("servletPath=/test_servlet".replace("_", separator)));
+        assertThat(response, Matchers.containsString("pathInfo=/path_info".replace("_", separator)));
     }
 
     public static class TestServlet extends HttpServlet
@@ -158,7 +180,7 @@ public class EncodedURITest
                 : request.startAsync();
 
             if (Boolean.parseBoolean(request.getParameter("encode")))
-                async.dispatch("/test%20servlet" + request.getPathInfo());
+                async.dispatch("/test%20servlet" + URIUtil.encodePath(request.getPathInfo()));
             else
                 async.dispatch("/test servlet/path info" + request.getPathInfo());
             return;
