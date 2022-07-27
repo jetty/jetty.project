@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -1017,20 +1018,21 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
     {
+        if (!resource.exists() || resource.isDirectory())
+            throw new IllegalArgumentException("invalid resource: " + resource);
         int len = (int)resource.length();
         if (len < 0)
-            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
+            throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
         int pos = BufferUtil.flipToFill(buffer);
-        if (resource.getPath() != null)
-            BufferUtil.readFrom(resource.getPath(), buffer);
-        else
+        try (ReadableByteChannel channel = resource.newReadableByteChannel())
         {
-            try (InputStream is = resource.getInputStream();)
+            long needed = len;
+            while (needed > 0 && buffer.hasRemaining())
             {
-                BufferUtil.readFrom(is, len, buffer);
+                needed = needed - channel.read(buffer);
             }
         }
         BufferUtil.flipToFlush(buffer, pos);
