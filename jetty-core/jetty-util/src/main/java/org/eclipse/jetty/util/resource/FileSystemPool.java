@@ -31,6 +31,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  * TODO figure out if this should be a LifeCycle or not, how many instances of this class can reside in a JVM, who can call sweep and when.
  */
+@ManagedObject("Pool of FileSystems used to mount Resources")
 public class FileSystemPool implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
@@ -112,6 +116,7 @@ public class FileSystemPool implements Dumpable
         }
     }
 
+    @ManagedAttribute("The mounted FileSystems")
     public Collection<Resource.Mount> mounts()
     {
         try (AutoLock ignore = poolLock.lock())
@@ -127,6 +132,7 @@ public class FileSystemPool implements Dumpable
             new DumpableCollection("mounts", mounts()));
     }
 
+    @ManagedOperation(value = "Sweep the pool for deleted mount points", impact = "ACTION")
     public void sweep()
     {
         Set<Map.Entry<URI, Bucket>> entries;

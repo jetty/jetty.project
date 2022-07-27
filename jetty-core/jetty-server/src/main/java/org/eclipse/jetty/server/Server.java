@@ -119,6 +119,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+        addBean(FileSystemPool.INSTANCE, false);
     }
 
     public String getServerInfo()
