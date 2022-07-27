@@ -474,10 +474,7 @@ public class ResourceTest
         // Bad java file.uri syntax
         String input = "file:/home/user/lib/acme.jar";
         List<URI> uris = Resource.split(input);
-
-        // To spec syntax
-        String expected = "file:///home/user/lib/acme.jar";
-        assertThat(uris.get(0).toString(), is(expected));
+        assertThat(uris.get(0).toString(), is(input));
     }
 
     @Test
