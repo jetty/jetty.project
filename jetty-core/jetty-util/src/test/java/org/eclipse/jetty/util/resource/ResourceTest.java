@@ -397,6 +397,15 @@ public class ResourceTest
         assertTrue(same.isAlias());
     }
 
+    @Test
+    public void testJarReferenceAsURINotYetMounted() throws Exception
+    {
+        Path jar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        URI jarFileUri = Resource.toJarFileUri(jar.toUri());
+        assertNotNull(jarFileUri);
+        assertThrows(IllegalStateException.class, () -> Resource.newResource(jarFileUri));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
         "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
@@ -424,7 +433,7 @@ public class ResourceTest
         assertFalse(Resource.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
     }
 
-    public static Stream<Arguments> toJarFileUri()
+    public static Stream<Arguments> jarFileUriCases()
     {
         List<Arguments> cases = new ArrayList<>();
 
@@ -444,7 +453,7 @@ public class ResourceTest
     }
 
     @ParameterizedTest
-    @MethodSource("toJarFileUri")
+    @MethodSource("jarFileUriCases")
     public void testToJarFileUri(String inputRawUri, String expectedRawUri)
     {
         URI actual = Resource.toJarFileUri(URI.create(inputRawUri));
