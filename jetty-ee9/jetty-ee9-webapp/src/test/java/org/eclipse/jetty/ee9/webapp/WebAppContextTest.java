@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -523,6 +524,7 @@ public class WebAppContextTest
             expectedUris = s
                 .filter(Files::isRegularFile)
                 .filter((path) -> path.getFileName().toString().endsWith(".jar"))
+                .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
                 .map(Resource::toJarFileUri)
                 .collect(Collectors.toList());
