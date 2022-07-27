@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.maven.plugin;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -222,9 +223,10 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
+            // This is a use provided list of overlays, which could have mountable entries.
+            List<URI> uris = Resource.split(str);
             // TODO: need a better place to close/release this mount.
-            Resource.Mount mount = Resource.mountCollection(str);
-            webApp.addBean(mount); // let context clean it up
+            Resource.Mount mount = Resource.mountCollection(uris);
             webApp.setWar(null);
             webApp.setBaseResource(mount.root());
         }

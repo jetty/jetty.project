@@ -778,14 +778,11 @@ public class HTTPServerDocs
         ResourceHandler handler = new ResourceHandler();
 
         // For multiple directories, use ResourceCollection.
-        Resource.Mount mount = Resource.mountCollection(
-            List.of(
-                Resource.newResource("/path/to/static/resources/"),
-                Resource.newResource("/another/path/to/static/resources/")
-            )
+        Resource resource = Resource.of(
+            Resource.newResource("/path/to/static/resources/"),
+            Resource.newResource("/another/path/to/static/resources/")
         );
-        // TODO: need to put the mount.close() somewhere when you are done with the Resource collection.
-        handler.setBaseResource(mount.root());
+        handler.setBaseResource(resource);
         // end::multipleResourcesHandler[]
     }
 

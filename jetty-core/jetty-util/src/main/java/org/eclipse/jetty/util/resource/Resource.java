@@ -39,11 +39,14 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
@@ -98,36 +101,53 @@ public abstract class Resource implements ResourceFactory
         return __defaultUseCaches;
     }
 
-    public static Resource.Mount mountCollection(Collection<Resource> resources)
+    /**
+     * <p>Create a ResourceCollection from an unknown set of URIs.</p>
+     *
+     * <p>
+     *     Use this if you are working with URIs from an unknown source,
+     *     such as a user configuration.  As some of the entries
+     *     might need mounting, but we cannot determine that yet.
+     * </p>
+     *
+     * @param uris collection of URIs to mount into a {@code ResourceCollection}
+     * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
+     */
+    public static Resource.Mount mountCollection(Collection<URI> uris)
     {
+        List<Resource> resources = new ArrayList<>();
         List<Resource.Mount> mounts = new ArrayList<>();
-        resources.forEach(res ->
-        {
-            Resource.Mount mount = Resource.mountIfNeeded(res);
-            if (mount != null)
-                mounts.add(mount);
-        });
 
         try
         {
+            // track URIs that have been seen, to avoid adding duplicates.
+            Set<URI> seenUris = new HashSet<>();
+
+            for (URI uri : uris)
+            {
+                if (seenUris.contains(uri))
+                    continue; // skip this one
+                Resource.Mount mount = Resource.mountIfNeeded(uri);
+                if (mount != null)
+                {
+                    mounts.add(mount);
+                    resources.add(mount.root()); // use mounted resource that has Path with proper FileSystem reference in it.
+                }
+                else
+                {
+                    resources.add(Resource.newResource(uri));
+                }
+                seenUris.add(uri);
+            }
+
             return new ResourceCollection.Mount(resources, mounts);
         }
         catch (Throwable t)
         {
-            // can't create ResourceCollection.Mount, unmount and rethrow.
+            // can't create ResourceCollection.Mount, so let's unmount and rethrow.
             mounts.forEach(IO::close);
             throw t;
         }
-    }
-
-    public static Resource.Mount mountCollectionURIs(Collection<URI> uris)
-    {
-        return mountCollection(uris.stream().map(Resource::newResource).toList());
-    }
-
-    public static Resource.Mount mountCollection(String csvResources) throws IOException
-    {
-        return mountCollection(Resource.fromList(csvResources, false));
     }
 
     /**
@@ -150,12 +170,9 @@ public abstract class Resource implements ResourceFactory
             return null;
         try
         {
-            if (scheme.equalsIgnoreCase("jar") || scheme.equalsIgnoreCase("file"))
+            if (scheme.equalsIgnoreCase("jar"))
             {
-                URI jarURI = toJarFileUri(uri);
-                if (jarURI == null)
-                    throw new IllegalArgumentException("Not a jar or file URI: " + uri);
-                return FileSystemPool.INSTANCE.mount(jarURI);
+                return FileSystemPool.INSTANCE.mount(uri);
             }
             return null;
         }
@@ -163,18 +180,6 @@ public abstract class Resource implements ResourceFactory
         {
             throw new IllegalArgumentException(ioe);
         }
-    }
-
-    /**
-     * @param resourceBase the base resource that might need to be mounted.
-     * @return the {@link Mount} if a mount is needed, null if one is not needed.
-     * @see #mountIfNeeded(URI)
-     */
-    public static Mount mountIfNeeded(Resource resourceBase)
-    {
-        if (resourceBase == null)
-            return null;
-        return mountIfNeeded(resourceBase.getURI());
     }
 
     /**
@@ -211,6 +216,34 @@ public abstract class Resource implements ResourceFactory
         if (jarUri == null)
             throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(List<Resource> resources)
+    {
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(Resource... resources)
+    {
+        if (resources == null || resources.length == 0)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(List.of(resources));
     }
 
     /**
@@ -1285,166 +1318,52 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Parse a list of String delimited resources and
-     * return the List of Resources instances it represents.
+     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
      * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
+     *     Each part of the input string could be path references (unix or windows style), or string URI references.
      * </p>
      *
-     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @return the list of resources parsed from input string.
+     * @param str the input string of references
      */
-    public static List<Resource> fromList(String resources, boolean globDirs) throws IOException
+    public static List<URI> split(String str)
     {
-        return fromList(resources, globDirs, Resource::newResource);
-    }
+        List<URI> uris = new ArrayList<>();
 
-    /**
-     * Parse a delimited String of resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(String resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
-    {
-        return fromList(StringUtil.tokenizerAsIterator(resources, StringUtil.DEFAULT_DELIMS), globDirs, resourceFactory);
-    }
-
-    /**
-     * Parse a collection of String resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the collection of string references
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(Collection<String> resources, boolean globDirs) throws IOException
-    {
-        return fromList(resources, globDirs, Resource::newResource);
-    }
-
-    /**
-     * Parse a collection of String resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the collection of string references
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(Collection<String> resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
-    {
-        Objects.requireNonNull(resources, "Collection cannot be null");
-        return fromList(resources.iterator(), globDirs, resourceFactory);
-    }
-
-    /**
-     * Parse an Iterator of String resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the iterator of string references
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(Iterator<String> resources, boolean globDirs) throws IOException
-    {
-        Objects.requireNonNull(resources, "Iterator cannot be null");
-        return fromList(resources, globDirs, Resource::newResource);
-    }
-
-    /**
-     * Parse an Iterator of String resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the iterator of string references
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @param resourceFactory the ResourceFactory used to create new Resource references // TODO: see if we can remove this factory concept
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(Iterator<String> resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
-    {
-        List<Resource> returnedResources = new ArrayList<>();
-
-        while (resources.hasNext())
+        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        while (tokenizer.hasMoreTokens())
         {
-            String token = resources.next();
-
+            String reference = tokenizer.nextToken();
             // Is this a glob reference?
-            if (token.endsWith("/*") || token.endsWith("\\*"))
+            if (reference.endsWith("/*") || reference.endsWith("\\*"))
             {
-                String dir = token.substring(0, token.length() - 2);
+                String dir = reference.substring(0, reference.length() - 2);
+                Path pathDir = Paths.get(dir);
                 // Use directory
-                Resource dirResource = resourceFactory.resolve(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
+                if (Files.exists(pathDir) && Files.isDirectory(pathDir))
                 {
                     // To obtain the list of entries
-                    List<String> entries = dirResource.list();
-                    if (entries != null)
+                    try (Stream<Path> listStream = Files.list(pathDir))
                     {
-                        entries.sort(Comparator.naturalOrder());
-                        for (String entry : entries)
-                        {
-                            try
-                            {
-                                Resource resource = dirResource.resolve(entry);
-                                if (!resource.isDirectory())
-                                {
-                                    returnedResources.add(resource);
-                                }
-                                else if (globDirs)
-                                {
-                                    returnedResources.add(resource);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                LOG.warn("Bad glob [{}] entry: {}", token, entry, ex);
-                            }
-                        }
+                        listStream
+                            .filter(Files::isRegularFile)
+                            .filter(Resource::isArchive)
+                            .sorted(Comparator.naturalOrder())
+                            .forEach(path -> uris.add(toJarFileUri(path.toUri())));
+                    }
+                    catch (IOException e)
+                    {
+                        throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
                     }
                 }
             }
             else
             {
                 // Simple reference, add as-is
-                returnedResources.add(resourceFactory.resolve(token));
+                Path path = Paths.get(reference);
+                uris.add(path.toUri());
             }
         }
-
-        return returnedResources;
+        return uris;
     }
 
     /**
@@ -1462,8 +1381,7 @@ public abstract class Resource implements ResourceFactory
          * Return the root {@link Resource} made available by this mount.
          *
          * @return the resource.
-         * @throws IOException Problem accessing resource
          */
-        Resource root() throws IOException;
+        Resource root();
     }
 }

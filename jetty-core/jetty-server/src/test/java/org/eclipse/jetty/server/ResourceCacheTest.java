@@ -119,28 +119,26 @@ public class ResourceCacheTest
             .map(Resource::newResource)
             .toList();
 
-        try (Resource.Mount rcMount = Resource.mountCollection(resourceList))
-        {
-            ResourceCollection rc = (ResourceCollection)rcMount.root();
-            List<Resource> r = rc.getResources();
-            MimeTypes mime = new MimeTypes();
+        ResourceCollection rc = Resource.of(resourceList);
 
-            CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
-            CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE);
-            CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
+        List<Resource> r = rc.getResources();
+        MimeTypes mime = new MimeTypes();
 
-            assertEquals(getContent(rc1, "1.txt"), "1 - one");
-            assertEquals(getContent(rc1, "2.txt"), "2 - two");
-            assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
 
-            assertEquals(getContent(rc2, "1.txt"), "1 - two");
-            assertEquals(getContent(rc2, "2.txt"), "2 - two");
-            assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals(getContent(rc1, "1.txt"), "1 - one");
+        assertEquals(getContent(rc1, "2.txt"), "2 - two");
+        assertEquals(getContent(rc1, "3.txt"), "3 - three");
 
-            assertNull(getContent(rc3, "1.txt"));
-            assertEquals(getContent(rc3, "2.txt"), "2 - three");
-            assertEquals(getContent(rc3, "3.txt"), "3 - three");
-        }
+        assertEquals(getContent(rc2, "1.txt"), "1 - two");
+        assertEquals(getContent(rc2, "2.txt"), "2 - two");
+        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+
+        assertNull(getContent(rc3, "1.txt"));
+        assertEquals(getContent(rc3, "2.txt"), "2 - three");
+        assertEquals(getContent(rc3, "3.txt"), "3 - three");
     }
 
     @Test
@@ -153,36 +151,34 @@ public class ResourceCacheTest
             .map(Resource::newResource)
             .toList();
 
-        try (Resource.Mount rcMount = Resource.mountCollection(resourceList))
+        ResourceCollection rc = new ResourceCollection(resourceList);
+
+        List<Resource> r = rc.getResources();
+        MimeTypes mime = new MimeTypes();
+
+        CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE)
         {
-            ResourceCollection rc = (ResourceCollection)rcMount.root();
-            List<Resource> r = rc.getResources();
-            MimeTypes mime = new MimeTypes();
-
-            CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
-            CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE)
+            @Override
+            public boolean isCacheable(Resource resource)
             {
-                @Override
-                public boolean isCacheable(Resource resource)
-                {
-                    return super.isCacheable(resource) && resource.getName().indexOf("2.txt") < 0;
-                }
-            };
+                return super.isCacheable(resource) && resource.getName().indexOf("2.txt") < 0;
+            }
+        };
 
-            CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
 
-            assertEquals(getContent(rc1, "1.txt"), "1 - one");
-            assertEquals(getContent(rc1, "2.txt"), "2 - two");
-            assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals(getContent(rc1, "1.txt"), "1 - one");
+        assertEquals(getContent(rc1, "2.txt"), "2 - two");
+        assertEquals(getContent(rc1, "3.txt"), "3 - three");
 
-            assertEquals(getContent(rc2, "1.txt"), "1 - two");
-            assertEquals(getContent(rc2, "2.txt"), "2 - two");
-            assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals(getContent(rc2, "1.txt"), "1 - two");
+        assertEquals(getContent(rc2, "2.txt"), "2 - two");
+        assertEquals(getContent(rc2, "3.txt"), "3 - three");
 
-            assertNull(getContent(rc3, "1.txt"));
-            assertEquals(getContent(rc3, "2.txt"), "2 - three");
-            assertEquals(getContent(rc3, "3.txt"), "3 - three");
-        }
+        assertNull(getContent(rc3, "1.txt"));
+        assertEquals(getContent(rc3, "2.txt"), "2 - three");
+        assertEquals(getContent(rc3, "3.txt"), "3 - three");
     }
 
     @Test

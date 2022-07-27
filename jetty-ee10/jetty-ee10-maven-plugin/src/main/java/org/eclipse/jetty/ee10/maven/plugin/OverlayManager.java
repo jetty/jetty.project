@@ -63,10 +63,7 @@ public class OverlayManager
                 resourceBases.add(webApp.getResourceBase());
         }
 
-        // TODO: need a better place to close/release this mount.
-        Resource.Mount mount = Resource.mountCollection(resourceBases);
-        webApp.addBean(mount); // let context clean it up
-        webApp.setBaseResource(mount.root());
+        webApp.setBaseResource(Resource.of(resourceBases));
     }
     
     /**

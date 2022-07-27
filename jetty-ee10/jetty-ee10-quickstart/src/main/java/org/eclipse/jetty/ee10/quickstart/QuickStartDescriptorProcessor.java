@@ -280,11 +280,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getResourceBase());
         collection.addAll(metaInfResources);
-
-        // TODO: need a better place to close/release this mount.
-        Resource.Mount baseMount = Resource.mountCollection(collection);
-        context.addBean(baseMount); // let context clean it up
-        // TODO: Perhaps BaseResource can be a Resource.Mount?
-        context.setBaseResource(baseMount.root());
+        context.setBaseResource(Resource.of(collection));
     }
 }

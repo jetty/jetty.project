@@ -1240,7 +1240,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
+        setExtraClasspath(Resource.globAwareSplit(extraClasspath, false, this::newResource));
     }
 
     public void setExtraClasspath(List<Resource> extraClasspath)

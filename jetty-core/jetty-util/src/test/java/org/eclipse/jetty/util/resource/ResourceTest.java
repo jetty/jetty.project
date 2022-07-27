@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -35,12 +37,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -51,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ResourceTest
 {
     private static final boolean DIR = true;
@@ -253,6 +258,8 @@ public class ResourceTest
 
         return cases.stream();
     }
+
+    public WorkDir workDir;
 
     @AfterAll
     public static void tearDown()
@@ -459,5 +466,109 @@ public class ResourceTest
         URI actual = Resource.toJarFileUri(URI.create(inputRawUri));
         assertNotNull(actual);
         assertThat(actual.toASCIIString(), is(expectedRawUri));
+    }
+
+    @Test
+    public void testSplitOnComma()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s,%s,%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = Resource.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnPipe()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s|%s|%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = Resource.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnSemicolon()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s;%s;%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = Resource.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnPipeWithGlob() throws IOException
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+        FS.touch(bar.resolve("lib-foo.jar"));
+        FS.touch(bar.resolve("lib-zed.zip"));
+
+        // This represents the user-space raw configuration with a glob
+        String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
+
+        // Split using commas
+        List<URI> uris = Resource.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            // Should see the two archives as `jar:file:` URI entries
+            Resource.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
+            Resource.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+        };
+        assertThat(uris, contains(expected));
     }
 }

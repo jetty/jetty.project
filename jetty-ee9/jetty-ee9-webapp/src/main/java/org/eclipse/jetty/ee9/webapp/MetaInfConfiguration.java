@@ -335,11 +335,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            // TODO: need a better place to close/release this mount.
-            Resource.Mount baseMount = Resource.mountCollection(collection);
-            context.addBean(baseMount); // let context clean it up
-            // TODO: Perhaps BaseResource can be a Resource.Mount?
-            context.setBaseResource(baseMount.root());
+            context.setBaseResource(Resource.of(collection));
         }
     }
 

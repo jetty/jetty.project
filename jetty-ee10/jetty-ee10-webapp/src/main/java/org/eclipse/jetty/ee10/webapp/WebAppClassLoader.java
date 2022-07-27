@@ -267,7 +267,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        for (Resource resource : Resource.fromList(classPath, false, _context::newResource))
+        for (Resource resource : Resource.globAwareSplit(classPath, false, _context::newResource))
         {
             addClassPath(resource);
         }

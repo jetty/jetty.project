@@ -17,12 +17,14 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -95,6 +98,12 @@ public class MavenWebAppContext extends WebAppContext
      * current project is added first or last in list of overlaid resources
      */
     private boolean _baseAppFirst = true;
+
+    /**
+     * Used to track any resource bases that are mounted
+     * as a result of calling {@link #setResourceBases(String[])}
+     */
+    private Resource.Mount _mountedResourceBases;
 
     public MavenWebAppContext() throws Exception
     {
@@ -215,21 +224,24 @@ public class MavenWebAppContext extends WebAppContext
      *
      * @param resourceBases Array of resources strings to set as a
      * {@link ResourceCollection}. Each resource string may be a
-     * comma separated list of resources
+     * comma {@code ,} or pipe {@code |} separated list of resource references
      */
     public void setResourceBases(String[] resourceBases)
     {
         try
         {
-            List<Resource> resources = Resource.fromList(List.of(resourceBases), false);
-            // TODO: need a better place to close/release this mount.
-            Resource.Mount mount = Resource.mountCollection(resources);
-            addBean(mount); // let context clean it up
-            setBaseResource(mount.root());
+            // This is a user provided list of configurations.
+            // We have to assume that mounting can happen.
+            List<URI> uris = Stream.of(resourceBases)
+                .map(URI::create)
+                .toList();
+            _mountedResourceBases = Resource.mountCollection(uris);
+
+            setBaseResource(_mountedResourceBases.root());
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            throw new IllegalArgumentException("Bad resourceBases: [" + String.join(", ", resourceBases) + "]", e);
+            throw new IllegalArgumentException("Bad resourceBases: [" + String.join(", ", resourceBases) + "]", t);
         }
     }
 
@@ -350,6 +362,8 @@ public class MavenWebAppContext extends WebAppContext
         getServletHandler().setFilterMappings(new FilterMapping[0]);
         getServletHandler().setServlets(new ServletHolder[0]);
         getServletHandler().setServletMappings(new ServletMapping[0]);
+
+        IO.close(_mountedResourceBases);
     }
 
     @Override

@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A collection of Resources.
@@ -42,16 +40,14 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourceCollection extends Resource
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ResourceCollection.class);
-
-    public static class Mount implements Resource.Mount
+    static class Mount implements Resource.Mount
     {
         private final List<Resource.Mount> _mounts;
-        private final ResourceCollection _resourceCollection;
+        private final ResourceCollection _root;
 
         Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
         {
-            _resourceCollection = new ResourceCollection(resources);
+            _root = new ResourceCollection(resources);
             _mounts = mounts;
         }
 
@@ -62,9 +58,9 @@ public class ResourceCollection extends Resource
         }
 
         @Override
-        public Resource root() throws IOException
+        public Resource root()
         {
-            return _resourceCollection;
+            return _root;
         }
     }
 
@@ -75,26 +71,32 @@ public class ResourceCollection extends Resource
      *
      * @param resources the resources to be added to collection
      */
-    private ResourceCollection(Collection<Resource> resources)
+    public ResourceCollection(Collection<Resource> resources)
     {
         List<Resource> res = new ArrayList<>();
+        gatherUniqueFlatResourceList(res, resources);
+        _resources = Collections.unmodifiableList(res);
+    }
 
+    private static void gatherUniqueFlatResourceList(List<Resource> unique, Collection<Resource> resources)
+    {
         if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("Empty ResourceCollection");
+            throw new IllegalArgumentException("Empty Resource collection");
 
         for (Resource r : resources)
         {
             if (r == null)
             {
-                continue;
+                throw new IllegalArgumentException("Null Resource entry encountered");
             }
-            if (r instanceof ResourceCollection)
+
+            if (r instanceof ResourceCollection resourceCollection)
             {
-                throw new IllegalArgumentException("ResourceCollection cannot contain another nested ResourceCollection");
+                gatherUniqueFlatResourceList(unique, resourceCollection.getResources());
             }
             else
             {
-                if (res.contains(r))
+                if (unique.contains(r))
                 {
                     // skip, already seen
                     continue;
@@ -104,10 +106,9 @@ public class ResourceCollection extends Resource
                 {
                     throw new IllegalArgumentException("Not an existing directory: " + r);
                 }
-                res.add(r);
+                unique.add(r);
             }
         }
-        _resources = Collections.unmodifiableList(res);
     }
 
     /**
