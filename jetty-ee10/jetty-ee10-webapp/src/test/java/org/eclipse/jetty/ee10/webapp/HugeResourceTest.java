@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -57,6 +59,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -183,9 +186,12 @@ public class HugeResourceTest
     public void startServer() throws Exception
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        server = new Server();
+
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
         HttpConfiguration httpConfig = new HttpConfiguration();
-        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+        ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
         server.addConnector(connector);
 
@@ -222,7 +228,12 @@ public class HugeResourceTest
     @BeforeEach
     public void startClient() throws Exception
     {
-        client = new HttpClient();
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        ClientConnector connector = new ClientConnector();
+        connector.setSelectors(1);
+        connector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(connector));
         client.start();
     }
 
@@ -239,9 +250,9 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.GET);
-        request.send(responseListener);
+        client.newRequest(destUri)
+            .method(HttpMethod.GET)
+            .send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
         assertThat("HTTP Response Code", response.getStatus(), is(200));
@@ -292,9 +303,9 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.HEAD);
-        request.send(responseListener);
+        client.newRequest(destUri)
+            .method(HttpMethod.HEAD)
+            .send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
         try (InputStream in = responseListener.getInputStream())
