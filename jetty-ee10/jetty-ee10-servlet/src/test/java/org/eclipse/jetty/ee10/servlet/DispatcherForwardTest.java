@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -451,7 +450,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testContentCanBeReadViaInputStreamAfterForwardWithoutQuery() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
@@ -501,7 +499,6 @@ public class DispatcherForwardTest
     }
 
     @Test
-    @Disabled // TODO
     public void testContentCanBeReadViaInputStreamAfterForwardWithQuery() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
