@@ -1381,7 +1381,7 @@ public class HttpChannelState implements HttpChannel, Components
                 request = _request;
 
                 // Be forgiving of applications that report a failure that is already known by treating as a noop.
-                if (request._httpChannel != null && request._httpChannel._error != null && TypeUtil.isAssociated(request._httpChannel._error.getCause(), failure))
+                if (request._httpChannel != null && request._httpChannel._error != null && ExceptionUtil.areAssociated(request._httpChannel._error.getCause(), failure))
                     return;
                 lockedOnComplete();
 

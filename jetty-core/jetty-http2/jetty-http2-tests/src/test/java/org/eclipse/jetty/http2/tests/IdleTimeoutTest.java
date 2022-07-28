@@ -411,7 +411,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
 
         final CountDownLatch dataLatch = new CountDownLatch(1);
         final CountDownLatch timeoutLatch = new CountDownLatch(1);
@@ -424,12 +424,13 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(idleTimeout);
             }
-        }, new Stream.Listener.Adapter()
+        }, new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callback.succeeded();
+                Stream.Data data = stream.readData();
+                data.release();
                 dataLatch.countDown();
             }
 
