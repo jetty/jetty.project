@@ -132,7 +132,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     protected Queue<HttpExchange> newExchangeQueue(HttpClient client)
     {
-        return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
+        int maxCapacity = client.getMaxRequestsQueuedPerDestination();
+        if (maxCapacity > 32)
+            return new BlockingArrayQueue<>(32, 32, maxCapacity);
+        return new BlockingArrayQueue<>(maxCapacity);
     }
 
     protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
