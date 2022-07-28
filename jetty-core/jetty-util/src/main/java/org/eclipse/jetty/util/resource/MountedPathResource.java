@@ -29,7 +29,7 @@ public class MountedPathResource extends PathResource
     MountedPathResource(URI uri) throws IOException
     {
         super(uri, true);
-        containerUri = FileSystemPool.containerUri(getURI());
+        containerUri = unwrapContainer(getURI());
     }
 
     @Override
