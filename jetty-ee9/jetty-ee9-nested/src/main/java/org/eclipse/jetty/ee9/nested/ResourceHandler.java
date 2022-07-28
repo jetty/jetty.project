@@ -418,7 +418,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            setBaseResource(ResourceFactory.of((Container)this).newResource(resourceBase));
+            setBaseResource(ResourceFactory.of(this).newResource(resourceBase));
         }
         catch (Exception e)
         {
