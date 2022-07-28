@@ -17,12 +17,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -312,23 +313,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // TODO may need to handle one level of parent classloader for API ?
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
-        URL[] urls = loader.getURLs();
-        StringBuilder classpath = new StringBuilder();
-        for (URL url : urls)
+
+        try (Stream<URL> urlStream = Stream.of(loader.getURLs())
+            .filter(Objects::nonNull))
         {
-            // TODO do this without Resource?
-            Resource resource = Resource.newResource(url);
-            Path path = resource.getPath();
-            if (path != null && Files.exists(path))
-            {
-                if (classpath.length() > 0)
-                    classpath.append(File.pathSeparatorChar);
-                classpath.append(path.toAbsolutePath());
-            }
+            String classpath = urlStream.map(URL::toString)
+                .map(URIUtil::getJarSource)
+                .collect(Collectors.joining(File.pathSeparator));
+            if (StringUtil.isBlank(classpath))
+                return null;
+            return classpath;
         }
-        if (classpath.length() == 0)
-            return null;
-        return classpath.toString();
     }
 
     /**
