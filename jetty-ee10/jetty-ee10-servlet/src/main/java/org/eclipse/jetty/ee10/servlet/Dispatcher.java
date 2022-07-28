@@ -15,13 +15,11 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -37,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -148,80 +147,30 @@ public class Dispatcher implements RequestDispatcher
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper
     {
-        private Map<String, String[]> params;
+        private final MultiMap<String> _params = new MultiMap<>();
+        private boolean decodedParams = false;
+        private final HttpServletRequest _httpServletRequest;
+        private final ServletContextRequest _baseRequest;
 
         public ParameterRequestWrapper(HttpServletRequest request)
         {
             super(request);
-        }
+            _httpServletRequest = request;
 
-        @Override
-        public String getParameter(String name)
-        {
-            String[] strings = getParameterMap().get(name);
-            if (strings == null || strings.length == 0)
-                return null;
-            return strings[0];
-        }
-
-        @Override
-        public Map<String, String[]> getParameterMap()
-        {
-            if (params != null)
-                return params;
-
-            Map<String, String[]> oldParams = super.getParameterMap();
-            if (_uri == null || _uri.getQuery() == null)
-            {
-                params = oldParams;
-                return oldParams;
-            }
-
-            MultiMap<String> newParams = new MultiMap<>();
-            UrlEncoded.decodeTo(_uri.getQuery(), newParams, UrlEncoded.ENCODING);
-            for (Map.Entry<String, String[]> entry : oldParams.entrySet())
-            {
-                newParams.addValues(entry.getKey(), entry.getValue());
-            }
-            params = newParams.toStringArrayMap();
-            return params;
-        }
-
-        @Override
-        public Enumeration<String> getParameterNames()
-        {
-            return Collections.enumeration(getParameterMap().entrySet().stream()
-                .flatMap(o -> Arrays.stream(o.getValue()))
-                .collect(Collectors.toList()));
-        }
-
-        @Override
-        public String[] getParameterValues(String name)
-        {
-            return getParameterMap().get(name);
-        }
-    }
-
-    private class ForwardRequest extends ParameterRequestWrapper
-    {
-        private final HttpServletRequest _httpServletRequest;
-        private final MultiMap<String> _params = new MultiMap<>();
-        private boolean decodedParams = false;
-
-        public ForwardRequest(HttpServletRequest httpRequest)
-        {
-            super(httpRequest);
-            _httpServletRequest = httpRequest;
-
+            // Have to assume ENCODING because we can't know otherwise.
             String targetQuery = (_uri == null) ? null : _uri.getQuery();
             if (targetQuery != null)
                 UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
+
+            _baseRequest = ServletContextRequest.getBaseRequest(_httpServletRequest);
+            if (_baseRequest == null)
+                throw new IllegalStateException();
 
             try
             {
                 String sourceQuery = _httpServletRequest.getQueryString();
                 if (sourceQuery != null)
-                    UrlEncoded.decodeTo(sourceQuery, _params, UrlEncoded.ENCODING);
+                    UrlEncoded.decodeTo(sourceQuery, _params, _baseRequest.getQueryEncoding());
             }
             catch (Throwable t)
             {
@@ -235,15 +184,50 @@ public class Dispatcher implements RequestDispatcher
                 return _params;
             decodedParams = true;
 
-            Enumeration<String> parameterNames = _httpServletRequest.getParameterNames();
-            while (parameterNames.hasMoreElements())
+            Fields contentParams = _baseRequest.getServletApiRequest().getContentParams();
+            for (Fields.Field field : contentParams)
             {
-                String name = parameterNames.nextElement();
-                String[] parameterValues = _httpServletRequest.getParameterValues(name);
-                if (parameterValues != null)
-                    _params.addValues(name, parameterValues);
+                _params.addValues(field.getName(), field.getValues());
             }
             return _params;
+        }
+
+        @Override
+        public String getParameter(String name)
+        {
+            return getParams().getValue(name);
+        }
+
+        @Override
+        public Map<String, String[]> getParameterMap()
+        {
+            return Collections.unmodifiableMap(getParams().toStringArrayMap());
+        }
+
+        @Override
+        public Enumeration<String> getParameterNames()
+        {
+            return Collections.enumeration(getParams().keySet());
+        }
+
+        @Override
+        public String[] getParameterValues(String name)
+        {
+            List<String> vals = getParams().getValues(name);
+            if (vals == null)
+                return null;
+            return vals.toArray(new String[0]);
+        }
+    }
+
+    private class ForwardRequest extends ParameterRequestWrapper
+    {
+        private final HttpServletRequest _httpServletRequest;
+
+        public ForwardRequest(HttpServletRequest httpRequest)
+        {
+            super(httpRequest);
+            _httpServletRequest = httpRequest;
         }
 
         @Override
@@ -284,33 +268,6 @@ public class Dispatcher implements RequestDispatcher
                     return targetQuery;
             }
             return _httpServletRequest.getQueryString();
-        }
-
-        @Override
-        public String getParameter(String name)
-        {
-            return getParams().getValue(name);
-        }
-
-        @Override
-        public Map<String, String[]> getParameterMap()
-        {
-            return Collections.unmodifiableMap(getParams().toStringArrayMap());
-        }
-
-        @Override
-        public Enumeration<String> getParameterNames()
-        {
-            return Collections.enumeration(getParams().keySet());
-        }
-
-        @Override
-        public String[] getParameterValues(String name)
-        {
-            List<String> vals = getParams().getValues(name);
-            if (vals == null)
-                return null;
-            return vals.toArray(new String[0]);
         }
 
         @Override

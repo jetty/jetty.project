@@ -204,6 +204,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _queryEncoding = Charset.forName(queryEncoding);
     }
 
+    public Charset getQueryEncoding()
+    {
+        return _queryEncoding;
+    }
+
     @Override
     public Object getAttribute(String name)
     {
@@ -333,6 +338,13 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (httpSession instanceof Session.APISession apiSession)
                 return apiSession.getCoreSession();
             return null;
+        }
+
+        public Fields getContentParams()
+        {
+            // Call getParameters() to ensure content params are extracted.
+            getParameters();
+            return _contentParameters;
         }
         
         public void setAuthentication(Authentication authentication)
