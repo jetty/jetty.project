@@ -942,7 +942,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         register(dir, config);
 
-        final MultiException me = new MultiException();
+        final ExceptionUtil.MultiException me = new ExceptionUtil.MultiException();
         try (Stream<Path> stream = Files.list(dir))
         {
             stream.forEach(p ->

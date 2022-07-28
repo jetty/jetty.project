@@ -30,9 +30,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -646,7 +646,7 @@ public class AnnotationParser
      */
     public void parse(Set<? extends Handler> handlers, List<String> classNames) throws Exception
     {
-        MultiException me = new MultiException();
+        Throwable multiException = null;
 
         for (String className : classNames)
         {
@@ -666,10 +666,10 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                me.add(new RuntimeException("Error scanning class " + className, e));
+                multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning class " + className, e));
             }
         }
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -684,7 +684,7 @@ public class AnnotationParser
         if (uris == null)
             return;
 
-        MultiException me = new MultiException();
+        Throwable multiException = null;
 
         for (URI uri : uris)
         {
@@ -694,10 +694,10 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                me.add(new RuntimeException("Problem parsing classes from " + uri, e));
+                multiException = ExceptionUtil.combine(multiException, new RuntimeException("Problem parsing classes from " + uri, e));
             }
         }
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -770,7 +770,7 @@ public class AnnotationParser
 
         Path rootPath = root.getPath();
 
-        MultiException me = new MultiException();
+        Throwable multiException = null;
         Collection<Resource> resources = root.getAllResources();
         if (resources != null)
         {
@@ -801,7 +801,7 @@ public class AnnotationParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Error scanning file {}", path, ex);
-                        me.add(new RuntimeException("Error scanning file " + path, ex));
+                        multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning file " + path, ex));
                     }
                 }
                 else
@@ -812,7 +812,7 @@ public class AnnotationParser
             }
         }
 
-        me.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     /**
@@ -827,17 +827,18 @@ public class AnnotationParser
         if (jarResource == null)
             return;
 
+        // TODO: what if the input is "FOO.JAR" or "Bar.Jar" ? - need to use FileID.isArchive() or FileID.isJar()
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning jar {}", jarResource);
 
-            MultiException me = new MultiException();
-
+            ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
                  Stream<Path> jarEntryStream = jarFile.stream()
                      .filter(Files::isRegularFile)
                      .filter(MultiReleaseJarFile::notModuleInfoClass)
+                     .filter(MultiReleaseJarFile::notMetaInfVersions)
                      .filter(MultiReleaseJarFile::isClassFile)
             )
             {
@@ -849,11 +850,11 @@ public class AnnotationParser
                     }
                     catch (Exception ex)
                     {
-                        me.add(new RuntimeException("Error scanning entry " + e.toUri(), ex));
+                        multiException.add(new RuntimeException("Error scanning entry " + e.toString(), ex));
                     }
                 });
             }
-            me.ifExceptionThrow();
+            multiException.ifExceptionThrow();
         }
     }
 
@@ -888,6 +889,7 @@ public class AnnotationParser
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Scanning class from jar {}", location);
+                LOG.debug("Scanning class from jar {}", location);
                 scanClass(handlers, jar, is);
             }
         }

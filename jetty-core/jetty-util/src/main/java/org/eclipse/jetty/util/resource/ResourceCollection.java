@@ -22,15 +22,14 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A collection of Resources.
@@ -39,102 +38,82 @@ import org.slf4j.LoggerFactory;
  * If a resource is not found in the main resource, it looks it up in
  * the order the provided in the constructors
  */
-public class ResourceCollection extends Resource implements AutoCloseable
+public class ResourceCollection extends Resource
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ResourceCollection.class);
-
-    // TODO: This should be final
-    private List<Resource> _resources;
-    private final List<Mount> _mounted = new ArrayList<>();
-
-    /**
-     * Instantiates an empty resource collection.
-     * <p>
-     * This constructor is used when configuring jetty-maven-plugin.
-     */
-    public ResourceCollection()
+    static class Mount implements Resource.Mount
     {
-        this(List.of());
+        private final List<Resource.Mount> _mounts;
+        private final ResourceCollection _root;
+
+        Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
+        {
+            _root = new ResourceCollection(resources);
+            _mounts = mounts;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            _mounts.forEach(IO::close);
+        }
+
+        @Override
+        public Resource root()
+        {
+            return _root;
+        }
     }
+
+    private final List<Resource> _resources;
 
     /**
      * Instantiates a new resource collection.
      *
      * @param resources the resources to be added to collection
      */
-    public ResourceCollection(Resource... resources)
+    ResourceCollection(Collection<Resource> resources)
     {
-        this(List.of(resources));
+        List<Resource> res = new ArrayList<>();
+        gatherUniqueFlatResourceList(res, resources);
+        _resources = Collections.unmodifiableList(res);
     }
 
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Collection<Resource> resources)
+    private static void gatherUniqueFlatResourceList(List<Resource> unique, Collection<Resource> resources)
     {
-        _resources = new ArrayList<>();
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("Empty Resource collection");
 
         for (Resource r : resources)
         {
             if (r == null)
             {
-                continue;
+                throw new IllegalArgumentException("Null Resource entry encountered");
             }
-            if (r instanceof ResourceCollection)
+
+            if (r instanceof ResourceCollection resourceCollection)
             {
-                _resources.addAll(((ResourceCollection)r).getResources());
+                gatherUniqueFlatResourceList(unique, resourceCollection.getResources());
             }
             else
             {
-                if (_resources.contains(r))
+                if (unique.contains(r))
                 {
                     // skip, already seen
                     continue;
                 }
 
-                try
+                if (!r.exists())
                 {
-                    Resource.Mount mount = Resource.mountIfNeeded(r);
-                    if (mount != null)
-                    {
-                        _mounted.add(mount);
-                        // add mounted resource, so that Resource.getPath().getFileSystem() is sane.
-                        _resources.add(mount.root());
-                    }
-                    else
-                    {
-                        if (!r.exists() || !r.isDirectory())
-                        {
-                            throw new IllegalArgumentException(r + " is not an existing directory.");
-                        }
-                        _resources.add(r);
-                    }
+                    throw new IllegalArgumentException("Does not exist: " + r);
                 }
-                catch (IllegalStateException | IOException e)
+
+                if (!r.isDirectory())
                 {
-                    LOG.warn("Unable to process resource {}", r, e);
+                    throw new IllegalArgumentException("Not a directory: " + r);
                 }
+                unique.add(r);
             }
         }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param csvResources the string containing comma-separated resource strings
-     * @throws IOException if any listed resource is not valid
-     */
-    public ResourceCollection(String csvResources) throws IOException
-    {
-        this(Resource.fromList(csvResources, false));
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        _mounted.forEach(IO::close);
     }
 
     /**
@@ -148,82 +127,8 @@ public class ResourceCollection extends Resource implements AutoCloseable
     }
 
     /**
-     * Sets the resource collection's resources.
+     * Resolves a path against the resource collection.
      *
-     * @param res the resources to set
-     * @deprecated ResourceCollection should be immutable, set at Constructor only.
-     */
-    @Deprecated
-    public void setResources(List<Resource> res)
-    {
-        _resources = new ArrayList<>();
-        if (res.isEmpty())
-        {
-            return;
-        }
-
-        _resources.addAll(res);
-    }
-
-    /**
-     * Sets the resource collection's resources.
-     *
-     * @param resources the new resource array
-     * @deprecated ResourceCollection should be immutable, set at Constructor only.
-     */
-    @Deprecated
-    public void setResources(Resource[] resources)
-    {
-        if (resources == null || resources.length == 0)
-        {
-            _resources = null;
-            return;
-        }
-
-        List<Resource> res = new ArrayList<>();
-        for (Resource resource : resources)
-        {
-            assertResourceValid(resource);
-            res.add(resource);
-        }
-
-        setResources(res);
-    }
-
-    /**
-     * Sets the resources as string of comma-separated values.
-     * This method should be used when configuring jetty-maven-plugin.
-     *
-     * @param resources the comma-separated string containing
-     * one or more resource strings.
-     * @throws IOException if unable resource declared is not valid
-     * @see Resource#fromList(String, boolean)
-     * @deprecated ResourceCollection should be immutable, set at Constructor only.
-     */
-    @Deprecated
-    public void setResources(String resources) throws IOException
-    {
-        if (StringUtil.isBlank(resources))
-        {
-            throw new IllegalArgumentException("String is blank");
-        }
-
-        List<Resource> list = Resource.fromList(resources, false);
-        if (list.isEmpty())
-        {
-            throw new IllegalArgumentException("String contains no entries");
-        }
-        List<Resource> ret = new ArrayList<>();
-        for (Resource resource : list)
-        {
-            assertResourceValid(resource);
-            ret.add(resource);
-        }
-        setResources(ret);
-    }
-
-    /**
-     * Add a path to the resource collection.
      * @param subUriPath The path segment to add
      * @return The resulting resource(s) :
      * <ul>
@@ -237,8 +142,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public Resource resolve(String subUriPath) throws IOException
     {
-        assertResourcesSet();
-
         if (subUriPath == null)
         {
             throw new MalformedURLException("null path");
@@ -266,11 +169,7 @@ public class ResourceCollection extends Resource implements AutoCloseable
         }
 
         if (resources == null)
-        {
-            if (addedResource != null)
-                return addedResource; // This will not exist
-            return EmptyResource.INSTANCE;
-        }
+            return addedResource; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -287,8 +186,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public boolean exists()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             if (r.exists())
@@ -303,7 +200,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public Path getPath()
     {
-        assertResourcesSet();
         for (Resource r : _resources)
         {
             Path p = r.getPath();
@@ -314,10 +210,8 @@ public class ResourceCollection extends Resource implements AutoCloseable
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
+    public InputStream newInputStream() throws IOException
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             if (!r.exists())
@@ -325,7 +219,7 @@ public class ResourceCollection extends Resource implements AutoCloseable
                 // Skip, cannot open anyway
                 continue;
             }
-            InputStream is = r.getInputStream();
+            InputStream is = r.newInputStream();
             if (is != null)
             {
                 return is;
@@ -336,13 +230,11 @@ public class ResourceCollection extends Resource implements AutoCloseable
     }
 
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
-            ReadableByteChannel channel = r.getReadableByteChannel();
+            ReadableByteChannel channel = r.newReadableByteChannel();
             if (channel != null)
             {
                 return channel;
@@ -354,8 +246,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public String getName()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             String name = r.getName();
@@ -370,8 +260,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public URI getURI()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             URI uri = r.getURI();
@@ -386,15 +274,12 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public boolean isDirectory()
     {
-        assertResourcesSet();
         return true;
     }
 
     @Override
     public long lastModified()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             long lm = r.lastModified();
@@ -418,7 +303,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public List<String> list()
     {
-        assertResourcesSet();
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
@@ -441,8 +325,6 @@ public class ResourceCollection extends Resource implements AutoCloseable
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        assertResourcesSet();
-
         // Copy in reverse order
         for (int r = _resources.size(); r-- > 0; )
         {
@@ -451,17 +333,14 @@ public class ResourceCollection extends Resource implements AutoCloseable
     }
 
     /**
-     * @return the list of resources separated by a path separator
+     * @return the list of resources
      */
     @Override
     public String toString()
     {
-        if (_resources.isEmpty())
-        {
-            return "[]";
-        }
-
-        return String.valueOf(_resources);
+        return _resources.stream()
+            .map(Resource::getName)
+            .collect(Collectors.joining(", ", "[", "]"));
     }
 
     @Override
@@ -469,26 +348,5 @@ public class ResourceCollection extends Resource implements AutoCloseable
     {
         // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
         return false;
-    }
-
-    private void assertResourcesSet()
-    {
-        if (_resources == null || _resources.isEmpty())
-        {
-            throw new IllegalStateException("*resources* not set.");
-        }
-    }
-
-    private void assertResourceValid(Resource resource)
-    {
-        if (resource == null)
-        {
-            throw new IllegalStateException("Null resource not supported");
-        }
-
-        if (!resource.exists() || !resource.isDirectory())
-        {
-            throw new IllegalArgumentException(resource + " is not an existing directory.");
-        }
     }
 }

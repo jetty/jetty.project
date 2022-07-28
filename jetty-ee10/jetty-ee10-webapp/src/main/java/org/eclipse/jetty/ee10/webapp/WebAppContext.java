@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -129,7 +130,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private List<Resource> _extraClasspath;
+    private ResourceCollection _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -549,7 +550,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void destroy()
     {
         // Prepare for configuration
-        MultiException mx = new MultiException();
+        Throwable multiException = null;
         if (_configurations != null)
         {
             for (Configuration configuration : _configurations)
@@ -560,13 +561,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 }
                 catch (Exception e)
                 {
-                    mx.add(e);
+                    multiException = ExceptionUtil.combine(multiException, e);
                 }
             }
         }
         _configurations = null;
         super.destroy();
-        mx.ifExceptionThrowRuntime();
+        ExceptionUtil.ifExceptionThrowRuntime(multiException);
     }
 
     /*
@@ -803,10 +804,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return null;
 
         // Iw there a WEB-INF directory?
-        Resource webInf = getResourceBase().resolve("WEB-INF/");
+        Resource webInf = getResourceBase().resolve("WEB-INF/"); // TODO: what does this do in a collection?
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
+        // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF
+        // TODO: should also never return from a META-INF/versions/#/WEB-INF location
         return webInf;
     }
 
@@ -1223,7 +1226,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public List<Resource> getExtraClasspath()
+    public ResourceCollection getExtraClasspath()
     {
         return _extraClasspath;
     }
@@ -1231,21 +1234,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the Extra ClassPath via delimited String.
      * <p>
-     * This is a convenience method for {@link #setExtraClasspath(List)}
+     * This is a convenience method for {@link #setExtraClasspath(ResourceCollection)}
      * </p>
      *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
-     * @throws IOException if unable to resolve the resources referenced
-     * @see #setExtraClasspath(List)
+     * @see #setExtraClasspath(ResourceCollection)
      */
-    public void setExtraClasspath(String extraClasspath) throws IOException
+    public void setExtraClasspath(String extraClasspath)
     {
-        setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
+        List<URI> uris = Resource.split(extraClasspath);
+        Resource.Mount mount = Resource.mountCollection(uris);
+        addBean(mount); // let doStop() cleanup mount
+        setExtraClasspath((ResourceCollection)mount.root());
     }
 
-    public void setExtraClasspath(List<Resource> extraClasspath)
+    public void setExtraClasspath(ResourceCollection extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }

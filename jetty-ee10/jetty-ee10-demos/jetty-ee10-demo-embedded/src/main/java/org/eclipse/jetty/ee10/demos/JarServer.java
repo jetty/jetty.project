@@ -32,17 +32,11 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JarServer
 {
-    public static Server createServer(int port) throws Exception
+    public static Server createServer(int port, Resource base) throws Exception
     {
         Server server = new Server(port);
 
-        Path jarFile = Paths.get("src/main/other/content.jar");
-        if (!Files.exists(jarFile))
-            throw new FileNotFoundException(jarFile.toString());
-
         ServletContextHandler context = new ServletContextHandler();
-        Resource.setDefaultUseCaches(true);
-        Resource base = Resource.newResource("jar:" + jarFile.toAbsolutePath().toUri().toASCIIString() + "!/");
         context.setBaseResource(base.getPath());
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
 
@@ -53,8 +47,16 @@ public class JarServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Server server = createServer(port);
-        server.start();
-        server.join();
+
+        Path jarFile = Paths.get("src/main/other/content.jar");
+        if (!Files.exists(jarFile))
+            throw new FileNotFoundException(jarFile.toString());
+
+        try (Resource.Mount mount = Resource.mountJar(jarFile))
+        {
+            Server server = createServer(port, mount.root());
+            server.start();
+            server.join();
+        }
     }
 }

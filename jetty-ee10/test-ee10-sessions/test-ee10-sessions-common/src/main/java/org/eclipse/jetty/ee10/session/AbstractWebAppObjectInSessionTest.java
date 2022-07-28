@@ -83,14 +83,14 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
         File targetFile = new File(packageDirs, resourceName);
         //copy(sourceFile, targetFile);
-        IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
+        IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
 
         resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
         resource = Resource.newResource(getClass().getResource(resourceName));
         //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
         targetFile = new File(packageDirs, resourceName);
         //copy(sourceFile, targetFile);
-        IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
+        IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);

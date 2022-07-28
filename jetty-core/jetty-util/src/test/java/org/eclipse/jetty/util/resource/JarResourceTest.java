@@ -33,6 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,6 +115,35 @@ public class JarResourceTest
         assertThrows(IllegalStateException.class, () -> resource.resolve("alphabet"));
         mount.close();
         assertThrows(ClosedFileSystemException.class, resource::exists);
+    }
+
+    @Test
+    public void testDumpAndSweep(@TempDir Path tempDir) throws Exception
+    {
+        Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
+        URI uri = URI.create(s);
+        try (Resource.Mount mount = Resource.mount(uri))
+        {
+            Resource resource = mount.root();
+            assertTrue(resource.exists());
+
+            String dump = FileSystemPool.INSTANCE.dump();
+            assertThat(dump, containsString("FileSystemPool"));
+            assertThat(dump, containsString("mounts size=1"));
+            assertThat(dump, containsString("Mount[uri=jar:file:/"));
+            assertThat(dump, containsString("test.zip!/subdir"));
+
+            Files.delete(testZip);
+            FileSystemPool.INSTANCE.sweep();
+
+            dump = FileSystemPool.INSTANCE.dump();
+            assertThat(dump, containsString("FileSystemPool"));
+            assertThat(dump, containsString("mounts size=0"));
+
+            assertThrows(ClosedFileSystemException.class, resource::exists);
+        }
     }
 
     @Test

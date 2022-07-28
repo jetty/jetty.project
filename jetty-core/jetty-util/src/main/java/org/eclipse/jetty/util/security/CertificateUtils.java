@@ -44,7 +44,7 @@ public class CertificateUtils
             if (!store.exists())
                 throw new IllegalStateException(store.getName() + " is not a valid keystore");
 
-            try (InputStream inStream = store.getInputStream())
+            try (InputStream inStream = store.newInputStream())
             {
                 keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
             }
@@ -59,18 +59,9 @@ public class CertificateUtils
 
         if (crlPath != null)
         {
-            InputStream in = null;
-            try
+            try (InputStream in = Resource.newResource(crlPath).newInputStream())
             {
-                in = Resource.newResource(crlPath).getInputStream();
                 crlList = CertificateFactory.getInstance("X.509").generateCRLs(in);
-            }
-            finally
-            {
-                if (in != null)
-                {
-                    in.close();
-                }
             }
         }
 

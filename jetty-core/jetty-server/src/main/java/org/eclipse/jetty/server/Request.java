@@ -393,14 +393,14 @@ public interface Request extends Attributes, Content.Source
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalURI(location);
+                location = URIUtil.normalizePathQuery(location);
             }
             else
             {
                 // relative to request
                 String path = uri.getPath();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
+                location = URIUtil.normalizePathQuery(URIUtil.addEncodedPaths(parent, location));
                 if (location != null && !location.startsWith("/"))
                     url.append('/');
             }

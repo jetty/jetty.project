@@ -851,7 +851,7 @@ public class ResourceService
                 return;
             }
 
-            try (InputStream input = content.getResource().getInputStream())
+            try (InputStream input = content.getResource().newInputStream())
             {
                 IO.copy(input, out);
                 return;

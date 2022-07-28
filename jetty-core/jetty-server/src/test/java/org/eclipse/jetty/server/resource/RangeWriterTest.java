@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
@@ -101,13 +100,15 @@ public class RangeWriterTest
         return Stream.of(
             Arguments.of("Traditional / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, true))),
             Arguments.of("Traditional / Indirect Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, false))),
-            Arguments.of("Traditional / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)realFileSystemResource.getReadableByteChannel())),
-            Arguments.of("Traditional / InputStream", new InputStreamRangeWriter(() -> realFileSystemResource.getInputStream())),
+            // TODO the cast to SeekableByteChannel is questionable
+            Arguments.of("Traditional / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)realFileSystemResource.newReadableByteChannel())),
+            Arguments.of("Traditional / InputStream", new InputStreamRangeWriter(() -> realFileSystemResource.newInputStream())),
 
             Arguments.of("Non-Default FS / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(nonDefaultFileSystemResource, true))),
             Arguments.of("Non-Default FS / Indirect Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(nonDefaultFileSystemResource, false))),
-            Arguments.of("Non-Default FS / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)nonDefaultFileSystemResource.getReadableByteChannel())),
-            Arguments.of("Non-Default FS / InputStream", new InputStreamRangeWriter(() -> nonDefaultFileSystemResource.getInputStream()))
+            // TODO the cast to SeekableByteChannel is questionable
+            Arguments.of("Non-Default FS / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)nonDefaultFileSystemResource.newReadableByteChannel())),
+            Arguments.of("Non-Default FS / InputStream", new InputStreamRangeWriter(() -> nonDefaultFileSystemResource.newInputStream()))
         );
     }
 

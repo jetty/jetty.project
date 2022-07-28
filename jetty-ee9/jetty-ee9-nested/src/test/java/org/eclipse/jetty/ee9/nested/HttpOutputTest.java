@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -91,6 +92,8 @@ public class HttpOutputTest
     @AfterEach
     public void destroy() throws Exception
     {
+        IO.close(_handler._contentInputStream);
+        IO.close(_handler._contentChannel);
         _server.stop();
         _server.join();
     }
@@ -137,7 +140,7 @@ public class HttpOutputTest
     public void testSendInputStreamSimple() throws Exception
     {
         Resource simple = Resource.newClassPathResource("simple/simple.txt");
-        _handler._contentInputStream = simple.getInputStream();
+        _handler._contentInputStream = simple.newInputStream();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
@@ -147,7 +150,7 @@ public class HttpOutputTest
     public void testSendInputStreamBig() throws Exception
     {
         Resource big = Resource.newClassPathResource("simple/big.txt");
-        _handler._contentInputStream = big.getInputStream();
+        _handler._contentInputStream = big.newInputStream();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
@@ -158,7 +161,7 @@ public class HttpOutputTest
     public void testSendInputStreamBigChunked() throws Exception
     {
         Resource big = Resource.newClassPathResource("simple/big.txt");
-        _handler._contentInputStream = new FilterInputStream(big.getInputStream())
+        _handler._contentInputStream = new FilterInputStream(big.newInputStream())
         {
             @Override
             public int read(byte[] b, int off, int len) throws IOException
@@ -189,7 +192,7 @@ public class HttpOutputTest
     public void testSendChannelSimple() throws Exception
     {
         Resource simple = Resource.newClassPathResource("simple/simple.txt");
-        _handler._contentChannel = simple.getReadableByteChannel();
+        _handler._contentChannel = simple.newReadableByteChannel();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
@@ -199,7 +202,7 @@ public class HttpOutputTest
     public void testSendChannelBig() throws Exception
     {
         Resource big = Resource.newClassPathResource("simple/big.txt");
-        _handler._contentChannel = big.getReadableByteChannel();
+        _handler._contentChannel = big.newReadableByteChannel();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
@@ -232,7 +235,7 @@ public class HttpOutputTest
     public void testSendChannelBigChunked() throws Exception
     {
         Resource big = Resource.newClassPathResource("simple/big.txt");
-        final ReadableByteChannel channel = big.getReadableByteChannel();
+        final ReadableByteChannel channel = big.newReadableByteChannel();
         _handler._contentChannel = new ReadableByteChannel()
         {
             @Override

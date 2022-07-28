@@ -43,8 +43,8 @@ public class TestJettyTldPreScanned
     public void testIt()
         throws Exception
     {
-        File jar = MavenTestingUtils.getTestResourceFile("taglib.jar");
-        File tld = MavenTestingUtils.getTestResourceFile("META-INF/foo-taglib.tld");
+        File jar = MavenTestingUtils.getTargetFile("test-classes/taglib.jar");
+        File tld = MavenTestingUtils.getTargetFile("test-classes/META-INF/foo-taglib.tld");
 
         List<URL> list = new ArrayList<>();
         list.add(new URL("jar:" + jar.toURI().toURL().toString() + "!/META-INF/bar-taglib.tld"));

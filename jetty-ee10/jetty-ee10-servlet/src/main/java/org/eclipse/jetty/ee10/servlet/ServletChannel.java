@@ -398,7 +398,7 @@ public class ServletChannel implements Runnable
                             {
                                 String contextPath = _request.getContext().getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                                pathInContext = URIUtil.normalizePath(dispatchUri.getPath());
+                                pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
                                 uri = HttpURI.build(_request.getHttpURI())
                                     .path(URIUtil.addPaths(contextPath, pathInContext))
                                     .query(dispatchUri.getQuery());
@@ -419,7 +419,7 @@ public class ServletChannel implements Runnable
                             }
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
-                            dispatcher.async(_request.getHttpServletRequest(), getResponse().getHttpServletResponse());
+                            dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
                         });
                         break;
                     }
@@ -607,6 +607,7 @@ public class ServletChannel implements Runnable
     {
         try
         {
+            _request.getResponse().getHttpOutput().reopen();
             _servletContextApi.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_request);

@@ -22,7 +22,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -130,7 +130,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             if (handlers == null)
                 return;
 
-            MultiException mex = null;
+            Throwable errors = null;
             for (Handler handler : handlers._handlers)
             {
                 try
@@ -143,18 +143,12 @@ public class HandlerCollection extends AbstractHandlerContainer
                 }
                 catch (Exception e)
                 {
-                    if (mex == null)
-                        mex = new MultiException();
-                    mex.add(e);
+                    errors = ExceptionUtil.combine(errors, e);
                 }
             }
-            if (mex != null)
-            {
-                if (mex.size() == 1)
-                    throw new ServletException(mex.getThrowable(0));
-                else
-                    throw new ServletException(mex);
-            }
+            if (errors instanceof IOException ioException)
+                throw ioException;
+            ExceptionUtil.ifExceptionThrowAs(ServletException.class, errors);
         }
     }
 

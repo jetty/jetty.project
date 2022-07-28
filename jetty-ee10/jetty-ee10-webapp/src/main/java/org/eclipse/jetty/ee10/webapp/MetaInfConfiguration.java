@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -22,7 +21,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,12 +38,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,11 +178,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (_mountedResources != null)
         {
             _mountedResources.forEach(IO::close);
-        }
-        Resource baseResource = context.getResourceBase();
-        if (baseResource instanceof Closeable closeableResource)
-        {
-            IO.close(closeableResource);
         }
         super.deconfigure(context);
     }
@@ -345,7 +335,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getResourceBase());
             collection.addAll(resources);
-            context.setBaseResource(new ResourceCollection(collection));
+            context.setBaseResource(Resource.of(collection));
         }
     }
 
@@ -464,7 +454,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (cache != null && cache.containsKey(target))
         {
             resourcesDir = cache.get(target);
-            if (resourcesDir == EmptyResource.INSTANCE)
+            if (isEmptyResource(resourcesDir))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} cached as containing no META-INF/resources", target);
@@ -487,16 +477,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                Resource.Mount mount = Resource.mountIfNeeded(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
                 if (_mountedResources == null)
                     _mountedResources = new ArrayList<>();
                 _mountedResources.add(mount);
-            }
-
-            if (!resourcesDir.exists() || !resourcesDir.isDirectory())
-            {
-                resourcesDir = EmptyResource.INSTANCE;
             }
 
             if (cache != null)
@@ -508,7 +493,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("{} META-INF/resources cache updated", target);
             }
 
-            if (resourcesDir == EmptyResource.INSTANCE)
+            if (isEmptyResource(resourcesDir))
             {
                 return;
             }
@@ -527,6 +512,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         dirs.add(resourcesDir);
     }
 
+    private static boolean isEmptyResource(Resource resourcesDir)
+    {
+        return !resourcesDir.exists() || !resourcesDir.isDirectory();
+    }
+
     /**
      * Scan for META-INF/web-fragment.xml file in the given jar.
      *
@@ -542,7 +532,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (cache != null && cache.containsKey(jar))
         {
             webFrag = cache.get(jar);
-            if (webFrag == EmptyResource.INSTANCE)
+            if (isEmptyFragment(webFrag))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} cached as containing no META-INF/web-fragment.xml", jar);
@@ -565,10 +555,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 URI uri = jar.getURI();
                 webFrag = Resource.newResource(uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
-            if (!webFrag.exists() || webFrag.isDirectory())
-            {
-                webFrag = EmptyResource.INSTANCE;
-            }
 
             if (cache != null)
             {
@@ -580,7 +566,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("{} META-INF/web-fragment.xml cache updated", jar);
             }
 
-            if (webFrag == EmptyResource.INSTANCE)
+            if (isEmptyFragment(webFrag))
                 return;
         }
 
@@ -593,6 +579,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         fragments.put(jar, webFrag);
         if (LOG.isDebugEnabled())
             LOG.debug("{} added to context", webFrag);
+    }
+
+    private static boolean isEmptyFragment(Resource webFrag)
+    {
+        return !webFrag.exists() || webFrag.isDirectory();
     }
 
     /**
@@ -673,16 +664,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_TLDS, null);
     }
 
-    public static boolean isTldFile(Path path)
-    {
-        if (path.getNameCount() < 2)
-            return false;
-        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
-            return false;
-        String filename = path.getFileName().toString();
-        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
-    }
-
     /**
      * Find all .tld files in all subdirs of the given dir.
      *
@@ -721,21 +702,34 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-
-        Path path = Paths.get(uri);
-        try (MultiReleaseJarFile multiReleaseJarFile = new MultiReleaseJarFile(path);
-             Stream<Path> entries = multiReleaseJarFile.stream()
-                 .filter(Files::isRegularFile)
-                 .filter(MetaInfConfiguration::isTldFile))
+        Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/"));
+        if (_mountedResources == null)
+            _mountedResources = new ArrayList<>();
+        _mountedResources.add(mount);
+        try (Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
-            Iterator<Path> iter = entries.iterator();
-            while (iter.hasNext())
+            Iterator<Path> it = stream
+                .filter(MetaInfConfiguration::isTldFile)
+                .iterator();
+            while (it.hasNext())
             {
-                Path entry = iter.next();
+                Path entry = it.next();
                 tlds.add(entry.toUri().toURL());
             }
         }
         return tlds;
+    }
+
+    private static boolean isTldFile(Path path)
+    {
+        if (!Files.isRegularFile(path))
+            return false;
+        if (path.getNameCount() < 2)
+            return false;
+        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
+            return false;
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
@@ -835,6 +829,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
@@ -880,6 +875,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
@@ -887,29 +883,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private URI uriJarPrefix(URI uri, String suffix)
     {
-        return Resource.toJarURI(uri, suffix);
+        // TODO: Bring to URIUtil
+        String uriString = uri.toString();
+        if (uriString.startsWith("jar:"))
+        {
+            return URI.create(uriString + suffix);
+        }
+        else
+        {
+            return URI.create("jar:" + uriString + suffix);
+        }
     }
 
     private boolean isFileSupported(Resource resource)
     {
-        try
-        {
-            if (resource.isDirectory())
-                return false;
-
-            if (resource.getPath() == null)
-                return false;
-        }
-        catch (Throwable t)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Bad Resource reference: {}", resource, t);
-            return false;
-        }
-
-        String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
-        int dot = filenameLowercase.lastIndexOf('.');
-        String extension = (dot < 0 ? null : filenameLowercase.substring(dot));
-        return (extension != null && (extension.equals(".jar") || extension.equals(".zip")));
+        return Resource.isArchive(resource.getURI());
     }
 }

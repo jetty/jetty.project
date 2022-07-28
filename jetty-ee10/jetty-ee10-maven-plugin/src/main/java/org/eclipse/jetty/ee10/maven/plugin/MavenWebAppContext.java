@@ -17,12 +17,15 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
@@ -34,6 +37,7 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -69,7 +73,7 @@ public class MavenWebAppContext extends WebAppContext
 
     private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
 
-    private List<File> _classpathFiles; // webInfClasses+testClasses+webInfJars
+    private List<URI> _classpathUris; // webInfClasses+testClasses+webInfJars
 
     private String _jettyEnvXml;
 
@@ -95,6 +99,12 @@ public class MavenWebAppContext extends WebAppContext
      * current project is added first or last in list of overlaid resources
      */
     private boolean _baseAppFirst = true;
+
+    /**
+     * Used to track any resource bases that are mounted
+     * as a result of calling {@link #setResourceBases(String[])}
+     */
+    private Resource.Mount _mountedResourceBases;
 
     public MavenWebAppContext() throws Exception
     {
@@ -123,9 +133,9 @@ public class MavenWebAppContext extends WebAppContext
         _webInfIncludeJarPattern = pattern;
     }
 
-    public List<File> getClassPathFiles()
+    public List<URI> getClassPathUris()
     {
-        return this._classpathFiles;
+        return this._classpathUris;
     }
 
     public void setJettyEnvXml(String jettyEnvXml)
@@ -214,21 +224,27 @@ public class MavenWebAppContext extends WebAppContext
      * configuration
      *
      * @param resourceBases Array of resources strings to set as a
-     * {@link ResourceCollection}. Each resource string may be a
-     * comma separated list of resources
+     * {@link ResourceCollection}.
      */
-    public void setResourceBases(String[] resourceBases) throws IOException
+    public void setResourceBases(String[] resourceBases)
     {
-        List<Resource> resources = new ArrayList<>();
-        for (String rl : resourceBases)
+        try
         {
-            String[] rs = StringUtil.csvSplit(rl);
-            for (String r : rs)
-            {
-                resources.add(Resource.newResource(r));
-            }
+            // TODO: what happens if this is called more than once?
+
+            // This is a user provided list of configurations.
+            // We have to assume that mounting can happen.
+            List<URI> uris = Stream.of(resourceBases)
+                .map(URI::create)
+                .toList();
+            _mountedResourceBases = Resource.mountCollection(uris);
+
+            setBaseResource(_mountedResourceBases.root());
         }
-        setBaseResource(new ResourceCollection(resources));
+        catch (Throwable t)
+        {
+            throw new IllegalArgumentException("Bad resourceBases: [" + String.join(", ", resourceBases) + "]", t);
+        }
     }
 
     public List<File> getWebInfLib()
@@ -267,15 +283,21 @@ public class MavenWebAppContext extends WebAppContext
 
         // Set up the classes dirs that comprises the equivalent of
         // WEB-INF/classes
-        if (_testClasses != null)
+        if (_testClasses != null && _testClasses.exists())
             _webInfClasses.add(_testClasses);
-        if (_classes != null)
+        if (_classes != null && _classes.exists())
             _webInfClasses.add(_classes);
 
         // Set up the classpath
-        _classpathFiles = new ArrayList<>();
-        _classpathFiles.addAll(_webInfClasses);
-        _classpathFiles.addAll(_webInfJars);
+        _classpathUris = new ArrayList<>();
+        _webInfClasses.forEach(f -> _classpathUris.add(f.toURI()));
+        _webInfJars.forEach(f ->
+        {
+            // ensure our JAR file references are `jar:file:...` URI references
+            URI jarFileUri = Resource.toJarFileUri(f.toURI());
+            // else use file uri as-is
+            _classpathUris.add(Objects.requireNonNullElseGet(jarFileUri, f::toURI));
+        });
 
         // Initialize map containing all jars in /WEB-INF/lib
         _webInfJarMap.clear();
@@ -321,9 +343,9 @@ public class MavenWebAppContext extends WebAppContext
     @Override
     public void doStop() throws Exception
     {
-        if (_classpathFiles != null)
-            _classpathFiles.clear();
-        _classpathFiles = null;
+        if (_classpathUris != null)
+            _classpathUris.clear();
+        _classpathUris = null;
 
         _classes = null;
         _testClasses = null;
@@ -348,6 +370,8 @@ public class MavenWebAppContext extends WebAppContext
         getServletHandler().setFilterMappings(new FilterMapping[0]);
         getServletHandler().setServlets(new ServletHolder[0]);
         getServletHandler().setServletMappings(new ServletMapping[0]);
+
+        IO.close(_mountedResourceBases);
     }
 
     @Override
@@ -361,8 +385,8 @@ public class MavenWebAppContext extends WebAppContext
         // /WEB-INF/classes
         if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
         {
-            // Canonicalize again to look for the resource inside /WEB-INF subdirectories.
-            String uri = URIUtil.canonicalPath(pathInContext);
+            // Normalize again to look for the resource inside /WEB-INF subdirectories.
+            String uri = URIUtil.normalizePath(pathInContext);
             if (uri == null)
                 return null;
 

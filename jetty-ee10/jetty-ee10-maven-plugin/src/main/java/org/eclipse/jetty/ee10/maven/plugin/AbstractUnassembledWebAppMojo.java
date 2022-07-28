@@ -176,6 +176,8 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
             if (webApp.getDescriptor() == null && webApp.getResourceBase() != null)
             {
+                // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/web.xml
+                // TODO: should also never return from a META-INF/versions/#/WEB-INF/web.xml location
                 Resource r = webApp.getResourceBase().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
@@ -186,6 +188,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
             {
+                // TODO: fix, use Resource or Path
                 File f = new File(new File(webAppSourceDirectory, "WEB-INF"), "web.xml");
                 if (f.exists() && f.isFile())
                 {

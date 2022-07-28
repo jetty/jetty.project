@@ -60,7 +60,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -714,7 +714,7 @@ public class ServletHandler extends ScopedHandler
     public void initialize()
         throws Exception
     {
-        MultiException mx = new MultiException();
+        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
         Consumer<BaseHolder<?>> c = h ->
         {
@@ -722,14 +722,17 @@ public class ServletHandler extends ScopedHandler
             {
                 if (!h.isStarted())
                 {
-                    h.start();
-                    h.initialize();
+                    multiException.callAndCatch(() ->
+                    {
+                        h.start();
+                        h.initialize();
+                    });
                 }
             }
             catch (Throwable e)
             {
                 LOG.debug("Unable to start {}", h, e);
-                mx.add(e);
+                multiException.add(e);
             }
         };
         
@@ -749,7 +752,7 @@ public class ServletHandler extends ScopedHandler
             _servlets.stream().sorted())
             .forEach(c);
 
-        mx.ifExceptionThrow();
+        multiException.ifExceptionThrow();
     }
     
     /**

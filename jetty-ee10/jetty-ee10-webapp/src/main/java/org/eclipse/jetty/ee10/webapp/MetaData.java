@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -39,7 +39,6 @@ public class MetaData
 
     public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
     public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
-    public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
     private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
@@ -366,7 +365,7 @@ public class MetaData
         {
             //if no resource associated with an annotation map it to empty resource - these
             //annotations will always be processed first
-            Resource enclosingResource = EmptyResource.INSTANCE;
+            Resource enclosingResource = null;
             Resource resource = annotation.getResource();
             if (resource != null)
             {
@@ -381,9 +380,7 @@ public class MetaData
                 if (enclosingResource == null)
                     enclosingResource = getEnclosingResource(_orderedContainerResources, resource);
 
-                //Couldn't find a parent resource in any of the known resources, map it to the empty resource
-                if (enclosingResource == null)
-                    enclosingResource = EmptyResource.INSTANCE;
+                //Couldn't find a parent resource in any of the known resources, map it to null
             }
 
             List<DiscoveredAnnotation> list = _annotations.computeIfAbsent(enclosingResource, k -> new ArrayList<>());
@@ -459,13 +456,10 @@ public class MetaData
         {
             orderedWebInfJars = getWebInfResources(true);
             List<String> orderedLibs = new ArrayList<>();
-            for (Resource webInfJar : orderedWebInfJars)
+            for (Resource jar: orderedWebInfJars)
             {
-                //get just the name of the jar file
-                String fullname = webInfJar.getName();
-                int i = fullname.indexOf(".jar");
-                int j = fullname.lastIndexOf("/", i);
-                orderedLibs.add(fullname.substring(j + 1, i + 4));
+                URI uri = Resource.unwrapContainer(jar.getURI());
+                orderedLibs.add(uri.getPath());
             }
             context.setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));
         }
@@ -490,7 +484,7 @@ public class MetaData
         }
 
         List<Resource> resources = new ArrayList<>();
-        resources.add(EmptyResource.INSTANCE); //always apply annotations with no resource first
+        resources.add(null); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
         resources.addAll(_webInfClasses); //next everything from web-inf classes
         resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
