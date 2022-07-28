@@ -223,13 +223,10 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
+            webApp.setWar(null);
             // This is a use provided list of overlays, which could have mountable entries.
             List<URI> uris = Resource.split(str);
-            // TODO: need a better place to close/release this mount.
-            Resource.Mount mount = Resource.mountCollection(uris);
-            webApp.addBean(mount); // let jetty-core ContextHandler.doStop() release mount
-            webApp.setWar(null);
-            webApp.setBaseResource(mount.root());
+            webApp.setBaseResource(Resource.newResource(uris, webApp));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);

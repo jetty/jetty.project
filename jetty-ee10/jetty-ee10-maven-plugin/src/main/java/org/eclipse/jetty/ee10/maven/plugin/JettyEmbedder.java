@@ -28,7 +28,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * Starts jetty within the current process. 
  */
-public class JettyEmbedder extends AbstractLifeCycle
+public class JettyEmbedder extends ContainerLifeCycle
 {
     protected List<ContextHandler> contextHandlers;
     protected List<LoginService> loginServices;

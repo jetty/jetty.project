@@ -119,7 +119,7 @@ public class ResourceCacheTest
             .map(Resource::newResource)
             .toList();
 
-        ResourceCollection rc = Resource.of(resourceList);
+        ResourceCollection rc = Resource.newResource(resourceList);
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -151,7 +151,7 @@ public class ResourceCacheTest
             .map(Resource::newResource)
             .toList();
 
-        ResourceCollection rc = Resource.of(resourceList);
+        ResourceCollection rc = Resource.newResource(resourceList);
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();

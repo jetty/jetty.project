@@ -261,7 +261,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             catch (Throwable th)
             {
                 // try as a resource
-                qstart = (Resource.newResource(attr.toString()));
+                qstart = (Resource.newResource(attr.toString(), context));
             }
             context.setAttribute(QUICKSTART_WEB_XML, qstart);
         }

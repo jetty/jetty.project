@@ -49,7 +49,7 @@ public class EnvironmentBuilder
         {
             try
             {
-                _classpath.add(Resource.newResource(classPath).getURI().toURL());
+                _classpath.add(Resource.newResource(classPath, null).getURI().toURL());
             }
             catch (IOException e)
             {

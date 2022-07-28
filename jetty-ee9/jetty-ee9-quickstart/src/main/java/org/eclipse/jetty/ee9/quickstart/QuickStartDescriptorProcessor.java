@@ -280,6 +280,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getBaseResource());
         collection.addAll(metaInfResources);
-        context.setBaseResource(Resource.of(collection));
+        context.setBaseResource(Resource.newResource(collection));
     }
 }

@@ -778,9 +778,9 @@ public class HTTPServerDocs
         ResourceHandler handler = new ResourceHandler();
 
         // For multiple directories, use ResourceCollection.
-        Resource resource = Resource.of(
-            Resource.newResource("/path/to/static/resources/"),
-            Resource.newResource("/another/path/to/static/resources/")
+        Resource resource = Resource.newResource(
+            Resource.newResource("/path/to/static/resources/", null),
+            Resource.newResource("/another/path/to/static/resources/", null)
         );
         handler.setBaseResource(resource);
         // end::multipleResourcesHandler[]

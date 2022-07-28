@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -40,30 +39,6 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
-    static class Mount implements Resource.Mount
-    {
-        private final List<Resource.Mount> _mounts;
-        private final ResourceCollection _root;
-
-        Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
-        {
-            _root = new ResourceCollection(resources);
-            _mounts = mounts;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            _mounts.forEach(IO::close);
-        }
-
-        @Override
-        public Resource root()
-        {
-            return _root;
-        }
-    }
-
     private final List<Resource> _resources;
 
     /**

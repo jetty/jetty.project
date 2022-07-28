@@ -13,13 +13,28 @@
 
 package org.eclipse.jetty.util.resource;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class JrtResourceTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testResourceModule()
         throws Exception

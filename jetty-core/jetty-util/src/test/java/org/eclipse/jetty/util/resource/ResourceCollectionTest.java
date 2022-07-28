@@ -30,11 +30,16 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +50,18 @@ public class ResourceCollectionTest
 {
     public WorkDir workDir;
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testList() throws Exception
     {
@@ -52,7 +69,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.newResource(
             Resource.newResource(one),
             Resource.newResource(two),
             Resource.newResource(three)
@@ -73,7 +90,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.newResource(
             Resource.newResource(one),
             Resource.newResource(two),
             Resource.newResource(three)
@@ -95,7 +112,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.newResource(
                 Resource.newResource(one),
                 Resource.newResource(two),
                 Resource.newResource(three)
@@ -121,7 +138,7 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = Resource.of(
+        ResourceCollection rc1 = Resource.newResource(
             List.of(
                 Resource.newResource(one),
                 Resource.newResource(two),
@@ -129,7 +146,7 @@ public class ResourceCollectionTest
             )
         );
 
-        ResourceCollection rc2 = Resource.of(
+        ResourceCollection rc2 = Resource.newResource(
             List.of(
                 // the original ResourceCollection
                 rc1,
@@ -177,11 +194,18 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        try (Resource.Mount mount = Resource.mountCollection(uris))
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        container.start();
+        try
         {
-            ResourceCollection rc = (ResourceCollection)mount.root();
+            ResourceCollection rc = Resource.newResource(uris, container);
             assertThat(getContent(rc, "test.txt"), is("Test"));
         }
+        finally
+        {
+            container.stop();
+        }
+        assertThat(FileSystemPool.INSTANCE.mounts(), Matchers.empty());
     }
 
     @Test
@@ -206,12 +230,19 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        try (Resource.Mount mount = Resource.mountCollection(uris))
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        container.start();
+        try
         {
-            ResourceCollection rc = (ResourceCollection)mount.root();
+            ResourceCollection rc = Resource.newResource(uris, container);
             assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
             assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
         }
+        finally
+        {
+            container.stop();
+        }
+        assertThat(FileSystemPool.INSTANCE.mounts(), Matchers.empty());
     }
 
     private void createJar(Path outputJar, String entryName, String entryContents) throws IOException

@@ -371,7 +371,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             List<Resource> resources = new ArrayList<>();
             for (String dir : directories)
             {
-                resources.add(Resource.newResource(dir));
+                resources.add(Resource.newResource(dir, this));
             }
             setMonitoredResources(resources);
         }

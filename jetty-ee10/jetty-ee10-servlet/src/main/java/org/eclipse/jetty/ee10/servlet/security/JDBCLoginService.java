@@ -97,7 +97,7 @@ public class JDBCLoginService extends AbstractLoginService
     protected void doStart() throws Exception
     {
         Properties properties = new Properties();
-        Resource resource = Resource.newResource(_config);
+        Resource resource = Resource.newResource(_config, this);
         try (InputStream in = resource.newInputStream())
         {
             properties.load(in);

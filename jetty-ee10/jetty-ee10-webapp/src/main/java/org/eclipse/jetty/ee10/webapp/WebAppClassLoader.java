@@ -41,6 +41,8 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -80,7 +82,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
 
-    private Resource.Mount _mountedExtraClassPath;
+    // TODO make this dumpable and more elegant
+    private final ContainerLifeCycle _mountContainer = new ContainerLifeCycle();
 
     /**
      * The Context in which the classloader operates.
@@ -172,6 +175,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             : (Thread.currentThread().getContextClassLoader() != null ? Thread.currentThread().getContextClassLoader()
             : (WebAppClassLoader.class.getClassLoader() != null ? WebAppClassLoader.class.getClassLoader()
             : ClassLoader.getSystemClassLoader())));
+        LifeCycle.start(_mountContainer);
         _parent = getParent();
         _context = context;
         if (_parent == null)
@@ -272,9 +276,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return;
 
         List<URI> uris = Resource.split(classPath);
-        _mountedExtraClassPath = Resource.mountCollection(uris);
-
-        ResourceCollection rc = (ResourceCollection)_mountedExtraClassPath.root();
+        ResourceCollection rc = Resource.newResource(uris, _mountContainer);
         for (Resource resource : rc.getResources())
         {
             addClassPath(resource);
@@ -655,7 +657,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public void close() throws IOException
     {
         super.close();
-        IO.close(_mountedExtraClassPath);
+        LifeCycle.stop(_mountContainer);
     }
 
     @Override

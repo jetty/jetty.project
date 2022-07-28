@@ -1245,9 +1245,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setExtraClasspath(String extraClasspath)
     {
         List<URI> uris = Resource.split(extraClasspath);
-        Resource.Mount mount = Resource.mountCollection(uris);
-        addBean(mount); // let doStop() cleanup mount
-        setExtraClasspath((ResourceCollection)mount.root());
+        setExtraClasspath(Resource.newResource(uris, this));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)

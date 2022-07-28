@@ -29,9 +29,11 @@ public class FileDestroyable implements Destroyable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileDestroyable.class);
     final List<Path> _paths = new ArrayList<Path>();
+    private final ContainerLifeCycle mountContainer = new ContainerLifeCycle();
 
     public FileDestroyable()
     {
+        LifeCycle.start(mountContainer);
     }
 
     public FileDestroyable(String file) throws IOException
@@ -61,7 +63,7 @@ public class FileDestroyable implements Destroyable
 
     public void removeFile(String file) throws IOException
     {
-        _paths.remove(Resource.newResource(file).getPath());
+        _paths.remove(Resource.newResource(file, mountContainer).getPath());
     }
 
     public void removeFile(Path path)
@@ -72,6 +74,7 @@ public class FileDestroyable implements Destroyable
     @Override
     public void destroy()
     {
+        LifeCycle.stop(mountContainer);
         for (Path path : _paths)
         {
             if (Files.exists(path))

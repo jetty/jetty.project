@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -530,15 +529,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
-
-        // cleanup any Mounts associated with the ContextHandler on stop.
-        // TODO: but what if the context is restarted? how do we remount? do we care?
-        java.util.Collection<Resource.Mount> mounts = getBeans(Resource.Mount.class);
-        mounts.forEach((mount) ->
-        {
-            IO.close(mount);
-            removeBean(mount);
-        });
     }
 
     public boolean checkVirtualHost(Request request)

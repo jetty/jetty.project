@@ -398,7 +398,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            setBaseResource(Resource.newResource(resourceBase));
+            setBaseResource(Resource.newResource(resourceBase, this));
         }
         catch (Exception e)
         {
@@ -414,7 +414,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            _stylesheet = Resource.newResource(stylesheet);
+            _stylesheet = Resource.newResource(stylesheet, this);
             if (!_stylesheet.exists())
             {
                 LOG.warn("unable to find custom stylesheet: {}", stylesheet);

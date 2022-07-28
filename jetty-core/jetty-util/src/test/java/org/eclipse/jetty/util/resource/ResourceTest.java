@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -61,6 +62,14 @@ public class ResourceTest
     private static final boolean DIR = true;
     private static final boolean EXISTS = true;
     private static final List<Closeable> TO_CLOSE = new ArrayList<>();
+
+    @AfterAll
+    public static void afterAll()
+    {
+        TO_CLOSE.forEach(IO::close);
+        TO_CLOSE.clear();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
 
     static class Scenario
     {
@@ -104,7 +113,11 @@ public class ResourceTest
             this.test = url;
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(url);
+            URI uri = Resource.toURI(url);
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+                TO_CLOSE.add(mount);
+            resource = Resource.newResource(uri);
         }
 
         Scenario(URI uri, boolean exists, boolean dir)
@@ -113,6 +126,9 @@ public class ResourceTest
             this.test = uri.toASCIIString();
             this.exists = exists;
             this.dir = dir;
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+                TO_CLOSE.add(mount);
             resource = Resource.newResource(uri);
         }
 
@@ -131,7 +147,11 @@ public class ResourceTest
             this.exists = exists;
             this.dir = dir;
             this.content = content;
-            resource = Resource.newResource(url);
+            URI uri = Resource.toURI(url);
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+                TO_CLOSE.add(mount);
+            resource = Resource.newResource(uri);
         }
 
         @Override
@@ -260,12 +280,6 @@ public class ResourceTest
     }
 
     public WorkDir workDir;
-
-    @AfterAll
-    public static void tearDown()
-    {
-        TO_CLOSE.forEach(IO::close);
-    }
 
     @ParameterizedTest
     @MethodSource("scenarios")

@@ -27,9 +27,12 @@ import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -37,6 +40,18 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class PathResourceTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testNonDefaultFileSystemGetInputStream() throws URISyntaxException, IOException
     {

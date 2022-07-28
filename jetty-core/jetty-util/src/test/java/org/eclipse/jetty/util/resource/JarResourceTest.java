@@ -27,6 +27,10 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -34,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +51,18 @@ public class JarResourceTest
 {
     public WorkDir workDir;
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testJarFile()
         throws Exception
@@ -53,8 +70,10 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
+        ContainerLifeCycle mountContainer = new ContainerLifeCycle();
         try (Resource.Mount ignore = Resource.mount(uri))
         {
+            mountContainer.start();
             Resource r = Resource.newResource(uri);
 
             Set<String> entries = new HashSet<>(r.list());
@@ -65,13 +84,13 @@ public class JarResourceTest
 
             r.copyTo(extract);
 
-            Resource e = Resource.newResource(extract.toString());
+            Resource e = Resource.newResource(extract.toString(), mountContainer);
 
             entries = new HashSet<>(e.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
             s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
-            r = Resource.newResource(s);
+            r = Resource.newResource(s, mountContainer);
 
             entries = new HashSet<>(r.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
@@ -81,10 +100,14 @@ public class JarResourceTest
 
             r.copyTo(extract2);
 
-            e = Resource.newResource(extract2.toString());
+            e = Resource.newResource(extract2.toString(), mountContainer);
 
             entries = new HashSet<>(e.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
+        }
+        finally
+        {
+            mountContainer.stop();
         }
     }
 
@@ -120,6 +143,8 @@ public class JarResourceTest
     @Test
     public void testDumpAndSweep(@TempDir Path tempDir) throws Exception
     {
+        FileSystemPool.INSTANCE.mounts().forEach(IO::close);
+        assertTrue(FileSystemPool.INSTANCE.mounts().isEmpty());
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";

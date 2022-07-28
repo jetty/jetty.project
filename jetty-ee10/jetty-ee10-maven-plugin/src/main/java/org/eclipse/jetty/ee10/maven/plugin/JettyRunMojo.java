@@ -219,7 +219,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         if (webApp.getDescriptor() != null)
         {
-            Resource r = Resource.newResource(webApp.getDescriptor());
+            Resource r = Resource.newResource(webApp.getDescriptor(), embedder);
             scanner.addFile(r.getPath());
         }
 

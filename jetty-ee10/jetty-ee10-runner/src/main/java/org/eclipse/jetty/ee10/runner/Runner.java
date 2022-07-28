@@ -198,26 +198,29 @@ public class Runner
      */
     public void configure(String[] args) throws Exception
     {
+        if (_server == null)
+            _server = new Server();
+
         // handle classpath bits first so we can initialize the log mechanism.
         for (int i = 0; i < args.length; i++)
         {
             if ("--lib".equals(args[i]))
             {
-                Resource lib = Resource.newResource(args[++i]);
+                Resource lib = Resource.newResource(args[++i], _server);
                 if (!lib.exists() || !lib.isDirectory())
                     usage("No such lib directory " + lib);
                 _classpath.addJars(lib);
             }
             else if ("--jar".equals(args[i]))
             {
-                Resource jar = Resource.newResource(args[++i]);
+                Resource jar = Resource.newResource(args[++i], _server);
                 if (!jar.exists() || jar.isDirectory())
                     usage("No such jar " + jar);
                 _classpath.addPath(jar);
             }
             else if ("--classes".equals(args[i]))
             {
-                Resource classes = Resource.newResource(args[++i]);
+                Resource classes = Resource.newResource(args[++i], _server);
                 if (!classes.exists() || !classes.isDirectory())
                     usage("No such classes directory " + classes);
                 _classpath.addPath(classes);
@@ -316,18 +319,12 @@ public class Runner
 
                     if (!runnerServerInitialized) // log handlers not registered, server maybe not created, etc
                     {
-                        if (_server == null) // server not initialized yet
-                        {
-                            // build the server
-                            _server = new Server();
-                        }
-
                         //apply jetty config files if there are any
                         if (_configFiles != null)
                         {
                             for (String cfg : _configFiles)
                             {
-                                Resource resource = Resource.newResource(cfg);
+                                Resource resource = Resource.newResource(cfg, _server);
                                 XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
                                 xmlConfiguration.configure(_server);
                             }
@@ -417,7 +414,7 @@ public class Runner
                     }
 
                     // Create a context
-                    Resource ctx = Resource.newResource(args[i]);
+                    Resource ctx = Resource.newResource(args[i], _server);
                     if (!ctx.exists())
                         usage("Context '" + ctx + "' does not exist");
 

@@ -324,7 +324,7 @@ public class AttributeNormalizerTest
                 .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
-            Resource webresource = Resource.newResource(war);
+            Resource webresource = Resource.newResource(war, null);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 

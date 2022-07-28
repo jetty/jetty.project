@@ -333,7 +333,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (war != null)
                 {
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = Resource.newResource(war).getPath();
+                    Path warfile = Resource.newResource(war, context).getPath();
                     if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
                         Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
@@ -449,9 +449,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfClasses.copyTo(webInfClassesDir.toPath());
             }
 
-            webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath());
+            webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath(), context);
 
-            Resource rc = Resource.of(webInf, webApp);
+            Resource rc = Resource.newResource(webInf, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);

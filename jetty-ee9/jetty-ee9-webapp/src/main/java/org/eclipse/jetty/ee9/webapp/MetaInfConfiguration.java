@@ -333,7 +333,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            context.setBaseResource(Resource.of(collection));
+            context.setBaseResource(Resource.newResource(collection));
         }
     }
 

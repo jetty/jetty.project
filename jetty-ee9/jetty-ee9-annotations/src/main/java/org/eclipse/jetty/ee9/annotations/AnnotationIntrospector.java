@@ -172,7 +172,7 @@ public class AnnotationIntrospector
                     return true; //no descriptor, can't be metadata-complete
                 try
                 {
-                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
+                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation, _context)));
                 }
                 catch (IOException e)
                 {

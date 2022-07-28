@@ -44,6 +44,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -54,6 +55,11 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,41 +118,24 @@ public abstract class Resource implements ResourceFactory
      * @param uris collection of URIs to mount into a {@code ResourceCollection}
      * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
      */
-    public static Resource.Mount mountCollection(Collection<URI> uris)
+    public static ResourceCollection newResource(Collection<URI> uris, Container mountContainer)
     {
         List<Resource> resources = new ArrayList<>();
-        List<Resource.Mount> mounts = new ArrayList<>();
 
-        try
+        // track URIs that have been seen, to avoid adding duplicates.
+        Set<URI> seenUris = new HashSet<>();
+
+        for (URI uri : uris)
         {
-            // track URIs that have been seen, to avoid adding duplicates.
-            Set<URI> seenUris = new HashSet<>();
-
-            for (URI uri : uris)
-            {
-                if (seenUris.contains(uri))
-                    continue; // skip this one
-                Resource.Mount mount = Resource.mountIfNeeded(uri);
-                if (mount != null)
-                {
-                    mounts.add(mount);
-                    resources.add(mount.root()); // use mounted resource that has Path with proper FileSystem reference in it.
-                }
-                else
-                {
-                    resources.add(Resource.newResource(uri));
-                }
-                seenUris.add(uri);
-            }
-
-            return new ResourceCollection.Mount(resources, mounts);
+            if (seenUris.contains(uri))
+                continue; // skip this one
+            seenUris.add(uri);
+            Mount mount = mountIfNeeded(uri);
+            Mounts.add(mountContainer, mount, uri);
+            resources.add(Resource.newResource(uri));
         }
-        catch (Throwable t)
-        {
-            // can't create ResourceCollection.Mount, so let's unmount and rethrow.
-            mounts.forEach(IO::close);
-            throw t;
-        }
+
+        return new ResourceCollection(resources);
     }
 
     /**
@@ -224,7 +213,7 @@ public abstract class Resource implements ResourceFactory
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(List<Resource> resources)
+    public static ResourceCollection newResource(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
             throw new IllegalArgumentException("No resources");
@@ -238,7 +227,7 @@ public abstract class Resource implements ResourceFactory
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(Resource... resources)
+    public static ResourceCollection newResource(Resource... resources)
     {
         if (resources == null || resources.length == 0)
             throw new IllegalArgumentException("No resources");
@@ -426,10 +415,27 @@ public abstract class Resource implements ResourceFactory
      * @param resource A URL or filename.
      * @return A Resource object.
      * @throws IOException Problem accessing URI
+     * @deprecated use {@link #newResource(String, Container)} to avoid leaking mounted resources.
      */
+    @Deprecated
     public static Resource newResource(String resource) throws IOException
     {
-        return newResource(toURI(resource));
+        return newResource(resource, null);
+    }
+
+    /**
+     * Construct a resource from a string.
+     *
+     * @param resource A URL or filename.
+     * @return A Resource object.
+     * @throws IOException Problem accessing URI
+     */
+    public static Resource newResource(String resource, Container mountContainer) throws IOException
+    {
+        URI uri = toURI(resource);
+        Mount mount = mountIfNeeded(uri);
+        Mounts.add(mountContainer, mount, uri);
+        return newResource(uri);
     }
 
     /**
@@ -1433,5 +1439,54 @@ public abstract class Resource implements ResourceFactory
          * @return the resource.
          */
         Resource root();
+    }
+
+    /**
+     * <p>A {@link LifeCycle} that holds a collection of {@link Mount}s, that are all closed
+     * when it is stopped.</p>
+     */
+    private static class Mounts extends AbstractLifeCycle implements Dumpable
+    {
+        private final List<Mount> _mounts = new CopyOnWriteArrayList<>();
+
+        public void add(Mount mount)
+        {
+            _mounts.add(mount);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            for (Mount mount : _mounts)
+                IO.close(mount);
+            _mounts.clear();
+            super.doStop();
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
+        }
+
+        public static void add(Container mountContainer, Mount mount, URI uri)
+        {
+            if (mount != null)
+            {
+                if (mountContainer == null)
+                    LOG.warn("Leaked mount {} for {}", mount, uri);
+                else
+                {
+                    Mounts mounts = mountContainer.getBean(Mounts.class);
+                    if (mounts == null)
+                    {
+                        mounts = new Mounts();
+                        LifeCycle.start(mounts);
+                        mountContainer.addBean(mounts, true);
+                    }
+                    mounts.add(mount);
+                }
+            }
+        }
     }
 }
