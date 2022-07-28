@@ -247,6 +247,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource qstart;
         if (attr == null || StringUtil.isBlank(attr.toString()))
         {
+            // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/quickstart-web.xml
+            // TODO: should also never return from a META-INF/versions/#/WEB-INF/quickstart-web.xml location
             qstart = webInf.resolve("quickstart-web.xml");
         }
         else

@@ -124,24 +124,26 @@ public class JarResourceTest
         Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        Resource.Mount mount = Resource.mount(uri);
-        Resource resource = mount.root();
-        assertTrue(resource.exists());
+        try (Resource.Mount mount = Resource.mount(uri))
+        {
+            Resource resource = mount.root();
+            assertTrue(resource.exists());
 
-        String dump = FileSystemPool.INSTANCE.dump();
-        assertThat(dump, containsString("FileSystemPool"));
-        assertThat(dump, containsString("mounts size=1"));
-        assertThat(dump, containsString("Mount uri=jar:file:/"));
-        assertThat(dump, containsString("test.zip!/subdir"));
+            String dump = FileSystemPool.INSTANCE.dump();
+            assertThat(dump, containsString("FileSystemPool"));
+            assertThat(dump, containsString("mounts size=1"));
+            assertThat(dump, containsString("Mount[uri=jar:file:/"));
+            assertThat(dump, containsString("test.zip!/subdir"));
 
-        Files.delete(testZip);
-        FileSystemPool.INSTANCE.sweep();
+            Files.delete(testZip);
+            FileSystemPool.INSTANCE.sweep();
 
-        dump = FileSystemPool.INSTANCE.dump();
-        assertThat(dump, containsString("FileSystemPool"));
-        assertThat(dump, containsString("mounts size=0"));
+            dump = FileSystemPool.INSTANCE.dump();
+            assertThat(dump, containsString("FileSystemPool"));
+            assertThat(dump, containsString("mounts size=0"));
 
-        assertThrows(ClosedFileSystemException.class, resource::exists);
+            assertThrows(ClosedFileSystemException.class, resource::exists);
+        }
     }
 
     @Test

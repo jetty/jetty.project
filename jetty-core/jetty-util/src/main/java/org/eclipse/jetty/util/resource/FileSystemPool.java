@@ -196,15 +196,7 @@ public class FileSystemPool implements Dumpable
 
     static URI containerUri(URI uri)
     {
-        String scheme = uri.getScheme();
-        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
-            return null;
-
-        String spec = uri.getRawSchemeSpecificPart();
-        int sep = spec.indexOf("!/");
-        if (sep != -1)
-            spec = spec.substring(0, sep);
-        return URI.create(spec);
+        return Resource.unwrapContainer(uri);
     }
 
     private static class Bucket
@@ -266,7 +258,7 @@ public class FileSystemPool implements Dumpable
         private final URI uri;
         private final Resource root;
 
-        private Mount(URI uri) throws IOException
+        private Mount(URI uri)
         {
             this.uri = uri;
             this.root = Resource.newResource(uri);
@@ -291,7 +283,7 @@ public class FileSystemPool implements Dumpable
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + " uri=" + uri;
+            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), uri, root);
         }
     }
 }

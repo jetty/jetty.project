@@ -26,7 +26,6 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
@@ -37,13 +36,16 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
@@ -78,7 +80,57 @@ public abstract class Resource implements ResourceFactory
         .build();
 
     /**
+     * <p>Create a ResourceCollection from an unknown set of URIs.</p>
+     *
+     * <p>
+     *     Use this if you are working with URIs from an unknown source,
+     *     such as a user configuration.  As some of the entries
+     *     might need mounting, but we cannot determine that yet.
+     * </p>
+     *
+     * @param uris collection of URIs to mount into a {@code ResourceCollection}
+     * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
+     */
+    public static Resource.Mount mountCollection(Collection<URI> uris)
+    {
+        List<Resource> resources = new ArrayList<>();
+        List<Resource.Mount> mounts = new ArrayList<>();
+
+        try
+        {
+            // track URIs that have been seen, to avoid adding duplicates.
+            Set<URI> seenUris = new HashSet<>();
+
+            for (URI uri : uris)
+            {
+                if (seenUris.contains(uri))
+                    continue; // skip this one
+                Resource.Mount mount = Resource.mountIfNeeded(uri);
+                if (mount != null)
+                {
+                    mounts.add(mount);
+                    resources.add(mount.root()); // use mounted resource that has Path with proper FileSystem reference in it.
+                }
+                else
+                {
+                    resources.add(Resource.newResource(uri));
+                }
+                seenUris.add(uri);
+            }
+
+            return new ResourceCollection.Mount(resources, mounts);
+        }
+        catch (Throwable t)
+        {
+            // can't create ResourceCollection.Mount, so let's unmount and rethrow.
+            mounts.forEach(IO::close);
+            throw t;
+        }
+    }
+
+    /**
      * <p>Mount a URI if it is needed.</p>
+     *
      * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
      * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
      * they no longer require any resources from a mounted resource.
@@ -87,11 +139,21 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountIfNeeded(URI uri)
     {
-        if (uri == null || uri.getScheme() == null)
+        if (uri == null)
+            return null;
+        String scheme = uri.getScheme();
+        if (scheme == null)
+            return null;
+        if (!isArchive(uri))
             return null;
         try
         {
-            return (uri.getScheme().equalsIgnoreCase("jar")) ? FileSystemPool.INSTANCE.mount(uri) : null;
+            if (scheme.equalsIgnoreCase("jar"))
+            {
+                return FileSystemPool.INSTANCE.mount(uri);
+            }
+            // TODO: review contract, should this be null, or an empty mount?
+            return null;
         }
         catch (IOException ioe)
         {
@@ -109,6 +171,8 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mount(URI uri) throws IOException
     {
+        if (!isArchive(uri))
+            throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
         return FileSystemPool.INSTANCE.mount(uri);
@@ -122,27 +186,179 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountJar(Path path) throws IOException
     {
+        if (!isArchive(path))
+            throw new IllegalArgumentException("Path is not a Java Archive: " + path);
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("not an allowed path: " + path);
-        URI jarUri = URI.create(toJarRoot(pathUri.toString()));
+            throw new IllegalArgumentException("Not an allowed path: " + path);
+        URI jarUri = toJarFileUri(pathUri);
+        if (jarUri == null)
+            throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
     }
 
-    public static String toJarRoot(String jarFile)
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(List<Resource> resources)
     {
-        return "jar:" + jarFile + "!/";
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(resources);
     }
 
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(Resource... resources)
+    {
+        if (resources == null || resources.length == 0)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(List.of(resources));
+    }
+
+    /**
+     * Test if Path is a Java Archive (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     *
+     * @param path the path to test
+     * @return true if path is a {@link Files#isRegularFile(Path, LinkOption...)} and name ends with {@code .jar}, {@code .war}, or {@code .zip}
+     */
+    public static boolean isArchive(Path path)
+    {
+        if (path == null)
+            return false;
+        if (!Files.isRegularFile(path))
+            return false;
+        String filename = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
+        return (filename.endsWith(".jar") || filename.endsWith(".war") || filename.endsWith(".zip"));
+    }
+
+    /**
+     * Test if URI is a Java Archive. (ends with {@code .jar}, {@code .war}, or {@code .zip}).
+     *
+     * @param uri the URI to test
+     * @return true if the URI has a path that seems to point to a ({@code .jar}, {@code .war}, or {@code .zip}).
+     */
+    public static boolean isArchive(URI uri)
+    {
+        if (uri == null)
+            return false;
+        if (uri.getScheme() == null)
+            return false;
+        String path = uri.getPath();
+        int idxEnd = path == null ? -1 : path.length();
+        if (uri.getScheme().equalsIgnoreCase("jar"))
+        {
+            String ssp = uri.getRawSchemeSpecificPart();
+            path = URI.create(ssp).getPath();
+            idxEnd = path.length();
+            // look for `!/` split
+            int jarEnd = path.indexOf("!/");
+            if (jarEnd >= 0)
+                idxEnd = jarEnd;
+        }
+        if (path == null)
+            return false;
+        int idxLastSlash = path.lastIndexOf('/', idxEnd);
+        if (idxLastSlash < 0)
+            return false; // no last slash, can't possibly be a valid jar/war/zip
+        // look for filename suffix
+        int idxSuffix = path.lastIndexOf('.', idxEnd);
+        if (idxSuffix < 0)
+            return false; // no suffix found, can't possibly be a jar/war/zip
+        if (idxSuffix < idxLastSlash)
+            return false; // last dot is before last slash, eg ("/path.to/something")
+        String suffix = path.substring(idxSuffix, idxEnd).toLowerCase(Locale.ENGLISH);
+        return suffix.equals(".jar") || suffix.equals(".war") || suffix.equals(".zip");
+    }
+
+    /**
+     * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
+     *
+     * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
+     *
+     * @param uri the URI to mutate to a {@code jar:file:...} URI.
+     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
+     * @see #isArchive(URI)
+     */
+    public static URI toJarFileUri(URI uri)
+    {
+        Objects.requireNonNull(uri, "URI");
+        String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
+
+        if (!isArchive(uri))
+            return null;
+
+        boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
+
+        if (scheme.equalsIgnoreCase("jar"))
+        {
+            if (uri.getRawSchemeSpecificPart().startsWith("file:"))
+            {
+                // Looking good as a jar:file: URI
+                if (hasInternalReference)
+                    return uri; // is all good, no changes needed.
+                else
+                    // add the internal reference indicator to the root of the archive
+                    return URI.create(uri.toASCIIString() + "!/");
+            }
+        }
+        else if (scheme.equalsIgnoreCase("file"))
+        {
+            String rawUri = uri.toASCIIString();
+            if (hasInternalReference)
+                return URI.create("jar:" + rawUri);
+            else
+                return URI.create("jar:" + rawUri + "!/");
+        }
+
+        // shouldn't be possible to reach this point
+        throw new IllegalArgumentException("Cannot make %s into `jar:file:` URI".formatted(uri));
+    }
+
+    // TODO: will be removed in MultiReleaseJarFile PR, as AnnotationParser is the only thing using this,
+    // and it doesn't need to recreate the URI that it will already have.
     public static String toJarPath(String jarFile, String pathInJar)
     {
         return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
     }
 
     /**
+     * Unwrap a URI to expose its container path reference.
+     *
+     * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
+     *
+     * @param uri the input URI
+     * @return the container String if a {@code jar} scheme, or just the URI untouched.
+     */
+    public static URI unwrapContainer(URI uri)
+    {
+        Objects.requireNonNull(uri);
+
+        String scheme = uri.getScheme();
+        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
+            return uri;
+
+        String spec = uri.getRawSchemeSpecificPart();
+        int sep = spec.indexOf("!/");
+        if (sep != -1)
+            spec = spec.substring(0, sep);
+        return URI.create(spec);
+    }
+
+    /**
      * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     *
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     *                 representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
      */
     public static URI toURI(String resource)
@@ -348,6 +564,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Return true if the Resource r is contained in the Resource containingResource, either because
      * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
+     *
      * @param r the contained resource
      * @param containingResource the containing resource
      * @return true if the Resource is contained, false otherwise
@@ -360,6 +577,7 @@ public abstract class Resource implements ResourceFactory
 
     /**
      * Return the Path corresponding to this resource.
+     *
      * @return the path.
      */
     public abstract Path getPath();
@@ -367,6 +585,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Return true if this resource is contained in the Resource r, either because
      * r is a folder or a jar file or any form of resource capable of containing other resources.
+     *
      * @param r the containing resource
      * @return true if this Resource is contained, false otherwise
      * @throws IOException Problem accessing resource
@@ -377,6 +596,7 @@ public abstract class Resource implements ResourceFactory
      * Return true if the passed Resource represents the same resource as the Resource.
      * For many resource types, this is equivalent to {@link #equals(Object)}, however
      * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
+     *
      * @param resource The resource to check
      * @return true if the passed resource represents the same resource.
      */
@@ -388,6 +608,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:
      * {@link #getPath()} and {@link LinkOption#NOFOLLOW_LINKS}.
+     *
      * @return true if the represented resource exists.
      */
     public boolean exists()
@@ -398,6 +619,7 @@ public abstract class Resource implements ResourceFactory
     /**
      * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return true if the represented resource is a container/directory.
      */
     public boolean isDirectory()
@@ -409,6 +631,7 @@ public abstract class Resource implements ResourceFactory
      * Time resource was last modified.
      * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
      * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     *
      * @return the last modified time as milliseconds since unix epoch or
      * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
      */
@@ -430,6 +653,7 @@ public abstract class Resource implements ResourceFactory
      * Length of the resource.
      * Equivalent to {@link Files#size(Path)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
      */
     public long length()
@@ -495,6 +719,7 @@ public abstract class Resource implements ResourceFactory
      * Deletes the given resource
      * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
      * {@link #getPath()}.
+     *
      * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
      * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
      */
@@ -516,6 +741,7 @@ public abstract class Resource implements ResourceFactory
      * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
      * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
      * on the {@code Path} returned by {@code move()}.
+     *
      * @param dest the destination name for the resource
      * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
      */
@@ -544,7 +770,7 @@ public abstract class Resource implements ResourceFactory
      * {@link IOException} was thrown while building the filename list.
      * Note: The resource names are not URL encoded.
      */
-    public List<String> list()
+    public List<String> list() // TODO: should return Path's
     {
         try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
         {
@@ -593,7 +819,9 @@ public abstract class Resource implements ResourceFactory
         // where default resolve behavior would be to treat
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
+        {
             subUriPath = subUriPath.substring(1);
+        }
 
         URI uri = getURI();
         URI resolvedUri;
@@ -660,7 +888,7 @@ public abstract class Resource implements ResourceFactory
      * @return String of HTML
      * @throws IOException on failure to generate a list.
      */
-    public String getListHTML(String base, boolean parent, String query) throws IOException
+    public String getListHTML(String base, boolean parent, String query) throws IOException // TODO: move to helper class
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
@@ -1099,96 +1327,72 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Parse a list of String delimited resources and
-     * return the List of Resources instances it represents.
+     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
      * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
+     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
      * </p>
      *
-     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @return the list of resources parsed from input string.
+     * @param str the input string of references
+     * @see #toJarFileUri(URI)
      */
-    public static List<Resource> fromList(String resources, boolean globDirs) throws IOException
+    public static List<URI> split(String str)
     {
-        return fromList(resources, globDirs, Resource::newResource);
-    }
+        List<URI> uris = new ArrayList<>();
 
-    /**
-     * Parse a delimited String of resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @param globDirs true to return directories in addition to files at the level of the glob
-     * @param resourceFactory the ResourceFactory used to create new Resource references
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromList(String resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
-    {
-        if (StringUtil.isBlank(resources))
-        {
-            return Collections.emptyList();
-        }
-
-        List<Resource> returnedResources = new ArrayList<>();
-
-        StringTokenizer tokenizer = new StringTokenizer(resources, StringUtil.DEFAULT_DELIMS);
+        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
         while (tokenizer.hasMoreTokens())
         {
-            String token = tokenizer.nextToken().trim();
-
-            // Is this a glob reference?
-            if (token.endsWith("/*") || token.endsWith("\\*"))
+            String reference = tokenizer.nextToken();
+            try
             {
-                String dir = token.substring(0, token.length() - 2);
-                // Use directory
-                Resource dirResource = resourceFactory.resolve(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
+                // Is this a glob reference?
+                if (reference.endsWith("/*") || reference.endsWith("\\*"))
                 {
-                    // To obtain the list of entries
-                    List<String> entries = dirResource.list();
-                    if (entries != null)
+                    String dir = reference.substring(0, reference.length() - 2);
+                    Path pathDir = Paths.get(dir);
+                    // Use directory
+                    if (Files.exists(pathDir) && Files.isDirectory(pathDir))
                     {
-                        entries.sort(Comparator.naturalOrder());
-                        for (String entry : entries)
+                        // To obtain the list of entries
+                        try (Stream<Path> listStream = Files.list(pathDir))
                         {
-                            try
-                            {
-                                Resource resource = dirResource.resolve(entry);
-                                if (!resource.isDirectory())
-                                {
-                                    returnedResources.add(resource);
-                                }
-                                else if (globDirs)
-                                {
-                                    returnedResources.add(resource);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                LOG.warn("Bad glob [{}] entry: {}", token, entry, ex);
-                            }
+                            listStream
+                                .filter(Files::isRegularFile)
+                                .filter(Resource::isArchive)
+                                .sorted(Comparator.naturalOrder())
+                                .forEach(path -> uris.add(toJarFileUri(path.toUri())));
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
                         }
                     }
                 }
+                else
+                {
+                    // Simple reference
+                    URI refUri = toURI(reference);
+                    // Is this a Java Archive that can be mounted?
+                    URI jarFileUri = toJarFileUri(refUri);
+                    if (jarFileUri != null)
+                        // add as mountable URI
+                        uris.add(jarFileUri);
+                    else
+                        // add as normal URI
+                        uris.add(refUri);
+
+                }
             }
-            else
+            catch (Exception e)
             {
-                // Simple reference, add as-is
-                returnedResources.add(resourceFactory.resolve(token));
+                LOG.warn("Invalid Resource Reference: " + reference);
+                throw e;
             }
         }
-
-        return returnedResources;
+        return uris;
     }
 
     /**
@@ -1196,6 +1400,7 @@ public abstract class Resource implements ResourceFactory
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
+     *
      * @see #mount(URI)
      * @see #mountJar(Path)
      */
@@ -1203,9 +1408,9 @@ public abstract class Resource implements ResourceFactory
     {
         /**
          * Return the root {@link Resource} made available by this mount.
+         *
          * @return the resource.
-         * @throws IOException Problem accessing resource
          */
-        Resource root() throws IOException;
+        Resource root();
     }
 }

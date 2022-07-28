@@ -56,7 +56,7 @@ public class ProxyWebAppTest
         // So, open up server classes here, for purposes of this testcase.
         webapp.getServerClassMatcher().add("-org.eclipse.jetty.ee10.proxy.");
         webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
-        webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("classes").toString());
+        webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("test-classes").toString());
         server.setHandler(webapp);
 
         server.start();

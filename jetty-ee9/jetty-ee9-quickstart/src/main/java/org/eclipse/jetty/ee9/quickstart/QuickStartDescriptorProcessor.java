@@ -38,7 +38,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -266,6 +265,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         context.addServletContainerInitializer(sciHolder);
     }
 
+    @SuppressWarnings("unchecked")
     public void visitMetaInfResource(WebAppContext context, Resource dir)
     {
         Collection<Resource> metaInfResources = (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
@@ -275,14 +275,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             context.setAttribute(MetaInfConfiguration.METAINF_RESOURCES, metaInfResources);
         }
         metaInfResources.add(dir);
+
         //also add to base resource of webapp
-        Resource[] collection = new Resource[metaInfResources.size() + 1];
-        int i = 0;
-        collection[i++] = context.getBaseResource();
-        for (Resource resource : metaInfResources)
-        {
-            collection[i++] = resource;
-        }
-        context.setBaseResource(new ResourceCollection(collection));
+        List<Resource> collection = new ArrayList<>();
+        collection.add(context.getBaseResource());
+        collection.addAll(metaInfResources);
+        context.setBaseResource(Resource.of(collection));
     }
 }

@@ -17,8 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
@@ -33,12 +35,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -78,6 +80,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
 
+    private Resource.Mount _mountedExtraClassPath;
+
     /**
      * The Context in which the classloader operates.
      */
@@ -107,7 +111,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        List<Resource> getExtraClasspath();
+        ResourceCollection getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -189,7 +193,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         if (context.getExtraClasspath() != null)
         {
-            for (Resource resource : context.getExtraClasspath())
+            for (Resource resource : context.getExtraClasspath().getResources())
             {
                 addClassPath(resource);
             }
@@ -267,7 +271,11 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        for (Resource resource : Resource.fromList(classPath, false, _context::newResource))
+        List<URI> uris = Resource.split(classPath);
+        _mountedExtraClassPath = Resource.mountCollection(uris);
+
+        ResourceCollection rc = (ResourceCollection)_mountedExtraClassPath.root();
+        for (Resource resource : rc.getResources())
         {
             addClassPath(resource);
         }
@@ -275,11 +283,19 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     /**
      * @param file Checks if this file type can be added to the classpath.
+     * TODO: move to FileID in later PR
      */
+
     private boolean isFileSupported(String file)
     {
         int dot = file.lastIndexOf('.');
-        return dot != -1 && _extensions.contains(file.substring(dot));
+        return dot != -1 && _extensions.contains(file.substring(dot).toLowerCase(Locale.ENGLISH));
+    }
+
+    // TODO: move to FileID in later PR
+    private boolean isFileSupported(Path path)
+    {
+        return isFileSupported(path.getFileName().toString());
     }
 
     /**
@@ -292,31 +308,34 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (lib.exists() && lib.isDirectory())
         {
-            List<String> entries = lib.list();
-            if (entries != null)
-            {
-                entries.sort(Comparator.naturalOrder());
+            Path dir = lib.getPath();
 
-                for (String entry : entries)
+            try (Stream<Path> streamEntries = Files.list(dir))
+            {
+                List<Path> jars = streamEntries
+                    .filter(Files::isRegularFile)
+                    .filter(this::isFileSupported)
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
+
+                for (Path jar: jars)
                 {
                     try
                     {
-                        Resource resource = lib.resolve(entry);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("addJar - {}", resource);
-                        String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
-                        // don't check if this is a directory (prevents use of symlinks), see Bug 353165
-                        if (isFileSupported(fnlc))
-                        {
-                            String jar = URIUtil.encodeSpecific(resource.toString(), ",;");
-                            addClassPath(jar);
-                        }
+                            LOG.debug("addJar - {}", jar);
+                        URI jarUri = Resource.toJarFileUri(jar.toUri());
+                        addClassPath(jarUri.toASCIIString());
                     }
                     catch (Exception ex)
                     {
-                        LOG.warn("Unable to load WEB-INF/lib JAR {}", entry, ex);
+                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
                     }
                 }
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
             }
         }
     }
@@ -636,6 +655,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public void close() throws IOException
     {
         super.close();
+        IO.close(_mountedExtraClassPath);
     }
 
     @Override
