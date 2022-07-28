@@ -179,6 +179,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (_mountedResources != null)
         {
             _mountedResources.forEach(IO::close);
+            _mountedResources.clear();
         }
         super.deconfigure(context);
     }

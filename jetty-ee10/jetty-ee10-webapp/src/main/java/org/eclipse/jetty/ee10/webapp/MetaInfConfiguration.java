@@ -179,6 +179,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (_mountedResources != null)
         {
             _mountedResources.forEach(IO::close);
+            _mountedResources.clear();
         }
         super.deconfigure(context);
     }
@@ -397,6 +398,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param scanTypes the type of things to look for in the jars
      * @throws Exception if unable to scan the jars
      */
+    @SuppressWarnings("unchecked")
     public void scanJars(final WebAppContext context, Collection<Resource> jars, boolean useCaches, List<String> scanTypes)
         throws Exception
     {
@@ -744,9 +746,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Resource webInfClasses = findWebInfClassesDir(context);
         if (webInfClasses != null)
             classDirs.add(webInfClasses);
-        List<Resource> extraClassDirs = findExtraClasspathDirs(context);
-        if (extraClassDirs != null)
-            classDirs.addAll(extraClassDirs);
+        classDirs.addAll(findExtraClasspathDirs(context));
 
         return classDirs;
     }
@@ -867,13 +867,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to look for extra classpaths in
      * @return the list of Resources to the extra classpath
-     * @throws Exception if unable to resolve the extra classpath resources
      */
     protected List<Resource> findExtraClasspathDirs(WebAppContext context)
-        throws Exception
     {
         if (context == null || context.getExtraClasspath() == null)
-            return null;
+            return List.of();
 
         return context.getExtraClasspath()
             .getResources()
