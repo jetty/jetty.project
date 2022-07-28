@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -477,7 +478,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.mount(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
                 if (_mountedResources == null)
                     _mountedResources = new ArrayList<>();
@@ -553,7 +554,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource(uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+                webFrag = Resource.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
             if (cache != null)
@@ -702,7 +703,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/"));
+        Resource.Mount mount = Resource.mount(URIUtil.uriJarPrefix(uri, "!/"));
         if (_mountedResources == null)
             _mountedResources = new ArrayList<>();
         _mountedResources.add(mount);
@@ -879,20 +880,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
-    }
-
-    private URI uriJarPrefix(URI uri, String suffix)
-    {
-        // TODO: Bring to URIUtil
-        String uriString = uri.toString();
-        if (uriString.startsWith("jar:"))
-        {
-            return URI.create(uriString + suffix);
-        }
-        else
-        {
-            return URI.create("jar:" + uriString + suffix);
-        }
     }
 
     private boolean isFileSupported(Resource resource)

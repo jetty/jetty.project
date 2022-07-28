@@ -73,13 +73,14 @@ public class AnnotationParser
      * Map of classnames scanned and the first location from which scan occurred
      */
     protected Map<String, URI> _parsedClassNames = new ConcurrentHashMap<>();
-    private final int _javaPlatform;
     private final int _asmVersion;
 
     /**
      * Determine the runtime version of asm.
      *
      * @return the {@link org.objectweb.asm.Opcodes} ASM value matching the runtime version of asm.
+     * TODO: can this be a jetty-util utility method to allow reuse across ee#?
+     * TODO: we should probably keep ASM centralized, as it's not EE specific, but Java Runtime specific behavior to keep up to date
      */
     private static int asmVersion()
     {
@@ -532,21 +533,10 @@ public class AnnotationParser
     }
 
     /**
-     * @param javaPlatform The target java version or 0 for the current runtime.
+     * @param asmVersion The target asm version or 0 for the internal version.
      */
-    public AnnotationParser(int javaPlatform)
+    public AnnotationParser(int asmVersion)
     {
-        _asmVersion = ASM_VERSION;
-        if (javaPlatform == 0)
-            javaPlatform = JavaVersion.VERSION.getPlatform();
-        _javaPlatform = javaPlatform;
-    }
-
-    public AnnotationParser(int javaPlatform, int asmVersion)
-    {
-        if (javaPlatform == 0)
-            javaPlatform = JavaVersion.VERSION.getPlatform();
-        _javaPlatform = javaPlatform;
         if (asmVersion == 0)
             asmVersion = ASM_VERSION;
         _asmVersion = asmVersion;
@@ -837,8 +827,8 @@ public class AnnotationParser
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
                  Stream<Path> jarEntryStream = jarFile.stream()
                      .filter(Files::isRegularFile)
-                     .filter(MultiReleaseJarFile::notModuleInfoClass)
-                     .filter(MultiReleaseJarFile::notMetaInfVersions)
+                     .filter(MultiReleaseJarFile::skipModuleInfoClass)
+                     .filter(MultiReleaseJarFile::skipMetaInfVersions)
                      .filter(MultiReleaseJarFile::isClassFile)
             )
             {
@@ -928,14 +918,16 @@ public class AnnotationParser
      *
      * @param name the class file name
      * @return whether the class file name is valid
+     * TODO: does multiple things, we should be able to move this FileID in future PR
      */
     public boolean isValidClassFileName(String name)
     {
-        //no name cannot be valid
+        // no name cannot be valid
         if (name == null || name.length() == 0)
             return false;
 
-        //skip anything that is not a class file
+        // skip anything that is not a class file
+        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
         String lc = name.toLowerCase(Locale.ENGLISH);
         if (!lc.endsWith(".class"))
         {
@@ -944,6 +936,7 @@ public class AnnotationParser
             return false;
         }
 
+        // TODO: exists in MultiReleaseJarFile.notModuleInfoClass(Path)
         if (lc.equals("module-info.class"))
         {
             if (LOG.isDebugEnabled())
@@ -951,7 +944,8 @@ public class AnnotationParser
             return false;
         }
 
-        //skip any classfiles that are not a valid java identifier
+        // skip any classfiles that are not a valid java identifier
+        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
         int c0 = 0;
         int ldir = name.lastIndexOf('/', name.length() - 6);
         c0 = (ldir > -1 ? ldir + 1 : c0);
@@ -970,6 +964,7 @@ public class AnnotationParser
      *
      * @param path the class file path
      * @return whether the class file path is valid
+     * TODO: remove, handled by MultiReleaseJarFile.skipHiddenDirs
      */
     public boolean isValidClassFilePath(String path)
     {
