@@ -77,6 +77,11 @@ public abstract class Resource implements ResourceFactory, Closeable
         return __defaultUseCaches;
     }
 
+    /**
+     * Attempt to resolve the real path of a Resource to potentially remove any symlinks causing the Resource to be an alias.
+     * @param resource the resource to resolve.
+     * @return a new Resource resolved to the real path of the original Resource, or the original resource if it was not an alias.
+     */
     public static Resource resolveAlias(Resource resource)
     {
         if (!resource.isAlias())
