@@ -1300,6 +1300,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         private final ChannelRequest _request;
         private Throwable _completedBy;
+        private boolean _completed = false;
 
         private ChannelCallback(ChannelRequest request)
         {
@@ -1318,6 +1319,10 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (_completed)
+                    return;
+                _completed = true;
+
                 lockedOnComplete();
                 httpChannelState = _request._httpChannel;
                 completeStream = httpChannelState._processState == ProcessState.PROCESSED && httpChannelState._writeState == WriteState.LAST_WRITE_COMPLETED;
@@ -1378,11 +1383,10 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
-                request = _request;
-
-                // Be forgiving of applications that report a failure that is already known by treating as a noop.
-                if (request._httpChannel != null && request._httpChannel._error != null && ExceptionUtil.areAssociated(request._httpChannel._error.getCause(), failure))
+                if (_completed)
                     return;
+                _completed = true;
+
                 lockedOnComplete();
 
                 httpChannelState = _request._httpChannel;
@@ -1392,6 +1396,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Verify whether we can write an error response.
                 writeErrorResponse = !httpChannelState._stream.isCommitted();
                 stream = httpChannelState._stream;
+                request = _request;
 
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
