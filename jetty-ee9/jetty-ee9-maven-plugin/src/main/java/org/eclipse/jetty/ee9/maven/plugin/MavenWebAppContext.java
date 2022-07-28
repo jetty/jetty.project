@@ -39,8 +39,10 @@ import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,7 +232,7 @@ public class MavenWebAppContext extends WebAppContext
             List<URI> uris = Stream.of(resourceBases)
                 .map(URI::create)
                 .toList();
-            setBaseResource(Resource.newResource(uris, this));
+            setBaseResource(ResourceFactory.of((Container)this).newResource(uris));
         }
         catch (Throwable t)
         {
@@ -402,7 +404,7 @@ public class MavenWebAppContext extends WebAppContext
                         while (res == null && (i < _webInfClasses.size()))
                         {
                             String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
-                            res = Resource.newResource(newPath, this);
+                            res = ResourceFactory.of((Container)this).newResource(newPath);
                             if (!res.exists())
                             {
                                 res = null;
@@ -423,7 +425,7 @@ public class MavenWebAppContext extends WebAppContext
                         return null;
                     File jarFile = _webInfJarMap.get(jarName);
                     if (jarFile != null)
-                        return Resource.newResource(jarFile.getPath(), this);
+                        return ResourceFactory.of((Container)this).newResource(jarFile.getPath());
 
                     return null;
                 }

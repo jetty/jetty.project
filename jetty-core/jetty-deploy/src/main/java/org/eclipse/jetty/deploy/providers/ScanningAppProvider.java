@@ -36,9 +36,11 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -371,7 +373,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             List<Resource> resources = new ArrayList<>();
             for (String dir : directories)
             {
-                resources.add(Resource.newResource(dir, this));
+                resources.add(ResourceFactory.of((Container)this).newResource(dir));
             }
             setMonitoredResources(resources);
         }

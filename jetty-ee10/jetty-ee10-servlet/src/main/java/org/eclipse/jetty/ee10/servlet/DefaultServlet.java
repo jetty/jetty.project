@@ -71,6 +71,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +120,7 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);

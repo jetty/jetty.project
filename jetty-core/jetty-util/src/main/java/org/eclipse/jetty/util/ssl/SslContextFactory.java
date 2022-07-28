@@ -78,9 +78,11 @@ import javax.net.ssl.X509TrustManager;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
@@ -717,7 +719,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             try
             {
-                _trustStoreResource = Resource.newResource(trustStorePath, this);
+                _trustStoreResource = ResourceFactory.of((Container)this).newResource(trustStorePath);
             }
             catch (Exception e)
             {

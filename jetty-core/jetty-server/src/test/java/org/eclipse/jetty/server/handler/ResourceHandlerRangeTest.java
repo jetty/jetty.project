@@ -24,7 +24,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -60,7 +61,7 @@ public class ResourceHandlerRangeTest
 
         ContextHandler contextHandler = new ContextHandler();
         ResourceHandler contentResourceHandler = new ResourceHandler();
-        contextHandler.setBaseResource(Resource.newResource(dir.getAbsolutePath(), contextHandler));
+        contextHandler.setBaseResource(ResourceFactory.of((Container)contextHandler).newResource(dir.getAbsolutePath()));
         contextHandler.setHandler(contentResourceHandler);
         contextHandler.setContextPath("/");
 

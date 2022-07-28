@@ -261,7 +261,7 @@ public class FileSystemPool implements Dumpable
         private Mount(URI uri)
         {
             this.uri = uri;
-            this.root = Resource.newResource(uri);
+            this.root = Resource.createResource(uri);
         }
 
         public Resource root()

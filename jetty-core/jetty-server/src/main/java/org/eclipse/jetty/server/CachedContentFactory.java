@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -173,7 +172,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             return content;
 
         // try loading the content from our factory.
-        Resource resource = _factory.resolve(pathInContext);
+        Resource resource = _factory.newResource(pathInContext);
         HttpContent loaded = load(pathInContext, resource, maxBufferSize);
         if (loaded != null)
             return loaded;
@@ -228,7 +227,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     if (compressedContent == null || compressedContent.isValid())
                     {
                         compressedContent = null;
-                        Resource compressedResource = _factory.resolve(compressedPathInContext);
+                        Resource compressedResource = _factory.newResource(compressedPathInContext);
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                             compressedResource.length() < resource.length())
                         {
@@ -274,7 +273,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
-                Resource compressedResource = _factory.resolve(compressedPathInContext);
+                Resource compressedResource = _factory.newResource(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,

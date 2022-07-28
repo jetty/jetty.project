@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -135,7 +136,26 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource newResource(URI uri)
+    {
+        try
+        {
+            // TODO optimize path for URI?
+            return resolve(uri.toString());
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Resource newResource(String resource) throws IOException
+    {
+        return resolve(resource);
+    }
+
+    protected Resource resolve(String subUriPath) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, subUriPath);
@@ -398,7 +418,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            setBaseResource(Resource.newResource(resourceBase, this));
+            setBaseResource(ResourceFactory.of((Container)this).newResource(resourceBase));
         }
         catch (Exception e)
         {
@@ -414,7 +434,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            _stylesheet = Resource.newResource(stylesheet, this);
+            _stylesheet = ResourceFactory.of((Container)this).newResource(stylesheet);
             if (!_stylesheet.exists())
             {
                 LOG.warn("unable to find custom stylesheet: {}", stylesheet);

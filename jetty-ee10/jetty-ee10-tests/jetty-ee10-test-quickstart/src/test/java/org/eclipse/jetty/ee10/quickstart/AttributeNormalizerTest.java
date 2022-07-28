@@ -25,7 +25,9 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -324,7 +326,7 @@ public class AttributeNormalizerTest
                 .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
-            Resource webresource = Resource.newResource(war, null);
+            Resource webresource = ResourceFactory.of((Container)null).newResource(war);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 

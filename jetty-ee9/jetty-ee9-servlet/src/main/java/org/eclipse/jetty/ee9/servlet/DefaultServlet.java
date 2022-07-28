@@ -405,6 +405,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return dft;
     }
 
+    @Override
+    public Resource newResource(URI uri)
+    {
+        // TODO optimised path for URI?
+        return resolve(uri.toString());
+    }
+
+    @Override
+    public Resource newResource(String resource) throws IOException
+    {
+        return resolve(resource);
+    }
+
     /**
      * get Resource to serve.
      * Map a path to a resource. The default implementation calls
@@ -414,8 +427,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      * @param subUriPath The path to find a resource for.
      * @return The resource to serve.
      */
-    @Override
-    public Resource resolve(String subUriPath)
+    protected Resource resolve(String subUriPath)
     {
         if (!_contextHandler.isCanonicalEncodingURIs())
             subUriPath = URIUtil.encodePath(subUriPath);

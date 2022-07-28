@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -226,7 +228,7 @@ public class WebAppPropertyConverter
             webApp.setWar(null);
             // This is a use provided list of overlays, which could have mountable entries.
             List<URI> uris = Resource.split(str);
-            webApp.setBaseResource(Resource.newResource(uris, webApp));
+            webApp.setBaseResource(ResourceFactory.of((Container)webApp).newResource(uris));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);

@@ -46,8 +46,10 @@ public class ResourceCollection extends Resource
      *
      * @param resources the resources to be added to collection
      */
-    ResourceCollection(Collection<Resource> resources)
+    public ResourceCollection(Collection<Resource> resources)
     {
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No resources");
         List<Resource> res = new ArrayList<>();
         gatherUniqueFlatResourceList(res, resources);
         _resources = Collections.unmodifiableList(res);

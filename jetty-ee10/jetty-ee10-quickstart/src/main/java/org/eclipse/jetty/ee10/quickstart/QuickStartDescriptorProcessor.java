@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -279,6 +280,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getResourceBase());
         collection.addAll(metaInfResources);
-        context.setBaseResource(Resource.newResource(collection));
+        context.setBaseResource(new ResourceCollection(collection));
     }
 }

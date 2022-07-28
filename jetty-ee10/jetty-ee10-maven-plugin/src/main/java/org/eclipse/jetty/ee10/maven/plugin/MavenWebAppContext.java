@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,7 +231,7 @@ public class MavenWebAppContext extends WebAppContext
             List<URI> uris = Stream.of(resourceBases)
                 .map(URI::create)
                 .toList();
-            setBaseResource(Resource.newResource(uris, this));
+            setBaseResource(ResourceFactory.of((org.eclipse.jetty.util.component.Container)this).newResource(uris));
         }
         catch (Throwable t)
         {
@@ -319,7 +320,7 @@ public class MavenWebAppContext extends WebAppContext
                 for (Configuration c : configurations)
                 {
                     if (c instanceof EnvConfiguration)
-                        ((EnvConfiguration)c).setJettyEnvResource(Resource.newResource(getJettyEnvXml(), this));
+                        ((EnvConfiguration)c).setJettyEnvResource(ResourceFactory.of((org.eclipse.jetty.util.component.Container)this).newResource(getJettyEnvXml()));
                 }
             }
             catch (IOException e)

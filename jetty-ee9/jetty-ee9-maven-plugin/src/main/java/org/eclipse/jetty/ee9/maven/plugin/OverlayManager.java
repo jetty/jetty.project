@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 /**
  * OverlayManager
@@ -63,7 +64,7 @@ public class OverlayManager
                 resourceBases.add(webApp.getBaseResource());
         }
 
-        webApp.setBaseResource(Resource.newResource(resourceBases));
+        webApp.setBaseResource(new ResourceCollection(resourceBases));
     }
     
     /**

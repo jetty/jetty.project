@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class FileDestroyable implements Destroyable
 
     public void removeFile(String file) throws IOException
     {
-        _paths.remove(Resource.newResource(file, mountContainer).getPath());
+        _paths.remove(ResourceFactory.of((Container)mountContainer).newResource(file).getPath());
     }
 
     public void removeFile(Path path)

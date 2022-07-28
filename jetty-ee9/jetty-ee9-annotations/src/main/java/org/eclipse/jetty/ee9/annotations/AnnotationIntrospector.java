@@ -24,7 +24,8 @@ import org.eclipse.jetty.ee9.servlet.BaseHolder;
 import org.eclipse.jetty.ee9.servlet.Source.Origin;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +173,7 @@ public class AnnotationIntrospector
                     return true; //no descriptor, can't be metadata-complete
                 try
                 {
-                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation, _context)));
+                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(ResourceFactory.of((Container)_context).newResource(descriptorLocation)));
                 }
                 catch (IOException e)
                 {

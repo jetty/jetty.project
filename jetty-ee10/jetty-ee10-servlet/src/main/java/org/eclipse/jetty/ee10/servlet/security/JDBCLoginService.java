@@ -25,7 +25,9 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +99,7 @@ public class JDBCLoginService extends AbstractLoginService
     protected void doStart() throws Exception
     {
         Properties properties = new Properties();
-        Resource resource = Resource.newResource(_config, this);
+        Resource resource = ResourceFactory.of((Container)this).newResource(_config);
         try (InputStream in = resource.newInputStream())
         {
             properties.load(in);

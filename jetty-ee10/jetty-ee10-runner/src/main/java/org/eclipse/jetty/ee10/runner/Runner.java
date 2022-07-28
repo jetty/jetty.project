@@ -54,7 +54,9 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
@@ -206,21 +208,24 @@ public class Runner
         {
             if ("--lib".equals(args[i]))
             {
-                Resource lib = Resource.newResource(args[++i], _server);
+                String resource = args[++i];
+                Resource lib = ResourceFactory.of((Container)_server).newResource(resource);
                 if (!lib.exists() || !lib.isDirectory())
                     usage("No such lib directory " + lib);
                 _classpath.addJars(lib);
             }
             else if ("--jar".equals(args[i]))
             {
-                Resource jar = Resource.newResource(args[++i], _server);
+                String resource = args[++i];
+                Resource jar = ResourceFactory.of((Container)_server).newResource(resource);
                 if (!jar.exists() || jar.isDirectory())
                     usage("No such jar " + jar);
                 _classpath.addPath(jar);
             }
             else if ("--classes".equals(args[i]))
             {
-                Resource classes = Resource.newResource(args[++i], _server);
+                String resource = args[++i];
+                Resource classes = ResourceFactory.of((Container)_server).newResource(resource);
                 if (!classes.exists() || !classes.isDirectory())
                     usage("No such classes directory " + classes);
                 _classpath.addPath(classes);
@@ -324,7 +329,7 @@ public class Runner
                         {
                             for (String cfg : _configFiles)
                             {
-                                Resource resource = Resource.newResource(cfg, _server);
+                                Resource resource = ResourceFactory.of((Container)_server).newResource(cfg);
                                 XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
                                 xmlConfiguration.configure(_server);
                             }
@@ -414,7 +419,7 @@ public class Runner
                     }
 
                     // Create a context
-                    Resource ctx = Resource.newResource(args[i], _server);
+                    Resource ctx = ResourceFactory.of((Container)_server).newResource(args[i]);
                     if (!ctx.exists())
                         usage("Context '" + ctx + "' does not exist");
 

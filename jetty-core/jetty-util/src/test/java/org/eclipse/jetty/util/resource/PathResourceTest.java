@@ -62,12 +62,13 @@ public class PathResourceTest
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
 
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env);
+             ResourceFactory.Closeable factory = ResourceFactory.closeable())
         {
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = (PathResource)Resource.newResource(manifestPath);
+            Resource resource = factory.newResource(manifestPath);
 
             try (InputStream inputStream = resource.newInputStream())
             {
@@ -86,12 +87,13 @@ public class PathResourceTest
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
 
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env);
+             ResourceFactory.Closeable factory = ResourceFactory.closeable())
         {
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = (PathResource)Resource.newResource(manifestPath);
+            Resource resource = factory.newResource(manifestPath);
 
             try (ReadableByteChannel channel = resource.newReadableByteChannel())
             {
@@ -110,12 +112,13 @@ public class PathResourceTest
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
 
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env);
+             ResourceFactory.Closeable factory = ResourceFactory.closeable())
         {
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            Resource resource = Resource.newResource(manifestPath);
+            Resource resource = factory.newResource(manifestPath);
             Path path = resource.getPath();
             assertThat("Path should not be null even for non-default FileSystem", path, notNullValue());
         }
@@ -124,11 +127,13 @@ public class PathResourceTest
     @Test
     public void testDefaultFileSystemGetFile() throws Exception
     {
-        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource resource = (PathResource)Resource.newResource(exampleJar);
-
-        Path path = resource.getPath();
-        assertThat("File for default FileSystem", path, is(exampleJar));
+        try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
+        {
+            Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+            Resource resource = factory.newResource(exampleJar);
+            Path path = resource.getPath();
+            assertThat("File for default FileSystem", path, is(exampleJar));
+        }
     }
 
     @Test

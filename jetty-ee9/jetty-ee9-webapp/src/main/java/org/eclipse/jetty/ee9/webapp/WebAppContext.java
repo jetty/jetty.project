@@ -61,10 +61,12 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1252,7 +1254,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
         List<URI> uris = Resource.split(extraClasspath);
-        setExtraClasspath(Resource.newResource(uris, this));
+        setExtraClasspath(ResourceFactory.of((Container)this).newResource(uris));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)

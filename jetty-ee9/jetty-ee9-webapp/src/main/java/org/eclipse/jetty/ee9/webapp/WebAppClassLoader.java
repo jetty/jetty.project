@@ -41,10 +41,12 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -275,7 +277,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return;
 
         List<URI> uris = Resource.split(classPath);
-        ResourceCollection rc = Resource.newResource(uris, _mountContainer);
+        ResourceCollection rc = ResourceFactory.of((Container)_mountContainer).newResource(uris);
         for (Resource resource : rc.getResources())
         {
             addClassPath(resource);

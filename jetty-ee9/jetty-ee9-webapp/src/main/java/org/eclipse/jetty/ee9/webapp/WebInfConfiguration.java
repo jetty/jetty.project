@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -449,7 +451,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath());
 
-            Resource rc = Resource.newResource(webInf, webApp);
+            Resource rc = new ResourceCollection(List.of(new Resource[]{webInf, webApp}));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);

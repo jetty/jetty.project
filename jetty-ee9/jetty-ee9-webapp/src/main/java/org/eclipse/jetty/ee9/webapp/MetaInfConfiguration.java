@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -333,7 +334,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            context.setBaseResource(Resource.newResource(collection));
+            context.setBaseResource(new ResourceCollection(collection));
         }
     }
 

@@ -27,8 +27,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -333,7 +336,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (war != null)
                 {
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = Resource.newResource(war, context).getPath();
+                    Path warfile = ResourceFactory.of((Container)context).newResource(war).getPath();
                     if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
                         Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
@@ -449,9 +452,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfClasses.copyTo(webInfClassesDir.toPath());
             }
 
-            webInf = Resource.newResource(extractedWebInfDir.getCanonicalPath(), context);
+            webInf = ResourceFactory.of((Container)context).newResource(extractedWebInfDir.getCanonicalPath());
 
-            Resource rc = Resource.newResource(webInf, webApp);
+            Resource rc = new ResourceCollection(List.of(new Resource[]{webInf, webApp}));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);

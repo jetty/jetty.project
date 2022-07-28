@@ -38,13 +38,10 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -55,11 +52,6 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +64,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-public abstract class Resource implements ResourceFactory
+public abstract class Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -104,38 +96,6 @@ public abstract class Resource implements ResourceFactory
     public static boolean getDefaultUseCaches()
     {
         return __defaultUseCaches;
-    }
-
-    /**
-     * <p>Create a ResourceCollection from an unknown set of URIs.</p>
-     *
-     * <p>
-     *     Use this if you are working with URIs from an unknown source,
-     *     such as a user configuration.  As some of the entries
-     *     might need mounting, but we cannot determine that yet.
-     * </p>
-     *
-     * @param uris collection of URIs to mount into a {@code ResourceCollection}
-     * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
-     */
-    public static ResourceCollection newResource(Collection<URI> uris, Container mountContainer)
-    {
-        List<Resource> resources = new ArrayList<>();
-
-        // track URIs that have been seen, to avoid adding duplicates.
-        Set<URI> seenUris = new HashSet<>();
-
-        for (URI uri : uris)
-        {
-            if (seenUris.contains(uri))
-                continue; // skip this one
-            seenUris.add(uri);
-            Mount mount = mountIfNeeded(uri);
-            Mounts.add(mountContainer, mount, uri);
-            resources.add(Resource.newResource(uri));
-        }
-
-        return new ResourceCollection(resources);
     }
 
     /**
@@ -205,34 +165,6 @@ public abstract class Resource implements ResourceFactory
         if (jarUri == null)
             throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
-    }
-
-    /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
-     * @see ResourceCollection
-     */
-    public static ResourceCollection newResource(List<Resource> resources)
-    {
-        if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("No resources");
-
-        return new ResourceCollection(resources);
-    }
-
-    /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
-     * @see ResourceCollection
-     */
-    public static ResourceCollection newResource(Resource... resources)
-    {
-        if (resources == null || resources.length == 0)
-            throw new IllegalArgumentException("No resources");
-
-        return new ResourceCollection(List.of(resources));
     }
 
     /**
@@ -397,16 +329,10 @@ public abstract class Resource implements ResourceFactory
      * @param url A URL.
      * @return A Resource object.
      */
+    @Deprecated
     public static Resource newResource(URL url)
     {
-        try
-        {
-            return newResource(url.toURI());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
+        return ResourceFactory.ROOT.newResource(url);
     }
 
     /**
@@ -415,27 +341,11 @@ public abstract class Resource implements ResourceFactory
      * @param resource A URL or filename.
      * @return A Resource object.
      * @throws IOException Problem accessing URI
-     * @deprecated use {@link #newResource(String, Container)} to avoid leaking mounted resources.
      */
     @Deprecated
     public static Resource newResource(String resource) throws IOException
     {
-        return newResource(resource, null);
-    }
-
-    /**
-     * Construct a resource from a string.
-     *
-     * @param resource A URL or filename.
-     * @return A Resource object.
-     * @throws IOException Problem accessing URI
-     */
-    public static Resource newResource(String resource, Container mountContainer) throws IOException
-    {
-        URI uri = toURI(resource);
-        Mount mount = mountIfNeeded(uri);
-        Mounts.add(mountContainer, mount, uri);
-        return newResource(uri);
+        return ResourceFactory.ROOT.newResource(resource);
     }
 
     /**
@@ -444,7 +354,13 @@ public abstract class Resource implements ResourceFactory
      * @param uri A URI.
      * @return A Resource object.
      */
+    @Deprecated
     public static Resource newResource(URI uri)
+    {
+        return ResourceFactory.ROOT.newResource(uri);
+    }
+
+    static Resource createResource(URI uri)
     {
         try
         {
@@ -478,9 +394,10 @@ public abstract class Resource implements ResourceFactory
      * @param path the path
      * @return the Resource for the provided path
      */
+    @Deprecated
     public static Resource newResource(Path path)
     {
-        return newResource(path.toUri());
+        return ResourceFactory.ROOT.newResource(path);
     }
 
     /**
@@ -827,7 +744,22 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * {@inheritDoc}
+     * <p>
+     * Returns the resource contained inside the current resource with the
+     * given name, which may or may not exist.
+     * </p>
+     * <p>
+     * The {@code subUriPath} parameter is interpreted like {@link URI#resolve(String)} would, except for a few convenient differences:
+     * <ul>
+     *     <li>{@code subUriPath} must not contain URI-invalid characters (<code>', [, %, ?</code> ...)</li>
+     *     <li>{@code subUriPath} can contain escaped characters that are going to be correctly interpreted</li>
+     *     <li>All prepended slashes are ignored</li>
+     *     <li>If the resulting resource provably points to an existing directory, a / is automatically appended</li>
+     * </ul>
+     *</p>
+     * @param subUriPath The path segment to add.
+     * @return the Resource for the resolved path within this Resource, never null
+     * @throws IOException if unable to resolve the path
      */
     public Resource resolve(String subUriPath) throws IOException
     {
@@ -875,7 +807,7 @@ public abstract class Resource implements ResourceFactory
                 uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uriResolve(uri, subUriPath);
         }
-        return newResource(resolvedUri);
+        return createResource(resolvedUri);
     }
 
     private static URI uriResolve(URI uri, String subUriPath) throws IOException
@@ -1441,52 +1373,4 @@ public abstract class Resource implements ResourceFactory
         Resource root();
     }
 
-    /**
-     * <p>A {@link LifeCycle} that holds a collection of {@link Mount}s, that are all closed
-     * when it is stopped.</p>
-     */
-    private static class Mounts extends AbstractLifeCycle implements Dumpable
-    {
-        private final List<Mount> _mounts = new CopyOnWriteArrayList<>();
-
-        public void add(Mount mount)
-        {
-            _mounts.add(mount);
-        }
-
-        @Override
-        protected void doStop() throws Exception
-        {
-            for (Mount mount : _mounts)
-                IO.close(mount);
-            _mounts.clear();
-            super.doStop();
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
-        }
-
-        public static void add(Container mountContainer, Mount mount, URI uri)
-        {
-            if (mount != null)
-            {
-                if (mountContainer == null)
-                    LOG.warn("Leaked mount {} for {}", mount, uri);
-                else
-                {
-                    Mounts mounts = mountContainer.getBean(Mounts.class);
-                    if (mounts == null)
-                    {
-                        mounts = new Mounts();
-                        LifeCycle.start(mounts);
-                        mountContainer.addBean(mounts, true);
-                    }
-                    mounts.add(mount);
-                }
-            }
-        }
-    }
 }

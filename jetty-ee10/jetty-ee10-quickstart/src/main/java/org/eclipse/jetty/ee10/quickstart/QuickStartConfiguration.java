@@ -30,7 +30,9 @@ import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -261,7 +263,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             catch (Throwable th)
             {
                 // try as a resource
-                qstart = (Resource.newResource(attr.toString(), context));
+                qstart = (ResourceFactory.of((Container)context).newResource(attr.toString()));
             }
             context.setAttribute(QUICKSTART_WEB_XML, qstart);
         }

@@ -30,8 +30,10 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -219,7 +221,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         if (webApp.getDescriptor() != null)
         {
-            Resource r = Resource.newResource(webApp.getDescriptor(), embedder);
+            Resource r = ResourceFactory.of((Container)embedder).newResource(webApp.getDescriptor());
             scanner.addFile(r.getPath());
         }
 

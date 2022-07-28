@@ -28,7 +28,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,11 +69,9 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        ContainerLifeCycle mountContainer = new ContainerLifeCycle();
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
         {
-            mountContainer.start();
-            Resource r = Resource.newResource(uri);
+            Resource r = factory.newResource(uri);
 
             Set<String> entries = new HashSet<>(r.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
@@ -84,13 +81,13 @@ public class JarResourceTest
 
             r.copyTo(extract);
 
-            Resource e = Resource.newResource(extract.toString(), mountContainer);
+            Resource e = factory.newResource(extract.toString());
 
             entries = new HashSet<>(e.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
             s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
-            r = Resource.newResource(s, mountContainer);
+            r = factory.newResource(s);
 
             entries = new HashSet<>(r.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
@@ -100,14 +97,10 @@ public class JarResourceTest
 
             r.copyTo(extract2);
 
-            e = Resource.newResource(extract2.toString(), mountContainer);
+            e = factory.newResource(extract2.toString());
 
             entries = new HashSet<>(e.list());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
-        }
-        finally
-        {
-            mountContainer.stop();
         }
     }
 
@@ -117,10 +110,12 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        Resource.Mount mount = Resource.mount(uri);
-        Resource resource = Resource.newResource(uri);
-        assertTrue(resource.exists());
-        mount.close();
+        Resource resource;
+        try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
+        {
+            resource = factory.newResource(uri);
+            assertTrue(resource.exists());
+        }
         assertThrows(ClosedFileSystemException.class, resource::exists);
     }
 
@@ -176,7 +171,7 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
-        assertThrows(IllegalStateException.class, () -> Resource.newResource(uri));
+        assertThrows(IllegalStateException.class, () -> Resource.createResource(uri));
     }
 
     @Test
@@ -186,9 +181,9 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource r = Resource.newResource(uri);
+            Resource r = mount.root();
             Collection<Resource> deep = r.getAllResources();
 
             assertEquals(4, deep.size());
@@ -201,16 +196,16 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource r = Resource.newResource(uri);
-            Resource container = Resource.newResource(testZip);
+            Resource r = mount.root();
+            Resource container = ResourceFactory.ROOT.newResource(testZip);
 
             assertThat(r, instanceOf(MountedPathResource.class));
 
             assertTrue(r.isContainedIn(container));
 
-            container = Resource.newResource(testZip.getParent());
+            container = ResourceFactory.ROOT.newResource(testZip.getParent());
             assertFalse(r.isContainedIn(container));
         }
     }
@@ -222,11 +217,10 @@ public class JarResourceTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers");
         try (ZipFile zf = new ZipFile(testZip.toFile());
-             Resource.Mount ignore = Resource.mount(uri))
+             Resource.Mount mount = Resource.mount(uri))
         {
+            Resource r = mount.root();
             long last = zf.getEntry("subdir/numbers").getTime();
-
-            Resource r = Resource.newResource(uri);
             assertEquals(last, r.lastModified());
         }
     }
@@ -237,9 +231,9 @@ public class JarResourceTest
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt");
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource r = Resource.newResource(uri);
+            Resource r = mount.root();
             assertTrue(r.exists());
         }
     }
@@ -249,9 +243,9 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource resource = Resource.newResource(uri);
+            Resource resource = mount.root();
             Resource rez = resource.resolve("rez/");
 
             assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
@@ -279,9 +273,9 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource resource = Resource.newResource(uri);
+            Resource resource = mount.root();
             Resource rez = resource.resolve("rez/oddities/");
 
             assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
@@ -305,9 +299,9 @@ public class JarResourceTest
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
-        try (Resource.Mount ignore = Resource.mount(uri))
+        try (Resource.Mount mount = Resource.mount(uri))
         {
-            Resource resource = Resource.newResource(uri);
+            Resource resource = mount.root();
             Resource anotherDir = resource.resolve("rez/another%20dir/");
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
