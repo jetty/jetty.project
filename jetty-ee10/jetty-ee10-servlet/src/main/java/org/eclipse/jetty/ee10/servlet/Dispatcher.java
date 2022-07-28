@@ -33,7 +33,6 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
@@ -166,15 +165,10 @@ public class Dispatcher implements RequestDispatcher
             if (_baseRequest == null)
                 throw new IllegalStateException();
 
-            try
+            Fields queryParams = _baseRequest.getServletApiRequest().getQueryParams();
+            for (Fields.Field field : queryParams)
             {
-                String sourceQuery = _httpServletRequest.getQueryString();
-                if (sourceQuery != null)
-                    UrlEncoded.decodeTo(sourceQuery, _params, _baseRequest.getQueryEncoding());
-            }
-            catch (Throwable t)
-            {
-                throw new BadMessageException(400, "Unable to parse URI query", t);
+                _params.addValues(field.getName(), field.getValues());
             }
         }
 

@@ -379,6 +379,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.ErrorPageTest$AppServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
+            assertThat(response, Matchers.containsString("getParameterMap()= {}"));
         }
     }
 
@@ -739,7 +740,6 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
-            writer.flush();
             writer.println("getParameterMap()= " + request.getParameterMap());
         }
     }
