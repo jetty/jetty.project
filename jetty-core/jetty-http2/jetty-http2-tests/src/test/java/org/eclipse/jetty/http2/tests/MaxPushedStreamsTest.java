@@ -52,7 +52,7 @@ public class MaxPushedStreamsTest extends AbstractTest
         int maxPushed = 2;
 
         CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -77,7 +77,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     .map(pushFrame ->
                     {
                         Promise.Completable<Stream> promise = new Promise.Completable<>();
-                        stream.push(pushFrame, promise, new Stream.Listener.Adapter());
+                        stream.push(pushFrame, promise, null);
                         return promise;
                     })
                     // ... wait for the pushed streams...
@@ -88,13 +88,14 @@ public class MaxPushedStreamsTest extends AbstractTest
                     {
                         PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
                         FuturePromise<Stream> extraPromise = new FuturePromise<>();
-                        stream.push(extraPushFrame, extraPromise, new Stream.Listener.Adapter()
+                        stream.push(extraPushFrame, extraPromise, new Stream.Listener()
                         {
                             @Override
-                            public void onReset(Stream stream, ResetFrame frame)
+                            public void onReset(Stream stream, ResetFrame frame, Callback callback)
                             {
                                 assertEquals(ErrorCode.REFUSED_STREAM_ERROR.code, frame.getError());
                                 resetLatch.countDown();
+                                callback.succeeded();
                             }
                         });
                         return streams;
@@ -116,10 +117,10 @@ public class MaxPushedStreamsTest extends AbstractTest
         });
         http2Client.setMaxConcurrentPushedStreams(maxPushed);
 
-        Session session = newClientSession(new Session.Listener.Adapter());
+        Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

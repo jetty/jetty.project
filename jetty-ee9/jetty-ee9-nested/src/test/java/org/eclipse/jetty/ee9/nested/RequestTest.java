@@ -77,6 +77,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -2288,6 +2289,12 @@ public class RequestTest
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return false;
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
         }
@@ -2296,6 +2303,12 @@ public class RequestTest
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return false;
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return null;
         }
 
         @Override

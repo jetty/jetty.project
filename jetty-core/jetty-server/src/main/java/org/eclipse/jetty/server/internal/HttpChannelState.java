@@ -54,10 +54,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -202,7 +203,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                     catch (Throwable t)
                     {
-                        if (!TypeUtil.isAssociated(failure, t))
+                        if (ExceptionUtil.areNotAssociated(failure, t))
                             failure.addSuppressed(t);
                         super.onError(task, failure);
                     }
@@ -212,7 +213,7 @@ public class HttpChannelState implements HttpChannel, Components
                     // We are already in error, so we will not handle this one,
                     // but we will add as suppressed if we have not seen it already.
                     Throwable cause = error.getCause();
-                    if (cause != null && !TypeUtil.isAssociated(cause, failure))
+                    if (cause != null && ExceptionUtil.areNotAssociated(cause, failure))
                         error.getCause().addSuppressed(failure);
                 }
             }
@@ -676,7 +677,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (failure != null)
                     {
-                        if (!TypeUtil.isAssociated(failure, _failure))
+                        if (ExceptionUtil.areNotAssociated(failure, _failure))
                             _failure.addSuppressed(failure);
                     }
                     failure = _failure;
@@ -725,7 +726,7 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = _stream;
                 if (_failure == null)
                     _failure = failure;
-                else if (!TypeUtil.isAssociated(_failure, failure))
+                else if (ExceptionUtil.areNotAssociated(_failure, failure))
                 {
                     _failure.addSuppressed(failure);
                     failure = _failure;
@@ -998,6 +999,12 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return true;
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             getStream().push(request);
@@ -1029,6 +1036,12 @@ public class HttpChannelState implements HttpChannel, Components
                 }
                 return true;
             }
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return getStream().getTunnelSupport();
         }
 
         @Override
@@ -1343,7 +1356,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (failure == null)
                         failure = httpChannelState._failure = unconsumed;
-                    else if (!TypeUtil.isAssociated(failure, unconsumed))
+                    else if (ExceptionUtil.areNotAssociated(failure, unconsumed))
                         failure.addSuppressed(unconsumed);
                 }
             }
@@ -1382,7 +1395,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
-                if (unconsumed != null && !TypeUtil.isAssociated(unconsumed, failure))
+                if (unconsumed != null && ExceptionUtil.areNotAssociated(unconsumed, failure))
                     failure.addSuppressed(unconsumed);
 
                 if (writeErrorResponse)
@@ -1526,7 +1539,7 @@ public class HttpChannelState implements HttpChannel, Components
                     Callback.from(() -> httpChannel._handlerInvoker.failed(_failure),
                         x ->
                         {
-                            if (!TypeUtil.isAssociated(_failure, x))
+                            if (ExceptionUtil.areNotAssociated(_failure, x))
                                 _failure.addSuppressed(x);
                             httpChannel._handlerInvoker.failed(_failure);
                         }));
@@ -1537,7 +1550,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void failed(Throwable x)
         {
-            if (!TypeUtil.isAssociated(_failure, x))
+            if (ExceptionUtil.areNotAssociated(_failure, x))
                 _failure.addSuppressed(x);
             _request.getHttpChannel()._handlerInvoker.failed(_failure);
         }

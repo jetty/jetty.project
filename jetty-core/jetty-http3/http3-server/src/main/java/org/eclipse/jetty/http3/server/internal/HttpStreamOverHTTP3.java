@@ -143,9 +143,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (data == null)
                 return null;
 
+            chunk = createChunk(data);
+            data.release();
+
             try (AutoLock ignored = lock.lock())
             {
-                this.chunk = newChunk(data);
+                this.chunk = chunk;
             }
         }
     }
@@ -186,10 +189,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
             return null;
         }
 
+        Content.Chunk chunk = createChunk(data);
+        data.release();
+
         try (AutoLock ignored = lock.lock())
         {
-            chunk = newChunk(data);
+            this.chunk = chunk;
         }
+
         return httpChannel.onContentAvailable();
     }
 
@@ -209,9 +216,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return httpChannel.onContentAvailable();
     }
 
-    private Content.Chunk newChunk(Stream.Data data)
+    private Content.Chunk createChunk(Stream.Data data)
     {
-        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data::complete);
+        // As we are passing the ByteBuffer to the Chunk we need to retain.
+        data.retain();
+        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
     }
 
     @Override

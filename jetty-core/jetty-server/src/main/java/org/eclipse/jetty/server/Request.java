@@ -196,6 +196,8 @@ public interface Request extends Attributes, Content.Source
      */
     boolean addErrorListener(Predicate<Throwable> onError);
 
+    TunnelSupport getTunnelSupport();
+
     void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
 
     static String getLocalAddr(Request request)
@@ -391,14 +393,14 @@ public interface Request extends Attributes, Content.Source
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalURI(location);
+                location = URIUtil.normalizePathQuery(location);
             }
             else
             {
                 // relative to request
                 String path = uri.getPath();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
+                location = URIUtil.normalizePathQuery(URIUtil.addEncodedPaths(parent, location));
                 if (location != null && !location.startsWith("/"))
                     url.append('/');
             }
@@ -551,6 +553,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return getWrapped().isPushSupported();
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             getWrapped().push(request);
@@ -560,6 +568,12 @@ public interface Request extends Attributes, Content.Source
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return getWrapped().addErrorListener(onError);
+        }
+
+        @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return getWrapped().getTunnelSupport();
         }
 
         @Override

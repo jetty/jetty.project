@@ -16,69 +16,62 @@ package org.eclipse.jetty.docs.programming.server.http;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.ee9.servlet.DefaultServlet;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlets.CrossOriginFilter;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLogWriter;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class HTTPServerDocs
@@ -100,14 +93,13 @@ public class HTTPServerDocs
         server.addConnector(connector);
 
         // Set a simple Handler to handle requests/responses.
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                // Mark the request as handled so that it
-                // will not be processed by other handlers.
-                jettyRequest.setHandled(true);
+                // Succeed the callback to write the response.
+                callback.succeeded();
             }
         });
 
@@ -119,6 +111,8 @@ public class HTTPServerDocs
     public void httpChannelListener() throws Exception
     {
         // tag::httpChannelListener[]
+        // TODO: HttpChannelState.Listener does not exist anymore.
+/*
         class TimingHttpChannelListener implements HttpChannelState.Listener
         {
             private final ConcurrentMap<Request, Long> times = new ConcurrentHashMap<>();
@@ -157,6 +151,7 @@ public class HTTPServerDocs
         });
 
         server.start();
+*/
         // end::httpChannelListener[]
     }
 
@@ -197,6 +192,8 @@ public class HTTPServerDocs
         mainContext.setContextPath("/main");
 
         // Create a RequestLogHandler to log requests for your main application.
+        // TODO: RequestLogHandler may need to be re-introduced, to allow per-context logging?
+/*
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog(new CustomRequestLog());
         // Wrap the main application with the request log handler.
@@ -208,6 +205,7 @@ public class HTTPServerDocs
         mainContext.setContextPath("/other");
 
         server.setHandler(new HandlerList(requestLogHandler, otherContext));
+*/
         // end::contextRequestLog[]
     }
 
@@ -475,27 +473,30 @@ public class HTTPServerDocs
 
     public void handlerTree()
     {
-        class LoggingHandler extends AbstractHandler
+        class LoggingHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
+                callback.succeeded();
             }
         }
 
-        class App1Handler extends AbstractHandler
+        class App1Handler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
+                callback.succeeded();
             }
         }
 
-        class App2Handler extends HandlerWrapper
+        class App2Handler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
+                callback.succeeded();
             }
         }
 
@@ -503,29 +504,23 @@ public class HTTPServerDocs
         // Create a Server instance.
         Server server = new Server();
 
-        HandlerCollection collection = new HandlerCollection();
+        LoggingHandler loggingHandler = new LoggingHandler();
         // Link the root Handler with the Server.
-        server.setHandler(collection);
+        server.setHandler(loggingHandler);
 
-        HandlerList list = new HandlerList();
-        collection.addHandler(list);
-        collection.addHandler(new LoggingHandler());
-
-        list.addHandler(new App1Handler());
-        HandlerWrapper wrapper = new HandlerWrapper();
-        list.addHandler(wrapper);
-
-        wrapper.setHandler(new App2Handler());
+        Handler.Collection collection = new Handler.Collection();
+        collection.addHandler(new App1Handler());
+        collection.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
     public void handlerAPI()
     {
-        class MyHandler extends AbstractHandler
+        class MyHandler extends Handler.Processor
         {
             @Override
             // tag::handlerAPI[]
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
             }
             // end::handlerAPI[]
@@ -535,29 +530,26 @@ public class HTTPServerDocs
     public void handlerHello() throws Exception
     {
         // tag::handlerHello[]
-        class HelloWorldHandler extends AbstractHandler
+        class HelloWorldHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                // Mark the request as handled by this Handler.
-                jettyRequest.setHandled(true);
-
                 response.setStatus(200);
-                response.setContentType("text/html; charset=UTF-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
 
                 // Write a Hello World response.
-                response.getWriter().print("" +
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<head>" +
-                    "  <title>Jetty Hello World Handler</title>" +
-                    "</head>" +
-                    "<body>" +
-                    "  <p>Hello World</p>" +
-                    "</body>" +
-                    "</html>" +
-                    "");
+                Content.Sink.write(response, true, """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Jetty Hello World Handler</title>
+                    </head>
+                    <body>
+                      <p>Hello World</p>
+                    </body>
+                    </html>
+                    """, callback);
             }
         }
 
@@ -574,15 +566,17 @@ public class HTTPServerDocs
 
     public void handlerFilter() throws Exception
     {
-        class HelloWorldHandler extends AbstractHandler
+        class HelloWorldHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
             }
         }
 
         // tag::handlerFilter[]
+        // TODO: This needs to be rewritten using a custom Processor
+/*
         class FilterHandler extends HandlerWrapper
         {
             @Override
@@ -617,19 +611,19 @@ public class HTTPServerDocs
         server.setHandler(filter);
 
         server.start();
+*/
         // end::handlerFilter[]
     }
 
     public void contextHandler() throws Exception
     {
         // tag::contextHandler[]
-        class ShopHandler extends AbstractHandler
+        class ShopHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                // Implement the shop.
+                // Implement the shop, remembering to complete the callback.
             }
         }
 
@@ -652,23 +646,21 @@ public class HTTPServerDocs
     public void contextHandlerCollection() throws Exception
     {
         // tag::contextHandlerCollection[]
-        class ShopHandler extends AbstractHandler
+        class ShopHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                // Implement the shop.
+                // Implement the shop, remembering to complete the callback.
             }
         }
 
-        class RESTHandler extends AbstractHandler
+        class RESTHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                // Implement the REST APIs.
+                // Implement the REST APIs, remembering to complete the callback.
             }
         }
 
@@ -767,9 +759,10 @@ public class HTTPServerDocs
         // Configure the directory where static resources are located.
         handler.setBaseResource(Resource.newResource("/path/to/static/resources/"));
         // Configure directory listing.
-        handler.setDirectoriesListed(false);
+        // TODO: is the directoriesListed feature still present?
+//        handler.setDirectoriesListed(false);
         // Configure welcome files.
-        handler.setWelcomeFiles(new String[]{"index.html"});
+        handler.setWelcomeFiles(List.of("index.html"));
         // Configure whether to accept range requests.
         handler.setAcceptRanges(true);
 
@@ -787,8 +780,9 @@ public class HTTPServerDocs
 
         // For multiple directories, use ResourceCollection.
         ResourceCollection directories = new ResourceCollection();
-        directories.addPath("/path/to/static/resources/");
-        directories.addPath("/another/path/to/static/resources/");
+        // TODO: how to add paths to ResourceCollection?
+//        directories.addPath("/path/to/static/resources/");
+//        directories.addPath("/another/path/to/static/resources/");
 
         handler.setBaseResource(directories);
         // end::multipleResourcesHandler[]
@@ -840,23 +834,21 @@ public class HTTPServerDocs
 
     public void contextGzipHandler() throws Exception
     {
-        class ShopHandler extends AbstractHandler
+        class ShopHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                // Implement the shop.
+                // Implement the shop, remembering to complete the callback.
             }
         }
 
-        class RESTHandler extends AbstractHandler
+        class RESTHandler extends Handler.Processor
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                // Implement the REST APIs.
+                // Implement the REST APIs, remembering to complete the callback.
             }
         }
 
@@ -999,8 +991,8 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create a HandlerList.
-        HandlerList handlerList = new HandlerList();
+        // Create a Handler collection.
+        Handler.Collection handlerList = new Handler.Collection();
 
         // Add as first a ContextHandlerCollection to manage contexts.
         ContextHandlerCollection contexts = new ContextHandlerCollection();

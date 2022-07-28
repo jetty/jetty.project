@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
 
 /**

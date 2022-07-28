@@ -85,6 +85,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -139,7 +140,7 @@ public class ProxyServletTest
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
@@ -607,7 +608,7 @@ public class ProxyServletTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Make sure the proxy coalesced the Via headers into just one.
-                org.eclipse.jetty.server.Request jettyRequest = (org.eclipse.jetty.server.Request)request;
+                var jettyRequest = (org.eclipse.jetty.ee9.nested.Request)request;
                 assertEquals(1, jettyRequest.getHttpFields().getFields(HttpHeader.VIA).size());
                 PrintWriter writer = response.getWriter();
                 List<String> viaValues = Collections.list(request.getHeaders("Via"));
@@ -620,7 +621,7 @@ public class ProxyServletTest
 
         String existingViaHeader = "1.0 charon";
         ContentResponse response = client.newRequest("http://localhost:" + serverConnector.getLocalPort())
-            .header(HttpHeader.VIA, existingViaHeader)
+            .headers(headers -> headers.put(HttpHeader.VIA, existingViaHeader))
             .send();
         String expected = String.join(", ", existingViaHeader, "1.1 " + viaHost);
         assertThat(response.getContentAsString(), equalTo(expected));
@@ -1499,7 +1500,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
+        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
@@ -1522,7 +1523,7 @@ public class ProxyServletTest
 
         // Wait a while and then offer more content.
         Thread.sleep(1000);
-        requestContent.offer(ByteBuffer.wrap(content, chunk1, content.length - chunk1));
+        requestContent.write(ByteBuffer.wrap(content, chunk1, content.length - chunk1), Callback.NOOP);
         requestContent.close();
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -1559,7 +1560,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
+        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))

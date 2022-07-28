@@ -398,7 +398,7 @@ public class ServletChannel implements Runnable
                             {
                                 String contextPath = _request.getContext().getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                                pathInContext = URIUtil.normalizePath(dispatchUri.getPath());
+                                pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
                                 uri = HttpURI.build(_request.getHttpURI())
                                     .path(URIUtil.addPaths(contextPath, pathInContext))
                                     .query(dispatchUri.getQuery());
@@ -433,7 +433,7 @@ public class ServletChannel implements Runnable
                         try
                         {
                             // Get ready to send an error response
-                            getResponse().reset();
+                            getResponse().resetContent();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
@@ -608,6 +608,7 @@ public class ServletChannel implements Runnable
         try
         {
             _servletContextApi.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
+            getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_request);
             dispatchable.dispatch();
         }

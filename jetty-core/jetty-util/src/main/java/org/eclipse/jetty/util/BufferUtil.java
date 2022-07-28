@@ -17,13 +17,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -1018,20 +1018,21 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
     {
+        if (!resource.exists() || resource.isDirectory())
+            throw new IllegalArgumentException("invalid resource: " + resource);
         int len = (int)resource.length();
         if (len < 0)
-            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
+            throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
         int pos = BufferUtil.flipToFill(buffer);
-        if (resource.getPath() != null)
-            BufferUtil.readFrom(resource.getPath(), buffer);
-        else
+        try (ReadableByteChannel channel = resource.newReadableByteChannel())
         {
-            try (InputStream is = resource.getInputStream();)
+            long needed = len;
+            while (needed > 0 && buffer.hasRemaining())
             {
-                BufferUtil.readFrom(is, len, buffer);
+                needed = needed - channel.read(buffer);
             }
         }
         BufferUtil.flipToFlush(buffer, pos);
@@ -1055,11 +1056,6 @@ public class BufferUtil
         return buf;
     }
 
-    public static ByteBuffer toMappedBuffer(File file) throws IOException
-    {
-        return toMappedBuffer(file.toPath(), 0, file.length());
-    }
-
     public static ByteBuffer toMappedBuffer(Path path) throws IOException
     {
         return toMappedBuffer(path, 0, Files.size(path));
@@ -1071,6 +1067,20 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, pos, len);
         }
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
+    {
+        if (!resource.isMemoryMappable())
+            return null;
+        return toMappedBuffer(resource.getPath());
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
+    {
+        if (!resource.isMemoryMappable())
+            return null;
+        return toMappedBuffer(resource.getPath(), pos, len);
     }
 
     public static String toSummaryString(ByteBuffer buffer)

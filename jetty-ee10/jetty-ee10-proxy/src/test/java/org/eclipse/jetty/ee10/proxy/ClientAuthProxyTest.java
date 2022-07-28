@@ -15,16 +15,20 @@ package org.eclipse.jetty.ee10.proxy;
 
 import java.security.KeyStore;
 import java.security.Principal;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509ExtendedKeyManager;
+import javax.security.auth.x500.X500Principal;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.HttpClient;
@@ -40,6 +44,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -129,20 +134,17 @@ public class ClientAuthProxyTest
 
     private void startServer() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                //TODO fix me
-                
-                /*                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
+                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
                 Assertions.assertNotNull(certificates);
                 X509Certificate certificate = certificates[0];
                 X500Principal principal = certificate.getSubjectX500Principal();
-                ServletOutputStream output = response.getOutputStream();
-                output.println(principal.toString());
-                output.println(request.getRemotePort());*/
+                String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
+                Content.Sink.write(response, true, body, callback);
             }
         });
     }
@@ -209,15 +211,14 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        //TODO fix me
-        /* X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
         {
             // Retain only "userN".
             return matcher.group(1).split("_")[0];
-        }*/
+        }
         return null;
     }
 

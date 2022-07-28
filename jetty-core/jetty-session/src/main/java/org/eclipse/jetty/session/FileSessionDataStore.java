@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -365,7 +365,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             //iterate over files in _storeDir and build map of session id to filename.
             //if we come across files for sessions in other contexts, check if they're
             //ancient and remove if necessary.
-            MultiException me = new MultiException();
+            final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
             long now = System.currentTimeMillis();
 
             // Build session file map by walking directory
@@ -422,13 +422,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                                     }
                                     catch (IOException e)
                                     {
-                                        me.add(e);
+                                        multiException.add(e);
                                     }
                                 }
                             }
                         }
                     });
-                me.ifExceptionThrow();
+                multiException.ifExceptionThrow();
             }
         }
     }

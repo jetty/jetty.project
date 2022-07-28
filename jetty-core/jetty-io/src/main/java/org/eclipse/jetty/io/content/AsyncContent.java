@@ -50,12 +50,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        if (byteBuffer != null)
-            write(Content.Chunk.from(byteBuffer, last), callback);
-        else if (last)
-            write(Content.Chunk.EOF, callback);
-        else
-            write(Content.Chunk.EMPTY, callback);
+        write(Content.Chunk.from(byteBuffer, last, callback::succeeded), callback);
     }
 
     public void write(Content.Chunk chunk, Callback callback)
@@ -171,7 +166,6 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             if (chunks.isEmpty())
                 l.signal();
         }
-        current.callback().succeeded();
         return current.chunk();
     }
 
@@ -228,11 +222,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             drained = List.copyOf(chunks);
             chunks.clear();
         }
-        drained.forEach(cc ->
-        {
-            cc.chunk().release();
-            cc.callback().failed(failure);
-        });
+        drained.forEach(cc -> cc.callback().failed(failure));
         invoker.run(this::invokeDemandCallback);
     }
 

@@ -100,7 +100,7 @@ public class BalancerServletTest
         {
             DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
             sessionIdManager.setWorkerName(nodeName);
-            server.setSessionIdManager(sessionIdManager);
+            server.addBean(sessionIdManager, true);
         }
 
         return server;
@@ -173,7 +173,6 @@ public class BalancerServletTest
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(balancer.getHandler());
         balancer.setHandler(rewrite);
-        rewrite.setRewriteRequestURI(true);
         rewrite.addRule(new VirtualHostRuleContainer());
         balancer.start();
 

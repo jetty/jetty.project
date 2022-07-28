@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.Principal;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +32,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -50,14 +48,18 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.ConnectHandler;
+import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Net;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -142,7 +144,7 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
@@ -151,7 +153,7 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newProxySslContextFactory()
     {
         SslContextFactory.Server proxyTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("proxy_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/proxy_keystore.p12").getAbsolutePath();
         proxyTLS.setKeyStorePath(keyStorePath);
         proxyTLS.setKeyStorePassword("storepwd");
         return proxyTLS;
@@ -346,17 +348,17 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS, new ConnectHandler()
         {
             @Override
-            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
             {
                 try
                 {
                     // Make sure the proxy remains idle enough.
                     sleep(2 * idleTimeout);
-                    super.handleConnect(baseRequest, request, response, serverAddress);
+                    super.handleConnect(request, response, callback, serverAddress);
                 }
                 catch (Throwable x)
                 {
-                    onConnectFailure(request, response, null, x);
+                    onConnectFailure(request, response, callback, x);
                 }
             }
         });
@@ -453,9 +455,9 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS, new ConnectHandler()
         {
             @Override
-            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
             {
-                ((HttpConnection)baseRequest.getHttpChannel().getHttpTransport()).close();
+                request.getConnectionMetaData().getConnection().getEndPoint().close();
             }
         });
 
@@ -510,17 +512,19 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public Request.Processor handle(Request request) throws Exception
             {
-                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
-                    return;
+                    return (req, res, cbk) ->
+                    {
+                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        cbk.succeeded();
+                    };
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(request);
             }
         }, realm);
     }
@@ -533,18 +537,19 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public Request.Processor handle(Request request) throws Exception
             {
-                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
-                    response.getOutputStream().write(new byte[4096]);
-                    return;
+                    return (req, res, cbk) ->
+                    {
+                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        res.write(true, ByteBuffer.allocate(4096), cbk);
+                    };
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(request);
             }
         }, realm);
     }
@@ -557,18 +562,19 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public Request.Processor handle(Request request) throws Exception
             {
-                String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
-                    response.getOutputStream().write(new byte[1024]);
-                    return;
+                    return (req, res, cbk) ->
+                    {
+                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        res.write(true, ByteBuffer.allocate(1024), cbk);
+                    };
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(request);
             }
         }, realm, true);
     }
@@ -581,12 +587,12 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
+            protected boolean handleAuthentication(Request request, Response response, String address)
             {
-                String header = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.toString());
+                String header = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (header == null || !header.startsWith("Basic "))
                 {
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.toString(), "Basic realm=\"" + realm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                     // Returning false adds Connection: close to the 407 response.
                     return false;
                 }
@@ -665,9 +671,8 @@ public class ForwardProxyTLSServerTest
                 for (int i = 0; i < keyManagers.length; i++)
                 {
                     KeyManager keyManager = keyManagers[i];
-                    if (keyManager instanceof X509ExtendedKeyManager)
+                    if (keyManager instanceof X509ExtendedKeyManager extKeyManager)
                     {
-                        X509ExtendedKeyManager extKeyManager = (X509ExtendedKeyManager)keyManager;
                         keyManagers[i] = new X509ExtendedKeyManagerWrapper(extKeyManager)
                         {
                             @Override
@@ -687,7 +692,7 @@ public class ForwardProxyTLSServerTest
                 return keyManagers;
             }
         };
-        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_keystore.p12").getAbsolutePath());
+        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_keystore.p12").getAbsolutePath());
         clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -742,7 +747,7 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
+        clientTLS.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_server_keystore.p12").getAbsolutePath());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -760,7 +765,7 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12").getAbsolutePath());
+        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTargetFile("test-classes/client_proxy_keystore.p12").getAbsolutePath());
         proxyClientTLS.setKeyStorePassword("storepwd");
         proxyClientTLS.setEndpointIdentificationAlgorithm(null);
         proxyClientTLS.start();
@@ -876,19 +881,42 @@ public class ForwardProxyTLSServerTest
         }
     }
 
-    private static class ServerHandler extends AbstractHandler
+    private static class ServerHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            request.setHandled(true);
-
-            String uri = httpRequest.getRequestURI();
+            String uri = request.getPathInContext();
             if ("/echo".equals(uri))
             {
-                String body = httpRequest.getParameter("body");
-                ServletOutputStream output = httpResponse.getOutputStream();
-                output.print(body);
+                if (request.getHttpURI().getQuery() != null)
+                {
+                    Fields fields = Request.extractQueryParameters(request);
+                    String body = fields.getValue("body");
+                    if (body != null)
+                        Content.Sink.write(response, true, body, callback);
+                    else
+                        callback.succeeded();
+                }
+                else if (MimeTypes.Type.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)))
+                {
+                    CompletableFuture<Fields> completable = FutureFormFields.forRequest(request);
+                    completable.whenComplete((fields, failure) ->
+                    {
+                        if (failure != null)
+                        {
+                            callback.failed(failure);
+                        }
+                        else
+                        {
+                            String body = fields.getValue("body");
+                            if (body != null)
+                                Content.Sink.write(response, true, body, callback);
+                            else
+                                callback.succeeded();
+                        }
+                    });
+                }
             }
             else
             {

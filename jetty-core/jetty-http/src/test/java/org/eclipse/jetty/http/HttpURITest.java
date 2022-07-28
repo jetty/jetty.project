@@ -487,8 +487,8 @@ public class HttpURITest
         try
         {
             HttpURI uri = HttpURI.from(input);
-            assertThat(uri.getCanonicalPath(), is(canonicalPath));
             assertThat(uri.getDecodedPath(), is(decodedPath));
+
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
             ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS)));
 

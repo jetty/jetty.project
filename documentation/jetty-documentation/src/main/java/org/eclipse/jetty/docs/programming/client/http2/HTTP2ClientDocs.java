@@ -77,7 +77,7 @@ public class HTTP2ClientDocs
 
         // Connect to the server, the CompletableFuture will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
 
         // Block to obtain the Session.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -98,7 +98,7 @@ public class HTTP2ClientDocs
 
         // Connect to the server, the CompletableFuture will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session> sessionCF = http2Client.connect(connector.getSslContextFactory(), serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(connector.getSslContextFactory(), serverAddress, new Session.Listener() {});
 
         // Block to obtain the Session.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -113,7 +113,7 @@ public class HTTP2ClientDocs
 
         // tag::configure[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        http2Client.connect(serverAddress, new Session.Listener.Adapter()
+        http2Client.connect(serverAddress, new Session.Listener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -138,7 +138,7 @@ public class HTTP2ClientDocs
         http2Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         // Configure the request headers.
@@ -153,7 +153,7 @@ public class HTTP2ClientDocs
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // Open a Stream by sending the HEADERS frame.
-        session.newStream(headersFrame, new Stream.Listener.Adapter());
+        session.newStream(headersFrame, null);
         // end::newStream[]
     }
 
@@ -163,7 +163,7 @@ public class HTTP2ClientDocs
         http2Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         // Configure the request headers.
@@ -178,7 +178,7 @@ public class HTTP2ClientDocs
         HeadersFrame headersFrame = new HeadersFrame(request, null, false);
 
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter());
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, null);
 
         // Block to obtain the Stream.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -205,7 +205,7 @@ public class HTTP2ClientDocs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -215,7 +215,7 @@ public class HTTP2ClientDocs
 
         // tag::responseListener[]
         // Open a Stream by sending the HEADERS frame.
-        session.newStream(headersFrame, new Stream.Listener.Adapter()
+        session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -227,6 +227,12 @@ public class HTTP2ClientDocs
                 {
                     MetaData.Response response = (MetaData.Response)metaData;
                     System.getLogger("http2").log(INFO, "Received response {0}", response);
+                    if (!frame.isEndStream())
+                    {
+                        // Demand for DATA frames, so that onDataAvailable()
+                        // below will be called when they are available.
+                        stream.demand();
+                    }
                 }
                 else
                 {
@@ -235,19 +241,29 @@ public class HTTP2ClientDocs
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
+                // Read a Data object.
+                Stream.Data data = stream.readData();
+
+                if (data == null)
+                {
+                    // Demand more DATA frames.
+                    stream.demand();
+                    return;
+                }
+
                 // Get the content buffer.
-                ByteBuffer buffer = frame.getData();
+                ByteBuffer buffer = data.frame().getData();
 
                 // Consume the buffer, here - as an example - just log it.
                 System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
                 // Tell the implementation that the buffer has been consumed.
-                callback.succeeded();
+                data.release();
 
-                // By returning from the method, implicitly tell the implementation
-                // to deliver to this method more DATA frames when they are available.
+                // Demand more DATA frames when they are available.
+                stream.demand();
             }
         });
         // end::responseListener[]
@@ -258,7 +274,7 @@ public class HTTP2ClientDocs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -268,12 +284,15 @@ public class HTTP2ClientDocs
 
         // tag::reset[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter()
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 // The server reset this stream.
+
+                // Succeed the callback to signal that the reset event has been handled.
+                callback.succeeded();
             }
         });
         Stream stream = streamCF.get();
@@ -288,7 +307,7 @@ public class HTTP2ClientDocs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -298,7 +317,7 @@ public class HTTP2ClientDocs
 
         // tag::push[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter()
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
@@ -314,7 +333,7 @@ public class HTTP2ClientDocs
                 Stream primaryStream = pushedStream.getSession().getStream(frame.getStreamId());
 
                 // Return a Stream.Listener to listen for the pushed "response" events.
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
@@ -326,18 +345,29 @@ public class HTTP2ClientDocs
                         {
                             // The pushed "response" headers.
                             HttpFields pushedResponseHeaders = metaData.getFields();
+
+                            // Typically a pushed stream has data, so demand for data.
+                            stream.demand();
                         }
                     }
 
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
                         // Handle the pushed stream "response" content.
 
+                        Stream.Data data = stream.readData();
+
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+
                         // The pushed stream "response" content bytes.
-                        ByteBuffer buffer = frame.getData();
-                        // Consume the buffer and complete the callback.
-                        callback.succeeded();
+                        ByteBuffer buffer = data.frame().getData();
+                        // Consume the buffer and release the Data object.
+                        data.release();
                     }
                 };
             }
@@ -350,7 +380,7 @@ public class HTTP2ClientDocs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -360,12 +390,12 @@ public class HTTP2ClientDocs
 
         // tag::pushReset[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener.Adapter()
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
             {
-                // Reset the pushed stream to tell the server we are not interested.
+                // Reset the pushed stream to tell the server you are not interested.
                 pushedStream.reset(new ResetFrame(pushedStream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
 
                 // Not interested in listening to pushed response events.

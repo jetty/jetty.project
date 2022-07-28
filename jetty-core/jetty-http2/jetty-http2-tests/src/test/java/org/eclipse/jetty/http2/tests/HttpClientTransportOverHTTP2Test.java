@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -83,6 +84,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -122,17 +124,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testRequestAbortSendsResetFrame() throws Exception
     {
         CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
                     {
                         resetLatch.countDown();
+                        callback.succeeded();
                     }
                 };
             }
@@ -149,7 +152,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testResponseAbortSendsResetFrame() throws Exception
     {
         CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -165,12 +168,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     }
                 });
 
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
                     {
                         resetLatch.countDown();
+                        callback.succeeded();
                     }
                 };
             }
@@ -209,9 +213,73 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
+    public void testDelayDemandAfterHeaders() throws Exception
+    {
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Callback.Completable completable = new Callback.Completable();
+                response.write(false, ByteBuffer.allocate(1), completable);
+                completable.whenComplete((r, x) ->
+                {
+                    if (x != null)
+                        callback.failed(x);
+                    else
+                        response.write(true, ByteBuffer.allocate(2), callback);
+                });
+            }
+        });
+
+        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        CountDownLatch beforeContentLatch = new CountDownLatch(1);
+        AtomicInteger contentCount = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(1);
+        httpClient.newRequest("localhost", connector.getLocalPort())
+            .onResponseContentDemanded(new org.eclipse.jetty.client.api.Response.DemandedContentListener()
+            {
+                @Override
+                public void onBeforeContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand)
+                {
+                    // Do not demand.
+                    demandRef.set(demand);
+                    beforeContentLatch.countDown();
+                }
+
+                @Override
+                public void onContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+                {
+                    contentCount.incrementAndGet();
+                    callback.succeeded();
+                    demand.accept(1);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                latch.countDown();
+            });
+
+        assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
+
+        // Verify that the response is not completed yet.
+        assertFalse(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(0, contentCount.get());
+
+        // Demand to receive the content.
+        demandRef.get().accept(1);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(2, contentCount.get());
+    }
+
+    @Test
     public void testLastStreamId() throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -370,17 +438,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         long idleTimeout = 1000;
 
         CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
                     {
                         resetLatch.countDown();
+                        callback.succeeded();
                     }
                 };
             }
@@ -402,17 +471,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testRequestIdleTimeoutSendsResetFrame() throws Exception
     {
         CountDownLatch resetLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
                     {
                         resetLatch.countDown();
+                        callback.succeeded();
                     }
                 };
             }
@@ -561,7 +631,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void test204WithContent() throws Exception
     {
         byte[] bytes = "No Content".getBytes(StandardCharsets.UTF_8);
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -588,7 +658,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testInvalidResponseHPack() throws Exception
     {
-        start(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)

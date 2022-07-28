@@ -122,7 +122,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         client.start();
 
         FuturePromise<Session> promise = new FuturePromise<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener.Adapter(), promise);
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
         Session session = promise.get(5, SECONDS);
 
         CountDownLatch clientBlockLatch = new CountDownLatch(1);
@@ -130,23 +130,25 @@ public class BlockedWritesWithSmallThreadPoolTest
         // Send a request to TCP congest the server.
         HttpURI uri = HttpURI.build("http://localhost:" + connector.getLocalPort() + "/congest");
         MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
+                Stream.Data data = stream.readData();
                 try
                 {
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
-                    callback.succeeded();
-                    if (frame.isEndStream())
+                    data.release();
+                    stream.demand();
+                    if (data.frame().isEndStream())
                         clientDataLatch.countDown();
                 }
                 catch (InterruptedException x)
                 {
-                    callback.failed(x);
+                    data.release();
                 }
             }
         });
@@ -183,23 +185,26 @@ public class BlockedWritesWithSmallThreadPoolTest
     {
         int contentLength = 16 * 1024 * 1024;
         CountDownLatch serverBlockLatch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                return new Stream.Listener.Adapter()
+                stream.demand();
+                return new Stream.Listener()
                 {
                     @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataAvailable(Stream stream)
                     {
+                        Stream.Data data = stream.readData();
                         try
                         {
                             // Block here to stop reading from the network
                             // to cause the client to TCP congest.
                             serverBlockLatch.await(5, SECONDS);
-                            callback.succeeded();
-                            if (frame.isEndStream())
+                            data.release();
+                            stream.demand();
+                            if (data.frame().isEndStream())
                             {
                                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
@@ -207,7 +212,7 @@ public class BlockedWritesWithSmallThreadPoolTest
                         }
                         catch (InterruptedException x)
                         {
-                            callback.failed(x);
+                            data.release();
                         }
                     }
                 };
@@ -226,7 +231,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         client.start();
 
         FuturePromise<Session> promise = new FuturePromise<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener.Adapter(), promise);
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
         Session session = promise.get(5, SECONDS);
 
         // Send a request to TCP congest the client.
@@ -234,7 +239,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

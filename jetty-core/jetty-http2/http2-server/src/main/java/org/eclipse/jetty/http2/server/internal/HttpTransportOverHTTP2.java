@@ -269,7 +269,7 @@ public class HttpTransportOverHTTP2
 //                if (LOG.isDebugEnabled())
 //                    LOG.debug("Could not push {}", request, x);
 //            }
-//        }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
+//        }, null); // TODO: handle reset from the client ?
 //    }
 //
 //    private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)

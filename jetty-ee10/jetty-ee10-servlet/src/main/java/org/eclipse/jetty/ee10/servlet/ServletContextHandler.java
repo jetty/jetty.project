@@ -84,9 +84,9 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -528,7 +528,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 try
                 {
                     //Call context listeners
-                    MultiException ex = new MultiException();
+                    Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(getServletContext());
                     Collections.reverse(_destroyServletContextListeners);
                     for (ServletContextListener listener : _destroyServletContextListeners)
@@ -539,10 +539,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                         }
                         catch (Exception x)
                         {
-                            ex.add(x);
+                            multiException = ExceptionUtil.combine(multiException, x);
                         }
                     }
-                    ex.ifExceptionThrow();
+                    ExceptionUtil.ifExceptionThrow(multiException);
                 }
                 finally
                 {
@@ -1286,7 +1286,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected void doStop() throws Exception
     {
         // Should we attempt a graceful shutdown?
-        MultiException mex = null;
+        Throwable multiException = null;
 
         ClassLoader oldClassloader = null;
         ClassLoader oldWebapploader = null;
@@ -1341,9 +1341,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
         catch (Throwable x)
         {
-            if (mex == null)
-                mex = new MultiException();
-            mex.add(x);
+            multiException = ExceptionUtil.combine(multiException, x);
         }
         finally
         {
@@ -1357,8 +1355,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             context.clearAttributes();
         }
 
-        if (mex != null)
-            mex.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
 
         _objFactory.clear();
         getServletContext().removeAttribute(DecoratedObjectFactory.ATTR);
@@ -2938,6 +2935,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public ServletContext getContext(String uripath)
         {
+            // TODO: should we throw UnsupportedOperationException here?
+            // This is a change in API from Jetty 10 and Jetty 11, as the older Jetty versions goes down to ContextHandler.
+            // Also, how do we handle cross context across EE environments?
             List<ServletContextHandler> contexts = new ArrayList<>();
             List<ServletContextHandler> handlers = getServer().getDescendants(ServletContextHandler.class);
             String matchedPath = null;
@@ -3063,8 +3063,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -3095,8 +3095,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)
@@ -3119,7 +3119,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.getInputStream();
+                return r.newInputStream();
             }
             catch (Exception e)
             {
@@ -3131,8 +3131,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // This is an API call from the application which may pass non-canonical paths.
+            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
             // ContextHandler.this.getResource(path).
             path = URIUtil.canonicalPath(path);
             if (path == null)

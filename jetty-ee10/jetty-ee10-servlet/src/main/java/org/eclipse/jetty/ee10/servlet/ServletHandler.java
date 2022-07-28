@@ -45,7 +45,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -54,7 +53,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -605,22 +604,17 @@ public class ServletHandler extends Handler.Wrapper
     public void initialize()
         throws Exception
     {
-        MultiException mx = new MultiException();
+        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
         Consumer<BaseHolder<?>> c = h ->
         {
-            try
+            if (!h.isStarted())
             {
-                if (!h.isStarted())
+                multiException.callAndCatch(() ->
                 {
                     h.start();
                     h.initialize();
-                }
-            }
-            catch (Throwable e)
-            {
-                LOG.debug("Unable to start {}", h, e);
-                mx.add(e);
+                });
             }
         };
         
@@ -641,7 +635,7 @@ public class ServletHandler extends Handler.Wrapper
             _servlets.stream().sorted())
             .forEach(c);
 
-        mx.ifExceptionThrow();
+        multiException.ifExceptionThrow();
     }
     
     /**

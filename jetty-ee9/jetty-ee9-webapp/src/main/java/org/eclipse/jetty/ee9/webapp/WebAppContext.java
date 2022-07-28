@@ -53,7 +53,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -558,7 +558,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void destroy()
     {
         // Prepare for configuration
-        MultiException mx = new MultiException();
+        Throwable multiException = null;
         if (_configurations != null)
         {
             for (Configuration configuration : _configurations)
@@ -569,13 +569,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 }
                 catch (Exception e)
                 {
-                    mx.add(e);
+                    multiException = ExceptionUtil.combine(multiException, e);
                 }
             }
         }
         _configurations = null;
         super.destroy();
-        mx.ifExceptionThrowRuntime();
+        ExceptionUtil.ifExceptionThrowRuntime(multiException);
     }
 
     /*

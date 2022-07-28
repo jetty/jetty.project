@@ -36,8 +36,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -118,6 +119,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+        addBean(FileSystemPool.INSTANCE, false);
     }
 
     public String getServerInfo()
@@ -392,7 +394,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
-            MultiException mex = new MultiException();
+            final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
             // Open network connector to ensure ports are available
             if (!_dryRun)
@@ -405,11 +407,11 @@ public class Server extends Handler.Wrapper implements Attributes
                     }
                     catch (Throwable th)
                     {
-                        mex.add(th);
+                        multiException.add(th);
                     }
                 });
                 // Throw now if verified start sequence and there was an open exception
-                mex.ifExceptionThrow();
+                multiException.ifExceptionThrow();
             }
 
             // Start the server and components, but not connectors!
@@ -436,13 +438,13 @@ public class Server extends Handler.Wrapper implements Attributes
                 }
                 catch (Throwable e)
                 {
-                    mex.add(e);
+                    multiException.add(e);
                     // stop any started connectors
                     _connectors.stream().filter(LifeCycle::isRunning).map(Object.class::cast).forEach(LifeCycle::stop);
                 }
             }
 
-            mex.ifExceptionThrow();
+            multiException.ifExceptionThrow();
             LOG.info(String.format("Started %s @%dms", this, Uptime.getUptime()));
         }
         catch (Throwable th)
@@ -487,7 +489,7 @@ public class Server extends Handler.Wrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
 
-        MultiException mex = new MultiException();
+        Throwable multiException = null;
 
         if (getStopTimeout() > 0)
         {
@@ -498,7 +500,7 @@ public class Server extends Handler.Wrapper implements Attributes
             }
             catch (Throwable e)
             {
-                mex.add(e);
+                multiException = ExceptionUtil.combine(multiException, e);
             }
             QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
             if (qtp != null)
@@ -514,7 +516,7 @@ public class Server extends Handler.Wrapper implements Attributes
             }
             catch (Throwable e)
             {
-                mex.add(e);
+                multiException = ExceptionUtil.combine(multiException, e);
             }
         }
 
@@ -525,7 +527,7 @@ public class Server extends Handler.Wrapper implements Attributes
         }
         catch (Throwable e)
         {
-            mex.add(e);
+            multiException = ExceptionUtil.combine(multiException, e);
         }
 
         if (getErrorProcessor() instanceof DynamicErrorProcessor)
@@ -538,7 +540,7 @@ public class Server extends Handler.Wrapper implements Attributes
         //remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
 
-        mex.ifExceptionThrow();
+        ExceptionUtil.ifExceptionThrow(multiException);
     }
 
     public void join() throws InterruptedException
@@ -648,7 +650,9 @@ public class Server extends Handler.Wrapper implements Attributes
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new ClassLoaderDump(this.getClass().getClassLoader()), new DumpableCollection("environments", Environment.getAll()));
+        dumpObjects(out, indent, new org.eclipse.jetty.util.component.ClassLoaderDump(this.getClass().getClassLoader()),
+            new DumpableCollection("environments", Environment.getAll()),
+            FileSystemPool.INSTANCE);
     }
 
     public static void main(String... args)

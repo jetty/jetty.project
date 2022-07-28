@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.TunnelSupport;
 
 public class TestableRequest implements Request
 {
@@ -153,8 +154,20 @@ public class TestableRequest implements Request
     }
 
     @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+
+    @Override
     public void push(org.eclipse.jetty.http.MetaData.Request request)
     {
+    }
+
+    @Override
+    public TunnelSupport getTunnelSupport()
+    {
+        return null;
     }
 
     @Override

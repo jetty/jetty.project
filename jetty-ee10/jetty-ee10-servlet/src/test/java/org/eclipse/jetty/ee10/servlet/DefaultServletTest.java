@@ -2688,11 +2688,11 @@ public class DefaultServletTest
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
         ResourceService resourceService = new ResourceService();
-        resourceService.setPrecompressedFormats(new CompressedContentFormat[]{
+        resourceService.setPrecompressedFormats(List.of(
                 new CompressedContentFormat("bzip2", ".bz2"),
                 new CompressedContentFormat("gzip", ".gz"),
                 new CompressedContentFormat("br", ".br")
-        });
+        ));
         ServletHolder defholder = new ServletHolder(new DefaultServlet()); // TODO: how to integrate resource service / precompressed format
         context.addServlet(defholder, "/");
         defholder.setInitParameter("resourceBase", docRoot.toString());

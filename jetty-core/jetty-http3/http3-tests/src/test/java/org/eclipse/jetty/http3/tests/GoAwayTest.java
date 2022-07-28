@@ -578,7 +578,7 @@ public class GoAwayTest extends AbstractClientServerTest
                     {
                         Stream.Data data = stream.readData();
                         if (data != null)
-                            data.complete();
+                            data.release();
                         if (data != null && data.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
@@ -1277,7 +1277,7 @@ public class GoAwayTest extends AbstractClientServerTest
                 Stream.Data data = stream.readData();
                 if (data != null)
                 {
-                    data.complete();
+                    data.release();
                     if (data.isLast())
                         dataLatch.countDown();
                 }
@@ -1332,7 +1332,7 @@ public class GoAwayTest extends AbstractClientServerTest
                 Stream.Data data = stream.readData();
                 if (data != null)
                 {
-                    data.complete();
+                    data.release();
                     if (data.isLast())
                         dataLatch.countDown();
                 }

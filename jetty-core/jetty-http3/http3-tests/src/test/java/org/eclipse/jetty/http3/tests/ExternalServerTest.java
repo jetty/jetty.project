@@ -76,7 +76,7 @@ public class ExternalServerTest
                     System.err.println("RESPONSE DATA = " + data);
                     if (data != null)
                     {
-                        data.complete();
+                        data.release();
                         if (data.isLast())
                         {
                             requestLatch.countDown();

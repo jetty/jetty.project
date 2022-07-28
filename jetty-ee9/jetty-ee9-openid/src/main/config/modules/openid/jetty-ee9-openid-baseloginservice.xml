@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure>
+  <!-- Optional code to configure the base LoginService used by the OpenIdLoginService
+  <New id="BaseLoginService" class="org.eclipse.jetty.security.HashLoginService">
+    <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
+    <Set name="hotReload">true</Set>
+  </New>
+  -->
+</Configure>

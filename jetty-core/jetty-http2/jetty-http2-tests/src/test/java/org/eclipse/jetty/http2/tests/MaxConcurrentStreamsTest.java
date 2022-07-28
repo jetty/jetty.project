@@ -449,7 +449,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testTCPCongestedStreamTimesOut() throws Exception
     {
         CountDownLatch request1Latch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -475,8 +475,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 }
-                // Return a Stream listener that consumes the content.
-                return new Stream.Listener.Adapter();
+                return null;
             }
         });
         http2.setMaxConcurrentStreams(2);
@@ -559,7 +558,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testDifferentMaxConcurrentStreamsForDifferentConnections() throws Exception
     {
         long processing = 125;
-        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
         {
             private Session session1;
             private Session session2;
@@ -728,9 +727,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         }
 
         @Override
-        public void onClose(Session session, GoAwayFrame frame)
+        public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
-            listener.onClose(session, frame);
+            listener.onClose(session, frame, callback);
         }
 
         @Override
@@ -740,9 +739,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         }
 
         @Override
-        public void onFailure(Session session, Throwable failure)
+        public void onFailure(Session session, Throwable failure, Callback callback)
         {
-            listener.onFailure(session, failure);
+            listener.onFailure(session, failure, callback);
         }
     }
 }

@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.MultiException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -154,10 +153,6 @@ public class ServletHolderTest
         {
             assertThat(e.getMessage(), containsString("foo"));
         }
-        catch (MultiException e)
-        {
-            assertThat(e.getCause().getMessage(), containsString("foo"));
-        }
     }
 
     @Test
@@ -213,10 +208,6 @@ public class ServletHolderTest
         catch (UnavailableException e)
         {
             assertThat(e.getMessage(), containsString("foo"));
-        }
-        catch (MultiException e)
-        {
-            assertThat(e.getCause().getMessage(), containsString("foo"));
         }
     }
 }

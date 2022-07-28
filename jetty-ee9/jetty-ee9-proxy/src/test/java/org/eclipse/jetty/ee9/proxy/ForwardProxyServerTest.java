@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -72,7 +72,7 @@ public class ForwardProxyServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
         serverTLS.setKeyStorePath(keyStorePath);
         serverTLS.setKeyStorePassword("storepwd");
         return serverTLS;
@@ -183,10 +183,11 @@ public class ForwardProxyServerTest
                             else
                                 assertFalse(request.contains("https://"));
 
-                            String response =
-                                "HTTP/1.1 200 OK\r\n" +
-                                    "Content-Length: 0\r\n" +
-                                    "\r\n";
+                            String response = """
+                                HTTP/1.1 200 OK
+                                Content-Length: 0
+                                
+                                """;
                             getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
                         }
                         catch (Throwable x)
@@ -232,15 +233,14 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new EmptyServerHandler()
+        startServer(null, http, new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                String remoteHost = jettyRequest.getRemoteHost();
+                String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
-                String remoteAddr = jettyRequest.getRemoteAddr();
-                assertThat(remoteAddr, Matchers.matchesPattern("\\[.+\\]"));
+                callback.succeeded();
             }
         });
         startProxy(new ProxyServlet()
@@ -271,15 +271,14 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new EmptyServerHandler()
+        startServer(null, http, new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                String remoteHost = jettyRequest.getRemoteHost();
+                String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
-                String remoteAddr = jettyRequest.getRemoteAddr();
-                assertThat(remoteAddr, Matchers.matchesPattern("\\[.+\\]"));
+                callback.succeeded();
             }
         });
         startProxy(new ProxyServlet()

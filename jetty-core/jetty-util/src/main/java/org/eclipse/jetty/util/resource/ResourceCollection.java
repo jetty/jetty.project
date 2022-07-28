@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -265,11 +264,7 @@ public class ResourceCollection extends Resource
         }
 
         if (resources == null)
-        {
-            if (addedResource != null)
-                return addedResource; // This will not exist
-            return EmptyResource.INSTANCE;
-        }
+            return addedResource; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -313,7 +308,7 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
+    public InputStream newInputStream() throws IOException
     {
         assertResourcesSet();
 
@@ -324,7 +319,7 @@ public class ResourceCollection extends Resource
                 // Skip, cannot open anyway
                 continue;
             }
-            InputStream is = r.getInputStream();
+            InputStream is = r.newInputStream();
             if (is != null)
             {
                 return is;
@@ -335,13 +330,13 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         assertResourcesSet();
 
         for (Resource r : _resources)
         {
-            ReadableByteChannel channel = r.getReadableByteChannel();
+            ReadableByteChannel channel = r.newReadableByteChannel();
             if (channel != null)
             {
                 return channel;

@@ -19,6 +19,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -45,8 +46,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.stream;
-
 /**
  * Resource service, used by DefaultServlet and ResourceHandler
  */
@@ -59,14 +58,14 @@ public class ResourceService
     // TODO: see if we can set this to private eventually
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
+    private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
     private HttpContent.ContentFactory _contentFactory;
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
-    private String[] _preferredEncodingOrder = new String[0];
+    private List<String> _preferredEncodingOrder = new ArrayList<>();
     private int _encodingCacheSize = 100;
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
@@ -118,7 +117,7 @@ public class ResourceService
             reqRanges = null;
 
         boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
-        boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && reqRanges == null;
+        boolean checkPrecompressedVariants = _precompressedFormats.size() > 0 && !endsWithSlash && reqRanges == null;
 
         try
         {
@@ -386,6 +385,7 @@ public class ResourceService
                 uri.path(uri.getCanonicalPath() + "/");
                 uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+                // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 Response.sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
@@ -444,6 +444,7 @@ public class ResourceService
             }
             case SERVE ->
             {
+                // TODO : check conditional headers.
                 // TODO output buffer size????
                 HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
                 sendData(request, response, callback, c, null);
@@ -535,7 +536,7 @@ public class ResourceService
                 putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
                 response.getHeaders().put(HttpHeader.CONTENT_RANGE,
                     InclusiveByteRange.to416HeaderRangeString(contentLength));
-                sendStatus(416, response, callback);
+                writeHttpError(request, response, callback, HttpStatus.RANGE_NOT_SATISFIABLE_416);
                 return true;
             }
 
@@ -551,7 +552,7 @@ public class ResourceService
                     response.getHeaders().addDateField(HttpHeader.DATE.asString(), System.currentTimeMillis());
                 response.getHeaders().put(HttpHeader.CONTENT_RANGE,
                     singleSatisfiableRange.toHeaderRangeString(contentLength));
-                writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
+                writeHttpPartialContent(request, response, callback, content, singleSatisfiableRange);
                 return true;
             }
 
@@ -614,9 +615,19 @@ public class ResourceService
             }
 
             multi.close();
- */
+             */
         }
         return true;
+    }
+
+    protected void writeHttpPartialContent(Request request, Response response, Callback callback, HttpContent content, InclusiveByteRange singleSatisfiableRange)
+    {
+        // TODO: implement this
+    }
+
+    protected void writeHttpError(Request request, Response response, Callback callback, int statusCode)
+    {
+        Response.writeError(request, response, callback, statusCode);
     }
 
     protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
@@ -720,7 +731,7 @@ public class ResourceService
     /**
      * @return Precompressed resources formats that can be used to serve compressed variant of resources.
      */
-    public CompressedContentFormat[] getPrecompressedFormats()
+    public List<CompressedContentFormat> getPrecompressedFormats()
     {
         return _precompressedFormats;
     }
@@ -782,10 +793,12 @@ public class ResourceService
      * @param precompressedFormats The list of precompresed formats to serve in encoded format if matching resource found.
      * For example serve gzip encoded file if ".gz" suffixed resource is found.
      */
-    public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
+    public void setPrecompressedFormats(List<CompressedContentFormat> precompressedFormats)
     {
-        _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(CompressedContentFormat::getEncoding).toArray(String[]::new);
+        _precompressedFormats.clear();
+        _precompressedFormats.addAll(precompressedFormats);
+        _preferredEncodingOrder.clear();
+        _preferredEncodingOrder.addAll(_precompressedFormats.stream().map(CompressedContentFormat::getEncoding).toList());
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)

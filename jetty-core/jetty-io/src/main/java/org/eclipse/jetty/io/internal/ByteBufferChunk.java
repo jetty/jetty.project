@@ -19,9 +19,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class ByteBufferChunk implements Content.Chunk
+public abstract class ByteBufferChunk implements Content.Chunk
 {
     public static final ByteBufferChunk EMPTY = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, false)
     {
@@ -49,18 +50,28 @@ public class ByteBufferChunk implements Content.Chunk
         this.last = last;
     }
 
+    @Override
     public ByteBuffer getByteBuffer()
     {
         return byteBuffer;
     }
 
+    @Override
     public boolean isLast()
     {
         return last;
     }
 
-    public void release()
+    @Override
+    public void retain()
     {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return true;
     }
 
     @Override
@@ -74,7 +85,29 @@ public class ByteBufferChunk implements Content.Chunk
         );
     }
 
-    public static class ReleasedByRunnable extends ByteBufferChunk
+    public static class WithReferenceCount extends ByteBufferChunk
+    {
+        private final ReferenceCounter references = new ReferenceCounter();
+
+        public WithReferenceCount(ByteBuffer byteBuffer, boolean last)
+        {
+            super(byteBuffer, last);
+        }
+
+        @Override
+        public void retain()
+        {
+            references.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return references.release();
+        }
+    }
+
+    public static class ReleasedByRunnable extends ByteBufferChunk.WithReferenceCount
     {
         private final AtomicReference<Runnable> releaser;
 
@@ -84,15 +117,21 @@ public class ByteBufferChunk implements Content.Chunk
             this.releaser = new AtomicReference<>(releaser);
         }
 
-        public void release()
+        @Override
+        public boolean release()
         {
-            Runnable runnable = releaser.getAndSet(null);
-            if (runnable != null)
-                runnable.run();
+            boolean released = super.release();
+            if (released)
+            {
+                Runnable runnable = releaser.getAndSet(null);
+                if (runnable != null)
+                    runnable.run();
+            }
+            return released;
         }
     }
 
-    public static class ReleasedByConsumer extends ByteBufferChunk
+    public static class ReleasedByConsumer extends ByteBufferChunk.WithReferenceCount
     {
         private final AtomicReference<Consumer<ByteBuffer>> releaser;
 
@@ -102,11 +141,40 @@ public class ByteBufferChunk implements Content.Chunk
             this.releaser = new AtomicReference<>(releaser);
         }
 
-        public void release()
+        @Override
+        public boolean release()
         {
-            Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
-            if (consumer != null)
-                consumer.accept(getByteBuffer());
+            boolean released = super.release();
+            if (released)
+            {
+                Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
+                if (consumer != null)
+                    consumer.accept(getByteBuffer());
+            }
+            return released;
+        }
+    }
+
+    public static class WithRetainable extends ByteBufferChunk
+    {
+        private final Retainable retainable;
+
+        public WithRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        {
+            super(byteBuffer, last);
+            this.retainable = retainable;
+        }
+
+        @Override
+        public void retain()
+        {
+            retainable.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return retainable.release();
         }
     }
 }

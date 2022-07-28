@@ -199,7 +199,7 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Precompressed resources formats that can be used to serve compressed variant of resources.
      */
-    public CompressedContentFormat[] getPrecompressedFormats()
+    public List<CompressedContentFormat> getPrecompressedFormats()
     {
         return _resourceService.getPrecompressedFormats();
     }
@@ -227,7 +227,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setBaseResource(Resource base)
     {
         _resourceBase = base;
-        setupContentFactory();
     }
 
     /**
@@ -266,7 +265,16 @@ public class ResourceHandler extends Handler.Wrapper
      * @param precompressedFormats The list of precompresed formats to serve in encoded format if matching resource found.
      * For example serve gzip encoded file if ".gz" suffixed resource is found.
      */
-    public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
+    public void setPrecompressedFormats(CompressedContentFormat... precompressedFormats)
+    {
+        setPrecompressedFormats(List.of(precompressedFormats));
+    }
+
+    /**
+     * @param precompressedFormats The list of precompresed formats to serve in encoded format if matching resource found.
+     * For example serve gzip encoded file if ".gz" suffixed resource is found.
+     */
+    public void setPrecompressedFormats(List<CompressedContentFormat> precompressedFormats)
     {
         _resourceService.setPrecompressedFormats(precompressedFormats);
         setupContentFactory();
@@ -305,6 +313,11 @@ public class ResourceHandler extends Handler.Wrapper
     public void setStylesheet(String stylesheet)
     {
         // TODO
+    }
+
+    public void setWelcomeFiles(String... welcomeFiles)
+    {
+        setWelcomeFiles(List.of(welcomeFiles));
     }
 
     public void setWelcomeFiles(List<String> welcomeFiles)

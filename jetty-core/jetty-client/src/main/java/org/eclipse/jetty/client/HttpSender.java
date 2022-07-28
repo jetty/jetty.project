@@ -478,9 +478,16 @@ public abstract class HttpSender
             Content.Source content = request.getBody();
 
             if (expect100)
-                chunk = Content.Chunk.EMPTY;
+            {
+                if (committed)
+                    return Action.IDLE;
+                else
+                    chunk = null;
+            }
             else
+            {
                 chunk = content.read();
+            }
             if (LOG.isDebugEnabled())
                 LOG.debug("Content {} for {}", chunk, request);
 

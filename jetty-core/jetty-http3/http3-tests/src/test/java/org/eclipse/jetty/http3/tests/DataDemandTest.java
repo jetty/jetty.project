@@ -462,7 +462,7 @@ public class DataDemandTest extends AbstractClientServerTest
                             if (data != null)
                             {
                                 // Consume the data.
-                                data.complete();
+                                data.release();
                                 if (data.isLast())
                                 {
                                     dataLatch.countDown();
@@ -558,7 +558,7 @@ public class DataDemandTest extends AbstractClientServerTest
                         }
                         else
                         {
-                            data.complete();
+                            data.release();
                             if (data.isLast())
                                 lastDataLatch.countDown();
                             else

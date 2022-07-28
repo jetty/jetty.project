@@ -75,6 +75,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -781,41 +782,37 @@ public class AsyncMiddleManServletTest
     @Test
     public void testClientRequestReadFailsOnSecondRead() throws Exception
     {
-        //TODO fix me
-        /*       try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
-            startServer(new EchoHttpServlet());
-            startProxy(new AsyncMiddleManServlet()
+            private int count;
+
+            @Override
+            protected int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
             {
-                private int count;
-        
-                @Override
-                protected int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
-                {
-                    if (++count < 2)
-                        return super.readClientRequestContent(input, buffer);
-                    else
-                        throw new IOException("explicitly_thrown_by_test");
-                }
+                if (++count < 2)
+                    return super.readClientRequestContent(input, buffer);
+                else
+                    throw new IOException("explicitly_thrown_by_test");
+            }
+        });
+        startClient();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent();
+        client.newRequest("localhost", serverConnector.getLocalPort())
+            .body(content)
+            .send(result ->
+            {
+                if (result.getResponse().getStatus() == 502)
+                    latch.countDown();
             });
-            startClient();
-        
-            CountDownLatch latch = new CountDownLatch(1);
-            AsyncRequestContent content = new AsyncRequestContent();
-            client.newRequest("localhost", serverConnector.getLocalPort())
-                .body(content)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == 502)
-                        latch.countDown();
-                });
-            content.offer(ByteBuffer.allocate(512));
-            sleep(1000);
-            content.offer(ByteBuffer.allocate(512));
-            content.close();
-        
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
-        }*/
+        content.write(ByteBuffer.allocate(512), Callback.NOOP);
+        sleep(1000);
+        content.write(ByteBuffer.allocate(512), Callback.NOOP);
+        content.close();
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1109,6 +1106,7 @@ public class AsyncMiddleManServletTest
     }
 
     @Test
+    @Disabled("idle timeouts do not work yet")
     public void testAfterContentTransformerClosingFilesOnClientRequestException() throws Exception
     {
         Path targetTestsDir = workDir.getEmptyPathDir();

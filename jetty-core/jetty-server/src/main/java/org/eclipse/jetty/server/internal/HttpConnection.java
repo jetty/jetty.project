@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -79,9 +81,11 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 public class HttpConnection extends AbstractConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
+    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
     private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
+    private final TunnelSupport _tunnelSupport = new TunnelSupportOverHTTP1();
     private final AtomicLong _streamIdGenerator = new AtomicLong();
     private final long _id;
     private final HttpConfiguration _configuration;
@@ -939,7 +943,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         protected void onCompleteSuccess()
         {
             // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
-            boolean upgrading = _httpChannel.getRequest() != null && _httpChannel.getRequest().getAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE) != null;
+            boolean upgrading = _httpChannel.getRequest() != null && _httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
             // If successfully upgraded it is responsibility of the next protocol to close the connection.
             if (_shutdownOut && !upgrading)
@@ -1005,12 +1009,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
             RetainableByteBuffer retainable = _retainableByteBuffer;
-            stream._chunk = Content.Chunk.from(buffer, false, () ->
-            {
-                retainable.release();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), retainable, this);
-            });
+            stream._chunk = Content.Chunk.from(buffer, false, new ChunkRetainable(retainable, buffer));
             return true;
         }
 
@@ -1135,7 +1134,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
     }
 
-    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
+    private class ChunkRetainable extends Retainable.Wrapper
+    {
+        private final ByteBuffer buffer;
+
+        private ChunkRetainable(Retainable retainable, ByteBuffer buffer)
+        {
+            super(retainable);
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean release()
+        {
+            boolean released = super.release();
+            if (LOG.isDebugEnabled())
+                LOG.debug("content released {} {}/{} for {}", released, BufferUtil.toDetailString(buffer), getWrapped(), HttpConnection.this);
+            return released;
+        }
+    }
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
@@ -1484,7 +1501,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             _upgradeConnection = connection;
             if (_httpChannel.getRequest() != null)
-                _httpChannel.getRequest().setAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+                _httpChannel.getRequest().setAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         }
 
         @Override
@@ -1542,6 +1559,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return _tunnelSupport;
+        }
+
+        @Override
         public void succeeded()
         {
             HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
@@ -1557,6 +1580,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 failed(new IOException("Pending read in onCompleted"));
                 return;
             }
+
+            // Save the upgrade Connection before recycling the HttpChannel which would clear the request attributes.
+            _upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
 
             _httpChannel.recycle();
 
@@ -1646,6 +1672,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public InvocationType getInvocationType()
         {
             return HttpStream.super.getInvocationType();
+        }
+    }
+
+    private class TunnelSupportOverHTTP1 implements TunnelSupport
+    {
+        @Override
+        public String getProtocol()
+        {
+            return null;
+        }
+
+        @Override
+        public EndPoint getEndPoint()
+        {
+            return HttpConnection.this.getEndPoint();
         }
     }
 }

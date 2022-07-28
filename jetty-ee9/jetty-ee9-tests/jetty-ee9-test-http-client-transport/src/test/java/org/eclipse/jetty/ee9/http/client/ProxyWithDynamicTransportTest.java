@@ -434,7 +434,7 @@ public class ProxyWithDynamicTransportTest
         startClient();
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
         MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.EMPTY, null);
@@ -442,7 +442,7 @@ public class ProxyWithDynamicTransportTest
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch tunnelLatch = new CountDownLatch(1);
         CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        session.newStream(frame, streamPromise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -519,7 +519,7 @@ public class ProxyWithDynamicTransportTest
         ((HTTP2CServerConnectionFactory)h2c).setStreamIdleTimeout(streamIdleTimeout);
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
         MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.EMPTY, null);
@@ -528,7 +528,7 @@ public class ProxyWithDynamicTransportTest
         CountDownLatch tunnelLatch = new CountDownLatch(1);
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch resetLatch = new CountDownLatch(1);
-        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        session.newStream(frame, streamPromise, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

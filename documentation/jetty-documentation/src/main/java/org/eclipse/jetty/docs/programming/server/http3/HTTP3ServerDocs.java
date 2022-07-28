@@ -157,7 +157,7 @@ public class HTTP3ServerDocs
                             System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
 
                             // Tell the implementation that the buffer has been consumed.
-                            data.complete();
+                            data.release();
 
                             if (!data.isLast())
                             {
@@ -204,7 +204,7 @@ public class HTTP3ServerDocs
                             else
                             {
                                 // Consume the request content.
-                                data.complete();
+                                data.release();
                                 if (data.isLast())
                                     respond(stream, request);
                             }
@@ -290,7 +290,7 @@ public class HTTP3ServerDocs
         // The favicon bytes.
         ByteBuffer faviconBuffer = BufferUtil.toBuffer(Resource.newResource("/path/to/favicon.ico"), true);
 
-        ServerSessionListener sessionListener = new ServerSessionListener.Adapter()
+        ServerSessionListener sessionListener = new ServerSessionListener()
         {
             // By default, push is enabled.
             private boolean pushEnabled = true;
@@ -315,7 +315,7 @@ public class HTTP3ServerDocs
                     HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico");
                     MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
-                    stream.push(promiseFrame, new Stream.Listener.Adapter())
+                    stream.push(promiseFrame, null)
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
@@ -325,7 +325,7 @@ public class HTTP3ServerDocs
                         });
                 }
                 // Return a Stream.Listener to handle the request events.
-                return new Stream.Listener.Adapter();
+                return new Stream.Listener();
             }
         };
         // end::push[]

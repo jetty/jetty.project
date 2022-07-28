@@ -24,11 +24,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class URIUtilCanonicalPathTest
+public class URIUtilNormalizePathTest
 {
     public static Stream<Arguments> paths()
     {
-        String[][] canonical =
+        String[][] unNormalAndNormal =
             {
                 // Examples from RFC
                 {"/a/b/c/./../../g", "/a/g"},
@@ -130,7 +130,7 @@ public class URIUtilCanonicalPathTest
             };
 
         ArrayList<Arguments> ret = new ArrayList<>();
-        for (String[] args : canonical)
+        for (String[] args : unNormalAndNormal)
         {
             ret.add(Arguments.of((Object[])args));
         }
@@ -139,23 +139,23 @@ public class URIUtilCanonicalPathTest
 
     @ParameterizedTest
     @MethodSource("paths")
-    public void testCanonicalPath(String input, String expectedResult)
+    public void testNormalizePath(String input, String expectedResult)
     {
         // Check canonicalPath
-        assertThat(URIUtil.canonicalPath(input), is(expectedResult));
+        assertThat(URIUtil.normalizePath(input), is(expectedResult));
 
         // Check canonicalURI
         if (expectedResult == null)
         {
-            assertThat(URIUtil.canonicalURI(input), nullValue());
+            assertThat(URIUtil.normalizePathQuery(input), nullValue());
         }
         else
         {
             // mostly encodedURI will be the same
-            assertThat(URIUtil.canonicalURI(input), is(expectedResult));
+            assertThat(URIUtil.normalizePathQuery(input), is(expectedResult));
             // but will terminate on fragments and queries
-            assertThat(URIUtil.canonicalURI(input + "?/foo/../bar/."), is(expectedResult + "?/foo/../bar/."));
-            assertThat(URIUtil.canonicalURI(input + "#/foo/../bar/."), is(expectedResult + "#/foo/../bar/."));
+            assertThat(URIUtil.normalizePathQuery(input + "?/foo/../bar/."), is(expectedResult + "?/foo/../bar/."));
+            assertThat(URIUtil.normalizePathQuery(input + "#/foo/../bar/."), is(expectedResult + "#/foo/../bar/."));
         }
     }
 
@@ -174,7 +174,7 @@ public class URIUtilCanonicalPathTest
     @MethodSource("queries")
     public void testQuery(String input, String expectedPath)
     {
-        String actual = URIUtil.canonicalURI(input);
+        String actual = URIUtil.normalizePathQuery(input);
         assertThat(actual, is(expectedPath));
     }
 }

@@ -291,7 +291,7 @@ public class ResourceTest
     {
         Assumptions.assumeTrue(data.content != null);
 
-        InputStream in = data.resource.getInputStream();
+        InputStream in = data.resource.newInputStream();
         String c = IO.toString(in);
         assertThat("Content: " + data.test, c, startsWith(data.content));
     }

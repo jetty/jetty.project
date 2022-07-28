@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -115,7 +116,7 @@ public class DefaultServlet extends HttpServlet
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
         // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
-        CompressedContentFormat[] precompressedFormats = new CompressedContentFormat[0];
+        List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
         ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
@@ -237,7 +238,7 @@ public class DefaultServlet extends HttpServlet
         IO.close(_resourceBaseMount);
     }
 
-    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
+    private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
     {
         if (precompressed == null && gzip == null)
         {
@@ -269,7 +270,7 @@ public class DefaultServlet extends HttpServlet
             // gzip handling is for backwards compatibility with older Jetty
             ret.add(CompressedContentFormat.GZIP);
         }
-        return ret.toArray(new CompressedContentFormat[ret.size()]);
+        return ret;
     }
 
     private Boolean getInitBoolean(String name)
@@ -505,6 +506,12 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        public boolean isPushSupported()
+        {
+            return _coreRequest.isPushSupported();
+        }
+
+        @Override
         public void push(MetaData.Request request)
         {
             _coreRequest.push(request);
@@ -517,9 +524,14 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
+        public TunnelSupport getTunnelSupport()
+        {
+            return _coreRequest.getTunnelSupport();
+        }
+
+        @Override
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
         {
-
         }
 
         @Override
@@ -971,7 +983,7 @@ public class DefaultServlet extends HttpServlet
                             welcome = URIUtil.addPaths(servletPath, welcome);
 
                         response.setContentLength(0);
-                        response.sendRedirect(welcome);
+                        response.sendRedirect(welcome); // Call API (might be overridden)
                         callback.succeeded();
                     }
                 }

@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.http3.client.http.internal;
 
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
@@ -34,7 +34,8 @@ import org.slf4j.LoggerFactory;
 public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
-    private boolean notifySuccess;
+
+    private final AtomicBoolean notifySuccess = new AtomicBoolean();
 
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
@@ -58,7 +59,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        if (notifySuccess)
+        if (notifySuccess.get())
             responseSuccess(exchange);
         else
             getHttpChannel().getStream().demand();
@@ -86,6 +87,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
             // TODO: add support for HttpMethod.CONNECT.
 
+            notifySuccess.set(frame.isLast());
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -98,7 +100,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("stalling response processing, no demand after headers on {}", this);
-                notifySuccess = frame.isLast();
             }
         }
     }
@@ -110,55 +111,45 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        try
+        Stream.Data data = stream.readData();
+        if (data != null)
         {
-            Stream.Data data = stream.readData();
-            if (data != null)
+            ByteBuffer byteBuffer = data.getByteBuffer();
+            if (byteBuffer.hasRemaining())
             {
-                ByteBuffer byteBuffer = data.getByteBuffer();
-                if (byteBuffer.hasRemaining())
+                notifySuccess.set(data.isLast());
+                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
-                    Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete, x ->
-                    {
-                        data.complete();
-                        if (responseFailure(x))
-                            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                    });
-                    boolean proceed = responseContent(exchange, byteBuffer, callback);
-                    if (proceed)
-                    {
-                        if (data.isLast())
-                            responseSuccess(exchange);
-                        else
-                            stream.demand();
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("stalling response processing, no demand after {} on {}", data, this);
-                        notifySuccess = data.isLast();
-                    }
-                }
-                else
+                    data.release();
+                    if (responseFailure(x))
+                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                });
+                boolean proceed = responseContent(exchange, byteBuffer, callback);
+                if (proceed)
                 {
-                    data.complete();
                     if (data.isLast())
                         responseSuccess(exchange);
                     else
                         stream.demand();
                 }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("stalling response processing, no demand after {} on {}", data, this);
+                }
             }
             else
             {
-                stream.demand();
+                data.release();
+                if (data.isLast())
+                    responseSuccess(exchange);
+                else
+                    stream.demand();
             }
         }
-        catch (Throwable x)
+        else
         {
-            Throwable failure = x;
-            if (x instanceof UncheckedIOException)
-                failure = x.getCause();
-            exchange.getRequest().abort(failure);
+            stream.demand();
         }
     }
 

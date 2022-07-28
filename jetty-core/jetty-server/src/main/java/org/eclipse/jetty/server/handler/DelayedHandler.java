@@ -53,6 +53,8 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 return processor;
             if (request.getLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
+            // TODO: add logic to not delay if it's a CONNECT request.
+            // TODO: also add logic to not delay if it's a request that expects 100 Continue.
 
             return new UntilContentProcessor(request, processor);
         }

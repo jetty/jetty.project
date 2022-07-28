@@ -43,8 +43,8 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
-        read(oneByte, 0, 1);
-        return oneByte[0] & 0xFF;
+        int read = read(oneByte, 0, 1);
+        return read < 0 ? -1 : oneByte[0] & 0xFF;
     }
 
     @Override

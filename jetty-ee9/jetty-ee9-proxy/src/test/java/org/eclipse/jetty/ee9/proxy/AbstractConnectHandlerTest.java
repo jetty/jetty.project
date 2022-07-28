@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.proxy;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
