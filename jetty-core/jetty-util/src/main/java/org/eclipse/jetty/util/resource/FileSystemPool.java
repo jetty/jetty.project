@@ -86,7 +86,7 @@ public class FileSystemPool implements Dumpable
             }
             catch (ProviderNotFoundException pnfe)
             {
-                LOG.warn("Unable to mount URI: {}", uri, pnfe);
+                throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + uri, pnfe);
             }
             Mount mount = new Mount(uri);
             retain(uri, fileSystem, mount);
