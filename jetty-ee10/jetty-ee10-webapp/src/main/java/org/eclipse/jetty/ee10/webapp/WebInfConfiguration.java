@@ -43,7 +43,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
-    private Resource.Mount _mount;
 
     public WebInfConfiguration()
     {
@@ -94,9 +93,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
-
-        IO.close(_mount);
-        _mount = null;
 
         //reset the base resource back to what it was before we did any unpacking of resources
         //TODO there is something wrong with the config of the resource base as this should never be null
@@ -318,8 +314,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                _mount = Resource.mountJar(webApp.getPath());
-                webApp = _mount.root();
+                webApp = ResourceFactory.of(webApp).newResource(Resource.toJarFileUri(webApp.getURI()));
             }
 
             // If we should extract or the URL is still not usable
@@ -372,10 +367,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                         Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                        try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                        try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
                         {
-                            Resource jarWebApp = mount.root();
-                            jarWebApp.copyTo(extractedWebAppDir);
+                            factory.newJarFileResource(webApp.getURI())).copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
                     }
@@ -390,10 +384,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                             Files.createDirectory(extractedWebAppDir);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                            try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                            try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
                             {
-                                Resource jarWebApp = mount.root();
-                                jarWebApp.copyTo(extractedWebAppDir);
+                                factory.newJarFileResource(webApp.getURI())).copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
                         }

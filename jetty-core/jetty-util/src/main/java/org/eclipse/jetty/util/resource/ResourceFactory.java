@@ -67,6 +67,15 @@ public interface ResourceFactory
         }
     }
 
+    default Resource newJarFileResource(URI uri)
+    {
+        if (!Resource.isArchive(uri))
+            throw new IllegalArgumentException("Path is not a Java Archive: " + uri);
+        if (!uri.getScheme().equalsIgnoreCase("file"))
+            throw new IllegalArgumentException("Not an allowed path: " + uri);
+        return newResource(Resource.toJarFileUri(uri));
+    }
+
     static ResourceFactory of(Resource baseResource)
     {
         if (baseResource == null)
@@ -116,19 +125,6 @@ public interface ResourceFactory
             LifeCycle.start(factory);
             container.addBean(factory, true);
         }
-        return factory;
-    }
-
-    static ResourceFactory of(LifeCycle lifeCycle)
-    {
-        if (lifeCycle == null)
-            return ROOT;
-
-        if (lifeCycle instanceof Container container)
-            return of(container);
-
-        LifeCycleResourceFactory factory = new LifeCycleResourceFactory();
-        lifeCycle.addEventListener(factory);
         return factory;
     }
 
@@ -203,29 +199,6 @@ public interface ResourceFactory
         public void dump(Appendable out, String indent) throws IOException
         {
             Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
-        }
-    }
-
-    class LifeCycleResourceFactory  implements ResourceFactory, LifeCycle.Listener
-    {
-        private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
-
-        @Override
-        public Resource newResource(URI uri)
-        {
-            Resource.Mount mount = Resource.mountIfNeeded(uri);
-            if (mount != null)
-                _mounts.add(mount);
-            return Resource.createResource(uri);
-        }
-
-        @Override
-        public void lifeCycleStopped(LifeCycle event)
-        {
-            for (Resource.Mount mount : _mounts)
-                IO.close(mount);
-            _mounts.clear();
-            LifeCycle.Listener.super.lifeCycleStopped(event);
         }
     }
 }

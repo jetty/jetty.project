@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.StringTokenizer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
@@ -105,10 +104,12 @@ public abstract class Resource
      * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
      * they no longer require any resources from a mounted resource.
      * @throws IllegalArgumentException If the uri could not be mounted.
-     * @see #mount(URI)
      */
+    @Deprecated
     public static Resource.Mount mountIfNeeded(URI uri)
     {
+        // TODO move this some private that can only be seen by ResourceFactory implementations.
+
         if (uri == null)
             return null;
         String scheme = uri.getScheme();
@@ -129,42 +130,6 @@ public abstract class Resource
         {
             throw new IllegalArgumentException(ioe);
         }
-    }
-
-    /**
-     * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the uri could not be mounted.
-     * @throws IllegalArgumentException If the URI does not require a mount.
-     * @see #mountIfNeeded(URI)
-     */
-    public static Resource.Mount mount(URI uri) throws IOException
-    {
-        if (!isArchive(uri))
-            throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
-        if (!uri.getScheme().equalsIgnoreCase("jar"))
-            throw new IllegalArgumentException("not an allowed URI: " + uri);
-        return FileSystemPool.INSTANCE.mount(uri);
-    }
-
-    /**
-     * @param path The path to a jar file to be mounted (e.g. "file:/tmp/some.jar")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the path could not be mounted
-     */
-    public static Resource.Mount mountJar(Path path) throws IOException
-    {
-        if (!isArchive(path))
-            throw new IllegalArgumentException("Path is not a Java Archive: " + path);
-        URI pathUri = path.toUri();
-        if (!pathUri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("Not an allowed path: " + path);
-        URI jarUri = toJarFileUri(pathUri);
-        if (jarUri == null)
-            throw new IllegalArgumentException("Not a mountable archive: " + path);
-        return FileSystemPool.INSTANCE.mount(jarUri);
     }
 
     /**
@@ -420,12 +385,15 @@ public abstract class Resource
      * treated as a normal resource.
      *
      * @param resource Resource as string representation
-     * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
+     * @param resourceFactory The factory to use if the resource cannot be found on the classloader
      * @return The new Resource
      * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer) throws IOException
+    public static Resource newSystemResource(String resource, ResourceFactory resourceFactory) throws IOException
     {
+        if (resourceFactory == null)
+            resourceFactory = ResourceFactory.ROOT;
+
         URL url = null;
         // Try to format as a URL?
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -469,16 +437,9 @@ public abstract class Resource
 
         try
         {
-            URI uri = url.toURI();
-            if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
-            {
-                Mount mount = mount(uri);
-                mountConsumer.accept(mount);
-                return mount.root();
-            }
-            return newResource(uri);
+            return resourceFactory.newResource(url.toURI());
         }
-        catch (IOException | URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
@@ -1359,9 +1320,6 @@ public abstract class Resource
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
-     *
-     * @see #mount(URI)
-     * @see #mountJar(Path)
      */
     public interface Mount extends Closeable
     {

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * OverlayManager
@@ -44,7 +45,7 @@ public class OverlayManager
     {
         List<Resource> resourceBases = new ArrayList<Resource>();
 
-        for (Overlay o : getOverlays())
+        for (Overlay o : getOverlays(ResourceFactory.of(webApp)))
         {
             //can refer to the current project in list of overlays for ordering purposes
             if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getResourceBase().exists())
@@ -70,7 +71,7 @@ public class OverlayManager
     /**
      * Generate an ordered list of overlays
      */
-    protected List<Overlay> getOverlays()
+    protected List<Overlay> getOverlays(ResourceFactory resourceFactory)
         throws Exception
     {        
         Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
@@ -96,8 +97,8 @@ public class OverlayManager
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                Resource.Mount mount = Resource.mountJar(a.getFile().toPath());
-                SelectiveJarResource r = new SelectiveJarResource(mount.root());
+                Resource warRoot = resourceFactory.newJarFileResource(a.getFile().toURI());
+                SelectiveJarResource r = new SelectiveJarResource(warRoot);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -110,8 +111,8 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource.Mount mount = Resource.mountJar(a.getFile().toPath());
-                Overlay overlay = new Overlay(null, mount.root());
+                Resource warRoot = resourceFactory.newJarFileResource(a.getFile().toURI());
+                Overlay overlay = new Overlay(null, warRoot);
                 overlays.add(overlay);
             }
         }

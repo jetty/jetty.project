@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -380,9 +381,9 @@ public class BufferUtilTest
         assertThat(jrtResource.exists(), is(true));
         assertThat(BufferUtil.toMappedBuffer(jrtResource), nullValue());
 
-        try (Resource.Mount mount = Resource.mountJar(testZip))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource jarResource = mount.root();
+            Resource jarResource = resourceFactory.newJarFileResource(testZip.toUri());
             assertThat(BufferUtil.toMappedBuffer(jarResource), nullValue());
         }
     }

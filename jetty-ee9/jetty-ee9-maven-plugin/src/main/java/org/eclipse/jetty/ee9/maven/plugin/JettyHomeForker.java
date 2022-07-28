@@ -36,7 +36,7 @@ import java.util.Map;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * JettyHomeBaseForker
@@ -412,11 +412,11 @@ public class JettyHomeForker extends AbstractForker
 
         if (jettyHome == null)
         {
-            try (Resource.Mount mount = Resource.mountJar(jettyHomeZip.toPath()))
+            try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
             {
-                Resource res = mount.root();
-                res.copyTo(baseDir.toPath());
+                factory.newJarFileResource(jettyHomeZip.toURI()).copyTo(baseDir.toPath());
             }
+
             //zip will unpack to target/jetty-home-<VERSION>
             jettyHome = new File(baseDir, "jetty-home-" + version);
         }

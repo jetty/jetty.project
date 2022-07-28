@@ -24,6 +24,7 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,11 +96,10 @@ public class PreconfigureQuickStartWar
             if (!dir.exists())
                 Files.createDirectories(dir.getPath());
 
-            URI jarUri = URI.create("jar:" + war.getURI() + "!/");
-            try (Resource.Mount warMount = Resource.mount(jarUri))
+            try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
             {
                 // unpack contents of war to directory
-                warMount.root().copyTo(dir.getPath());
+                factory.newResource(URI.create("jar:" + war.getURI() + "!/")).copyTo(dir.getPath());
             }
         }
 

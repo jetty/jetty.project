@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.ee9.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
-    private Resource.Mount _mount;
 
     public WebInfConfiguration()
     {
@@ -92,9 +92,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
-
-        IO.close(_mount);
-        _mount = null;
 
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
@@ -315,8 +312,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                _mount = Resource.mountJar(webApp.getPath());
-                webApp = _mount.root();
+                webApp = ResourceFactory.of(webApp).newResource(Resource.toJarFileUri(webApp.getURI()));
             }
 
             // If we should extract or the URL is still not usable
@@ -333,7 +329,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (war != null)
                 {
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = Resource.newResource(war).getPath();
+                    // TODO this looks wrong
+                    Path warfile = ResourceFactory.of(context).newResource(war).getPath();
                     if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
                         Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
@@ -369,10 +366,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                         Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                        try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                        try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
                         {
-                            Resource jarWebApp = mount.root();
-                            jarWebApp.copyTo(extractedWebAppDir);
+                            factory.newJarFileResource(webApp.getURI()).copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
                     }
@@ -387,10 +383,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                             Files.createDirectory(extractedWebAppDir);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
-                            try (Resource.Mount mount = Resource.mountJar(webApp.getPath()))
+                            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                             {
-                                Resource jarWebApp = mount.root();
-                                jarWebApp.copyTo(extractedWebAppDir);
+                                resourceFactory.newJarFileResource(webApp.getURI()).copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
                         }

@@ -19,8 +19,8 @@ import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
-
-    private Resource.Mount _mount;
 
     public WebXmlConfiguration()
     {
@@ -48,7 +46,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = Resource.newSystemResource(defaultsDescriptor, mount -> _mount = mount);
+            Resource dftResource = Resource.newSystemResource(defaultsDescriptor, ResourceFactory.of(context));
             if (dftResource == null)
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
@@ -58,8 +56,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _mount = Resource.mountIfNeeded(uri);
-                        dftResource = _mount == null ? Resource.newResource(uri) : _mount.root();
+                        dftResource = ResourceFactory.of(context).newResource(uri);
                     }
                 }
                 if (dftResource == null)
@@ -130,9 +127,6 @@ public class WebXmlConfiguration extends AbstractConfiguration
         //TODO: ErrorPageErorrHandler is not an ErrorProcessor
         if (context.getErrorProcessor() instanceof ErrorPageErrorHandler errorPageErrorHandler) 
             errorPageErrorHandler.setErrorPages(null);
-
-        IO.close(_mount);
-        _mount = null;
 
         // TODO remove classpaths from classloader
     }
