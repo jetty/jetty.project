@@ -15,24 +15,19 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -699,39 +694,24 @@ public class URIUtilTest
         assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
     }
 
-    public static Stream<Arguments> uriLastSegmentSource() throws URISyntaxException, IOException
+    public static Stream<Arguments> uriLastSegmentSource() throws IOException
     {
         final String TEST_RESOURCE_JAR = "test-base-resource.jar";
-        Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
-        URI uri = new URI("jar", testJar.toUri().toASCIIString(), null);
-
-        Map<String, Object> env = new HashMap<>();
-        env.put("multi-release", "runtime");
-
         List<Arguments> arguments = new ArrayList<>();
-        arguments.add(Arguments.of(uri, TEST_RESOURCE_JAR));
-        try (FileSystem zipFs = FileSystems.newFileSystem(uri, env))
-        {
-            FileVisitOption[] fileVisitOptions = new FileVisitOption[]{};
+        Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
+        URI jarFileUri = Resource.toJarFileUri(testJar.toUri());
 
-            for (Path root : zipFs.getRootDirectories())
+        try (Resource.Mount jarMount = Resource.mount(jarFileUri))
+        {
+            arguments.add(Arguments.of(jarFileUri, TEST_RESOURCE_JAR));
+
+            Path root = jarMount.root().getPath();
+
+            try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true))
             {
-                try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true, fileVisitOptions))
-                {
-                    entryStream.forEach((path) ->
-                    {
-                        if (path.toString().endsWith("!/"))
-                        {
-                            // skip - JAR entry type not supported by Jetty
-                            // TODO: re-enable once we start to use zipfs
-                            LOG.warn("Skipping Unsupported entry: " + path.toUri());
-                        }
-                        else
-                        {
-                            arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
-                        }
-                    });
-                }
+                entryStream.filter(Files::isRegularFile)
+                    .forEach((path) ->
+                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR)));
             }
         }
 
@@ -789,5 +769,53 @@ public class URIUtilTest
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
         assertEquals(path, decoded);
+    }
+
+    public static Stream<Arguments> uriJarPrefixCasesGood()
+    {
+        return Stream.of(
+            Arguments.of("file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("uriJarPrefixCasesGood")
+    public void testUriJarPrefixGood(String input, String encodedSuffix, String expected)
+    {
+        URI inputURI = URI.create(input);
+        URI outputURI = URIUtil.uriJarPrefix(inputURI, encodedSuffix);
+        assertThat(outputURI.toASCIIString(), is(expected));
+    }
+
+    public static Stream<Arguments> uriJarPrefixCasesBad()
+    {
+        return Stream.of(
+            // Not jar or file scheme
+            Arguments.of("http://webtide.com", "!/zed.dat"),
+            // null parameters
+            Arguments.of(null, "!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", null),
+            // empty encodedSuffix
+            Arguments.of("file:///opt/foo.jar", ""),
+            Arguments.of("jar:file:///opt/foo.jar", ""),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", ""),
+            // encodedSuffix not starting with "!/"
+            Arguments.of("file:///opt/foo.jar", "/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "/zed.dat"),
+            Arguments.of("file:///opt/foo.jar", "zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "zed.dat")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("uriJarPrefixCasesBad")
+    public void testUriJarPrefixBad(String input, String suffix)
+    {
+        final URI inputURI = input == null ? null : URI.create(input);
+        assertThrows(IllegalArgumentException.class, () -> URIUtil.uriJarPrefix(inputURI, suffix));
     }
 }

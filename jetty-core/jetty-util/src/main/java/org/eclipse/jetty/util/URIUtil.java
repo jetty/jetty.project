@@ -1670,4 +1670,41 @@ public class URIUtil
         int bangSlash = uri.indexOf("!/");
         return (bangSlash >= 0) ? uri.substring(4, bangSlash) : uri.substring(4);
     }
+
+    /**
+     * Take a URI and add a deep reference {@code jar:file://foo.jar!/suffix}, replacing
+     * any existing deep reference on the input URI.
+     *
+     * @param uri the input URI (supporting {@code jar} or {@code file} based schemes
+     * @param encodedSuffix the suffix to set.  Must start with {@code !/}.  Must be properly URI encoded.
+     * @return the {@code jar:file:} based URI with a deep reference
+     */
+    public static URI uriJarPrefix(URI uri, String encodedSuffix)
+    {
+        if (uri == null)
+            throw new IllegalArgumentException("URI must not be null");
+        if (encodedSuffix == null)
+            throw new IllegalArgumentException("Encoded Suffix must not be null");
+        if (!encodedSuffix.startsWith("!/"))
+            throw new IllegalArgumentException("Suffix must start with \"!/\"");
+
+        String uriString = uri.toASCIIString(); // ensure proper encoding
+
+        int bangSlash = uriString.indexOf("!/");
+        if (bangSlash >= 0)
+           uriString = uriString.substring(0, bangSlash);
+
+        if (uri.getScheme().equalsIgnoreCase("jar"))
+        {
+            return URI.create(uriString + encodedSuffix);
+        }
+        else if (uri.getScheme().equalsIgnoreCase("file"))
+        {
+            return URI.create("jar:" + uriString + encodedSuffix);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unsupported URI scheme: " + uri);
+        }
+    }
 }
