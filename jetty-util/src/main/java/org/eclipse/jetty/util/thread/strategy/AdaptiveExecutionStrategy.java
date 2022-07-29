@@ -521,12 +521,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @Override
     public String toString()
     {
-        String ret;
         try (AutoLock l = _lock.lock())
         {
-            ret = toStringLocked();
+            return toStringLocked();
         }
-        return ret;
     }
 
     public String toStringLocked()
