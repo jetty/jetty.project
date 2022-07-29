@@ -182,6 +182,11 @@
           <execution>
             <id>modify-services-loader-ee9-to-ee8</id>
             <phase>process-resources</phase>
+            <configuration>
+              <extraFileNames>
+                <extraFileName>org.apache.juli.logging.Log</extraFileName>
+              </extraFileNames>
+            </configuration>
             <goals>
               <goal>modify-service-loader-files-ee9-to-ee8</goal>
             </goals>
