@@ -13,31 +13,10 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
@@ -53,6 +32,18 @@ import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.websocket.*;
+import javax.websocket.server.ServerEndpointConfig;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
@@ -596,10 +587,24 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        ByteBuffer payload = BufferUtil.copy(frame.getPayload());
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, false);
-        callback.succeeded();
-        coreSession.demand(1);
+        if (coreSession.isOutputOpen())
+        {
+            ByteBuffer payload = BufferUtil.copy(frame.getPayload());
+            coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.from(() ->
+            {
+                callback.succeeded();
+                coreSession.demand(1);
+            }, t ->
+            {
+                callback.failed(t);
+                coreSession.demand(1);
+            }), false);
+        }
+        else
+        {
+            callback.succeeded();
+            coreSession.demand(1);
+        }
     }
 
     public void onPong(Frame frame, Callback callback)
