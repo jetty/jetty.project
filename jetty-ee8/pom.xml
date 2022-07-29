@@ -81,6 +81,7 @@
             <nonFilteredFileExtension>bz2</nonFilteredFileExtension>
             <nonFilteredFileExtension>br</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jsp</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
@@ -227,8 +228,8 @@
         </dependency>
         <dependency>
           <groupId>org.glassfish.web</groupId>
-          <artifactId>javax.servlet.jsp.jstl</artifactId>
-          <version>1.2.5</version>
+          <artifactId>jstl-impl</artifactId>
+          <version>1.2</version>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.toolchain</groupId>

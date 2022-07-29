@@ -20,6 +20,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
+          <systemPropertyVariables>
+            <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
