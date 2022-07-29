@@ -529,9 +529,9 @@ public class URIUtilTest
             Arguments.of("jar:file:///tmp/foo.jar", "file:///tmp/foo.jar"),
             Arguments.of("jar:file:///tmp/foo.jar!/some/path", "file:///tmp/foo.jar"),
             // Bad File.toURL cases
-            Arguments.of("file:/tmp/", "file:///tmp/"),
-            Arguments.of("jar:file:/tmp/foo.jar", "file:///tmp/foo.jar"),
-            Arguments.of("jar:file:/tmp/foo.jar!/some/path", "file:///tmp/foo.jar")
+            Arguments.of("file:/tmp/", "file:/tmp/"),
+            Arguments.of("jar:file:/tmp/foo.jar", "file:/tmp/foo.jar"),
+            Arguments.of("jar:file:/tmp/foo.jar!/some/path", "file:/tmp/foo.jar")
         );
     }
 
@@ -541,7 +541,8 @@ public class URIUtilTest
     {
         URI input = URI.create(uri);
         URI expected = URI.create(expectedJarUri);
-        assertThat(URIUtil.getJarSource(input), is(expected));
+        URI actual = URIUtil.getJarSource(input);
+        assertThat(actual.toASCIIString(), is(expected.toASCIIString()));
     }
 
     public static Stream<Arguments> badJavaIoFileUrlCases()
@@ -581,7 +582,7 @@ public class URIUtilTest
         URI inputUri = URI.create(input);
         URI actualUri = URIUtil.fixBadJavaIoFileUrl(inputUri);
         URI expectedUri = URI.create(expected);
-        assertThat(actualUri, is(expectedUri));
+        assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     @Test
@@ -601,8 +602,8 @@ public class URIUtilTest
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
         assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
 
-        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUri), is(expectedUri));
-        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUrlUri), is(expectedUri));
+        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpacesSource()

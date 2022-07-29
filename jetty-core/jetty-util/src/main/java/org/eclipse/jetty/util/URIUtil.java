@@ -1655,14 +1655,14 @@ public class URIUtil
     public static URI getJarSource(URI uri)
     {
         if (!"jar".equals(uri.getScheme()))
-            return fixBadJavaIoFileUrl(uri);
+            return uri;
 
         // Get SSP (retaining encoded form)
         String s = uri.getRawSchemeSpecificPart();
         int bangSlash = s.indexOf("!/");
         if (bangSlash >= 0)
             s = s.substring(0, bangSlash);
-        return fixBadJavaIoFileUrl(URI.create(s));
+        return URI.create(s);
     }
 
     public static URI fixBadJavaIoFileUrl(URI uri)
@@ -1717,11 +1717,11 @@ public class URIUtil
 
         if (uri.getScheme().equalsIgnoreCase("jar"))
         {
-            return fixBadJavaIoFileUrl(URI.create(uriString + encodedSuffix));
+            return URI.create(uriString + encodedSuffix);
         }
         else if (uri.getScheme().equalsIgnoreCase("file"))
         {
-            return fixBadJavaIoFileUrl(URI.create("jar:" + uriString + encodedSuffix));
+            return URI.create("jar:" + uriString + encodedSuffix);
         }
         else
         {

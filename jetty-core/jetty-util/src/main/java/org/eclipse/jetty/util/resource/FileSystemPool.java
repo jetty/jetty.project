@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -74,29 +73,29 @@ public class FileSystemPool implements Dumpable
         if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
-        // use base URI so that pool key/release/sweep is sane
-        URI baseUri = URIUtil.uriJarPrefix(uri, "!/");
         FileSystem fileSystem = null;
         try (AutoLock ignore = poolLock.lock())
         {
             try
             {
-                fileSystem = FileSystems.newFileSystem(baseUri, ENV_MULTIRELEASE_RUNTIME);
+                fileSystem = FileSystems.newFileSystem(uri, ENV_MULTIRELEASE_RUNTIME);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Mounted new FS {}", baseUri);
+                    LOG.debug("Mounted new FS {}", uri);
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
-                fileSystem = Paths.get(baseUri).getFileSystem();
+                fileSystem = Paths.get(uri).getFileSystem();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Using existing FS {}", baseUri);
+                    LOG.debug("Using existing FS {}", uri);
             }
             catch (ProviderNotFoundException pnfe)
             {
                 throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + uri, pnfe);
             }
-            Mount mount = new Mount(uri);
-            retain(baseUri, fileSystem, mount);
+            // use root FS URI so that pool key/release/sweep is sane
+            URI rootURI = fileSystem.getPath("/").toUri();
+            Mount mount = new Mount(rootURI, Resource.newResource(uri));
+            retain(rootURI, fileSystem, mount);
             return mount;
         }
         catch (Exception e)
@@ -106,16 +105,15 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    public void release(URI uri)
+    private void release(URI fsUri)
     {
         try (AutoLock ignore = poolLock.lock())
         {
             // use base URI so that pool key/release/sweep is sane
-            URI baseUri = URIUtil.uriJarPrefix(uri, "!/");
-            Bucket bucket = pool.get(baseUri);
+            Bucket bucket = pool.get(fsUri);
             if (bucket == null)
             {
-                LOG.warn("Unable to release Mount (not in pool): {}", uri);
+                LOG.warn("Unable to release Mount (not in pool): {}", fsUri);
                 return;
             }
 
@@ -125,7 +123,7 @@ public class FileSystemPool implements Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
                 IO.close(bucket.fileSystem);
-                pool.remove(baseUri);
+                pool.remove(fsUri);
             }
             else
             {
@@ -166,7 +164,7 @@ public class FileSystemPool implements Dumpable
 
         for (Map.Entry<URI, Bucket> entry : entries)
         {
-            URI uri = entry.getKey();
+            URI fsUri = entry.getKey();
             Bucket bucket = entry.getValue();
             FileSystem fileSystem = bucket.fileSystem;
 
@@ -188,7 +186,7 @@ public class FileSystemPool implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("File {} backing filesystem {} has been removed or changed, closing it", bucket.path, fileSystem);
                     IO.close(fileSystem);
-                    pool.remove(uri);
+                    pool.remove(fsUri);
                 }
             }
             catch (IOException e)
@@ -199,16 +197,16 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void retain(URI uri, FileSystem fileSystem, Resource.Mount mount)
+    private void retain(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
     {
         assert poolLock.isHeldByCurrentThread();
 
-        Bucket bucket = pool.get(uri);
+        Bucket bucket = pool.get(fsUri);
         if (bucket == null)
         {
             LOG.debug("Pooling new FS {}", fileSystem);
-            bucket = new Bucket(uri, fileSystem, mount);
-            pool.put(uri, bucket);
+            bucket = new Bucket(fsUri, fileSystem, mount);
+            pool.put(fsUri, bucket);
         }
         else
         {
@@ -226,9 +224,10 @@ public class FileSystemPool implements Dumpable
         private final Path path;
         private final Resource.Mount mount;
 
-        private Bucket(URI uri, FileSystem fileSystem, Resource.Mount mount)
+        private Bucket(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
         {
-            Path path = uriToPath(uri);
+            URI containerUri = Resource.unwrapContainer(fsUri);
+            Path path = Paths.get(containerUri);
 
             long size = -1L;
             FileTime lastModifiedTime = null;
@@ -240,7 +239,7 @@ public class FileSystemPool implements Dumpable
             catch (IOException ioe)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
+                    LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, fsUri);
             }
 
             this.counter = new AtomicInteger(1);
@@ -249,12 +248,6 @@ public class FileSystemPool implements Dumpable
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
             this.mount = mount;
-        }
-
-        private static Path uriToPath(URI uri)
-        {
-            URI rawUri = Resource.unwrapContainer(uri);
-            return Paths.get(rawUri);
         }
 
         @Override
@@ -266,14 +259,13 @@ public class FileSystemPool implements Dumpable
 
     private static class Mount implements Resource.Mount
     {
-        private final URI uri;
+        private final URI fsUri;
         private final Resource root;
 
-        private Mount(URI uri)
+        private Mount(URI fsUri, Resource resource)
         {
-            // use base URI so that release/sweep is sane
-            this.uri = URIUtil.uriJarPrefix(uri, "!/");;
-            this.root = Resource.newResource(uri);
+            this.fsUri = fsUri;
+            this.root = resource;
         }
 
         public Resource root()
@@ -281,21 +273,16 @@ public class FileSystemPool implements Dumpable
             return root;
         }
 
-        public URI getUri()
-        {
-            return uri;
-        }
-
         @Override
         public void close() throws IOException
         {
-            FileSystemPool.INSTANCE.release(uri);
+            FileSystemPool.INSTANCE.release(fsUri);
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), uri, root);
+            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), fsUri, root);
         }
     }
 }
