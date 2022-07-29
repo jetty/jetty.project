@@ -686,7 +686,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         try (Stream<Path> entries = Files.walk(dir)
             .filter(Files::isRegularFile)
-            .filter(path -> FileID.isTldFile(path)))
+            .filter(FileID::isTld))
         {
             Iterator<Path> iter = entries.iterator();
             while (iter.hasNext())
@@ -715,7 +715,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         try (Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
             Iterator<Path> it = stream
-                .filter(path -> FileID.isTldFile(path))
+                .filter(Files::isRegularFile)
+                .filter(FileID::isTld)
                 .iterator();
             while (it.hasNext())
             {

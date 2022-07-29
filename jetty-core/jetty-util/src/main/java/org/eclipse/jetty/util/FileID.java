@@ -39,7 +39,7 @@ public class FileID
         if (path == null)
             return false;
         int segmentCount = path.getNameCount();
-        for (int i = segmentCount - 1; i > 0; i--)
+        for (int i = segmentCount - 1; i >= 0; i--)
         {
             Path segment = path.getName(i);
             if (segment.getFileName().toString().equalsIgnoreCase(directoryName))
@@ -291,15 +291,13 @@ public class FileID
      * @param path the path to test.
      * @return True if a .war file.
      */
-    public static boolean isTldFile(Path path)
+    public static boolean isTld(Path path)
     {
         if (path == null)
             return false;
-        if (path.getNameCount() < 2)
+        if (!containsDirectory(path, "META-INF"))
             return false;
-        if (!".tld".equals(getExtension(path)))
-            return false;
-        return containsDirectory(path, "META-INF");
+        return ".tld".equals(getExtension(path));
     }
 
     /**
