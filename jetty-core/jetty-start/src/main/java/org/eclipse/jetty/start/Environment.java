@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -167,9 +167,9 @@ public class Environment
             if (Files.isReadable(path))
             {
                 Properties props = new Properties();
-                try
+                try (InputStream in = Files.newInputStream(path))
                 {
-                    props.load(new FileInputStream(path.toFile()));
+                    props.load(in);
                     for (Object key : props.keySet())
                     {
                         out.printf(" %s:%s = %s%n", p, key, props.getProperty(String.valueOf(key)));
@@ -235,7 +235,7 @@ public class Environment
 
             for (Path libpath : _baseHome.getPaths(libref))
             {
-                getClasspath().addComponent(libpath.toFile());
+                getClasspath().addComponent(libpath);
             }
         }
     }

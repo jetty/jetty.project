@@ -14,7 +14,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -153,7 +152,7 @@ public class Main
         out.println("      changes to the --module=name command line options will be reflected here.");
 
         int i = 0;
-        for (File element : classpath.getElements())
+        for (Path element : classpath.getElements())
         {
             out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
         }
@@ -164,16 +163,16 @@ public class Main
         return baseHome;
     }
 
-    private String getVersion(File element)
+    private String getVersion(Path element)
     {
-        if (element.isDirectory())
+        if (Files.isDirectory(element))
         {
             return "(dir)";
         }
 
-        if (element.isFile())
+        if (Files.isRegularFile(element))
         {
-            String name = element.getName().toLowerCase(Locale.ENGLISH);
+            String name = element.toString().toLowerCase(Locale.ENGLISH);
             if (name.endsWith(".jar"))
             {
                 return JarVersion.getVersion(element);

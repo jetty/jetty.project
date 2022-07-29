@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -424,7 +423,7 @@ public class StartArgs
 
                 for (Path libpath : baseHome.getPaths(libref))
                 {
-                    environment.getClasspath().addComponent(libpath.toFile());
+                    environment.getClasspath().addComponent(libpath);
                 }
             }
 
@@ -540,24 +539,26 @@ public class StartArgs
         {
             if (isJPMS())
             {
-                Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
-                    .collect(Collectors.groupingBy(File::isDirectory));
-                List<File> files = dirsAndFiles.get(false);
+                Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
+                    .collect(Collectors.groupingBy(Files::isDirectory));
+                List<Path> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
                     String modules = files.stream()
-                        .map(File::getAbsolutePath)
-                        .collect(Collectors.joining(File.pathSeparator));
+                        .map(Path::toAbsolutePath)
+                        .map(Path::toString)
+                        .collect(Collectors.joining(FS.pathSeparator()));
                     cmd.addRawArg(modules);
                 }
-                List<File> dirs = dirsAndFiles.get(true);
+                List<Path> dirs = dirsAndFiles.get(true);
                 if (dirs != null && !dirs.isEmpty())
                 {
                     cmd.addRawArg("--class-path");
                     String directories = dirs.stream()
-                        .map(File::getAbsolutePath)
-                        .collect(Collectors.joining(File.pathSeparator));
+                        .map(Path::toAbsolutePath)
+                        .map(Path::toString)
+                        .collect(Collectors.joining(FS.pathSeparator()));
                     cmd.addRawArg(directories);
                 }
 
@@ -598,7 +599,7 @@ public class StartArgs
                     propPath.toFile().deleteOnExit();
                 }
                 else
-                    propPath = new File(execProperties).toPath();
+                    propPath = Paths.get(execProperties);
 
                 try (OutputStream out = Files.newOutputStream(propPath))
                 {
@@ -628,7 +629,9 @@ public class StartArgs
                 cmd.addArg(environment.getName());
 
                 environment.getClasspath().getElements().stream()
-                    .map(File::getAbsolutePath).forEach(s ->
+                    .map(Path::toAbsolutePath)
+                    .map(Path::toString)
+                    .forEach(s ->
                     {
                         cmd.addArg("-cp");
                         cmd.addArg(s);
@@ -640,7 +643,7 @@ public class StartArgs
                     cmd.addArg(property.key + "=" + property.value);
 
                 for (Path xmlFile : environment.getXmlFiles())
-                    cmd.addArg(xmlFile.toFile().getAbsolutePath());
+                    cmd.addArg(xmlFile.toAbsolutePath().toString());
             }
         }
 
@@ -694,7 +697,7 @@ public class StartArgs
         int equals = valueString.indexOf('=');
         if (equals <= 0)
             throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
-        String delimiter = valueIsFile ? File.pathSeparator : ",";
+        String delimiter = valueIsFile ? FS.pathSeparator() : ",";
         String key = valueString.substring(0, equals).trim();
         String[] values = valueString.substring(equals + 1).split(delimiter);
         Set<String> result = output.computeIfAbsent(key, k -> new LinkedHashSet<>());
@@ -723,7 +726,7 @@ public class StartArgs
         for (Map.Entry<String, Set<String>> entry : _jmodPatch.entrySet())
         {
             cmd.addRawArg("--patch-module");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
+            cmd.addRawArg(entry.getKey() + "=" + String.join(FS.pathSeparator(), entry.getValue()));
         }
         for (Map.Entry<String, Set<String>> entry : _jmodOpens.entrySet())
         {
@@ -784,7 +787,7 @@ public class StartArgs
             return null;
         }
 
-        Path localRepoDir = new File(localRepo).toPath();
+        Path localRepoDir = Paths.get(localRepo);
         localRepoDir = localRepoDir.normalize().toAbsolutePath();
         if (Files.exists(localRepoDir) && Files.isDirectory(localRepoDir))
         {
@@ -1222,7 +1225,7 @@ public class StartArgs
         if (arg.startsWith("--lib="))
         {
             String cp = Props.getValue(arg);
-            StringTokenizer t = new StringTokenizer(cp, File.pathSeparator);
+            StringTokenizer t = new StringTokenizer(cp, FS.pathSeparator());
             while (t.hasMoreTokens())
                 environment.addLibRef(t.nextToken());
             return environment;
