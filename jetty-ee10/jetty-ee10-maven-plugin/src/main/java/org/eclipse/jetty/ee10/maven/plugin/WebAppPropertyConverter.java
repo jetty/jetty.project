@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -224,7 +225,7 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
         {
             // This is a use provided list of overlays, which could have mountable entries.
-            List<URI> uris = Resource.split(str);
+            List<URI> uris = URIUtil.split(str);
             // TODO: need a better place to close/release this mount.
             Resource.Mount mount = Resource.mountCollection(uris);
             webApp.addBean(mount); // let jetty-core ContextHandler.doStop() release mount

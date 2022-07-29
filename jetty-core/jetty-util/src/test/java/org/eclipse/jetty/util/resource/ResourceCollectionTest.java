@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -172,7 +173,7 @@ public class ResourceCollectionTest
         String config = String.format("%s,%s,%s", dir, foo, bar);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = Resource.split(config);
+        List<URI> uris = URIUtil.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
@@ -201,7 +202,7 @@ public class ResourceCollectionTest
         String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = Resource.split(config);
+        List<URI> uris = URIUtil.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there

@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
@@ -41,15 +42,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -409,205 +406,8 @@ public class ResourceTest
     public void testJarReferenceAsURINotYetMounted() throws Exception
     {
         Path jar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        URI jarFileUri = Resource.toJarFileUri(jar.toUri());
+        URI jarFileUri = URIUtil.toJarFileUri(jar.toUri());
         assertNotNull(jarFileUri);
         assertThrows(IllegalStateException.class, () -> Resource.newResource(jarFileUri));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
-        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
-        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
-        "file:/home/user/install/jetty-home-12.0.0.zip",
-        "file:/opt/websites/webapps/company.war",
-        "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
-    })
-    public void testIsArchiveUriTrue(String rawUri)
-    {
-        assertTrue(Resource.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "jar:file:/home/user/project/with.jar/in/path/name",
-        "file:/home/user/project/directory/",
-        "file:/home/user/hello.ear",
-        "/home/user/hello.jar",
-        "/home/user/app.war"
-    })
-    public void testIsArchiveUriFalse(String rawUri)
-    {
-        assertFalse(Resource.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
-    }
-
-    public static Stream<Arguments> jarFileUriCases()
-    {
-        List<Arguments> cases = new ArrayList<>();
-
-        String expected = "jar:file:/path/company-1.0.jar!/";
-        cases.add(Arguments.of("file:/path/company-1.0.jar", expected));
-        cases.add(Arguments.of("jar:file:/path/company-1.0.jar", expected));
-        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/", expected));
-        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected + "META-INF/services"));
-
-        expected = "jar:file:/opt/jetty/webapps/app.war!/";
-        cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", expected));
-        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war", expected));
-        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/", expected));
-        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected + "WEB-INF/classes"));
-
-        return cases.stream();
-    }
-
-    @ParameterizedTest
-    @MethodSource("jarFileUriCases")
-    public void testToJarFileUri(String inputRawUri, String expectedRawUri)
-    {
-        URI actual = Resource.toJarFileUri(URI.create(inputRawUri));
-        assertNotNull(actual);
-        assertThat(actual.toASCIIString(), is(expectedRawUri));
-    }
-
-    public static Stream<Arguments> unwrapContainerCases()
-    {
-        return Stream.of(
-            Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"),
-            Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"),
-            Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"),
-            Arguments.of("jar:file:///path/to/bar.jar!/internal.txt", "file:///path/to/bar.jar")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("unwrapContainerCases")
-    public void testUnwrapContainer(String inputRawUri, String expected)
-    {
-        URI input = Resource.toURI(inputRawUri);
-        URI actual = Resource.unwrapContainer(input);
-        assertThat(actual.toASCIIString(), is(expected));
-    }
-
-    @Test
-    public void testSplitSingleJar()
-    {
-        // Bad java file.uri syntax
-        String input = "file:/home/user/lib/acme.jar";
-        List<URI> uris = Resource.split(input);
-        String expected = String.format("jar:%s!/", input);
-        assertThat(uris.get(0).toString(), is(expected));
-    }
-
-    @Test
-    public void testSplitSinglePath()
-    {
-        String input = "/home/user/lib/acme.jar";
-        List<URI> uris = Resource.split(input);
-        String expected = String.format("jar:file://%s!/", input);
-        assertThat(uris.get(0).toString(), is(expected));
-    }
-
-    @Test
-    public void testSplitOnComma()
-    {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
-
-        // This represents the user-space raw configuration
-        String config = String.format("%s,%s,%s", dir, foo, bar);
-
-        // Split using commas
-        List<URI> uris = Resource.split(config);
-
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
-    }
-
-    @Test
-    public void testSplitOnPipe()
-    {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
-
-        // This represents the user-space raw configuration
-        String config = String.format("%s|%s|%s", dir, foo, bar);
-
-        // Split using commas
-        List<URI> uris = Resource.split(config);
-
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
-    }
-
-    @Test
-    public void testSplitOnSemicolon()
-    {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
-
-        // This represents the user-space raw configuration
-        String config = String.format("%s;%s;%s", dir, foo, bar);
-
-        // Split using commas
-        List<URI> uris = Resource.split(config);
-
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
-    }
-
-    @Test
-    public void testSplitOnPipeWithGlob() throws IOException
-    {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
-        FS.touch(bar.resolve("lib-foo.jar"));
-        FS.touch(bar.resolve("lib-zed.zip"));
-
-        // This represents the user-space raw configuration with a glob
-        String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
-
-        // Split using commas
-        List<URI> uris = Resource.split(config);
-
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            // Should see the two archives as `jar:file:` URI entries
-            Resource.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-            Resource.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
-        };
-        assertThat(uris, contains(expected));
     }
 }

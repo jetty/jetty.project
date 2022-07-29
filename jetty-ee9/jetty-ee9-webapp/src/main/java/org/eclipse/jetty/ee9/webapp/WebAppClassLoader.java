@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -270,7 +271,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        List<URI> uris = Resource.split(classPath);
+        List<URI> uris = URIUtil.split(classPath);
         _mountedExtraClassPath = Resource.mountCollection(uris);
 
         ResourceCollection rc = (ResourceCollection)_mountedExtraClassPath.root();
@@ -324,7 +325,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("addJar - {}", jar);
-                        URI jarUri = Resource.toJarFileUri(jar.toUri());
+                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
                         addClassPath(jarUri.toASCIIString());
                     }
                     catch (Exception ex)

@@ -294,7 +294,7 @@ public class MavenWebAppContext extends WebAppContext
         _webInfJars.forEach(f ->
         {
             // ensure our JAR file references are `jar:file:...` URI references
-            URI jarFileUri = Resource.toJarFileUri(f.toURI());
+            URI jarFileUri = URIUtil.toJarFileUri(f.toURI());
             // else use file uri as-is
             _classpathUris.add(Objects.requireNonNullElseGet(jarFileUri, f::toURI));
         });
