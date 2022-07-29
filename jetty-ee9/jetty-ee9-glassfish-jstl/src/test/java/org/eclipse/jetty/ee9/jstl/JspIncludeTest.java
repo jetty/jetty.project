@@ -59,14 +59,14 @@ public class JspIncludeTest
         FS.ensureDirExists(testLibDir);
                 
         //Make a taglib jar
-        File srcTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
+        File srcTagLibDir = MavenTestingUtils.getTargetPath("test-classes/taglibjar").toFile();
         File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
         IO.copy(srcTagLibDir, scratchTagLibDir);
         File tagLibJar =  new File(testLibDir, "testtaglib.jar");
         JAR.create(scratchTagLibDir, tagLibJar);
         
         //Copy content
-        File srcWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
+        File srcWebAppDir = MavenTestingUtils.getTargetPath("test-classes/webapp").toFile();
         IO.copyDir(srcWebAppDir, testDir);
 
         // Configure WebAppContext

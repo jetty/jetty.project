@@ -28,7 +28,7 @@ public class JspConfig
     {
         context.setAttribute("jakarta.servlet.context.tempdir", scratchDir);
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard.*\\.jar");
+            System.getProperty("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern"));
         context.setWar(baseUri.toASCIIString());
         context.setResourceBase(baseUri.toASCIIString());
     }
