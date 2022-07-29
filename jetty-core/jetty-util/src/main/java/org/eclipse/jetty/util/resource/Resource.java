@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.ClosedFileSystemException;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
@@ -615,14 +614,7 @@ public abstract class Resource implements ResourceFactory
      */
     public boolean exists()
     {
-        try
-        {
-            return Files.exists(getPath(), NO_FOLLOW_LINKS);
-        }
-        catch (ClosedFileSystemException e)
-        {
-            throw new IllegalStateException("Attempt to use Resource on closed FileSystem: " + getURI(), e);
-        }
+        return Files.exists(getPath(), NO_FOLLOW_LINKS);
     }
 
     /**
