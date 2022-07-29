@@ -217,9 +217,7 @@ public class JettyEmbedder extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         super.doStart();
-        
-        Resource.setDefaultUseCaches(false);
-        
+
         configure();
         configureShutdownMonitor();
         server.start();

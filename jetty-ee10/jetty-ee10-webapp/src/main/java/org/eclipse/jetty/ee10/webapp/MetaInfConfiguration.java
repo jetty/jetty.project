@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -23,6 +22,7 @@ import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -30,17 +30,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
@@ -703,26 +702,32 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public Collection<URL> getTlds(URI uri) throws IOException
     {
-        HashSet<URL> tlds = new HashSet<URL>();
-
-        URI jarUri = uriJarPrefix(uri, "!/");
-        URL url = jarUri.toURL();
-        JarURLConnection jarConn = (JarURLConnection)url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
-        JarFile jarFile = jarConn.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements())
+        HashSet<URL> tlds = new HashSet<>();
+        Resource resource = _resourceFactory.newResource(uriJarPrefix(uri, "!/"));
+        try (Stream<Path> stream = Files.walk(resource.getPath()))
         {
-            JarEntry e = entries.nextElement();
-            String name = e.getName();
-            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            Iterator<Path> it = stream
+                .filter(MetaInfConfiguration::isTldFile)
+                .iterator();
+            while (it.hasNext())
             {
-                tlds.add(new URL(jarUri + name));
+                Path entry = it.next();
+                tlds.add(entry.toUri().toURL());
             }
         }
-        if (!Resource.getDefaultUseCaches())
-            jarFile.close();
         return tlds;
+    }
+
+    private static boolean isTldFile(Path path)
+    {
+        if (!Files.isRegularFile(path))
+            return false;
+        if (path.getNameCount() < 2)
+            return false;
+        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
+            return false;
+        String filename = path.getFileName().toString();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)

@@ -13,15 +13,25 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import java.io.FileNotFoundException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +45,11 @@ public class JarServerTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = JarServer.createServer(0);
+        Path jarFile = Paths.get("src/main/other/content.jar");
+        if (!Files.exists(jarFile))
+            throw new FileNotFoundException(jarFile.toString());
+
+        server = JarServer.createServer(0, jarFile);
         server.start();
     }
 
@@ -45,7 +59,6 @@ public class JarServerTest extends AbstractEmbeddedTest
         server.stop();
     }
 
-    @Disabled //TODO
     @Test
     public void testGetDir0Test0() throws Exception
     {
@@ -62,7 +75,6 @@ public class JarServerTest extends AbstractEmbeddedTest
         assertThat("Response Content", responseBody, containsString("test0"));
     }
 
-    @Disabled //TODO
     @Test
     public void testGetDir1Test1() throws Exception
     {

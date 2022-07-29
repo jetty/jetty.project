@@ -369,7 +369,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                         try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
                         {
-                            factory.newJarFileResource(webApp.getURI())).copyTo(extractedWebAppDir);
+                            factory.newJarFileResource(webApp.getURI()).copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
                     }
@@ -386,7 +386,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
                             {
-                                factory.newJarFileResource(webApp.getURI())).copyTo(extractedWebAppDir);
+                                factory.newJarFileResource(webApp.getURI()).copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
                         }
@@ -447,7 +447,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             webInf = ResourceFactory.of((Container)context).newResource(extractedWebInfDir.getCanonicalPath());
 
-            Resource rc = new ResourceCollection(List.of(new Resource[]{webInf, webApp}));
+            Resource rc = Resource.of(webInf, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);

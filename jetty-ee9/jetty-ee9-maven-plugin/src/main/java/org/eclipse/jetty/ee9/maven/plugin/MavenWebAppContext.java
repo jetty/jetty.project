@@ -37,6 +37,7 @@ import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;

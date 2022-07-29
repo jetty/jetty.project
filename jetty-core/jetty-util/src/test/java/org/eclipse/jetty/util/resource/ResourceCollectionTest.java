@@ -70,9 +70,11 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = new ResourceCollection(List.of(new Resource[]{
-            Resource.newResource(one), Resource.newResource(two), Resource.newResource(three)
-        }));
+        ResourceCollection rc = Resource.of(
+            Resource.newResource(one),
+            Resource.newResource(two),
+            Resource.newResource(three)
+        );
         assertThat(rc.list(), contains("1.txt", "2.txt", "3.txt", "dir/"));
         assertThat(rc.resolve("dir").list(), contains("1.txt", "2.txt", "3.txt"));
         assertThat(rc.resolve("unknown").list(), nullValue());
@@ -89,9 +91,11 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = new ResourceCollection(List.of(new Resource[]{
-            Resource.newResource(one), Resource.newResource(two), Resource.newResource(three)
-        }));
+        ResourceCollection rc = Resource.of(
+            Resource.newResource(one),
+            Resource.newResource(two),
+            Resource.newResource(three)
+        );
 
         // This should return a ResourceCollection with 3 `/dir/` sub-directories.
         Resource r = rc.resolve("dir");
@@ -109,9 +113,11 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = new ResourceCollection(List.of(new Resource[]{
-            Resource.newResource(one), Resource.newResource(two), Resource.newResource(three)
-        }));
+        ResourceCollection rc = Resource.of(
+                Resource.newResource(one),
+                Resource.newResource(two),
+                Resource.newResource(three)
+        );
         Path destDir = workDir.getEmptyPathDir();
         rc.copyTo(destDir);
 
@@ -133,23 +139,24 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = new ResourceCollection(List.of(
-            Resource.newResource(one),
-            Resource.newResource(two),
-            Resource.newResource(three)
-        ));
+        ResourceCollection rc1 = Resource.of(
+            List.of(
+                Resource.newResource(one),
+                Resource.newResource(two),
+                Resource.newResource(three)
+            )
+        );
 
-        // the original ResourceCollection
-        // a duplicate entry
-        // a new entry
-        ResourceCollection rc2 = new ResourceCollection(List.of(
-            // the original ResourceCollection
-            rc1,
-            // a duplicate entry
-            Resource.newResource(two),
-            // a new entry
-            Resource.newResource(twoDir)
-        ));
+        ResourceCollection rc2 = Resource.of(
+            List.of(
+                // the original ResourceCollection
+                rc1,
+                // a duplicate entry
+                Resource.newResource(two),
+                // a new entry
+                Resource.newResource(twoDir)
+            )
+        );
 
         URI[] expected = new URI[] {
             one.toUri(),

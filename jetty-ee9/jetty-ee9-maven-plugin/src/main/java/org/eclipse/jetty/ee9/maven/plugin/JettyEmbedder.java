@@ -217,9 +217,7 @@ public class JettyEmbedder extends AbstractLifeCycle
     public void doStart() throws Exception
     {
         super.doStart();
-        
-        Resource.setDefaultUseCaches(false);
-        
+
         configure();
         configureShutdownMonitor();
         server.start();

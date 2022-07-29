@@ -76,26 +76,6 @@ public abstract class Resource
         .with("jar:")
         .build();
 
-    // TODO remove
-    public static boolean __defaultUseCaches = true;
-
-    /**
-     * Change the default setting for url connection caches.
-     * Subsequent URLConnections will use this default.
-     *
-     * @param useCaches true to enable URL connection caches, false otherwise.
-     * TODO remove
-     */
-    public static void setDefaultUseCaches(boolean useCaches)
-    {
-        __defaultUseCaches = useCaches;
-    }
-
-    // TODO remove
-    public static boolean getDefaultUseCaches()
-    {
-        return __defaultUseCaches;
-    }
 
     /**
      * <p>Mount a URI if it is needed.</p>
@@ -185,6 +165,34 @@ public abstract class Resource
             return false; // last dot is before last slash, eg ("/path.to/something")
         String suffix = path.substring(idxSuffix, idxEnd).toLowerCase(Locale.ENGLISH);
         return suffix.equals(".jar") || suffix.equals(".war") || suffix.equals(".zip");
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(List<Resource> resources)
+    {
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    public static ResourceCollection of(Resource... resources)
+    {
+        if (resources == null || resources.length == 0)
+            throw new IllegalArgumentException("No resources");
+
+        return new ResourceCollection(List.of(resources));
     }
 
     /**
@@ -1320,6 +1328,9 @@ public abstract class Resource
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
+     *
+     * @see #mount(URI)
+     * @see #mountJar(Path)
      */
     public interface Mount extends Closeable
     {

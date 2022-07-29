@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Example of serving content from a JAR file.
@@ -32,18 +33,13 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JarServer
 {
-    public static Server createServer(int port) throws Exception
+    public static Server createServer(int port, Path base) throws Exception
     {
         Server server = new Server(port);
 
-        Path jarFile = Paths.get("src/main/other/content.jar");
-        if (!Files.exists(jarFile))
-            throw new FileNotFoundException(jarFile.toString());
-
         ServletContextHandler context = new ServletContextHandler();
-        Resource.setDefaultUseCaches(true);
-        Resource base = Resource.newResource("jar:" + jarFile.toAbsolutePath().toUri().toASCIIString() + "!/");
-        context.setBaseResource(base.getPath());
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        context.setBaseResource(resourceFactory.newResource(base));
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
 
         server.setHandler(new Handler.Collection(context, new DefaultHandler()));
@@ -53,7 +49,12 @@ public class JarServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Server server = createServer(port);
+
+        Path jarFile = Paths.get("src/main/other/content.jar");
+        if (!Files.exists(jarFile))
+            throw new FileNotFoundException(jarFile.toString());
+
+        Server server = createServer(port, jarFile);
         server.start();
         server.join();
     }

@@ -1327,7 +1327,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled("TODO: sendError not working (yet)")
     public void testWelcomeServlet() throws Exception
     {
         Path inde = docRoot.resolve("index.htm");
@@ -1353,7 +1352,7 @@ public class DefaultServletTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        // TODO: sendError not working (yet) assertThat(response.getContent(), containsString("JSP support not configured"));
+        assertThat(response.getContent(), containsString("JSP support not configured"));
 
         Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
         rawResponse = connector.getResponse("""

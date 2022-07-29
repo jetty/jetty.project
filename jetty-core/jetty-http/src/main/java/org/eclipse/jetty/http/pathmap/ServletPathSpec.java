@@ -195,6 +195,7 @@ public class ServletPathSpec extends AbstractPathSpec
             servletPathSpec = "";
         if (servletPathSpec.startsWith("servlet|"))
             servletPathSpec = servletPathSpec.substring("servlet|".length());
+        servletPathSpec = URIUtil.canonicalPath(servletPathSpec);
         assertValidServletPathSpec(servletPathSpec);
 
         // The Root Path Spec

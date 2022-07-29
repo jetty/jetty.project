@@ -702,7 +702,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
 
         super.setContextPath(contextPath);
-        _contextPathEncoded = URIUtil.encodePath(contextPath);
+        _contextPathEncoded = URIUtil.canonicalPath(contextPath);
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
