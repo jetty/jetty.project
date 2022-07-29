@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -458,7 +459,7 @@ public class MetaData
             List<String> orderedLibs = new ArrayList<>();
             for (Resource jar: orderedWebInfJars)
             {
-                URI uri = Resource.unwrapContainer(jar.getURI());
+                URI uri = URIUtil.unwrapContainer(jar.getURI());
                 orderedLibs.add(uri.getPath());
             }
             context.setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));

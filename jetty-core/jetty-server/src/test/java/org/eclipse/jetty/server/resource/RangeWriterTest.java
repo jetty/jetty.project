@@ -27,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
@@ -69,7 +70,7 @@ public class RangeWriterTest
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
-        URI jarFileUri = Resource.toJarFileUri(exampleJar.toUri());
+        URI jarFileUri = URIUtil.toJarFileUri(exampleJar.toUri());
 
         // close prior one (if it exists)
         IO.close(zipfs);

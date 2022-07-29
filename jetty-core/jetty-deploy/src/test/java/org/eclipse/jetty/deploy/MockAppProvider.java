@@ -16,9 +16,9 @@ package org.eclipse.jetty.deploy;
 import java.io.File;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
@@ -60,9 +60,9 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
         String name = app.getPath().toString();
         name = name.substring(name.lastIndexOf("-")  + 1);
-        File war = new File(webappsDir, name);
+        Path war = new File(webappsDir, name).toPath();
 
-        String path = war.getName();
+        String path = war.toString();
 
         if (FileID.isWebArchive(war))
         {

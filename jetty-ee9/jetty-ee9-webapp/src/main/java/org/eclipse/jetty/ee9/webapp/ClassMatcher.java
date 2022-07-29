@@ -738,7 +738,7 @@ public class ClassMatcher extends AbstractSet<String>
         {
             try
             {
-                return URIUtil.getJarSource(url.toURI());
+                return URIUtil.unwrapContainer(url.toURI());
             }
             catch (URISyntaxException ignored)
             {

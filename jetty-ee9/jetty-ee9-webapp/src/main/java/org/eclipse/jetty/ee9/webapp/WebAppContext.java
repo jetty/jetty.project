@@ -1251,7 +1251,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        List<URI> uris = Resource.split(extraClasspath);
+        List<URI> uris = URIUtil.split(extraClasspath);
         _mountedExtraClasspath = Resource.mountCollection(uris);
         setExtraClasspath((ResourceCollection)_mountedExtraClasspath.root());
     }

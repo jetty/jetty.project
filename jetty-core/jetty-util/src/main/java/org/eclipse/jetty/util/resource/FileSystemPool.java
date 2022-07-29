@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -226,7 +227,7 @@ public class FileSystemPool implements Dumpable
 
         private Bucket(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
         {
-            URI containerUri = Resource.unwrapContainer(fsUri);
+            URI containerUri = URIUtil.unwrapContainer(fsUri);
             Path path = Paths.get(containerUri);
 
             long size = -1L;
