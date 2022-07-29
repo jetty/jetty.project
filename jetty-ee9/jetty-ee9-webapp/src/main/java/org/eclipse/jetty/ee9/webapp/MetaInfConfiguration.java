@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -299,20 +298,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
+    protected List<URI> getAllContainerJars(final WebAppContext context)
     {
-        List<URI> uris = new ArrayList<>();
         ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
+        List<URI> uris = new ArrayList<>();
         while (loader != null)
         {
-            if (loader instanceof URLClassLoader)
+            if (loader instanceof URLClassLoader urlCL)
             {
-                URL[] urls = ((URLClassLoader)loader).getURLs();
-                if (urls != null)
-                {
-                    for (URL url : urls)
-                        uris.add(new URI(url.toString().replaceAll(" ", "%20")));
-                }
+                URIUtil.streamOf(urlCL).forEach(uris::add);
             }
             loader = loader.getParent();
         }

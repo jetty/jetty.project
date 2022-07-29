@@ -14,9 +14,12 @@
 package org.eclipse.jetty.util;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.slf4j.Logger;
@@ -1644,31 +1647,49 @@ public class URIUtil
         return query1 + '&' + query2;
     }
 
-    public static URI getJarSource(URI uri)
+    public static URI getJarSource(URL url)
     {
-        try
-        {
-            if (!"jar".equals(uri.getScheme()))
-                return uri;
-            // Get SSP (retaining encoded form)
-            String s = uri.getRawSchemeSpecificPart();
-            int bangSlash = s.indexOf("!/");
-            if (bangSlash >= 0)
-                s = s.substring(0, bangSlash);
-            return new URI(s);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        return getJarSource(URI.create(url.toString()));
     }
 
-    public static String getJarSource(String uri)
+    public static URI getJarSource(URI uri)
     {
-        if (!uri.startsWith("jar:"))
+        if (!"jar".equals(uri.getScheme()))
+            return fixBadJavaIoFileUrl(uri);
+
+        // Get SSP (retaining encoded form)
+        String s = uri.getRawSchemeSpecificPart();
+        int bangSlash = s.indexOf("!/");
+        if (bangSlash >= 0)
+            s = s.substring(0, bangSlash);
+        return fixBadJavaIoFileUrl(URI.create(s));
+    }
+
+    public static URI fixBadJavaIoFileUrl(URI uri)
+    {
+        if ((uri == null) || (uri.getScheme() == null))
             return uri;
-        int bangSlash = uri.indexOf("!/");
-        return (bangSlash >= 0) ? uri.substring(4, bangSlash) : uri.substring(4);
+
+        if (!uri.getScheme().equalsIgnoreCase("file") && !uri.getScheme().equalsIgnoreCase("jar"))
+            return uri; // not a scheme we can fix
+
+        if (uri.getRawAuthority() != null)
+            return uri; // already valid (used in Windows UNC uris)
+
+        if (!uri.isAbsolute())
+            return uri; // non-absolute URI cannot be fixed
+
+        String rawURI = uri.toASCIIString();
+        int colon = rawURI.indexOf(":/");
+        if (colon < 0)
+            return uri; // path portion not found
+
+        int end = -1;
+        if (rawURI.charAt(colon + 2) != '/')
+            end = colon + 2;
+        if (end >= 0)
+            return URI.create(rawURI.substring(0, colon) + ":///" + rawURI.substring(end));
+        return uri;
     }
 
     /**
@@ -1696,15 +1717,30 @@ public class URIUtil
 
         if (uri.getScheme().equalsIgnoreCase("jar"))
         {
-            return URI.create(uriString + encodedSuffix);
+            return fixBadJavaIoFileUrl(URI.create(uriString + encodedSuffix));
         }
         else if (uri.getScheme().equalsIgnoreCase("file"))
         {
-            return URI.create("jar:" + uriString + encodedSuffix);
+            return fixBadJavaIoFileUrl(URI.create("jar:" + uriString + encodedSuffix));
         }
         else
         {
             throw new IllegalArgumentException("Unsupported URI scheme: " + uri);
         }
     }
+
+    /**
+     * Stream the {@link URLClassLoader#getURLs()} as URIs
+     *
+     * @param urlClassLoader the classloader to load from
+     * @return the Stream of {@link URI}
+     */
+    public static Stream<URI> streamOf(URLClassLoader urlClassLoader)
+    {
+        URL[] urls = urlClassLoader.getURLs();
+        return Stream.of(urls)
+            .filter(Objects::nonNull)
+            .map(URIUtil::getJarSource)
+            .map(URIUtil::fixBadJavaIoFileUrl);
+        }
 }

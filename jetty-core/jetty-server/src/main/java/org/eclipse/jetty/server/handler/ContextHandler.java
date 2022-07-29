@@ -15,14 +15,13 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventListener;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -314,16 +312,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
 
-        try (Stream<URL> urlStream = Stream.of(loader.getURLs())
-            .filter(Objects::nonNull))
-        {
-            String classpath = urlStream.map(URL::toString)
-                .map(URIUtil::getJarSource)
-                .collect(Collectors.joining(File.pathSeparator));
-            if (StringUtil.isBlank(classpath))
-                return null;
-            return classpath;
-        }
+        String classpath = URIUtil.streamOf(loader)
+            .map(URI::toASCIIString)
+            .collect(Collectors.joining(File.pathSeparator));
+        if (StringUtil.isBlank(classpath))
+            return null;
+        return classpath;
     }
 
     /**
