@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Properties;
@@ -136,9 +136,9 @@ public class JarVersion
         return null; // no valid impl version entries found
     }
 
-    public static String getVersion(File file)
+    public static String getVersion(Path file)
     {
-        try (JarFile jar = new JarFile(file))
+        try (JarFile jar = new JarFile(file.toFile()))
         {
             String version = null;
 

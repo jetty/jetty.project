@@ -13,42 +13,27 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CommandLineBuilder
 {
-    public static File findExecutable(File root, String path)
-    {
-        String npath = path.replace('/', File.separatorChar);
-        File exe = new File(root, npath);
-        if (!exe.exists())
-        {
-            return null;
-        }
-        return exe;
-    }
-
     public static String findJavaBin()
     {
-        File javaHome = new File(System.getProperty("java.home"));
-        if (!javaHome.exists())
-        {
+        Path javaHome = Paths.get(System.getProperty("java.home"));
+        if (!Files.exists(javaHome))
             return null;
-        }
 
-        File javabin = findExecutable(javaHome, "bin/java");
-        if (javabin != null)
-        {
-            return javabin.getAbsolutePath();
-        }
+        Path javabin = javaHome.resolve("bin/java");
+        if (Files.exists(javabin))
+            return javabin.toAbsolutePath().toString();
 
-        javabin = findExecutable(javaHome, "bin/java.exe");
-        if (javabin != null)
-        {
-            return javabin.getAbsolutePath();
-        }
+        javabin = javaHome.resolve("bin/java.exe");
+        if (Files.exists(javabin))
+            return javabin.toAbsolutePath().toString();
 
         return "java";
     }

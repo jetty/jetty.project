@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +71,7 @@ public class Modules implements Iterable<Module>
             Path deprecatedPath = _baseHome.getPath("modules/deprecated.properties");
             if (deprecatedPath != null && FS.exists(deprecatedPath))
             {
-                try (FileInputStream inputStream = new FileInputStream(deprecatedPath.toFile()))
+                try (InputStream inputStream = Files.newInputStream(deprecatedPath))
                 {
                     _deprecated.load(inputStream);
                 }

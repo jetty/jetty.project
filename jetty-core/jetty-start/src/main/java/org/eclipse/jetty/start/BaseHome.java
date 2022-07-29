@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -69,15 +68,6 @@ public class BaseHome
             return dir.resolve(FS.separators(subpath));
         }
 
-        public SearchDir setDir(File path)
-        {
-            if (path != null)
-            {
-                return setDir(path.toPath());
-            }
-            return this;
-        }
-
         public SearchDir setDir(Path path)
         {
             if (path != null)
@@ -99,7 +89,7 @@ public class BaseHome
         public String toShortForm(Path path)
         {
             Path relative = dir.relativize(path);
-            return String.format("${%s}%c%s", name, File.separatorChar, relative.toString());
+            return String.format("${%s}%s%s", name, FS.separator(), relative);
         }
     }
 
@@ -399,17 +389,6 @@ public class BaseHome
     }
 
     /**
-     * Convenience method for <code>toShortForm(file.toPath())</code>
-     *
-     * @param path the path to shorten
-     * @return the short form of the path as a String
-     */
-    public String toShortForm(final File path)
-    {
-        return toShortForm(path.toPath());
-    }
-
-    /**
      * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
      *
      * @param path the path to shorten
@@ -430,7 +409,7 @@ public class BaseHome
                     if (dirsource.isPropertyBased())
                     {
                         Path relative = dir.relativize(apath);
-                        return String.format("%s%c%s", dirsource.getId(), File.separatorChar, relative.toString());
+                        return String.format("%s%s%s", dirsource.getId(), FS.separator(), relative.toString());
                     }
                     else
                     {

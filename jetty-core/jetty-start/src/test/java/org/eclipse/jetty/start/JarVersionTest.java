@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ public class JarVersionTest
 {
     private void assertJarVersion(String jarname, String expectedVersion)
     {
-        File jarfile = MavenTestingUtils.getTestResourceFile(jarname);
+        Path jarfile = MavenTestingUtils.getTestResourcePathFile(jarname);
         assertThat("Jar: " + jarname, JarVersion.getVersion(jarfile), containsString(expectedVersion));
     }
 
