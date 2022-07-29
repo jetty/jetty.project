@@ -95,7 +95,7 @@ public class PreconfigureQuickStartWar
             if (!dir.exists())
                 Files.createDirectories(dir.getPath());
 
-            URI jarUri = URI.create("jar:" + war.getURI() + "!/");
+            URI jarUri = Resource.toJarFileUri(war.getURI());
             try (Resource.Mount warMount = Resource.mount(jarUri))
             {
                 // unpack contents of war to directory

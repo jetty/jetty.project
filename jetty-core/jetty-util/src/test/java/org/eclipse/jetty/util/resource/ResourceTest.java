@@ -265,6 +265,7 @@ public class ResourceTest
     public static void tearDown()
     {
         TO_CLOSE.forEach(IO::close);
+        TO_CLOSE.clear();
     }
 
     @ParameterizedTest

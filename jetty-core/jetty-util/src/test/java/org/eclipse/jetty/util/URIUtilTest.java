@@ -13,26 +13,22 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -40,11 +36,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(URIUtilTest.class);
     public WorkDir workDir;
 
     public static Stream<Arguments> encodePathSource()
@@ -526,33 +521,86 @@ public class URIUtilTest
     public static Stream<Arguments> getJarSourceStringSource()
     {
         return Stream.of(
+            // Common cases
             Arguments.of("file:///tmp/", "file:///tmp/"),
             Arguments.of("jar:file:///tmp/foo.jar", "file:///tmp/foo.jar"),
-            Arguments.of("jar:file:///tmp/foo.jar!/some/path", "file:///tmp/foo.jar")
+            Arguments.of("jar:file:///tmp/foo.jar!/some/path", "file:///tmp/foo.jar"),
+            // Bad File.toURL cases
+            Arguments.of("file:/tmp/", "file:/tmp/"),
+            Arguments.of("jar:file:/tmp/foo.jar", "file:/tmp/foo.jar"),
+            Arguments.of("jar:file:/tmp/foo.jar!/some/path", "file:/tmp/foo.jar")
         );
     }
 
     @ParameterizedTest
     @MethodSource("getJarSourceStringSource")
-    public void testJarSourceString(String uri, String expectedJarUri) throws Exception
+    public void testJarSourceURI(String uri, String expectedJarUri)
     {
-        assertThat(URIUtil.getJarSource(uri), is(expectedJarUri));
+        URI input = URI.create(uri);
+        URI expected = URI.create(expectedJarUri);
+        URI actual = URIUtil.getJarSource(input);
+        assertThat(actual.toASCIIString(), is(expected.toASCIIString()));
     }
 
-    public static Stream<Arguments> getJarSourceURISource()
+    public static Stream<Arguments> badJavaIoFileUrlCases()
     {
         return Stream.of(
-            Arguments.of(URI.create("file:///tmp/"), URI.create("file:///tmp/")),
-            Arguments.of(URI.create("jar:file:///tmp/foo.jar"), URI.create("file:///tmp/foo.jar")),
-            Arguments.of(URI.create("jar:file:///tmp/foo.jar!/some/path"), URI.create("file:///tmp/foo.jar"))
+            // Already valid URIs
+            Arguments.of("file:///foo.jar", "file:///foo.jar"),
+            Arguments.of("jar:file:///foo.jar!/", "jar:file:///foo.jar!/"),
+            Arguments.of("jar:file:///foo.jar!/zed.txt", "jar:file:///foo.jar!/zed.txt"),
+            // Badly created File.toURL.toURI URIs
+            Arguments.of("file:/foo.jar", "file:///foo.jar"),
+            Arguments.of("jar:file:/foo.jar", "jar:file:///foo.jar"),
+            Arguments.of("jar:file:/foo.jar!/", "jar:file:///foo.jar!/"),
+            Arguments.of("jar:file:/foo.jar!/zed.txt", "jar:file:///foo.jar!/zed.txt"),
+            // Windows UNC uris
+            Arguments.of("file://machine/share/foo.jar", "file://machine/share/foo.jar"),
+            Arguments.of("file:////machine/share/foo.jar", "file:////machine/share/foo.jar"),
+            // Excessive slashes (can't do anything)
+            Arguments.of("file://////foo.jar", "file://////foo.jar"),
+            // Not an absolute file uri
+            Arguments.of("file:foo.jar", "file:foo.jar"),
+            Arguments.of("foo.jar", "foo.jar"),
+            Arguments.of("/foo.jar", "/foo.jar"),
+            // Not a file or jar uri
+            Arguments.of("https://webtide.com", "https://webtide.com"),
+            Arguments.of("mailto:jesse@webtide.com", "mailto:jesse@webtide.com"),
+            // Empty scheme
+            // Arguments.of("file:", "file:"), java.net.URI requires an SSP for `file`
+            Arguments.of("jar:file:", "jar:file:")
         );
     }
 
     @ParameterizedTest
-    @MethodSource("getJarSourceURISource")
-    public void testJarSourceURI(URI uri, URI expectedJarUri) throws Exception
+    @MethodSource("badJavaIoFileUrlCases")
+    public void testFixBadJavaIoFileUrl(String input, String expected)
     {
-        assertThat(URIUtil.getJarSource(uri), is(expectedJarUri));
+        URI inputUri = URI.create(input);
+        URI actualUri = URIUtil.fixBadJavaIoFileUrl(inputUri);
+        URI expectedUri = URI.create(expected);
+        assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
+    }
+
+    @Test
+    public void testFixBadJavaIoFileUrlActualFile() throws Exception
+    {
+        File file = MavenTestingUtils.getTargetFile("testFixBadJavaIoFileUrlActualFile.txt");
+        FS.touch(file);
+
+        URI expectedUri = file.toPath().toUri();
+
+        assertThat(expectedUri.toASCIIString(), containsString("://"));
+
+        URI fileUri = file.toURI();
+        URI fileUrlUri = file.toURL().toURI();
+
+        // If these 2 tests start failing, that means Java itself has been fixed
+        assertThat(fileUri.toASCIIString(), not(containsString("://")));
+        assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
+
+        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpacesSource()
@@ -699,39 +747,24 @@ public class URIUtilTest
         assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
     }
 
-    public static Stream<Arguments> uriLastSegmentSource() throws URISyntaxException, IOException
+    public static Stream<Arguments> uriLastSegmentSource() throws IOException
     {
         final String TEST_RESOURCE_JAR = "test-base-resource.jar";
-        Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
-        URI uri = new URI("jar", testJar.toUri().toASCIIString(), null);
-
-        Map<String, Object> env = new HashMap<>();
-        env.put("multi-release", "runtime");
-
         List<Arguments> arguments = new ArrayList<>();
-        arguments.add(Arguments.of(uri, TEST_RESOURCE_JAR));
-        try (FileSystem zipFs = FileSystems.newFileSystem(uri, env))
-        {
-            FileVisitOption[] fileVisitOptions = new FileVisitOption[]{};
+        Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
+        URI jarFileUri = Resource.toJarFileUri(testJar.toUri());
 
-            for (Path root : zipFs.getRootDirectories())
+        try (Resource.Mount jarMount = Resource.mount(jarFileUri))
+        {
+            arguments.add(Arguments.of(jarFileUri, TEST_RESOURCE_JAR));
+
+            Path root = jarMount.root().getPath();
+
+            try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true))
             {
-                try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true, fileVisitOptions))
-                {
-                    entryStream.forEach((path) ->
-                    {
-                        if (path.toString().endsWith("!/"))
-                        {
-                            // skip - JAR entry type not supported by Jetty
-                            // TODO: re-enable once we start to use zipfs
-                            LOG.warn("Skipping Unsupported entry: " + path.toUri());
-                        }
-                        else
-                        {
-                            arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
-                        }
-                    });
-                }
+                entryStream.filter(Files::isRegularFile)
+                    .forEach((path) ->
+                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR)));
             }
         }
 
@@ -789,5 +822,53 @@ public class URIUtilTest
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
         assertEquals(path, decoded);
+    }
+
+    public static Stream<Arguments> uriJarPrefixCasesGood()
+    {
+        return Stream.of(
+            Arguments.of("file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("uriJarPrefixCasesGood")
+    public void testUriJarPrefixGood(String input, String encodedSuffix, String expected)
+    {
+        URI inputURI = URI.create(input);
+        URI outputURI = URIUtil.uriJarPrefix(inputURI, encodedSuffix);
+        assertThat(outputURI.toASCIIString(), is(expected));
+    }
+
+    public static Stream<Arguments> uriJarPrefixCasesBad()
+    {
+        return Stream.of(
+            // Not jar or file scheme
+            Arguments.of("http://webtide.com", "!/zed.dat"),
+            // null parameters
+            Arguments.of(null, "!/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", null),
+            // empty encodedSuffix
+            Arguments.of("file:///opt/foo.jar", ""),
+            Arguments.of("jar:file:///opt/foo.jar", ""),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", ""),
+            // encodedSuffix not starting with "!/"
+            Arguments.of("file:///opt/foo.jar", "/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "/zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "/zed.dat"),
+            Arguments.of("file:///opt/foo.jar", "zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar", "zed.dat"),
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "zed.dat")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("uriJarPrefixCasesBad")
+    public void testUriJarPrefixBad(String input, String suffix)
+    {
+        final URI inputURI = input == null ? null : URI.create(input);
+        assertThrows(IllegalArgumentException.class, () -> URIUtil.uriJarPrefix(inputURI, suffix));
     }
 }

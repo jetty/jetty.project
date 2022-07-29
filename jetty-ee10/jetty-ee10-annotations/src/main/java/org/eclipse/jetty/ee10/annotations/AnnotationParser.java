@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,9 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
@@ -70,14 +71,15 @@ public class AnnotationParser
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
-    protected Map<String, String> _parsedClassNames = new ConcurrentHashMap<>();
-    private final int _javaPlatform;
+    protected Map<String, URI> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _asmVersion;
 
     /**
      * Determine the runtime version of asm.
      *
      * @return the {@link org.objectweb.asm.Opcodes} ASM value matching the runtime version of asm.
+     * TODO: can this be a jetty-util utility method to allow reuse across ee#?
+     * TODO: we should probably keep ASM centralized, as it's not EE specific, but Java Runtime specific behavior to keep up to date
      */
     private static int asmVersion()
     {
@@ -526,25 +528,14 @@ public class AnnotationParser
 
     public AnnotationParser()
     {
-        this(JavaVersion.VERSION.getPlatform());
+        this(ASM_VERSION);
     }
 
     /**
-     * @param javaPlatform The target java version or 0 for the current runtime.
+     * @param asmVersion The target asm version or 0 for the internal version.
      */
-    public AnnotationParser(int javaPlatform)
+    public AnnotationParser(int asmVersion)
     {
-        _asmVersion = ASM_VERSION;
-        if (javaPlatform == 0)
-            javaPlatform = JavaVersion.VERSION.getPlatform();
-        _javaPlatform = javaPlatform;
-    }
-
-    public AnnotationParser(int javaPlatform, int asmVersion)
-    {
-        if (javaPlatform == 0)
-            javaPlatform = JavaVersion.VERSION.getPlatform();
-        _javaPlatform = javaPlatform;
         if (asmVersion == 0)
             asmVersion = ASM_VERSION;
         _asmVersion = asmVersion;
@@ -556,9 +547,9 @@ public class AnnotationParser
      * @param classname the name of the class
      * @param location the fully qualified location of the class
      */
-    public void addParsedClass(String classname, String location)
+    public void addParsedClass(String classname, URI location)
     {
-        String existing = _parsedClassNames.putIfAbsent(classname, location);
+        URI existing = _parsedClassNames.putIfAbsent(classname, location);
         if (existing != null)
             LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
@@ -580,8 +571,8 @@ public class AnnotationParser
         if (resource != null)
         {
             Resource r = Resource.newResource(resource);
-            addParsedClass(className, r.toString());
-            try (InputStream is = r.newInputStream())
+            addParsedClass(className, r.getURI());
+            try (InputStream is = Files.newInputStream(r.getPath()))
             {
                 scanClass(handlers, null, is);
             }
@@ -606,8 +597,8 @@ public class AnnotationParser
             if (resource != null)
             {
                 Resource r = Resource.newResource(resource);
-                addParsedClass(clazz.getName(), r.toString());
-                try (InputStream is = r.newInputStream())
+                addParsedClass(clazz.getName(), r.getURI());
+                try (InputStream is = Files.newInputStream(r.getPath()))
                 {
                     scanClass(handlers, null, is);
                 }
@@ -655,8 +646,8 @@ public class AnnotationParser
                 if (resource != null)
                 {
                     Resource r = Resource.newResource(resource);
-                    addParsedClass(className, r.toString());
-                    try (InputStream is = r.newInputStream())
+                    addParsedClass(className, r.getURI());
+                    try (InputStream is = Files.newInputStream(r.getPath()))
                     {
                         scanClass(handlers, null, is);
                     }
@@ -740,7 +731,7 @@ public class AnnotationParser
 
         if (fullname.endsWith(".class"))
         {
-            try (InputStream is = r.newInputStream())
+            try (InputStream is = Files.newInputStream(r.getPath()))
             {
                 scanClass(handlers, null, is);
                 return;
@@ -789,8 +780,8 @@ public class AnnotationParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Scanning class {}", r);
-                        addParsedClass(str, r.toString());
-                        try (InputStream is = r.newInputStream())
+                        addParsedClass(str, r.getURI());
+                        try (InputStream is = Files.newInputStream(path))
                         {
                             scanClass(handlers, Resource.newResource(path.getParent()), is);
                         }
@@ -825,16 +816,22 @@ public class AnnotationParser
         if (jarResource == null)
             return;
 
+        // TODO: what if the input is "FOO.JAR" or "Bar.Jar" ? - need to use FileID.isArchive() or FileID.isJar()
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning jar {}", jarResource);
 
-            Throwable multiException = null;
-            // TODO is the jarResource's Path always convertible to File?
-            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath().toFile(), _javaPlatform, false))
+            ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
+            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
+                 Stream<Path> jarEntryStream = jarFile.stream()
+                     .filter(Files::isRegularFile)
+                     .filter(MultiReleaseJarFile::skipModuleInfoClass)
+                     .filter(MultiReleaseJarFile::skipMetaInfVersions)
+                     .filter(MultiReleaseJarFile::isClassFile)
+            )
             {
-                for (MultiReleaseJarFile.VersionedJarEntry e : jarFile)
+                jarEntryStream.forEach(e ->
                 {
                     try
                     {
@@ -842,11 +839,11 @@ public class AnnotationParser
                     }
                     catch (Exception ex)
                     {
-                        multiException = ExceptionUtil.combine(multiException, new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                        multiException.add(new RuntimeException("Error scanning entry " + e.toString(), ex));
                     }
-                }
+                });
             }
-            ExceptionUtil.ifExceptionThrow(multiException);
+            multiException.ifExceptionThrow();
         }
     }
 
@@ -858,28 +855,30 @@ public class AnnotationParser
      * @param jar the jar file
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry(Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry)
+    protected void parseJarEntry(Set<? extends Handler> handlers, Resource jar, Path entry)
         throws Exception
     {
         if (jar == null || entry == null)
             return;
 
         //skip directories
-        if (entry.isDirectory())
+        if (Files.isDirectory(entry))
             return;
 
-        String name = entry.getName();
+        String name = entry.toString();
 
         //check file is a valid class file name
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
-            String location = Resource.toJarPath(jar.toString(), entry.getNameInJar());
+            URI location = entry.toUri();
             addParsedClass(shortName, location);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Scanning class from jar {}", location);
-            try (InputStream is = entry.getInputStream())
+
+            try (InputStream is = Files.newInputStream(entry))
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Scanning class from jar {}", location);
+                LOG.debug("Scanning class from jar {}", location);
                 scanClass(handlers, jar, is);
             }
         }
@@ -918,14 +917,16 @@ public class AnnotationParser
      *
      * @param name the class file name
      * @return whether the class file name is valid
+     * TODO: does multiple things, we should be able to move this FileID in future PR
      */
     public boolean isValidClassFileName(String name)
     {
-        //no name cannot be valid
+        // no name cannot be valid
         if (name == null || name.length() == 0)
             return false;
 
-        //skip anything that is not a class file
+        // skip anything that is not a class file
+        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
         String lc = name.toLowerCase(Locale.ENGLISH);
         if (!lc.endsWith(".class"))
         {
@@ -934,6 +935,7 @@ public class AnnotationParser
             return false;
         }
 
+        // TODO: exists in MultiReleaseJarFile.notModuleInfoClass(Path)
         if (lc.equals("module-info.class"))
         {
             if (LOG.isDebugEnabled())
@@ -941,7 +943,8 @@ public class AnnotationParser
             return false;
         }
 
-        //skip any classfiles that are not a valid java identifier
+        // skip any classfiles that are not a valid java identifier
+        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
         int c0 = 0;
         int ldir = name.lastIndexOf('/', name.length() - 6);
         c0 = (ldir > -1 ? ldir + 1 : c0);
@@ -960,6 +963,7 @@ public class AnnotationParser
      *
      * @param path the class file path
      * @return whether the class file path is valid
+     * TODO: remove, handled by MultiReleaseJarFile.skipHiddenDirs
      */
     public boolean isValidClassFilePath(String path)
     {

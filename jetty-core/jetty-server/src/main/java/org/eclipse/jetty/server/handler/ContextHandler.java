@@ -15,9 +15,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -312,23 +311,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // TODO may need to handle one level of parent classloader for API ?
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
-        URL[] urls = loader.getURLs();
-        StringBuilder classpath = new StringBuilder();
-        for (URL url : urls)
-        {
-            // TODO do this without Resource?
-            Resource resource = Resource.newResource(url);
-            Path path = resource.getPath();
-            if (path != null && Files.exists(path))
-            {
-                if (classpath.length() > 0)
-                    classpath.append(File.pathSeparatorChar);
-                classpath.append(path.toAbsolutePath());
-            }
-        }
-        if (classpath.length() == 0)
+
+        String classpath = URIUtil.streamOf(loader)
+            .map(URI::toASCIIString)
+            .collect(Collectors.joining(File.pathSeparator));
+        if (StringUtil.isBlank(classpath))
             return null;
-        return classpath.toString();
+        return classpath;
     }
 
     /**

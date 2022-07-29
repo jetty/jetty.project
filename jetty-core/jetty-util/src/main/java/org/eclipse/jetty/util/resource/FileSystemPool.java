@@ -22,9 +22,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +49,16 @@ public class FileSystemPool implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
+    private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
+
+    static
+    {
+        Map<String, String> env = new HashMap<>();
+        // Key and Value documented at https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html
+        env.put("releaseVersion", "runtime");
+        ENV_MULTIRELEASE_RUNTIME = env;
+    }
+
     private final Map<URI, Bucket> pool = new HashMap<>();
     private final AutoLock poolLock = new AutoLock();
 
@@ -68,14 +78,24 @@ public class FileSystemPool implements Dumpable
         {
             try
             {
-                fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                fileSystem = FileSystems.newFileSystem(uri, ENV_MULTIRELEASE_RUNTIME);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Mounted new FS {}", uri);
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
                 fileSystem = Paths.get(uri).getFileSystem();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Using existing FS {}", uri);
             }
-            Mount mount = new Mount(uri);
-            retain(uri, fileSystem, mount);
+            catch (ProviderNotFoundException pnfe)
+            {
+                throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + uri, pnfe);
+            }
+            // use root FS URI so that pool key/release/sweep is sane
+            URI rootURI = fileSystem.getPath("/").toUri();
+            Mount mount = new Mount(rootURI, Resource.newResource(uri));
+            retain(rootURI, fileSystem, mount);
             return mount;
         }
         catch (Exception e)
@@ -85,14 +105,15 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    public void release(URI uri)
+    private void release(URI fsUri)
     {
         try (AutoLock ignore = poolLock.lock())
         {
-            Bucket bucket = pool.get(uri);
+            // use base URI so that pool key/release/sweep is sane
+            Bucket bucket = pool.get(fsUri);
             if (bucket == null)
             {
-                LOG.warn("Unable to release Mount (not in pool): {}", uri);
+                LOG.warn("Unable to release Mount (not in pool): {}", fsUri);
                 return;
             }
 
@@ -102,7 +123,7 @@ public class FileSystemPool implements Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
                 IO.close(bucket.fileSystem);
-                pool.remove(uri);
+                pool.remove(fsUri);
             }
             else
             {
@@ -143,7 +164,7 @@ public class FileSystemPool implements Dumpable
 
         for (Map.Entry<URI, Bucket> entry : entries)
         {
-            URI uri = entry.getKey();
+            URI fsUri = entry.getKey();
             Bucket bucket = entry.getValue();
             FileSystem fileSystem = bucket.fileSystem;
 
@@ -165,7 +186,7 @@ public class FileSystemPool implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("File {} backing filesystem {} has been removed or changed, closing it", bucket.path, fileSystem);
                     IO.close(fileSystem);
-                    pool.remove(uri);
+                    pool.remove(fsUri);
                 }
             }
             catch (IOException e)
@@ -176,27 +197,22 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void retain(URI uri, FileSystem fileSystem, Resource.Mount mount)
+    private void retain(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
     {
         assert poolLock.isHeldByCurrentThread();
 
-        Bucket bucket = pool.get(uri);
+        Bucket bucket = pool.get(fsUri);
         if (bucket == null)
         {
             LOG.debug("Pooling new FS {}", fileSystem);
-            bucket = new Bucket(uri, fileSystem, mount);
-            pool.put(uri, bucket);
+            bucket = new Bucket(fsUri, fileSystem, mount);
+            pool.put(fsUri, bucket);
         }
         else
         {
             int count = bucket.counter.incrementAndGet();
             LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
         }
-    }
-
-    static URI containerUri(URI uri)
-    {
-        return Resource.unwrapContainer(uri);
     }
 
     private static class Bucket
@@ -208,42 +224,30 @@ public class FileSystemPool implements Dumpable
         private final Path path;
         private final Resource.Mount mount;
 
-        private Bucket(URI uri, FileSystem fileSystem, Resource.Mount mount)
+        private Bucket(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
         {
-            Path path = uriToPath(uri);
+            URI containerUri = Resource.unwrapContainer(fsUri);
+            Path path = Paths.get(containerUri);
 
             long size = -1L;
             FileTime lastModifiedTime = null;
-            if (path != null)
+            try
             {
-                try
-                {
-                    size = Files.size(path);
-                    lastModifiedTime = Files.getLastModifiedTime(path);
-                }
-                catch (IOException ioe)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, uri);
-                }
+                size = Files.size(path);
+                lastModifiedTime = Files.getLastModifiedTime(path);
             }
-            else
+            catch (IOException ioe)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Filesystem at {} is not backed by a file", uri);
+                    LOG.debug("Cannot read size or last modified time from {} backing filesystem at {}", path, fsUri);
             }
+
             this.counter = new AtomicInteger(1);
             this.fileSystem = fileSystem;
             this.path = path;
             this.size = size;
             this.lastModifiedTime = lastModifiedTime;
             this.mount = mount;
-        }
-
-        private static Path uriToPath(URI uri)
-        {
-            URI rawUri = containerUri(uri);
-            return rawUri == null ? null : Paths.get(rawUri).toAbsolutePath();
         }
 
         @Override
@@ -255,13 +259,13 @@ public class FileSystemPool implements Dumpable
 
     private static class Mount implements Resource.Mount
     {
-        private final URI uri;
+        private final URI fsUri;
         private final Resource root;
 
-        private Mount(URI uri)
+        private Mount(URI fsUri, Resource resource)
         {
-            this.uri = uri;
-            this.root = Resource.newResource(uri);
+            this.fsUri = fsUri;
+            this.root = resource;
         }
 
         public Resource root()
@@ -269,21 +273,16 @@ public class FileSystemPool implements Dumpable
             return root;
         }
 
-        public URI getUri()
-        {
-            return uri;
-        }
-
         @Override
         public void close() throws IOException
         {
-            FileSystemPool.INSTANCE.release(uri);
+            FileSystemPool.INSTANCE.release(fsUri);
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), uri, root);
+            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), fsUri, root);
         }
     }
 }
