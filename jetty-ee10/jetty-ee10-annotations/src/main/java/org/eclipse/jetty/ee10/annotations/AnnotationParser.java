@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
@@ -529,7 +528,7 @@ public class AnnotationParser
 
     public AnnotationParser()
     {
-        this(JavaVersion.VERSION.getPlatform());
+        this(0);
     }
 
     /**

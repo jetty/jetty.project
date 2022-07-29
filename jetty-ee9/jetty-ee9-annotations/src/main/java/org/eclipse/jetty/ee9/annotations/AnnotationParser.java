@@ -529,7 +529,7 @@ public class AnnotationParser
 
     public AnnotationParser()
     {
-        this(ASM_VERSION);
+        this(0);
     }
 
     /**
