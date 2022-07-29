@@ -179,7 +179,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} dispatch {}", this, execute);
+            LOG.debug("{} dispatch {}", toStringLocked(), execute);
         if (execute)
             _executor.execute(_runPendingProducer);
     }
@@ -198,7 +198,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private void tryProduce(boolean wasPending)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} tryProduce {}", this, wasPending);
+            LOG.debug("{} tryProduce {}", toStringLocked(), wasPending);
 
         // Takes the lock to atomically check if the thread can produce.
         try (AutoLock l = _lock.lock())
@@ -358,7 +358,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("ss={} t={}/{} {}", subStrategy, task, Invocable.getInvocationType(task), this);
+            LOG.debug("ss={} t={}/{} {}", subStrategy, task, Invocable.getInvocationType(task), toStringLocked());
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:
@@ -521,10 +521,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @Override
     public String toString()
     {
+        String ret;
         try (AutoLock l = _lock.lock())
         {
-            return toStringLocked();
+            ret = toStringLocked();
         }
+        return ret;
     }
 
     public String toStringLocked()
