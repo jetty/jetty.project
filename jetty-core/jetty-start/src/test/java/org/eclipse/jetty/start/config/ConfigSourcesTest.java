@@ -111,7 +111,7 @@ public class ConfigSourcesTest
 
         // Create common
         Path common = testdir.getPathFile("common");
-        FS.ensureEmpty(common.toFile());
+        FS.ensureEmpty(common);
         common = common.toRealPath();
 
         // Create base

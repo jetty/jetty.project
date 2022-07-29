@@ -14,248 +14,198 @@
 package org.eclipse.jetty.util;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.Iterator;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+import java.util.Objects;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Utility class to handle a Multi Release Jar file</p>
  */
-public class MultiReleaseJarFile implements Closeable, Iterable<MultiReleaseJarFile.VersionedJarEntry>
+public class MultiReleaseJarFile
 {
-    private static final String META_INF_VERSIONS = "META-INF/versions/";
+    private static final Logger LOG = LoggerFactory.getLogger(MultiReleaseJarFile.class);
 
-    private final JarFile jarFile;
-    private final int platform;
-    private final boolean multiRelease;
-
-    /* Map to hold unversioned name to VersionedJarEntry */
-    private final Map<String, VersionedJarEntry> entries;
+    private final Resource jarFile;
 
     /**
      * Construct a multi release jar file for the current JVM version, ignoring directories.
      *
-     * @param file The file to open
-     * @throws IOException if the jar file cannot be read
+     * @param jarFile The file to open
      */
-    public MultiReleaseJarFile(File file) throws IOException
+    public MultiReleaseJarFile(Resource jarFile)
     {
-        this(file, JavaVersion.VERSION.getPlatform(), false);
+        Objects.requireNonNull(jarFile, "Jar File");
+
+        if (jarFile.exists())
+            throw new IllegalArgumentException("File does not exist: " + jarFile);
+
+        if (!jarFile.isDirectory())
+            throw new IllegalArgumentException("Not a file: " + jarFile);
+
+        // TODO : use FileID.isJar() in future PR
+        if (!Resource.isArchive(jarFile.getPath()))
+            throw new IllegalArgumentException("Not a Jar: " + jarFile);
+
+        if (!Files.isReadable(jarFile.getPath()))
+            throw new IllegalArgumentException("Unable to read Jar file: " + jarFile);
+
+        this.jarFile = jarFile;
+
     }
 
     /**
-     * Construct a multi release jar file
+     * Predicate to skip {@code module-info.class} files.
      *
-     * @param file The file to open
-     * @param javaPlatform The  JVM platform to apply when selecting a version.
-     * @param includeDirectories true if any directory entries should not be ignored
-     * @throws IOException if the jar file cannot be read
+     * <p>
+     * This is a simple test against the last path segment using {@link Path#getFileName()}
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not a {@code module-info.class} file
+     * TODO: move to FileID class in later PR
      */
-    public MultiReleaseJarFile(File file, int javaPlatform, boolean includeDirectories) throws IOException
+    public static boolean skipModuleInfoClass(Path path)
     {
-        if (file == null || !file.exists() || !file.canRead() || file.isDirectory())
-            throw new IllegalArgumentException("bad jar file: " + file);
+        Path filenameSegment = path.getFileName();
+        if (filenameSegment == null)
+            return true;
 
-        jarFile = new JarFile(file, true, JarFile.OPEN_READ);
-        this.platform = javaPlatform;
+        return !filenameSegment.toString().equalsIgnoreCase("module-info.class");
+    }
 
-        Manifest manifest = jarFile.getManifest();
-        if (manifest == null)
-            multiRelease = false;
-        else
-            multiRelease = Boolean.parseBoolean(String.valueOf(manifest.getMainAttributes().getValue("Multi-Release")));
+    /**
+     * Predicate to skip {@code META-INF/versions/*} tree from walk/stream results.
+     *
+     * <p>
+     * This only works with a zipfs based FileSystem
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not in {@code META-INF/versions/*} tree
+     * TODO: move to FileID class in later PR
+     */
+    public static boolean skipMetaInfVersions(Path path)
+    {
+        return !isMetaInfVersions(path);
+    }
 
-        Map<String, VersionedJarEntry> map = new TreeMap<>();
-        jarFile.stream()
-            .map(VersionedJarEntry::new)
-            .filter(e -> (includeDirectories || !e.isDirectory()) && e.isApplicable())
-            .forEach(e -> map.compute(e.name, (k, v) -> v == null || v.isReplacedBy(e) ? e : v));
+    /**
+     * Predicate to filter on {@code META-INF/versions/*} tree in walk/stream results.
+     *
+     * <p>
+     * This only works with a zipfs based FileSystem
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if path is in {@code META-INF/versions/*} tree
+     * TODO: move to FileID class in later PR
+     */
+    public static boolean isMetaInfVersions(Path path)
+    {
+        if (path.getNameCount() < 3)
+            return false;
 
-        for (Iterator<Map.Entry<String, VersionedJarEntry>> i = map.entrySet().iterator(); i.hasNext(); )
+        Path path0 = path.getName(0);
+        Path path1 = path.getName(1);
+        Path path2 = path.getName(2);
+
+        return (path0.toString().equals("META-INF") &&
+            path1.toString().equals("versions") &&
+            path2.getFileName().toString().matches("[0-9]+"));
+    }
+
+    /**
+     * Predicate to select all class files
+     *
+     * @param path the path to test
+     * @return true if the filename ends with {@code .class}
+     * TODO: move to FileID class in later PR
+     */
+    public static boolean isClassFile(Path path)
+    {
+        String filename = path.getFileName().toString();
+        // has to end in ".class"
+        if (!filename.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+            return false;
+        // is it a valid class filename?
+        int start = 0;
+        int end = filename.length() - 6; // drop ".class"
+        if (end <= start) // if the filename is only ".class"
+            return false;
+        // Test first character
+        if (!Character.isJavaIdentifierStart(filename.charAt(0)))
+            return false;
+        // Test rest
+        for (int i = start + 1; i < end; i++)
         {
-            Map.Entry<String, VersionedJarEntry> e = i.next();
-            VersionedJarEntry entry = e.getValue();
-            if (entry.inner)
+            if (!Character.isJavaIdentifierPart(filename.codePointAt(i)))
             {
-                VersionedJarEntry outer = entry.outer == null ? null : map.get(entry.outer);
-                if (outer == null || outer.version != entry.version)
-                    i.remove();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not a java identifier: {}", filename);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Predicate useful for {@code Stream<Path>} to exclude hidden paths following
+     * filesystem rules for hidden directories and files.
+     *
+     * @param base the base path to search from (anything above this path is not evaluated)
+     * @param path the path to evaluate
+     * @return true if hidden by FileSystem rules, false if not
+     * @see Files#isHidden(Path)
+     * TODO: move to FileID.isHidden(Path, Path)
+     */
+    public static boolean isHidden(Path base, Path path)
+    {
+        // Work with the path in relative form, from the base onwards to the path
+        Path relative = base.relativize(path);
+
+        int count = relative.getNameCount();
+        for (int i = 0; i < count; i++)
+        {
+            try
+            {
+                if (Files.isHidden(relative.getName(i)))
+                    return true;
+            }
+            catch (IOException ignore)
+            {
+                // ignore, if filesystem gives us an error, we cannot make the call on hidden status
             }
         }
 
-        entries = Collections.unmodifiableMap(map);
+        return false;
     }
 
     /**
-     * @return true IFF the jar is a multi release jar
+     * @return A stream of versioned entries from the jar, excluding {@code META-INF/versions} entries.
      */
-    public boolean isMultiRelease()
+    @SuppressWarnings("resource")
+    public Stream<Path> stream() throws IOException
     {
-        return multiRelease;
-    }
+        Path rootPath = jarFile.getPath();
 
-    /**
-     * @return The major version applied to this jar for the purposes of selecting entries
-     */
-    public int getVersion()
-    {
-        return platform;
-    }
-
-    /**
-     * @return A stream of versioned entries from the jar, excluded any that are not applicable
-     */
-    public Stream<VersionedJarEntry> stream()
-    {
-        return entries.values().stream();
-    }
-
-    @Override
-    public Iterator<VersionedJarEntry> iterator()
-    {
-        return entries.values().iterator();
-    }
-
-    /**
-     * Get a versioned resource entry by name
-     *
-     * @param name The unversioned name of the resource
-     * @return The versioned entry of the resource
-     */
-    public VersionedJarEntry getEntry(String name)
-    {
-        return entries.get(name);
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        if (jarFile != null)
-            jarFile.close();
+        return Files.walk(rootPath)
+            // skip the entire META-INF/versions tree
+            .filter(MultiReleaseJarFile::skipMetaInfVersions);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%b,%d]", jarFile.getName(), isMultiRelease(), getVersion());
-    }
-
-    /**
-     * A versioned Jar entry
-     */
-    public class VersionedJarEntry
-    {
-        final JarEntry entry;
-        final String name;
-        final int version;
-        final boolean inner;
-        final String outer;
-
-        VersionedJarEntry(JarEntry entry)
-        {
-            int v = 0;
-            String name = entry.getName();
-            if (name.startsWith(META_INF_VERSIONS))
-            {
-                v = -1;
-                int index = name.indexOf('/', META_INF_VERSIONS.length());
-                if (index > META_INF_VERSIONS.length() && index < name.length())
-                {
-                    try
-                    {
-                        v = TypeUtil.parseInt(name, META_INF_VERSIONS.length(), index - META_INF_VERSIONS.length(), 10);
-                        name = name.substring(index + 1);
-                    }
-                    catch (NumberFormatException x)
-                    {
-                        throw new RuntimeException("illegal version in " + jarFile, x);
-                    }
-                }
-            }
-
-            this.entry = entry;
-            this.name = name;
-            this.version = v;
-            this.inner = name.contains("$") && name.toLowerCase(Locale.ENGLISH).endsWith(".class");
-            this.outer = inner ? name.substring(0, name.indexOf('$')) + ".class" : null;
-        }
-
-        /**
-         * @return the unversioned name of the resource
-         */
-        public String getName()
-        {
-            return name;
-        }
-
-        /**
-         * @return The name of the resource within the jar, which could be versioned
-         */
-        public String getNameInJar()
-        {
-            return entry.getName();
-        }
-
-        /**
-         * @return The version of the resource or 0 for a base version
-         */
-        public int getVersion()
-        {
-            return version;
-        }
-
-        /**
-         * @return True iff the entry is not from the base version
-         */
-        public boolean isVersioned()
-        {
-            return version > 0;
-        }
-
-        /**
-         * @return True iff the entry is a directory
-         */
-        public boolean isDirectory()
-        {
-            return entry.isDirectory();
-        }
-
-        /**
-         * @return An input stream of the content of the versioned entry.
-         * @throws IOException if something goes wrong!
-         */
-        public InputStream getInputStream() throws IOException
-        {
-            return jarFile.getInputStream(entry);
-        }
-
-        boolean isApplicable()
-        {
-            if (multiRelease)
-                return (this.version == 0 || this.version == platform) && name.length() > 0;
-            return this.version == 0;
-        }
-
-        boolean isReplacedBy(VersionedJarEntry entry)
-        {
-            if (isDirectory())
-                return entry.version == 0;
-            return this.name.equals(entry.name) && entry.version > version;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s->%s[%d]", name, entry.getName(), version);
-        }
+        return jarFile.toString();
     }
 }

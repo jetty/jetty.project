@@ -13,21 +13,24 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 /**
  * Class to handle CLASSPATH construction
  */
-public class Classpath implements Iterable<File>
+public class Classpath implements Iterable<Path>
 {
     private static class Loader extends URLClassLoader
     {
@@ -48,7 +51,7 @@ public class Classpath implements Iterable<File>
         }
     }
 
-    private final List<File> elements = new ArrayList<File>();
+    private final List<Path> elements = new ArrayList<>();
 
     public Classpath()
     {
@@ -64,7 +67,7 @@ public class Classpath implements Iterable<File>
         boolean added = false;
         if (s != null)
         {
-            StringTokenizer t = new StringTokenizer(s, File.pathSeparator);
+            StringTokenizer t = new StringTokenizer(s, FS.pathSeparator());
             while (t.hasMoreTokens())
             {
                 added |= addComponent(t.nextToken());
@@ -73,10 +76,10 @@ public class Classpath implements Iterable<File>
         return added;
     }
 
-    public boolean addComponent(File file)
+    public boolean addComponent(Path file)
     {
         StartLog.debug("Adding classpath component: %s", file);
-        if ((file == null) || (!file.exists()))
+        if ((file == null) || (!Files.exists(file)))
         {
             // not a valid component
             return false;
@@ -84,7 +87,7 @@ public class Classpath implements Iterable<File>
 
         try
         {
-            File key = file.getCanonicalFile();
+            Path key = file.toRealPath();
             if (!elements.contains(key))
             {
                 elements.add(key);
@@ -107,7 +110,7 @@ public class Classpath implements Iterable<File>
             return false;
         }
 
-        return addComponent(new File(component));
+        return addComponent(Paths.get(component));
     }
 
     public int count()
@@ -118,21 +121,22 @@ public class Classpath implements Iterable<File>
     public void dump(PrintStream out)
     {
         int i = 0;
-        for (File element : elements)
+        for (Path element : elements)
         {
-            out.printf("%2d: %s%n", i++, element.getAbsolutePath());
+            out.printf("%2d: %s%n", i++, element);
         }
     }
 
     public ClassLoader getClassLoader()
     {
         int cnt = elements.size();
+
         URL[] urls = new URL[cnt];
         for (int i = 0; i < cnt; i++)
         {
             try
             {
-                urls[i] = elements.get(i).toURI().toURL();
+                urls[i] = elements.get(i).toUri().toURL();
                 StartLog.debug("URLClassLoader.url[%d] = %s", i, urls[i]);
             }
             catch (MalformedURLException e)
@@ -154,7 +158,7 @@ public class Classpath implements Iterable<File>
         return new Loader(urls, parent);
     }
 
-    public List<File> getElements()
+    public List<Path> getElements()
     {
         return elements;
     }
@@ -165,7 +169,7 @@ public class Classpath implements Iterable<File>
     }
 
     @Override
-    public Iterator<File> iterator()
+    public Iterator<Path> iterator()
     {
         return elements.iterator();
     }
@@ -177,7 +181,7 @@ public class Classpath implements Iterable<File>
      */
     public void overlay(Classpath other)
     {
-        for (File otherElement : other.elements)
+        for (Path otherElement : other.elements)
         {
             if (this.elements.contains(otherElement))
             {
@@ -191,17 +195,8 @@ public class Classpath implements Iterable<File>
     @Override
     public String toString()
     {
-        StringBuffer cp = new StringBuffer(1024);
-        boolean needDelim = false;
-        for (File element : elements)
-        {
-            if (needDelim)
-            {
-                cp.append(File.pathSeparatorChar);
-            }
-            cp.append(element.getAbsolutePath());
-            needDelim = true;
-        }
-        return cp.toString();
+        return elements.stream()
+            .map(Path::toString)
+            .collect(Collectors.joining(FS.pathSeparator()));
     }
 }

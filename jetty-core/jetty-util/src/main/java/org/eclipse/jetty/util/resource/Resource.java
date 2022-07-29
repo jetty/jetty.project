@@ -253,6 +253,7 @@ public abstract class Resource
      *
      * @param uri the input URI
      * @return the container String if a {@code jar} scheme, or just the URI untouched.
+     * TODO: reconcile with URIUtil.getJarSource(URI)
      */
     public static URI unwrapContainer(URI uri)
     {

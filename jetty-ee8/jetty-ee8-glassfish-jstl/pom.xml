@@ -1,15 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty.ee8</groupId>
+    <artifactId>jetty-ee8</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-glassfish-jstl</artifactId>
-  <name>EE9 :: Glassfish :: JSTL module</name>
+  <artifactId>jetty-ee8-glassfish-jstl</artifactId>
+  <name>EE8 :: Glassfish :: JSTL module</name>
   <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
   <packaging>jar</packaging>
   <properties>
+    <ee9.module>jetty-ee9-glassfish-jstl</ee9.module>
     <bundle-symbolic-name>${project.groupId}.glassfish.jstl</bundle-symbolic-name>
   </properties>
 
@@ -21,7 +22,7 @@
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
           <systemPropertyVariables>
-            <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
+            <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*jstl-impl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -40,11 +41,27 @@
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <artifactId>jstl-impl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -54,20 +71,20 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-apache-jsp</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-annotations</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-webapp</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -16,14 +16,10 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +38,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -292,20 +289,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
+    protected List<URI> getAllContainerJars(final WebAppContext context)
     {
-        List<URI> uris = new ArrayList<>();
         ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
+        List<URI> uris = new ArrayList<>();
         while (loader != null)
         {
-            if (loader instanceof URLClassLoader)
+            if (loader instanceof URLClassLoader urlCL)
             {
-                URL[] urls = ((URLClassLoader)loader).getURLs();
-                if (urls != null)
-                {
-                    for (URL url : urls)
-                        uris.add(new URI(url.toString().replaceAll(" ", "%20")));
-                }
+                URIUtil.streamOf(urlCL).forEach(uris::add);
             }
             loader = loader.getParent();
         }
@@ -464,7 +456,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 //Resource represents a packed jar
-                resourcesDir = ResourceFactory.of(context).newResource(uriJarPrefix(target.getURI(), "!/META-INF/resources"));
+                resourcesDir = ResourceFactory.of(context).newResource(URIUtil.uriJarPrefix(target.getURI(), "!/META-INF/resources"));
             }
 
             if (cache != null)
@@ -536,7 +528,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource(uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+                webFrag = Resource.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
             if (cache != null)
@@ -658,28 +650,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<>();
+        Set<URL> tlds = new HashSet<>();
 
-        final Path rootDir = dir;
-        Files.walkFileTree(dir, new SimpleFileVisitor<>()
+        try (Stream<Path> entries = Files.walk(dir)
+            .filter(Files::isRegularFile)
+            .filter(MetaInfConfiguration::isTldFile))
         {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                if (!Files.isSameFile(rootDir, dir))
-                    tlds.addAll(getTlds(dir));
-                return FileVisitResult.SKIP_SUBTREE;
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
+        }
 
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
-            {
-                String name = f.normalize().toString();
-                if (name.contains("META-INF") && name.endsWith(".tld"))
-                    tlds.add(f.toUri().toURL());
-                return FileVisitResult.CONTINUE;
-            }
-        });
         return tlds;
     }
 
@@ -693,7 +677,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource resource = _resourceFactory.newResource(uriJarPrefix(uri, "!/"));
+        Resource resource = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/"));
         try (Stream<Path> stream = Files.walk(resource.getPath()))
         {
             Iterator<Path> it = stream
@@ -866,19 +850,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
-    }
-
-    private URI uriJarPrefix(URI uri, String suffix)
-    {
-        String uriString = uri.toString();
-        if (uriString.startsWith("jar:"))
-        {
-            return URI.create(uriString + suffix);
-        }
-        else
-        {
-            return URI.create("jar:" + uriString + suffix);
-        }
     }
 
     private boolean isFileSupported(Resource resource)

@@ -124,7 +124,7 @@ public class RebuildTestResources
     {
         System.out.println("Copying libs (lib dir) ...");
         Path libsDir = destDir.resolve("lib");
-        FS.ensureDirExists(libsDir.toFile());
+        FS.ensureDirExists(libsDir);
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
         Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?", "-" + JETTY_VERSION);
@@ -136,7 +136,7 @@ public class RebuildTestResources
     {
         System.out.println("Copying modules ...");
         Path modulesDir = destDir.resolve("modules");
-        FS.ensureDirExists(modulesDir.toFile());
+        FS.ensureDirExists(modulesDir);
 
         PathMatcher matcher = getPathMatcher("glob:**.mod");
         Renamer renamer = new NoRenamer();
@@ -148,7 +148,7 @@ public class RebuildTestResources
     {
         System.out.println("Copying xmls (etc dir) ...");
         Path xmlDir = destDir.resolve("etc");
-        FS.ensureDirExists(xmlDir.toFile());
+        FS.ensureDirExists(xmlDir);
 
         PathMatcher matcher = getPathMatcher("glob:**.xml");
         Renamer renamer = new NoRenamer();

@@ -151,7 +151,7 @@ public interface ResourceFactory
         }
     };
 
-    class Closeable implements ResourceFactory, AutoCloseable
+    class Closeable implements ResourceFactory, java.io.Closeable
     {
         private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
 

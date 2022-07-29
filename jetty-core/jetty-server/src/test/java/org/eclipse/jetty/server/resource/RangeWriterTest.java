@@ -17,22 +17,20 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,15 +44,18 @@ import static org.hamcrest.Matchers.is;
 public class RangeWriterTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
-    private static FileSystem zipfs;
+    private static ResourceFactory.Closeable resourceFactory;
+
+    @BeforeAll
+    public static void init()
+    {
+        resourceFactory = ResourceFactory.closeable();
+    }
 
     @AfterAll
-    public static void closeZipFs() throws IOException
+    public static void closeResourceFactory()
     {
-        if (zipfs != null)
-        {
-            zipfs.close();
-        }
+        IO.close(resourceFactory);
     }
 
     public static Path initDataFile() throws IOException
@@ -72,30 +73,21 @@ public class RangeWriterTest
         return dataFile;
     }
 
-    private static Path initZipFsDataFile() throws URISyntaxException, IOException
+    private static Path initZipFsDataFile()
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
-        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
+        URI jarFileUri = Resource.toJarFileUri(exampleJar.toUri());
 
-        Map<String, Object> env = new HashMap<>();
-        env.put("multi-release", "runtime");
-
-        if (zipfs != null)
-        {
-            // close prior one
-            zipfs.close();
-        }
-
-        zipfs = FileSystems.newFileSystem(uri, env);
-        Path rootPath = zipfs.getRootDirectories().iterator().next();
+        Resource zipfs = resourceFactory.newResource(jarFileUri);
+        Path rootPath = zipfs.getPath();
         return rootPath.resolve("data.dat");
     }
 
-    public static Stream<Arguments> impls() throws IOException, URISyntaxException
+    public static Stream<Arguments> impls() throws IOException
     {
-        Resource realFileSystemResource = Resource.newResource(initDataFile());
-        Resource nonDefaultFileSystemResource = Resource.newResource(initZipFsDataFile());
+        Resource realFileSystemResource = resourceFactory.newResource(initDataFile());
+        Resource nonDefaultFileSystemResource = resourceFactory.newResource(initZipFsDataFile());
 
         return Stream.of(
             Arguments.of("Traditional / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, true))),

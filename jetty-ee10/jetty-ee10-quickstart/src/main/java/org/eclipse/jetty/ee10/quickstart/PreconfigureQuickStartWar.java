@@ -98,8 +98,9 @@ public class PreconfigureQuickStartWar
 
             try (ResourceFactory.Closeable factory = ResourceFactory.closeable())
             {
+                URI warUri = Resource.toJarFileUri(war.getURI());
                 // unpack contents of war to directory
-                factory.newResource(URI.create("jar:" + war.getURI() + "!/")).copyTo(dir.getPath());
+                factory.newResource(warUri).copyTo(dir.getPath());
             }
         }
 

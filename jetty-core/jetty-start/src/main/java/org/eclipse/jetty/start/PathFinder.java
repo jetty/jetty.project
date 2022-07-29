@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileVisitResult;
@@ -57,14 +56,9 @@ public class PathFinder extends SimpleFileVisitor<Path>
         return fileMatcher;
     }
 
-    public List<File> getHitList()
+    public List<Path> getHitList()
     {
-        List<File> ret = new ArrayList<>();
-        for (Path path : hits.values())
-        {
-            ret.add(path.toFile());
-        }
-        return ret;
+        return new ArrayList<>(hits.values());
     }
 
     public Collection<Path> getHits()
