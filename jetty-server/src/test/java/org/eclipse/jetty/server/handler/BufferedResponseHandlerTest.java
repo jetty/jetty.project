@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -49,6 +50,7 @@ public class BufferedResponseHandlerTest
     public static void setUp() throws Exception
     {
         _server = new Server();
+        _server.addBean(new NullByteBufferPool()); // Avoid giving larger buffers than requested
         _config = new HttpConfiguration();
         _config.setOutputBufferSize(1024);
         _config.setOutputAggregationSize(256);

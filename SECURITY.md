@@ -22,11 +22,9 @@ The [following checklist](https://www.eclipse.org/jetty/security_processes.php) 
 - [ ] Identify a CWE Definition and add it to the advisory description.
 - [ ] Identify vulnerable version(s), including current and past versions that are affected (e.g. 9.4.0 through 9.4.35, and 10.0.0.alpha1 through 10.0.0.beta3…​etc.)
 - [ ] Identify and document workaround(s), if applicable, in the comments of the security advisory.
-- [ ] Open an Eclipse Bugzilla issue to have a CVE allocated. The issue should be opened under the Community "Product" category with a "Component" of Vulnerability Reports. The CVE should include the following:
-     1. Version(s) affected
-     2. CVE Score
-     3. CWE Identifier(s)
-     4. Brief description of the issue
+- [ ] Open an [Gitlab@Eclipse EMO CVE issue](https://gitlab.eclipse.org/eclipsefdn/emo-team/emo/-/issues/new?issuable_template=cve) to have a CVE allocated.   
+      The issue should be opened under the "Eclipse Foundation" > "EMO Team" > "EMO" section as a "cve" description, with the "This issue is confidential" checkbox checked.   
+      Follow the template for what details are necessary to file for a CVE.
 - [ ] Once the CVE is allocated update the Security Advisory with the number
 - [ ] Build and test fix(es) locally and in CI environment.
 - [ ] Merge tests and fix  - ensure description does not mention vulnerability directly. Do not merge directly from the security advisory as it can be traced back before publication.

@@ -31,7 +31,7 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.server.HttpOutput.Interceptor;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -69,19 +69,7 @@ public class HttpOutputTest
     {
         _server = new Server();
 
-        _server.addBean(new ByteBufferPool()
-        {
-            @Override
-            public ByteBuffer acquire(int size, boolean direct)
-            {
-                return direct ? BufferUtil.allocateDirect(size) : BufferUtil.allocate(size);
-            }
-
-            @Override
-            public void release(ByteBuffer buffer)
-            {
-            }
-        });
+        _server.addBean(new NullByteBufferPool());
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setRequestHeaderSize(1024);

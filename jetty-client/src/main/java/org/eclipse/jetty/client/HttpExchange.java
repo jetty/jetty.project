@@ -291,6 +291,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         {
             responseState = State.PENDING;
             responseFailure = null;
+            response.clearHeaders();
         }
     }
 

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -35,7 +33,7 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
@@ -190,13 +188,11 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     {
         try
         {
-            FutureCallback b = new FutureCallback();
-            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
-            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), Callback.NOOP);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.trace("IGNORED", e);
+            LOG.trace("IGNORED", t);
         }
     }
 

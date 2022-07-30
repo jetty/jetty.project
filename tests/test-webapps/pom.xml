@@ -4,16 +4,18 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
   <packaging>pom</packaging>
+
   <properties>
     <jacoco.skip>true</jacoco.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
+
   <modules>
     <module>test-webapp-rfc2616</module>
     <module>test-http2-webapp</module>

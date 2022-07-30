@@ -53,12 +53,15 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout on {}: {}", this, failure);
-        offerFailure(failure);
         boolean result = true;
         Connection connection = getConnection();
         if (connection != null)
             result = connection.onIdleExpired();
-        consumer.accept(() -> close(failure));
+        if (result) 
+        {
+            offerFailure(failure);
+            consumer.accept(() -> close(failure));
+        }
         return result;
     }
 

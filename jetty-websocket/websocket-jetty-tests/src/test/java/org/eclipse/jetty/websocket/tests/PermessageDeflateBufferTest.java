@@ -13,30 +13,47 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PermessageDeflateBufferTest
@@ -44,6 +61,10 @@ public class PermessageDeflateBufferTest
     private Server server;
     private ServerConnector connector;
     private WebSocketClient client;
+    private JettyWebSocketServerContainer serverContainer;
+    private final FailEndPointOutgoing outgoingFailEndPoint = new FailEndPointOutgoing();
+    private final FailEndPointIncoming incomingFailEndPoint = new FailEndPointIncoming();
+    private final ServerSocket serverSocket = new ServerSocket();
 
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     private static final List<String> DICT = Arrays.asList(
@@ -83,7 +104,7 @@ public class PermessageDeflateBufferTest
     public void before() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -93,10 +114,13 @@ public class PermessageDeflateBufferTest
         {
             container.setMaxTextMessageSize(65535);
             container.setInputBufferSize(16384);
-            container.addMapping("/", ServerSocket.class);
+            container.addMapping("/", (req, resp) -> serverSocket);
+            container.addMapping("/outgoingFail", (req, resp) -> outgoingFailEndPoint);
+            container.addMapping("/incomingFail", (req, resp) -> incomingFailEndPoint);
         });
 
         server.start();
+        serverContainer = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         client = new WebSocketClient();
         client.start();
     }
@@ -156,5 +180,179 @@ public class PermessageDeflateBufferTest
         session.close();
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(socket.closeCode, equalTo(StatusCode.NORMAL));
+    }
+
+    @Test
+    public void testClientPartialMessageThenServerIdleTimeout() throws Exception
+    {
+        Duration idleTimeout = Duration.ofMillis(1000);
+        serverContainer.setIdleTimeout(idleTimeout);
+
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+
+        EventSocket socket = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
+        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+
+        session.getRemote().sendPartialString("partial", false);
+
+        // Wait for the idle timeout to elapse.
+        assertTrue(incomingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
+
+        server.getContainedBeans(InflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+        server.getContainedBeans(DeflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+    }
+
+    @Test
+    public void testClientPartialMessageThenClientClose() throws Exception
+    {
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+
+        PartialTextSocket socket = new PartialTextSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
+        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+
+        session.getRemote().sendPartialString("partial", false);
+        // Wait for the server to process the partial message.
+        assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("partial" + "last=true"));
+
+        // Abruptly close the connection from the client.
+        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession()).getConnection().getEndPoint().close();
+
+        // Wait for the server to process the close.
+        assertTrue(incomingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
+
+        server.getContainedBeans(InflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+        server.getContainedBeans(DeflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+    }
+
+    @Test
+    public void testServerPartialMessageThenServerIdleTimeout() throws Exception
+    {
+        Duration idleTimeout = Duration.ofMillis(1000);
+        serverContainer.setIdleTimeout(idleTimeout);
+
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+
+        EventSocket socket = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
+        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+
+        session.getRemote().sendString("hello");
+
+        // Wait for the idle timeout to elapse.
+        assertTrue(outgoingFailEndPoint.closeLatch.await(2 * idleTimeout.toMillis(), TimeUnit.SECONDS));
+
+        server.getContainedBeans(InflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+        server.getContainedBeans(DeflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+    }
+
+    @Test
+    public void testServerPartialMessageThenClientClose() throws Exception
+    {
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+
+        PartialTextSocket socket = new PartialTextSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
+        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+
+        session.getRemote().sendString("hello");
+        // Wait for the server to process the message.
+        assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("hello" + "last=false"));
+
+        // Abruptly close the connection from the client.
+        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession()).getConnection().getEndPoint().close();
+
+        // Wait for the server to process the close.
+        assertTrue(outgoingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
+
+        server.getContainedBeans(InflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + pool.dump()));
+        server.getContainedBeans(DeflaterPool.class).stream()
+            .map(CompressionPool::getPool)
+            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + pool.dump()));
+    }
+
+    @WebSocket
+    public static class PartialTextSocket
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
+
+        public Session session;
+        public BlockingQueue<String> partialMessages = new BlockingArrayQueue<>();
+        public CountDownLatch openLatch = new CountDownLatch(1);
+        public CountDownLatch closeLatch = new CountDownLatch(1);
+
+        @OnWebSocketConnect
+        public void onOpen(Session session)
+        {
+            this.session = session;
+            openLatch.countDown();
+        }
+
+        @OnWebSocketMessage
+        public void onMessage(String message, boolean last) throws IOException
+        {
+            partialMessages.offer(message + "last=" + last);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            closeLatch.countDown();
+        }
+    }
+
+    @WebSocket
+    public static class FailEndPointOutgoing
+    {
+        public CountDownLatch closeLatch = new CountDownLatch(1);
+
+        @OnWebSocketMessage
+        public void onMessage(Session session, String message) throws IOException
+        {
+            session.getRemote().sendPartialString(message, false);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            closeLatch.countDown();
+        }
+    }
+
+    @WebSocket
+    public static class FailEndPointIncoming
+    {
+        public CountDownLatch closeLatch = new CountDownLatch(1);
+
+        @OnWebSocketMessage
+        public void onMessage(Session session, String message, boolean last) throws IOException
+        {
+            session.getRemote().sendString(message);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            closeLatch.countDown();
+        }
     }
 }

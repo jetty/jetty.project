@@ -19,6 +19,8 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class NullByteBufferPool implements ByteBufferPool
 {
+    private final RetainableByteBufferPool _retainableByteBufferPool = RetainableByteBufferPool.from(this);
+
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
@@ -32,5 +34,11 @@ public class NullByteBufferPool implements ByteBufferPool
     public void release(ByteBuffer buffer)
     {
         BufferUtil.clear(buffer);
+    }
+
+    @Override
+    public RetainableByteBufferPool asRetainableByteBufferPool()
+    {
+        return _retainableByteBufferPool;
     }
 }

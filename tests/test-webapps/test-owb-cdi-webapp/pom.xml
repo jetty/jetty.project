@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,7 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.owb</bundle-symbolic-name>
-    <openwebbeans.version>2.0.26</openwebbeans.version>
+    <openwebbeans.version>2.0.27</openwebbeans.version>
   </properties>
 
   <build>

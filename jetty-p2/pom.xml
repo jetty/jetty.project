@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-p2</artifactId>
@@ -12,7 +12,7 @@
   <description>Generates a (maven based) P2 Updatesite</description>
   <packaging>pom</packaging>
   <properties>
-    <tycho-version>2.7.3</tycho-version>
+    <tycho-version>2.7.4</tycho-version>
   </properties>
   <build>
     <plugins>
@@ -46,6 +46,26 @@
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-alpn</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot-jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot-warurl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-httpservice</artifactId>
     </dependency>
   </dependencies>
 </project>

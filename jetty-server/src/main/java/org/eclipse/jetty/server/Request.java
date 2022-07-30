@@ -66,7 +66,6 @@ import javax.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -231,7 +230,7 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionHandler _sessionHandler;
     private long _timeStamp;
-    private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
+    private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
     private List<Session> _sessions; //list of sessions used during lifetime of request
 
@@ -353,7 +352,10 @@ public class Request implements HttpServletRequest
             HttpHeader header = field.getHeader();
             if (header == HttpHeader.SET_COOKIE)
             {
-                HttpCookie cookie = ((SetCookieHttpField)field).getHttpCookie();
+                HttpCookie cookie = (field instanceof SetCookieHttpField)
+                    ? ((SetCookieHttpField)field).getHttpCookie()
+                    : new HttpCookie(field.getValue());
+
                 if (cookie.getMaxAge() > 0)
                     cookies.put(cookie.getName(), cookie.getValue());
                 else
@@ -1464,7 +1466,7 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                _multiParts.deleteParts();
+                _multiParts.close();
             }
             catch (Throwable e)
             {
@@ -1750,6 +1752,7 @@ public class Request implements HttpServletRequest
                 if (field instanceof HostPortHttpField)
                 {
                     HostPortHttpField authority = (HostPortHttpField)field;
+
                     builder.host(authority.getHost()).port(authority.getPort());
                 }
                 else
@@ -2296,7 +2299,6 @@ public class Request implements HttpServletRequest
 
             _multiParts = newMultiParts(config);
             Collection<Part> parts = _multiParts.getParts();
-            setNonComplianceViolationsOnRequest();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2357,26 +2359,23 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private void setNonComplianceViolationsOnRequest()
+    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
     {
-        @SuppressWarnings("unchecked")
-        List<String> violations = (List<String>)getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-        if (violations != null)
-            return;
+        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
+        if (LOG.isDebugEnabled())
+            LOG.debug("newMultiParts {} {}", compliance, this);
 
-        EnumSet<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
-        violations = new ArrayList<>();
-        for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
+        switch (compliance)
         {
-            violations.add(nc.name() + ": " + nc.getURL());
-        }
-        setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
-    }
+            case RFC7578:
+                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
 
-    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException
-    {
-        return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null));
+            case LEGACY:
+            default:
+                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+        }
     }
 
     @Override

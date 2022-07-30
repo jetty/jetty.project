@@ -120,7 +120,7 @@ public class ServerGenerator extends Generator
     private ByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        ByteBuffer endRequestBuffer = acquire(8);
+        ByteBuffer endRequestBuffer = acquire(16);
         BufferUtil.clearToFill(endRequestBuffer);
         endRequestBuffer.putInt(0x01_03_00_00 + request);
         endRequestBuffer.putInt(0x00_08_00_00);

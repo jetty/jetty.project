@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
   </parent>
   <artifactId>jmx-webapp</artifactId>
   <packaging>war</packaging>
@@ -35,15 +35,5 @@
   </dependencies>
   <build>
     <finalName>jmx-webapp</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 </project>

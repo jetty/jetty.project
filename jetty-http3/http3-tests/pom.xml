@@ -3,12 +3,17 @@
   <parent>
     <groupId>org.eclipse.jetty.http3</groupId>
     <artifactId>http3-parent</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>http3-tests</artifactId>
   <name>Jetty :: HTTP3 :: Tests</name>
+
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
 
   <dependencies>
     <dependency>

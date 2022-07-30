@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.10-SNAPSHOT</version>
+    <version>10.0.12-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -18,6 +18,7 @@
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.2</injection.bundle.version>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -130,6 +131,36 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.function</artifactId>
+      <version>${osgi-util-function-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.promise</artifactId>
+      <version>${osgi-util-promise-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.measurement</artifactId>
+      <version>${osgi-util-measurement-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.position</artifactId>
+      <version>${osgi-util-position-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.xml</artifactId>
+      <version>${osgi-util-xml-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.inject</groupId>
       <artifactId>jakarta.inject-api</artifactId>
       <scope>test</scope>
@@ -153,7 +184,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-boot</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -169,7 +199,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-boot-jsp</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -185,7 +214,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-httpservice</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -346,7 +374,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-alpn</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -506,14 +533,6 @@
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>

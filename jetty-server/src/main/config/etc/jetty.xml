@@ -75,6 +75,7 @@
       <Set name="uriCompliance"><Call class="org.eclipse.jetty.http.UriCompliance" name="from"><Arg><Property name="jetty.httpConfig.uriCompliance" default="SAFE"/></Arg></Call></Set>
       <Set name="requestCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.requestCookieCompliance" default="RFC6265"/></Arg></Call></Set>
       <Set name="responseCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.responseCookieCompliance" default="RFC6265"/></Arg></Call></Set>
+      <Set name="multiPartFormDataCompliance"><Call class="org.eclipse.jetty.server.MultiPartFormDataCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.multiPartFormDataCompliance" default="RFC7578"/></Arg></Call></Set>
       <Set name="relativeRedirectAllowed"><Property name="jetty.httpConfig.relativeRedirectAllowed" default="false"/></Set>
       <Set name="useInputDirectByteBuffers" property="jetty.httpConfig.useInputDirectByteBuffers"/>
       <Set name="useOutputDirectByteBuffers" property="jetty.httpConfig.useOutputDirectByteBuffers"/>

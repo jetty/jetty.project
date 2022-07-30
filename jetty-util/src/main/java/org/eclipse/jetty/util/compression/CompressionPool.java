@@ -16,9 +16,11 @@ package org.eclipse.jetty.util.compression;
 import java.io.Closeable;
 
 import org.eclipse.jetty.util.Pool;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public abstract class CompressionPool<T> extends AbstractLifeCycle
+@ManagedObject
+public abstract class CompressionPool<T> extends ContainerLifeCycle
 {
     public static final int DEFAULT_CAPACITY = 1024;
 
@@ -49,6 +51,11 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         if (isStarted())
             throw new IllegalStateException("Already Started");
         _capacity = capacity;
+    }
+
+    public Pool<Entry> getPool()
+    {
+        return _pool;
     }
 
     protected abstract T newPooled();
@@ -85,7 +92,10 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     protected void doStart() throws Exception
     {
         if (_capacity > 0)
+        {
             _pool = new Pool<>(Pool.StrategyType.RANDOM, _capacity, true);
+            addBean(_pool);
+        }
         super.doStart();
     }
 
@@ -95,6 +105,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         if (_pool != null)
         {
             _pool.close();
+            removeBean(_pool);
             _pool = null;
         }
         super.doStop();

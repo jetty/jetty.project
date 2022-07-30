@@ -57,7 +57,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
     {
         super(endPoint, executor);
-        this.buffers = RetainableByteBufferPool.findOrAdapt(null, byteBufferPool);
+        this.buffers = byteBufferPool.asRetainableByteBufferPool();
         this.parser = parser;
         parser.init(MessageListener::new);
     }
@@ -486,18 +486,18 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             else if (metaData.isResponse())
             {
                 MetaData.Response response = (MetaData.Response)metaData;
-                if (response.getStatus() != HttpStatus.CONTINUE_100)
+                if (HttpStatus.isInformational(response.getStatus()))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("staying in parserDataMode=false for response {} on {}", metaData, this);
+                }
+                else
                 {
                     // Expect DATA frames now.
                     parserDataMode = true;
                     parser.setDataMode(true);
                     if (LOG.isDebugEnabled())
                         LOG.debug("switching to parserDataMode=true for response {} on {}", metaData, this);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("staying in parserDataMode=false for response {} on {}", metaData, this);
                 }
             }
             else

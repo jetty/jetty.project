@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -48,7 +47,7 @@ public class RegexServletTest
             @Override
             protected PathSpec asPathSpec(String pathSpec)
             {
-                return PathMappings.asPathSpec(pathSpec);
+                return PathSpec.from(pathSpec);
             }
         });
 
@@ -93,10 +92,10 @@ public class RegexServletTest
         String response = _connector.getResponse("GET /ctx/forward/ignore HTTP/1.0\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("contextPath='/ctx'"));
-        assertThat(response, containsString("servletPath='/Test/info'"));
-        assertThat(response, containsString("pathInfo='null'"));
+        assertThat(response, containsString("servletPath='/Test'"));
+        assertThat(response, containsString("pathInfo='/info'"));
         assertThat(response, containsString("mapping.mappingMatch='null'"));
-        assertThat(response, containsString("mapping.matchValue='Test/info'"));
+        assertThat(response, containsString("mapping.matchValue='Test'"));
         assertThat(response, containsString("mapping.pattern='^/[Tt]est(/.*)?'"));
     }
 
