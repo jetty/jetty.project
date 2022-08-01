@@ -134,7 +134,7 @@
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
-    <h2spec.maven.plugin.version>1.0.9</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
