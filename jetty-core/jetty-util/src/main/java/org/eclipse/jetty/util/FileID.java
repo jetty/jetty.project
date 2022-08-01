@@ -27,28 +27,6 @@ import java.util.Locale;
 public class FileID
 {
     /**
-     * Does the provided path have a directory segment with
-     * the configured name.
-     *
-     * @param path the path to search
-     * @param directoryName the directory name to look for (case insensitive lookup)
-     * @return true if the directory name exists in path, false if otherwise
-     */
-    public static boolean containsDirectory(Path path, String directoryName)
-    {
-        if (path == null)
-            return false;
-        int segmentCount = path.getNameCount();
-        for (int i = segmentCount - 1; i >= 0; i--)
-        {
-            Path segment = path.getName(i);
-            if (segment.getFileName().toString().equalsIgnoreCase(directoryName))
-                return true;
-        }
-        return false;
-    }
-
-    /**
      * Retrieve the basename of a path. This is the name of the
      * last segment of the path, with any dot suffix (e.g. ".war") removed
      *
@@ -107,6 +85,29 @@ public class FileID
         if (lastDot < 0)
             return null; // no extension
         return filename.substring(lastDot).toLowerCase(Locale.ENGLISH);
+    }
+
+    /**
+     * Does the provided path have a directory segment with the given name.
+     *
+     * @param path the path to search
+     * @param segmentName the segment name (of the given path) to look for (case insensitive lookup),
+     * only capable of searching 1 segment name at a time, does not support "foo/bar" multi-segment
+     * names.
+     * @return true if the directory name exists in path, false if otherwise
+     */
+    public static boolean hasNamedPathSegment(Path path, String segmentName)
+    {
+        if (path == null)
+            return false;
+        int segmentCount = path.getNameCount();
+        for (int i = segmentCount - 1; i >= 0; i--)
+        {
+            Path segment = path.getName(i);
+            if (segment.getFileName().toString().equalsIgnoreCase(segmentName))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -289,6 +290,40 @@ public class FileID
     }
 
     /**
+     * Predicate to skip {@code META-INF/versions/*} tree from walk/stream results.
+     *
+     * <p>
+     * This only works with a zipfs based FileSystem
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not in {@code META-INF/versions/*} tree
+     */
+    public static boolean isNotMetaInfVersions(Path path)
+    {
+        return !isMetaInfVersions(path);
+    }
+
+    /**
+     * Predicate to skip {@code module-info.class} files.
+     *
+     * <p>
+     * This is a simple test against the last path segment using {@link Path#getFileName()}
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not a {@code module-info.class} file
+     */
+    public static boolean isNotModuleInfoClass(Path path)
+    {
+        Path filenameSegment = path.getFileName();
+        if (filenameSegment == null)
+            return true;
+
+        return !filenameSegment.toString().equalsIgnoreCase("module-info.class");
+    }
+
+    /**
      * Is the path a TLD File
      *
      * @param path the path to test.
@@ -298,7 +333,7 @@ public class FileID
     {
         if (path == null)
             return false;
-        if (!containsDirectory(path, "META-INF"))
+        if (!hasNamedPathSegment(path, "META-INF"))
             return false;
         return ".tld".equals(getExtension(path));
     }
@@ -345,39 +380,5 @@ public class FileID
     public static boolean isXml(String filename)
     {
         return ".xml".equals(getExtension(filename));
-    }
-
-    /**
-     * Predicate to skip {@code META-INF/versions/*} tree from walk/stream results.
-     *
-     * <p>
-     * This only works with a zipfs based FileSystem
-     * </p>
-     *
-     * @param path the path to test
-     * @return true if not in {@code META-INF/versions/*} tree
-     */
-    public static boolean isNotMetaInfVersions(Path path)
-    {
-        return !isMetaInfVersions(path);
-    }
-
-    /**
-     * Predicate to skip {@code module-info.class} files.
-     *
-     * <p>
-     * This is a simple test against the last path segment using {@link Path#getFileName()}
-     * </p>
-     *
-     * @param path the path to test
-     * @return true if not a {@code module-info.class} file
-     */
-    public static boolean isNotModuleInfoClass(Path path)
-    {
-        Path filenameSegment = path.getFileName();
-        if (filenameSegment == null)
-            return true;
-
-        return !filenameSegment.toString().equalsIgnoreCase("module-info.class");
     }
 }

@@ -96,7 +96,7 @@ public class FileIDTest
         }
     }
 
-    public static Stream<Arguments> containsDirectoryTrueCases()
+    public static Stream<Arguments> hasNamedPathSegmentTrueCases()
     {
         return Stream.of(
             Arguments.of("path/to/webapps/root.war", "webapps"),
@@ -108,17 +108,17 @@ public class FileIDTest
     }
 
     /**
-     * Tests of {@link FileID#containsDirectory(Path, String)} on a real file system
+     * Tests of {@link FileID#hasNamedPathSegment(Path, String)} on a real file system
      */
     @ParameterizedTest
-    @MethodSource("containsDirectoryTrueCases")
-    public void testContainsDirectoryTrue(String input, String dirname) throws IOException
+    @MethodSource("hasNamedPathSegmentTrueCases")
+    public void testHasNamedPathSegmentTrue(String input, String dirname) throws IOException
     {
         Path path = touchTestPath(input);
-        assertTrue(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+        assertTrue(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
     }
 
-    public static Stream<Arguments> containsDirectoryFalseCases()
+    public static Stream<Arguments> hasNamedPathSegmentFalseCases()
     {
         return Stream.of(
             Arguments.of("path/to/webapps/root.war", "WEB-INF"),
@@ -129,31 +129,32 @@ public class FileIDTest
     }
 
     /**
-     * Tests of {@link FileID#containsDirectory(Path, String)} on a real file system
+     * Tests of {@link FileID#hasNamedPathSegment(Path, String)} on a real file system
      */
     @ParameterizedTest
-    @MethodSource("containsDirectoryFalseCases")
-    public void testContainsDirectoryFalse(String input, String dirname) throws IOException
+    @MethodSource("hasNamedPathSegmentFalseCases")
+    public void testHasNamedPathSegmentFalse(String input, String dirname) throws IOException
     {
         Path path = touchTestPath(input);
-        assertFalse(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+        assertFalse(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
     }
 
-    public static Stream<Arguments> containsDirectoryTrueZipFsCases()
+    public static Stream<Arguments> hasNamedPathSegmentCasesTrue()
     {
         return Stream.of(
             Arguments.of("/META-INF/services/org.eclipse.jetty.FooService", "META-INF"),
             Arguments.of("/WEB-INF/lib/lib-1.jar", "WEB-INF"),
-            Arguments.of("/WEB-INF/dir/foo.tld", "WEB-INF")
+            Arguments.of("/WEB-INF/dir/foo.tld", "WEB-INF"),
+            Arguments.of("/opt/web/base/webapps/root.war", "webapps")
         );
     }
 
     /**
-     * Tests of {@link FileID#containsDirectory(Path, String)} on a ZipFS based file system
+     * Tests of {@link FileID#hasNamedPathSegment(Path, String)} on a ZipFS based file system
      */
     @ParameterizedTest
-    @MethodSource("containsDirectoryTrueZipFsCases")
-    public void containsDirectoryTrueZipFs(String input, String dirname) throws IOException
+    @MethodSource("hasNamedPathSegmentCasesTrue")
+    public void testHasNamedPathSegmentsTrueZipFs(String input, String dirname) throws IOException
     {
         Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
@@ -164,26 +165,26 @@ public class FileIDTest
         {
             Path root = zipfs.getPath("/");
             Path path = touchTestPath(root, input);
-            assertTrue(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+            assertTrue(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
         }
     }
 
-    public static Stream<Arguments> containsDirectoryFalseZipFsCases()
+    public static Stream<Arguments> hasNamedPathSegmentFalseZipFsCases()
     {
         return Stream.of(
             Arguments.of("/css/main.css", "WEB-INF"),
             Arguments.of("/META-INF/classes/module-info.class", "WEB-INF"),
-            Arguments.of("/", "util"),
+            Arguments.of("/", "tmp"),
             Arguments.of("/index.html", "target") // shouldn't detect that the zipfs archive is in the target directory
         );
     }
 
     /**
-     * Tests of {@link FileID#containsDirectory(Path, String)} on a ZipFS based file system
+     * Tests of {@link FileID#hasNamedPathSegment(Path, String)} on a ZipFS based file system
      */
     @ParameterizedTest
-    @MethodSource("containsDirectoryFalseZipFsCases")
-    public void containsDirectoryFalseZipFs(String input, String dirname) throws IOException
+    @MethodSource("hasNamedPathSegmentFalseZipFsCases")
+    public void testHasNamedPathSegmentFalseZipFs(String input, String dirname) throws IOException
     {
         Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
@@ -194,8 +195,9 @@ public class FileIDTest
         try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
         {
             Path root = zipfs.getPath("/");
+            FS.ensureDirExists(root.resolve("/tmp"));
             Path path = touchTestPath(root, input);
-            assertFalse(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+            assertFalse(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
         }
     }
 
