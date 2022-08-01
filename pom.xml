@@ -100,7 +100,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
-    <junit.version>5.8.2</junit.version>
+    <junit.version>5.9.0</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.18.0</log4j2.version>
     <logback.version>1.3.0-alpha16</logback.version>
@@ -140,7 +140,7 @@
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.6</maven.bundle.plugin.version>
+    <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
@@ -158,7 +158,7 @@
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
-    <maven.remote-resources-plugin.version>1.7.0</maven.remote-resources-plugin.version>
+    <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
     <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
