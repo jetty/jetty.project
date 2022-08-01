@@ -670,14 +670,14 @@ public abstract class Resource implements ResourceFactory
     /**
      * {@inheritDoc}
      */
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource resolve(String subUriPath)
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
         // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
         if (URIUtil.normalizePath(subUriPath) == null)
-            throw new IOException(subUriPath);
+            throw new IllegalArgumentException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))
             return this;
