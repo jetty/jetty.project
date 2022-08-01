@@ -106,7 +106,7 @@
     <logback.version>1.3.0-alpha16</logback.version>
     <mariadb.version>3.0.6</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.resolver.version>1.8.1</maven.resolver.version>
+    <maven.resolver.version>1.8.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
