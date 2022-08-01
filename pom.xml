@@ -25,7 +25,7 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.12</ant.version>
-    <apache.avro.version>1.11.0</apache.avro.version>
+    <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
