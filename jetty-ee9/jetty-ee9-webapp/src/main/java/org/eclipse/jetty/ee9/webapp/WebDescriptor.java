@@ -166,23 +166,22 @@ public class WebDescriptor extends Descriptor
                     redirectEntity("https://javax.ee/xml/ns/javaxee/javaee_9.xsd", jakartaee9);
 
                     final URL webapp50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_5_0.xsd");
-                    redirectEntity("web-app_5_0.xsd", webapp50xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/web-app_5_0.xsd", webapp50xsd);
                     redirectEntity("webapp_5_0.xsd", webapp50xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/webapp_5_0.xsd", webapp50xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/web-app_5_0.xsd", webapp50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/webapp_5_0.xsd", webapp50xsd);
+                    redirectEntity("web-app_5_0.xsd", webapp50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd", webapp50xsd);
 
                     final URL webcommon50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_5_0.xsd");
                     redirectEntity("web-common_5_0.xsd", webcommon50xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/web-common_5_0.xsd", webcommon50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-common_5_0.xsd", webcommon50xsd);
 
                     final URL webfragment50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
                     redirectEntity("web-fragment_5_0.xsd", webfragment50xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/web-fragment_5_0.xsd", webfragment50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_5_0.xsd", webfragment50xsd);
 
                     final URL webservice20xsd = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_web_services_client_2_0.xsd");
-                    redirectEntity("javaxee_web_services_client_2_0.xsd", webservice20xsd);
-                    redirectEntity("https://javax.ee/xml/ns/javaxee/javaxee_web_services_client_2_0.xsd", webservice20xsd);
+                    redirectEntity("jakartaee_web_services_client_2_0.xsd", webservice20xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd", webservice20xsd);
                 }
 
                 redirectEntity("jsp_2_0.xsd", jsp20xsd);
