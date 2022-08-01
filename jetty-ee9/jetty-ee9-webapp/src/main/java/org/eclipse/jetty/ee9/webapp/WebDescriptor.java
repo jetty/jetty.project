@@ -97,41 +97,37 @@ public class WebDescriptor extends Descriptor
             void mapResources()
             {
                 //set up cache of DTDs and schemas locally
-                final URL dtd22 = Loader.getResource("jakarta/servlet/resources/web-app_2_2.dtd");
-                final URL dtd23 = Loader.getResource("jakarta/servlet/resources/web-app_2_3.dtd");
-                final URL j2ee14xsd = Loader.getResource("jakarta/servlet/resources/j2ee_1_4.xsd");
-                final URL javaee5 = Loader.getResource("jakarta/servlet/resources/javaee_5.xsd");
-                final URL javaee6 = Loader.getResource("jakarta/servlet/resources/javaee_6.xsd");
-                final URL javaee7 = Loader.getResource("jakarta/servlet/resources/javaee_7.xsd");
-                final URL javaee8 = Loader.getResource("jakarta/servlet/resources/javaee_8.xsd");
-                final URL jakartaee9 = Loader.getResource("jakarta/servlet/resources/jakartaee_9.xsd");
+                final URL dtd22 = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_2.dtd");
+                final URL dtd23 = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_3.dtd");
+                final URL j2ee14xsd = Loader.getRequiredResource("jakarta/servlet/resources/j2ee_1_4.xsd");
+                final URL javaee5 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_5.xsd");
+                final URL javaee6 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_6.xsd");
+                final URL javaee7 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_7.xsd");
+                final URL javaee8 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_8.xsd");
+                final URL jakartaee9 = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_9.xsd");
 
-                final URL webapp24xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_4.xsd");
-                final URL webapp25xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_5.xsd");
-                final URL webapp30xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_0.xsd");
-                final URL webapp31xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_1.xsd");
-                final URL webapp40xsd = Loader.getResource("jakarta/servlet/resources/web-app_4_0.xsd");
-                final URL webapp50xsd = Loader.getResource("jakarta/servlet/resources/web-app_5_0.xsd");
+                final URL webapp24xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_4.xsd");
+                final URL webapp25xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_5.xsd");
+                final URL webapp30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_0.xsd");
+                final URL webapp31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_1.xsd");
+                final URL webapp40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_4_0.xsd");
+                final URL webapp50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_5_0.xsd");
+
+                final URL webcommon30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_0.xsd");
+                final URL webcommon31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_1.xsd");
+                final URL webcommon40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_4_0.xsd");
+                final URL webcommon50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_5_0.xsd");
                 
+                final URL webfragment30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
+                final URL webfragment31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
+                final URL webfragment40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
+                final URL webfragment50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
                 
-                final URL webcommon30xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_0.xsd");
-                final URL webcommon31xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_1.xsd");
-                final URL webcommon40xsd = Loader.getResource("jakarta/servlet/resources/web-common_4_0.xsd");
-                final URL webcommon50xsd = Loader.getResource("jakarta/servlet/resources/web-common_5_0.xsd");
-                
-                final URL webfragment30xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
-                final URL webfragment31xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
-                final URL webfragment40xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
-                final URL webfragment50xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
-                
-                final URL schemadtd = Loader.getResource("jakarta/servlet/resources/XMLSchema.dtd");
-                final URL xmlxsd = Loader.getResource("jakarta/servlet/resources/xml.xsd");
-                final URL webservice11xsd = Loader.getResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
-                final URL webservice12xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_2.xsd");
-                final URL webservice13xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_3.xsd");
-                final URL webservice14xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_4.xsd");
-                final URL webservice20xsd = Loader.getResource("jakarta/servlet/resources/jakartaee_web_services_client_2_0.xsd");
-                final URL datatypesdtd = Loader.getResource("jakarta/servlet/resources/datatypes.dtd");
+                final URL webservice11xsd = Loader.getRequiredResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
+                final URL webservice12xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_2.xsd");
+                final URL webservice13xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_3.xsd");
+                final URL webservice14xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_4.xsd");
+                final URL webservice20xsd = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_web_services_client_2_0.xsd");
 
                 URL jsp20xsd = null;
                 URL jsp21xsd = null;
@@ -164,15 +160,6 @@ public class WebDescriptor extends Descriptor
                     if (jsp30xsd == null)
                         jsp30xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_3_0.xsd");
                 }
-
-                redirectEntity("web-app_2_2.dtd", dtd22);
-                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN", dtd22);
-                redirectEntity("web.dtd", dtd23);
-                redirectEntity("web-app_2_3.dtd", dtd23);
-                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN", dtd23);
-                redirectEntity("XMLSchema.dtd", schemadtd);
-                redirectEntity("http://www.w3.org/2001/XMLSchema.dtd", schemadtd);
-                redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN", schemadtd);
 
                 redirectEntity("jsp_2_0.xsd", jsp20xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd", jsp20xsd);
@@ -233,11 +220,6 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("web-fragment_5_0.xsd", webfragment50xsd);
                 redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_5_0.xsd", webfragment50xsd);
                 
-                redirectEntity("xml.xsd", xmlxsd);
-                redirectEntity("http://www.w3.org/2001/xml.xsd", xmlxsd);
-                redirectEntity("datatypes.dtd", datatypesdtd);
-                redirectEntity("http://www.w3.org/2001/datatypes.dtd", datatypesdtd);
-
                 redirectEntity("j2ee_web_services_client_1_1.xsd", webservice11xsd);
                 redirectEntity("http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd", webservice11xsd);
                 redirectEntity("javaee_web_services_client_1_2.xsd", webservice12xsd);
