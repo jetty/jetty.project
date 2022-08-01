@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -1655,7 +1656,28 @@ public final class URIUtil
         return query1 + '&' + query2;
     }
 
-    public static URI correctBadFileURI(URI uri)
+    /**
+     * <p>
+     * Corrects any bad {@code file} based URIs (even within a {@code jar:file:} based URIs) from the bad out-of-spec
+     * format that various older Java APIs creates (most notably: {@link java.io.File} creates with it's {@link File#toURL()}
+     * and {@link File#toURI()}, along with the side effects of using {@link URL#toURI()})
+     * </p>
+     *
+     * <p>
+     *     This correction is limited to only the {@code file:/} substring in the URI.
+     *     If there is a {@code file:/<not-a-slash>} detected, that substring is corrected to
+     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@core file:}
+     *     substring are left alone.
+     * </p>
+     *
+     * <p>
+     *     Note that Windows UNC based URIs are left alone, along with non-absolute URIs.
+     * </p>
+     *
+     * @param uri the URI to (possibly) correct
+     * @return the new URI with the {@code file:/} substring corrected, or the original URI.
+     */
+    public static URI correctFileURI(URI uri)
     {
         if ((uri == null) || (uri.getScheme() == null))
             return uri;
@@ -1869,6 +1891,6 @@ public final class URIUtil
             .map(URL::toString)
             .map(URI::create)
             .map(URIUtil::unwrapContainer)
-            .map(URIUtil::correctBadFileURI);
-        }
+            .map(URIUtil::correctFileURI);
+    }
 }
