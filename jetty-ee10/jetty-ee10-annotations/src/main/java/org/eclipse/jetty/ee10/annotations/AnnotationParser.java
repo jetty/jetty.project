@@ -826,8 +826,8 @@ public class AnnotationParser
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
                  Stream<Path> jarEntryStream = jarFile.stream()
                      .filter(Files::isRegularFile)
-                     .filter(FileID::skipModuleInfoClass)
-                     .filter(FileID::skipMetaInfVersions)
+                     .filter(FileID::isNotModuleInfoClass)
+                     .filter(FileID::isNotMetaInfVersions)
                      .filter(FileID::isClassFile)
             )
             {

@@ -72,7 +72,7 @@ public class MultiReleaseJarFile implements Closeable
 
         return Files.walk(rootPath)
             // skip the entire META-INF/versions tree
-            .filter(FileID::skipMetaInfVersions);
+            .filter(FileID::isNotMetaInfVersions);
     }
 
     @Override

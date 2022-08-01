@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,14 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class FileIDTest
 {
-    private static FileSystem metaInfVersionTestFileSystem;
     public WorkDir workDir;
-
-    @AfterAll
-    public static void closeFileSystems()
-    {
-        IO.close(metaInfVersionTestFileSystem);
-    }
 
     private Path touchTestPath(String input) throws IOException
     {
@@ -62,7 +53,7 @@ public class FileIDTest
         Path path = base.resolve(input);
         if (input.endsWith("/"))
         {
-            FS.ensureEmpty(path);
+            FS.ensureDirExists(path);
         }
         else
         {
@@ -72,45 +63,37 @@ public class FileIDTest
         return path;
     }
 
-    /**
-     * Create an empty ZipFs FileSystem useful for testing skipMetaInfVersions and isMetaInfVersions rules
-     */
-    private static FileSystem getMetaInfVersionTestJar() throws IOException
-    {
-        if (metaInfVersionTestFileSystem != null)
-            return metaInfVersionTestFileSystem;
-
-        Path outputJar = MavenTestingUtils.getTargetTestingPath("getMetaInfVersionTestJar").resolve("metainf-versions.jar");
-        FS.ensureEmpty(outputJar.getParent());
-
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
-        metaInfVersionTestFileSystem = FileSystems.newFileSystem(uri, env);
-
-        // this is an empty FileSystem, I don't need to create the files for the skipMetaInfVersions() tests
-
-        return metaInfVersionTestFileSystem;
-    }
-
     public static Stream<Arguments> basenameCases()
     {
         return Stream.of(
-            Arguments.of("foo.xml", "foo"),
-            Arguments.of("dir/foo.xml", "foo"),
-            Arguments.of("dir/foo", "foo"),
-            Arguments.of("foo", "foo")
+            Arguments.of("/foo.xml", "foo"),
+            Arguments.of("/dir/foo.xml", "foo"),
+            Arguments.of("/dir/foo", "foo"),
+            Arguments.of("/dir/foo/", "foo"),
+            Arguments.of("/foo", "foo"),
+            Arguments.of("/foo/", "foo"),
+            Arguments.of("/", "")
         );
     }
 
     @ParameterizedTest
     @MethodSource("basenameCases")
-    public void testGetBasename(String input, String expected)
+    public void testGetBasename(String input, String expected) throws IOException
     {
-        Path path = workDir.getEmptyPathDir().resolve(input);
-        String actual = FileID.getBasename(path);
-        assertThat(actual, is(expected));
+
+        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path path = touchTestPath(root, input);
+            String actual = FileID.getBasename(path);
+            assertThat("getBasename(%s, \"%s\")".formatted(path, expected), actual, is(expected));
+        }
     }
 
     public static Stream<Arguments> containsDirectoryTrueCases()
@@ -124,6 +107,9 @@ public class FileIDTest
         );
     }
 
+    /**
+     * Tests of {@link FileID#containsDirectory(Path, String)} on a real file system
+     */
     @ParameterizedTest
     @MethodSource("containsDirectoryTrueCases")
     public void testContainsDirectoryTrue(String input, String dirname) throws IOException
@@ -142,12 +128,75 @@ public class FileIDTest
         );
     }
 
+    /**
+     * Tests of {@link FileID#containsDirectory(Path, String)} on a real file system
+     */
     @ParameterizedTest
     @MethodSource("containsDirectoryFalseCases")
     public void testContainsDirectoryFalse(String input, String dirname) throws IOException
     {
         Path path = touchTestPath(input);
         assertFalse(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+    }
+
+    public static Stream<Arguments> containsDirectoryTrueZipFsCases()
+    {
+        return Stream.of(
+            Arguments.of("/META-INF/services/org.eclipse.jetty.FooService", "META-INF"),
+            Arguments.of("/WEB-INF/lib/lib-1.jar", "WEB-INF"),
+            Arguments.of("/WEB-INF/dir/foo.tld", "WEB-INF")
+        );
+    }
+
+    /**
+     * Tests of {@link FileID#containsDirectory(Path, String)} on a ZipFS based file system
+     */
+    @ParameterizedTest
+    @MethodSource("containsDirectoryTrueZipFsCases")
+    public void containsDirectoryTrueZipFs(String input, String dirname) throws IOException
+    {
+        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path path = touchTestPath(root, input);
+            assertTrue(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+        }
+    }
+
+    public static Stream<Arguments> containsDirectoryFalseZipFsCases()
+    {
+        return Stream.of(
+            Arguments.of("/css/main.css", "WEB-INF"),
+            Arguments.of("/META-INF/classes/module-info.class", "WEB-INF"),
+            Arguments.of("/", "util"),
+            Arguments.of("/index.html", "target") // shouldn't detect that the zipfs archive is in the target directory
+        );
+    }
+
+    /**
+     * Tests of {@link FileID#containsDirectory(Path, String)} on a ZipFS based file system
+     */
+    @ParameterizedTest
+    @MethodSource("containsDirectoryFalseZipFsCases")
+    public void containsDirectoryFalseZipFs(String input, String dirname) throws IOException
+    {
+        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        // Use ZipFS to be able to test Path objects from root references (like "/")
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path path = touchTestPath(root, input);
+            assertFalse(FileID.containsDirectory(path, dirname), "containsDirectory(%s, \"%s\")".formatted(path, dirname));
+        }
     }
 
     public static Stream<Arguments> extensionCases()
@@ -270,10 +319,19 @@ public class FileIDTest
     })
     public void testIsMetaInfVersions(String input) throws IOException
     {
-        FileSystem zipfs = getMetaInfVersionTestJar();
-        Path testPath = zipfs.getPath(input);
-        assertTrue(FileID.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
-        assertFalse(FileID.skipMetaInfVersions(testPath), "skipMetaInfVersions(" + testPath + ")");
+        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        // Use ZipFS to be able to test Path objects from root references (like "/")
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path testPath = touchTestPath(root, input);
+            assertTrue(FileID.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
+            assertFalse(FileID.isNotMetaInfVersions(testPath), "isNotMetaInfVersions(" + testPath + ")");
+        }
     }
 
     @ParameterizedTest
@@ -353,10 +411,19 @@ public class FileIDTest
     })
     public void testNotMetaInfVersions(String input) throws IOException
     {
-        FileSystem zipfs = getMetaInfVersionTestJar();
-        Path testPath = zipfs.getPath(input);
-        assertTrue(FileID.skipMetaInfVersions(testPath), "skipMetaInfVersions(" + testPath + ")");
-        assertFalse(FileID.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
+        Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        // Use ZipFS to be able to test Path objects from root references (like "/")
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path testPath = touchTestPath(root, input);
+            assertTrue(FileID.isNotMetaInfVersions(testPath), "isNotMetaInfVersions(" + testPath + ")");
+            assertFalse(FileID.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
+        }
     }
 
     @ParameterizedTest
@@ -366,10 +433,10 @@ public class FileIDTest
         "Module-Info.Class", // case differences
         "META-INF/versions/17/module-info.class"
     })
-    public void testSkipModuleInfoClassFalse(String input) throws IOException
+    public void testIsNotModuleInfoClassFalse(String input) throws IOException
     {
         Path path = touchTestPath(input);
-        assertFalse(FileID.skipModuleInfoClass(path), "skipModuleInfoClass(" + path + ")");
+        assertFalse(FileID.isNotModuleInfoClass(path), "isNotModuleInfoClass(" + path + ")");
     }
 
     @ParameterizedTest
@@ -380,9 +447,9 @@ public class FileIDTest
         "META-INF/versions/9/foo/module-info.class/Zed.class", // as path segment
         "", // no segment
     })
-    public void testSkipModuleInfoClassTrue(String input) throws IOException
+    public void testIsNotModuleInfoClassTrue(String input) throws IOException
     {
         Path path = touchTestPath(input);
-        assertTrue(FileID.skipModuleInfoClass(path), "skipModuleInfoClass(" + path + ")");
+        assertTrue(FileID.isNotModuleInfoClass(path), "isNotModuleInfoClass(" + path + ")");
     }
 }

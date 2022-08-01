@@ -57,7 +57,10 @@ public class FileID
      */
     public static String getBasename(Path path)
     {
-        String basename = path.getFileName().toString();
+        Path filename = path.getFileName();
+        if (filename == null)
+            return "";
+        String basename = filename.toString();
         int dot = basename.lastIndexOf('.');
         if (dot >= 0)
             basename = basename.substring(0, dot);
@@ -354,7 +357,7 @@ public class FileID
      * @param path the path to test
      * @return true if not in {@code META-INF/versions/*} tree
      */
-    public static boolean skipMetaInfVersions(Path path)
+    public static boolean isNotMetaInfVersions(Path path)
     {
         return !isMetaInfVersions(path);
     }
@@ -369,7 +372,7 @@ public class FileID
      * @param path the path to test
      * @return true if not a {@code module-info.class} file
      */
-    public static boolean skipModuleInfoClass(Path path)
+    public static boolean isNotModuleInfoClass(Path path)
     {
         Path filenameSegment = path.getFileName();
         if (filenameSegment == null)
