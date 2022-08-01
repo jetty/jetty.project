@@ -272,9 +272,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource A URL or filename.
      * @return A Resource object.
-     * @throws IOException Problem accessing URI
      */
-    public static Resource newResource(String resource) throws IOException
+    public static Resource newResource(String resource)
     {
         return newResource(toURI(resource));
     }
@@ -331,9 +330,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource Resource as string representation
      * @return The new Resource
-     * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource) throws IOException
+    public static Resource newSystemResource(String resource)
     {
         return newSystemResource(resource, null);
     }
@@ -346,9 +344,8 @@ public abstract class Resource implements ResourceFactory
      * @param resource Resource as string representation
      * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
      * @return The new Resource
-     * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer) throws IOException
+    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer)
     {
         URL url = null;
         // Try to format as a URL?
@@ -436,9 +433,8 @@ public abstract class Resource implements ResourceFactory
      * @param r the contained resource
      * @param containingResource the containing resource
      * @return true if the Resource is contained, false otherwise
-     * @throws IOException Problem accessing resource
      */
-    public static boolean isContainedIn(Resource r, Resource containingResource) throws IOException
+    public static boolean isContainedIn(Resource r, Resource containingResource)
     {
         return r.isContainedIn(containingResource);
     }
@@ -456,9 +452,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param r the containing resource
      * @return true if this Resource is contained, false otherwise
-     * @throws IOException Problem accessing resource
      */
-    public abstract boolean isContainedIn(Resource r) throws IOException;
+    public abstract boolean isContainedIn(Resource r);
 
     /**
      * Return true if the passed Resource represents the same resource as the Resource.
@@ -742,9 +737,8 @@ public abstract class Resource implements ResourceFactory
      * @param parent True if the parent directory should be included
      * @param query query params
      * @return String of HTML
-     * @throws IOException on failure to generate a list.
      */
-    public String getListHTML(String base, boolean parent, String query) throws IOException // TODO: move to helper class
+    public String getListHTML(String base, boolean parent, String query)  // TODO: move to helper class
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -322,18 +321,11 @@ public class MavenWebAppContext extends WebAppContext
         Configurations configurations = super.newConfigurations();
         if (getJettyEnvXml() != null)
         {
-            try
+            // inject configurations with config from maven plugin
+            for (Configuration c : configurations)
             {
-                // inject configurations with config from maven plugin
-                for (Configuration c : configurations)
-                {
-                    if (c instanceof EnvConfiguration)
-                        ((EnvConfiguration)c).setJettyEnvResource(Resource.newResource(getJettyEnvXml()));
-                }
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
+                if (c instanceof EnvConfiguration)
+                    ((EnvConfiguration)c).setJettyEnvResource(Resource.newResource(getJettyEnvXml()));
             }
         }
 
@@ -390,62 +382,51 @@ public class MavenWebAppContext extends WebAppContext
             if (uri == null)
                 return null;
 
-            try
+            // Replace /WEB-INF/classes with candidates for the classpath
+            if (uri.startsWith(WEB_INF_CLASSES_PREFIX))
             {
-                // Replace /WEB-INF/classes with candidates for the classpath
-                if (uri.startsWith(WEB_INF_CLASSES_PREFIX))
+                if (uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX) || uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX + "/"))
                 {
-                    if (uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX) || uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX + "/"))
+                    // exact match for a WEB-INF/classes, so preferentially
+                    // return the resource matching the web-inf classes
+                    // rather than the test classes
+                    if (_classes != null)
+                        return Resource.newResource(_classes.toPath());
+                    else if (_testClasses != null)
+                        return Resource.newResource(_testClasses.toPath());
+                }
+                else
+                {
+                    // try matching
+                    Resource res = null;
+                    int i = 0;
+                    while (res == null && (i < _webInfClasses.size()))
                     {
-                        // exact match for a WEB-INF/classes, so preferentially
-                        // return the resource matching the web-inf classes
-                        // rather than the test classes
-                        if (_classes != null)
-                            return Resource.newResource(_classes.toPath());
-                        else if (_testClasses != null)
-                            return Resource.newResource(_testClasses.toPath());
-                    }
-                    else
-                    {
-                        // try matching
-                        Resource res = null;
-                        int i = 0;
-                        while (res == null && (i < _webInfClasses.size()))
+                        String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                        res = Resource.newResource(newPath);
+                        if (!res.exists())
                         {
-                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
-                            res = Resource.newResource(newPath);
-                            if (!res.exists())
-                            {
-                                res = null;
-                                i++;
-                            }
+                            res = null;
+                            i++;
                         }
-                        return res;
                     }
+                    return res;
                 }
-                else if (uri.startsWith(WEB_INF_LIB_PREFIX))
-                {
-                    // Return the real jar file for all accesses to
-                    // /WEB-INF/lib/*.jar
-                    String jarName = StringUtil.strip(uri, WEB_INF_LIB_PREFIX);
-                    if (jarName.startsWith("/") || jarName.startsWith("\\"))
-                        jarName = jarName.substring(1);
-                    if (jarName.length() == 0)
-                        return null;
-                    File jarFile = _webInfJarMap.get(jarName);
-                    if (jarFile != null)
-                        return Resource.newResource(jarFile.getPath());
-
+            }
+            else if (uri.startsWith(WEB_INF_LIB_PREFIX))
+            {
+                // Return the real jar file for all accesses to
+                // /WEB-INF/lib/*.jar
+                String jarName = StringUtil.strip(uri, WEB_INF_LIB_PREFIX);
+                if (jarName.startsWith("/") || jarName.startsWith("\\"))
+                    jarName = jarName.substring(1);
+                if (jarName.length() == 0)
                     return null;
-                }
-            }
-            catch (MalformedURLException e)
-            {
-                throw e;
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
+                File jarFile = _webInfJarMap.get(jarName);
+                if (jarFile != null)
+                    return Resource.newResource(jarFile.getPath());
+
+                return null;
             }
         }
         return resource;

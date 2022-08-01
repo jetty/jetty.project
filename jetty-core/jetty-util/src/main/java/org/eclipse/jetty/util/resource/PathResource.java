@@ -189,12 +189,12 @@ public class PathResource extends Resource
      * @param uri the URI to build this PathResource from.
      * @throws IOException if unable to construct the PathResource from the URI.
      */
-    PathResource(URI uri) throws IOException
+    PathResource(URI uri)
     {
         this(uri, false);
     }
 
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck) throws IOException
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
@@ -213,11 +213,6 @@ public class PathResource extends Resource
         catch (FileSystemNotFoundException e)
         {
             throw new IllegalStateException("No FileSystem mounted for : " + uri, e);
-        }
-        catch (Exception e)
-        {
-            LOG.trace("IGNORED", e);
-            throw new IOException("Unable to build Path from: " + uri, e);
         }
     }
 
