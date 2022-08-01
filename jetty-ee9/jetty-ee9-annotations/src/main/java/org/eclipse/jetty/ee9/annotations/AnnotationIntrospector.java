@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -170,15 +169,7 @@ public class AnnotationIntrospector
                 String descriptorLocation = holder.getSource().getResource();
                 if (descriptorLocation == null)
                     return true; //no descriptor, can't be metadata-complete
-                try
-                {
-                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
-                }
-                catch (IOException e)
-                {
-                    LOG.warn("Unable to get Resource for descriptor {}", descriptorLocation, e);
-                    return false; //something wrong with the descriptor
-                }
+                return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
             }
         }
     }
