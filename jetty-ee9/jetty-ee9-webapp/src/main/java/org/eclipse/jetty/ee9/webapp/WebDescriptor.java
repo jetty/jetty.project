@@ -17,6 +17,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
@@ -159,8 +161,22 @@ public class WebDescriptor extends Descriptor
                 // Only process these entities if we are in the "ee9" package.
                 // This will allow the auto-backport of this class into ee8 to skip the ee9 specific resources
                 // These resources come from the jakarta.servlet-api-5.0.0.jar
-                // TODO: this check is a hack, we should really have a class with a static indicating the ee# support level
-                if (this.getClass().getPackage().getName().contains(".ee9."))
+
+                // TODO: this should probably be a static method somewhere in jetty-ee9-servlet
+                int eeLevel = 9; // default ee level
+                String packageName = this.getClass().getPackageName();
+                // look for .ee#. in the package name of this WebDescriptor
+                Matcher matcher = Pattern.compile("\\.ee([1-9][0-9]*)\\.").matcher(packageName);
+                if (matcher.find())
+                {
+                    if (matcher.groupCount() >= 1)
+                    {
+                        // Parse the number in ".ee#."
+                        eeLevel = Integer.parseInt(matcher.group(1));
+                    }
+                }
+
+                if (eeLevel >= 9)
                 {
                     final URL jakartaee9 = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_9.xsd");
                     redirectEntity("https://javax.ee/xml/ns/javaxee/javaee_9.xsd", jakartaee9);
