@@ -229,9 +229,16 @@ public class FileID
         int count = relative.getNameCount();
         for (int i = 0; i < count; i++)
         {
+            Path segment = relative.getName(i);
+
+            // default behavior that Jetty enforces
+            if (segment.toString().charAt(0) == '.')
+                return true;
+
+            // FileSystem behavior, that the FileSystem enforces
             try
             {
-                if (Files.isHidden(relative.getName(i)))
+                if (Files.isHidden(segment))
                     return true;
             }
             catch (IOException ignore)
