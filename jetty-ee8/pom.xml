@@ -44,6 +44,7 @@
     <module>jetty-ee8-glassfish-jstl</module>
     <module>jetty-ee8-bom</module>
     <module>jetty-ee8-demos</module>
+    <module>test-ee8-sessions</module>
     <module>jetty-ee8-home</module>
   </modules>
 

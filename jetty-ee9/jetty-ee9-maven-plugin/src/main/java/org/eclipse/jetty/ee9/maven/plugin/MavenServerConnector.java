@@ -51,6 +51,8 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     private int port;
     private long idleTimeout;
 
+    private boolean reusePort;
+
     public MavenServerConnector()
     {
     }
@@ -102,6 +104,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         this.delegate.setPort(this.port);
         this.delegate.setHost(this.host);
         this.delegate.setIdleTimeout(idleTimeout);
+        this.delegate.setReusePort(this.reusePort);
         this.delegate.start();
 
         super.doStart();
