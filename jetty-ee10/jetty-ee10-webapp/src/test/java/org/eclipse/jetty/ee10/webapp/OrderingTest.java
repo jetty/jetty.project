@@ -113,12 +113,6 @@ public class OrderingTest
         {
             return 0;
         }
-
-        @Override
-        public List<String> list()
-        {
-            return null;
-        }
     }
 
     @BeforeEach

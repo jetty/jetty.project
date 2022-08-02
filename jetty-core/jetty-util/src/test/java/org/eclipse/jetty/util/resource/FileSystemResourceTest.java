@@ -30,8 +30,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -58,7 +56,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -502,33 +499,6 @@ public class FileSystemResourceTest
         Resource base = ResourceFactory.root().newResource(dir);
         Resource foo = base.resolve("foo");
         assertThat("getURI", foo.getURI(), is(expected));
-    }
-
-    @Test
-    public void testList() throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
-        Files.createFile(dir.resolve("foo"));
-        Files.createFile(dir.resolve("bar"));
-        Files.createDirectories(dir.resolve("tick"));
-        Files.createDirectories(dir.resolve("tock"));
-
-        List<String> expected = new ArrayList<>();
-        expected.add("foo");
-        expected.add("bar");
-        expected.add("tick/");
-        expected.add("tock/");
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        List<String> actual = base.list();
-
-        assertEquals(expected.size(), actual.size());
-        for (String s : expected)
-        {
-            assertTrue(actual.contains(s));
-        }
     }
 
     @Test

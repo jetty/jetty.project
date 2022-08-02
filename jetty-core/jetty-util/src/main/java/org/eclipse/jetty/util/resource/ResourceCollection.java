@@ -22,8 +22,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -261,25 +259,6 @@ public class ResourceCollection extends Resource
     public long length()
     {
         return -1;
-    }
-
-    /**
-     * @return The list of resource names(merged) contained in the collection of resources.
-     */
-    @Override
-    public List<String> list()
-    {
-        HashSet<String> set = new HashSet<>();
-        for (Resource r : _resources)
-        {
-            List<String> list = r.list();
-            if (list != null)
-                set.addAll(list);
-        }
-
-        ArrayList<String> result = new ArrayList<>(set);
-        result.sort(Comparator.naturalOrder());
-        return result;
     }
 
     @Override

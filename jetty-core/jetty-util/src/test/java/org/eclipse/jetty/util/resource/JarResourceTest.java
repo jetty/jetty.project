@@ -17,16 +17,17 @@ import java.net.URI;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,8 +73,8 @@ public class JarResourceTest
         {
             Resource r = resourceFactory.newResource(uri);
 
-            Set<String> entries = new HashSet<>(r.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            Set<String> entries = Files.list(r.getPath()).map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             Path extract = workDir.getPathFile("extract");
             FS.ensureEmpty(extract);
@@ -82,13 +83,13 @@ public class JarResourceTest
 
             Resource e = resourceFactory.newResource(extract.toString());
 
-            entries = new HashSet<>(e.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            entries = Files.list(r.getPath()).map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
             r = resourceFactory.newResource(s);
 
-            entries = new HashSet<>(r.list());
+            entries = Files.list(r.getPath()).map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
             Path extract2 = workDir.getPathFile("extract2");
@@ -98,7 +99,7 @@ public class JarResourceTest
 
             e = resourceFactory.newResource(extract2.toString());
 
-            entries = new HashSet<>(e.list());
+            entries = Files.list(r.getPath()).map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
         }
     }
@@ -166,24 +167,7 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileGetAllResoures()
-        throws Exception
-    {
-        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        URI uri = URI.create(s);
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Resource r = resourceFactory.newResource(uri);
-            Collection<Resource> deep = r.getAllResources();
-
-            assertEquals(4, deep.size());
-        }
-    }
-
-    @Test
     public void testJarFileIsContainedIn()
-        throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
@@ -234,7 +218,7 @@ public class JarResourceTest
     public void testJarFileResourceList() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
-        URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
+        URI uri = URIUtil.toJarFileUri(testJar.toUri());
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newResource(uri);
@@ -242,17 +226,25 @@ public class JarResourceTest
 
             assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
-            String[] expected = new String[]{
-                "one",
-                "aaa",
-                "bbb",
-                "oddities/",
-                "another dir/",
-                "ccc",
-                "deep/",
-                };
-            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            try (Stream<Path> listStream = Files.list(rez.getPath()))
+            {
+                List<String> actual = listStream
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .sorted()
+                    .toList();
+
+                String[] expected = new String[]{
+                    "one",
+                    "aaa",
+                    "bbb",
+                    "oddities",
+                    "another dir",
+                    "ccc",
+                    "deep",
+                    };
+                assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            }
         }
     }
 
@@ -272,17 +264,25 @@ public class JarResourceTest
 
             assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
-            String[] expected = new String[]{
-                ";",
-                "#hashcode",
-                "index.html#fragment",
-                "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
-                "a file with a space",
-                ";\" onmousedown=\"alert(document.location)\"",
-                "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
-            };
-            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            try (Stream<Path> listStream = Files.list(rez.getPath()))
+            {
+                List<String> actual = listStream
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .sorted()
+                    .toList();
+
+                String[] expected = new String[]{
+                    ";",
+                    "#hashcode",
+                    "index.html#fragment",
+                    "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
+                    "a file with a space",
+                    ";\" onmousedown=\"alert(document.location)\"",
+                    "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
+                };
+                assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            }
         }
     }
 
@@ -298,13 +298,38 @@ public class JarResourceTest
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-            List<String> actual = anotherDir.list();
-            String[] expected = new String[]{
-                "a file.txt",
-                "another file.txt",
-                "..\\a different file.txt",
-                };
-            assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            // Show list as raw filenames
+            try (Stream<Path> listStream = Files.list(anotherDir.getPath()))
+            {
+                List<String> actual = listStream
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .sorted()
+                    .toList();
+                String[] expected = new String[]{
+                    "a file.txt",
+                    "another file.txt",
+                    "..\\a different file.txt",
+                    };
+                assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            }
+
+            // Show list as URI encoded filenames
+            try (Stream<Path> listStream = Files.list(anotherDir.getPath()))
+            {
+                List<String> actual = listStream
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(URIUtil::encodePath)
+                    .sorted()
+                    .toList();
+                String[] expected = new String[]{
+                    "a%20file.txt",
+                    "another%20file.txt",
+                    "..%5Ca%20different%20file.txt",
+                    };
+                assertThat("Dir contents", actual, containsInAnyOrder(expected));
+            }
         }
     }
 }

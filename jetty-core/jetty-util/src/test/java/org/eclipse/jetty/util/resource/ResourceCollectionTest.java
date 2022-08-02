@@ -40,7 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,27 +60,6 @@ public class ResourceCollectionTest
     {
         resourceFactory.close();
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @Test
-    public void testList() throws Exception
-    {
-        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
-        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
-        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
-
-        ResourceCollection rc = Resource.combine(
-            resourceFactory.newResource(one),
-            resourceFactory.newResource(two),
-            resourceFactory.newResource(three)
-        );
-        assertThat(rc.list(), contains("1.txt", "2.txt", "3.txt", "dir/"));
-        assertThat(rc.resolve("dir").list(), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc.resolve("unknown").list(), nullValue());
-
-        assertEquals(getContent(rc, "1.txt"), "1 - one");
-        assertEquals(getContent(rc, "2.txt"), "2 - two");
-        assertEquals(getContent(rc, "3.txt"), "3 - three");
     }
 
     @Test

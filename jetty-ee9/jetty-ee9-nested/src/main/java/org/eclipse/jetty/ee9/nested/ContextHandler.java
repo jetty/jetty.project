@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -36,6 +37,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -1491,21 +1494,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = getResource(path);
 
-            if (resource != null && resource.exists())
-            {
-                if (!path.endsWith(URIUtil.SLASH))
-                    path = path + URIUtil.SLASH;
+            if ((resource == null) || (!resource.exists()) || (!resource.isDirectory()))
+                return Set.of();
 
-                List<String> l = resource.list();
-                if (l != null)
-                {
-                    HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.size(); i++)
-                    {
-                        set.add(path + l.get(i));
-                    }
-                    return set;
-                }
+            Path dir = resource.getPath();
+            try (Stream<Path> dirStream = Files.list(dir))
+            {
+                return dirStream.map((entry) -> String.format("%s/%s", path, entry.getFileName().toString()))
+                    .collect(Collectors.toSet());
             }
         }
         catch (Exception e)

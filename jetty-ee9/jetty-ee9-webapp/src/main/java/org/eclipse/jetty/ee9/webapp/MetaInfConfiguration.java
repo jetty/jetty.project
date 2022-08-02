@@ -24,12 +24,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +39,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -756,35 +755,22 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
             return null;
 
-        List<Resource> jarResources = new ArrayList<Resource>();
         Resource webInfLib = webInf.resolve("/lib");
-        if (webInfLib.exists() && webInfLib.isDirectory())
+        if (!webInfLib.exists() || !webInfLib.isDirectory())
         {
-            List<String> files = webInfLib.list();
-            if (files != null)
-            {
-                files.sort(Comparator.naturalOrder());
-            }
-            for (int f = 0; files != null && f < files.size(); f++)
-            {
-                try
-                {
-                    Resource file = webInfLib.resolve(files.get(f));
-                    String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
-                    int dot = fnlc.lastIndexOf('.');
-                    String extension = (dot < 0 ? null : fnlc.substring(dot));
-                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-                    {
-                        jarResources.add(file);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn("Unable to load WEB-INF file {}", files.get(f), ex);
-                }
-            }
+            return List.of();
         }
-        return jarResources;
+
+        try (Stream<Path> entries = Files.list(webInf.getPath()))
+        {
+            return entries
+                .filter(Files::isRegularFile)
+                .filter(FileID::isArchive)
+                .sorted(PathCollators.byName(true))
+                // return the jar itself, not the contents
+                .map((path) -> context.getResourceFactory().newResource(path))
+                .toList();
+        }
     }
 
     /**
