@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee10.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.ee10.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.webapp.DefaultsDescriptor;
@@ -223,32 +221,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             default ->
             {
             }
-        }
-    }
-
-    @Deprecated
-    public void visitContainerInitializer(WebAppContext context, ContainerInitializer containerInitializer)
-    {
-        if (containerInitializer == null)
-            return;
-
-        //add the ContainerInitializer to the list of container initializers
-        List<ContainerInitializer> containerInitializers = (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
-        if (containerInitializers == null)
-        {
-            containerInitializers = new ArrayList<ContainerInitializer>();
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS, containerInitializers);
-        }
-
-        containerInitializers.add(containerInitializer);
-
-        //Ensure a bean is set up on the context that will invoke the ContainerInitializers as the context starts
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter == null)
-        {
-            starter = new ServletContainerInitializersStarter(context);
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-            context.addBean(starter, true);
         }
     }
     

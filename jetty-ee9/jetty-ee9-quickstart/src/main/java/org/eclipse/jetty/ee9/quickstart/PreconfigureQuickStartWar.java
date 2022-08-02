@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.Locale;
 
@@ -90,10 +91,15 @@ public class PreconfigureQuickStartWar
         {
             if (war.isDirectory())
                 error("war file is directory");
-
             if (!dir.exists())
                 Files.createDirectories(dir.getPath());
-            war.copyTo(dir.getPath());
+
+            URI jarUri = Resource.toJarFileUri(war.getURI());
+            try (Resource.Mount warMount = Resource.mount(jarUri))
+            {
+                // unpack contents of war to directory
+                warMount.root().copyTo(dir.getPath());
+            }
         }
 
         final Server server = new Server();

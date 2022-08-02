@@ -42,7 +42,7 @@ public class PreconfigureStandardTestWar
             IO.delete(realmPropertiesDest);
 
         Resource realmPropertiesSrc = Resource.newResource("src/test/resources/realm.properties");
-        realmPropertiesSrc.copyTo(realmPropertiesDest);
+        realmPropertiesSrc.copyTo(realmPropertiesDest.toPath());
         System.setProperty("jetty.home", "target");
 
         PreconfigureQuickStartWar.main("target/test-standard.war", target, "src/test/resources/test.xml");
