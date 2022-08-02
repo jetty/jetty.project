@@ -176,12 +176,6 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public boolean delete() throws SecurityException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean exists()
     {
         for (Resource r : _resources)
@@ -312,12 +306,6 @@ public class ResourceCollection extends Resource
         ArrayList<String> result = new ArrayList<>(set);
         result.sort(Comparator.naturalOrder());
         return result;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

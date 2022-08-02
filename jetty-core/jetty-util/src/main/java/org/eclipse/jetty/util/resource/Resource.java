@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -46,11 +45,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Abstract resource class.
@@ -575,50 +571,6 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Deletes the given resource
-     * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
-     * {@link #getPath()}.
-     *
-     * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
-     * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
-     */
-    public boolean delete()
-    {
-        try
-        {
-            return Files.deleteIfExists(getPath());
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return false;
-        }
-    }
-
-    /**
-     * Rename the given resource
-     * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
-     * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
-     * on the {@code Path} returned by {@code move()}.
-     *
-     * @param dest the destination name for the resource
-     * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     */
-    public boolean renameTo(Resource dest)
-    {
-        try
-        {
-            Path result = Files.move(getPath(), dest.getPath());
-            return Files.exists(result, NO_FOLLOW_LINKS);
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return false;
-        }
-    }
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
@@ -723,56 +675,6 @@ public abstract class Resource implements ResourceFactory
      */
     public URI getAlias()
     {
-        return null;
-    }
-
-    /**
-     * Get the raw (decoded if possible) Filename for this Resource.
-     * This is the last segment of the path.
-     *
-     * @return the raw / decoded filename for this resource
-     */
-    private String getFileName()
-    {
-        try
-        {
-            // if a Resource supports File
-            Path path = getPath();
-            if (path != null)
-            {
-                return path.getFileName().toString();
-            }
-        }
-        catch (Throwable ignored)
-        {
-        }
-
-        // All others use raw getName
-        try
-        {
-            String rawName = getName(); // gets long name "/foo/bar/xxx"
-            int idx = rawName.lastIndexOf('/');
-            if (idx == rawName.length() - 1)
-            {
-                // hit a tail slash, aka a name for a directory "/foo/bar/"
-                idx = rawName.lastIndexOf('/', idx - 1);
-            }
-
-            String encodedFileName;
-            if (idx >= 0)
-            {
-                encodedFileName = rawName.substring(idx + 1);
-            }
-            else
-            {
-                encodedFileName = rawName; // entire name
-            }
-            return UrlEncoded.decodeString(encodedFileName, 0, encodedFileName.length(), UTF_8);
-        }
-        catch (Throwable ignored)
-        {
-        }
-
         return null;
     }
 
