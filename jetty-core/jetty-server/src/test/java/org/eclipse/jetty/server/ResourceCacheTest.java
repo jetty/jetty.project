@@ -214,12 +214,12 @@ public class ResourceCacheTest
         cache.setMaxCachedFileSize(85);
         cache.setMaxCachedFiles(4);
 
-        assertNull(cache.getContent("does not exist", 4096));
-        assertTrue(cache.getContent(names[9], 4096) instanceof ResourceHttpContent);
-        assertNotNull(cache.getContent(names[9], 4096).getBuffer());
+        assertNull(cache.getContent("does not exist"));
+        assertTrue(cache.getContent(names[9]) instanceof ResourceHttpContent);
+        assertNotNull(cache.getContent(names[9]).getBuffer());
 
         HttpContent content;
-        content = cache.getContent(names[8], 4096);
+        content = cache.getContent(names[8]);
         assertThat(content, is(not(nullValue())));
         assertEquals(80, content.getContentLengthValue());
         assertEquals(0, cache.getCachedSize());
@@ -240,7 +240,7 @@ public class ResourceCacheTest
             cache.setMaxCachedFileSize(85);
             cache.setMaxCachedFiles(4);
 
-            content = cache.getContent(names[8], 4096);
+            content = cache.getContent(names[8]);
             content.getBuffer();
             assertEquals(cache.isUseFileMappedBuffer() ? 0 : 80, cache.getCachedSize());
 
@@ -254,7 +254,7 @@ public class ResourceCacheTest
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[1], 4096);
+        content = cache.getContent(names[1]);
         assertEquals(80, cache.getCachedSize());
         content.getBuffer();
         assertEquals(90, cache.getCachedSize());
@@ -262,35 +262,35 @@ public class ResourceCacheTest
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[2], 4096);
+        content = cache.getContent(names[2]);
         content.getBuffer();
         assertEquals(30, cache.getCachedSize());
         assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[3], 4096);
+        content = cache.getContent(names[3]);
         content.getBuffer();
         assertEquals(60, cache.getCachedSize());
         assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[4], 4096);
+        content = cache.getContent(names[4]);
         content.getBuffer();
         assertEquals(90, cache.getCachedSize());
         assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[5], 4096);
+        content = cache.getContent(names[5]);
         content.getBuffer();
         assertEquals(90, cache.getCachedSize());
         assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[6], 4096);
+        content = cache.getContent(names[6]);
         content.getBuffer();
         assertEquals(60, cache.getCachedSize());
         assertEquals(1, cache.getCachedFiles());
@@ -301,42 +301,42 @@ public class ResourceCacheTest
         {
             out.write(' ');
         }
-        content = cache.getContent(names[7], 4096);
+        content = cache.getContent(names[7]);
         content.getBuffer();
         assertEquals(70, cache.getCachedSize());
         assertEquals(1, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[6], 4096);
+        content = cache.getContent(names[6]);
         content.getBuffer();
         assertEquals(71, cache.getCachedSize());
         assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[0], 4096);
+        content = cache.getContent(names[0]);
         content.getBuffer();
         assertEquals(72, cache.getCachedSize());
         assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[1], 4096);
+        content = cache.getContent(names[1]);
         content.getBuffer();
         assertEquals(82, cache.getCachedSize());
         assertEquals(4, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[2], 4096);
+        content = cache.getContent(names[2]);
         content.getBuffer();
         assertEquals(32, cache.getCachedSize());
         assertEquals(4, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content = cache.getContent(names[3], 4096);
+        content = cache.getContent(names[3]);
         content.getBuffer();
         assertEquals(61, cache.getCachedSize());
         assertEquals(4, cache.getCachedFiles());
@@ -366,7 +366,7 @@ public class ResourceCacheTest
 
     static String getContent(CachedContentFactory rc, String path) throws Exception
     {
-        HttpContent content = rc.getContent(path, rc.getMaxCachedFileSize());
+        HttpContent content = rc.getContent(path);
         if (content == null)
             return null;
 

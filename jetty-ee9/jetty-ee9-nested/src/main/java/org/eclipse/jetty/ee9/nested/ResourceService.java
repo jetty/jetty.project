@@ -238,7 +238,7 @@ public class ResourceService
         try
         {
             // Find the content
-            content = _contentFactory.getContent(pathInContext, response.getBufferSize());
+            content = _contentFactory.getContent(pathInContext);
             if (LOG.isDebugEnabled())
                 LOG.debug("content={}", content);
 

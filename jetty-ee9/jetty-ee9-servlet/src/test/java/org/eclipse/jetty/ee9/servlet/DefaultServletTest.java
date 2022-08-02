@@ -59,7 +59,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1239,10 +1238,10 @@ public class DefaultServletTest
 
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
 
-        HttpContent content = factory.getContent("/index.html", 200);
+        HttpContent content = factory.getContent("/index.html");
         ByteBuffer buffer = content.getBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
+        content = factory.getContent("/index.html");
         buffer = content.getBuffer();
         assertThat("Direct buffer", buffer, is(nullValue()));
     }
