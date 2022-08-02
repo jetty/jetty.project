@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
@@ -111,24 +112,19 @@ public class WebDescriptor extends Descriptor
                 final URL webapp30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_0.xsd");
                 final URL webapp31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_1.xsd");
                 final URL webapp40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_4_0.xsd");
-                final URL webapp50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_5_0.xsd");
-                
-                
+
                 final URL webcommon30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_0.xsd");
                 final URL webcommon31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_1.xsd");
                 final URL webcommon40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_4_0.xsd");
-                final URL webcommon50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_5_0.xsd");
-                
+
                 final URL webfragment30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
                 final URL webfragment31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
                 final URL webfragment40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
-                final URL webfragment50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
-                
+
                 final URL webservice11xsd = Loader.getRequiredResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
                 final URL webservice12xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_2.xsd");
                 final URL webservice13xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_3.xsd");
                 final URL webservice14xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_4.xsd");
-                final URL webservice20xsd = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_web_services_client_2_0.xsd");
 
                 URL jsp20xsd = null;
                 URL jsp21xsd = null;
@@ -162,6 +158,55 @@ public class WebDescriptor extends Descriptor
                         jsp30xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_3_0.xsd");
                 }
 
+                // Servlet 5 Support
+                if (ServletContextHandler.ServletContextApi.SERVLET_MAJOR_VERSION >= 5)
+                {
+                    final URL jakartaee9 = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_9.xsd");
+                    redirectEntity("https://javax.ee/xml/ns/javaxee/javaee_9.xsd", jakartaee9);
+
+                    final URL webapp50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_5_0.xsd");
+                    redirectEntity("webapp_5_0.xsd", webapp50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/webapp_5_0.xsd", webapp50xsd);
+                    redirectEntity("web-app_5_0.xsd", webapp50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd", webapp50xsd);
+
+                    final URL webcommon50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_5_0.xsd");
+                    redirectEntity("web-common_5_0.xsd", webcommon50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-common_5_0.xsd", webcommon50xsd);
+
+                    final URL webfragment50xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
+                    redirectEntity("web-fragment_5_0.xsd", webfragment50xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_5_0.xsd", webfragment50xsd);
+
+                    final URL webservice20xsd = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_web_services_client_2_0.xsd");
+                    redirectEntity("jakartaee_web_services_client_2_0.xsd", webservice20xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd", webservice20xsd);
+                }
+
+                // Servlet 6 Support
+                if (ServletContextHandler.ServletContextApi.SERVLET_MAJOR_VERSION >= 6)
+                {
+                    // TODO: verify if this is needed, as it seems to be missing from servlet-api-6.jar (the ee9 version was in servlet-api-5.jar)
+                    /*
+                    final URL jakartaee10 = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_10.xsd");
+                    redirectEntity("https://javax.ee/xml/ns/javaxee/javaee_10.xsd", jakartaee10);
+                     */
+
+                    final URL webapp60xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_6_0.xsd");
+                    redirectEntity("webapp_6_0.xsd", webapp60xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/webapp_6_0.xsd", webapp60xsd);
+                    redirectEntity("web-app_6_0.xsd", webapp60xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd", webapp60xsd);
+
+                    final URL webcommon60xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_6_0.xsd");
+                    redirectEntity("web-common_6_0.xsd", webcommon60xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-common_6_0.xsd", webcommon60xsd);
+
+                    final URL webfragment60xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_6_0.xsd");
+                    redirectEntity("web-fragment_6_0.xsd", webfragment60xsd);
+                    redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_0.xsd", webfragment60xsd);
+                }
+
                 redirectEntity("web-app_2_2.dtd", dtd22);
                 redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN", dtd22);
                 redirectEntity("web.dtd", dtd23);
@@ -192,9 +237,7 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd", webcommon31xsd);
                 redirectEntity("web-common_4_0.xsd", webcommon40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd", webcommon40xsd);
-                redirectEntity("web-common_5_0.xsd", webcommon50xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-common_5_0.xsd", webcommon50xsd);
-                
+
                 redirectEntity("web-app_2_4.xsd", webapp24xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd", webapp24xsd);
                 redirectEntity("web-app_2_5.xsd", webapp25xsd);
@@ -205,28 +248,21 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd", webapp31xsd);
                 redirectEntity("web-app_4_0.xsd", webapp40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd", webapp40xsd);
-                redirectEntity("web-app_5_0.xsd", webapp50xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd", webapp50xsd);
-                
+
                 // Handle linewrap hyphen error in PDF spec
                 redirectEntity("webapp_4_0.xsd", webapp40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/webapp_4_0.xsd", webapp40xsd);
-                redirectEntity("webapp_5_0.xsd", webapp50xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/webapp_5_0.xsd", webapp50xsd);
-                
+
                 // handle jakartaee coordinates
                 redirectEntity("http://xmlns.eclipse.org/xml/ns/jakartaee/web-app_4_0.xsd", webapp40xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd", webapp50xsd);
-                
+
                 redirectEntity("web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("web-fragment_3_1.xsd", webfragment31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd", webfragment31xsd);
                 redirectEntity("web-fragment_4_0.xsd", webfragment40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd", webfragment40xsd);
-                redirectEntity("web-fragment_5_0.xsd", webfragment50xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_5_0.xsd", webfragment50xsd);
-                
+
                 redirectEntity("j2ee_web_services_client_1_1.xsd", webservice11xsd);
                 redirectEntity("http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd", webservice11xsd);
                 redirectEntity("javaee_web_services_client_1_2.xsd", webservice12xsd);
@@ -235,8 +271,6 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_web_services_client_1_3.xsd", webservice13xsd);
                 redirectEntity("javaee_web_services_client_1_4.xsd", webservice14xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_web_services_client_1_4.xsd", webservice14xsd);
-                redirectEntity("jakartaee_web_services_client_2_0.xsd", webservice20xsd);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd", webservice20xsd);
             }
         };
 
