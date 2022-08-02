@@ -2325,7 +2325,6 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
-                <excludedGroups>external, large-disk-resource, stress, slow</excludedGroups>
                 <systemPropertyVariables>
                   <env>ci</env>
                 </systemPropertyVariables>
