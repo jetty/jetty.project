@@ -570,7 +570,7 @@ public class AnnotationParser
 
         if (r.isDirectory())
         {
-            parseDir(handlers, r);
+            parseDir(handlers, r, r.getPath());
             return;
         }
 
@@ -587,20 +587,15 @@ public class AnnotationParser
      * Parse all classes in a directory
      *
      * @param handlers the set of handlers to look for classes in
-     * @param rootResource the resource directory to look for classes
+     * @param baseResource the resource representing the baseResource being scanned (jar, dir, etc)
+     * @param dir the directory root to start the scanning of classes for
      * @throws Exception if unable to parse
      */
-    private void parseDir(Set<? extends Handler> handlers, Resource rootResource) throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scanning dir {}", rootResource);
-
-        Path dir = rootResource.getPath();
-        parseDir(handlers, rootResource, dir);
-    }
-
     private void parseDir(Set<? extends Handler> handlers, Resource baseResource, Path dir) throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scanning dir {}", dir.toUri());
+
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
         try (Stream<Path> classStream = Files.walk(dir))
         {
