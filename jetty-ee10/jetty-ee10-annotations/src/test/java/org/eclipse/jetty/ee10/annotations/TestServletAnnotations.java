@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,12 +30,19 @@ import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,8 +51,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * TestServletAnnotations
  */
+@ExtendWith(WorkDirExtension.class)
 public class TestServletAnnotations
 {
+    public WorkDir workDir;
+
     public class TestWebServletAnnotationHandler extends WebServletAnnotationHandler
     {
         List<DiscoveredAnnotation> _list = null;
@@ -61,8 +77,9 @@ public class TestServletAnnotations
     @Test
     public void testServletAnnotation() throws Exception
     {
-        List<String> classes = new ArrayList<String>();
-        classes.add("org.eclipse.jetty.ee10.annotations.ServletC");
+        Path root = workDir.getEmptyPathDir();
+        copyClass(org.eclipse.jetty.ee10.annotations.ServletC.class, root);
+
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
@@ -70,7 +87,7 @@ public class TestServletAnnotations
 
         TestWebServletAnnotationHandler handler = new TestWebServletAnnotationHandler(wac, results);
 
-        parser.parse(Collections.singleton(handler), classes);
+        parser.parse(Collections.singleton(handler), Resource.newResource(root));
 
         assertEquals(1, results.size());
         assertTrue(results.get(0) instanceof WebServletAnnotation);
@@ -286,5 +303,17 @@ public class TestServletAnnotations
         DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
         handler.doHandle(ServletC.class);
         assertThat(sh.getRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
+    }
+
+    private void copyClass(Class<?> clazz, Path outputDir) throws IOException, URISyntaxException
+    {
+        String classRef = TypeUtil.toClassReference(clazz);
+        URL url = this.getClass().getResource('/' + classRef);
+        assertThat("URL for: " + classRef, url, notNullValue());
+
+        Path srcClass = Paths.get(url.toURI());
+        Path dest = outputDir.resolve(classRef);
+        FS.ensureDirExists(dest.getParent());
+        Files.copy(srcClass, dest);
     }
 }
