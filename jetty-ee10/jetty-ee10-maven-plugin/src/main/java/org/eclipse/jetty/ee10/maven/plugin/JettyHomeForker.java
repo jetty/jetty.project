@@ -415,7 +415,7 @@ public class JettyHomeForker extends AbstractForker
             try (Resource.Mount mount = Resource.mountJar(jettyHomeZip.toPath()))
             {
                 Resource res = mount.root();
-                res.copyTo(baseDir.toPath());
+                res.copyTo(baseDir.toPath()); // TODO: Resource.copyTo() cannot copy dir to dir, only file to file
             }
             //zip will unpack to target/jetty-home-<VERSION>
             jettyHome = new File(baseDir, "jetty-home-" + version);

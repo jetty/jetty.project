@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
@@ -668,7 +669,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         try (Stream<Path> entries = Files.walk(dir)
             .filter(Files::isRegularFile)
-            .filter(MetaInfConfiguration::isTldFile))
+            .filter(FileID::isTld))
         {
             Iterator<Path> iter = entries.iterator();
             while (iter.hasNext())
@@ -698,7 +699,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         try (Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
             Iterator<Path> it = stream
-                .filter(MetaInfConfiguration::isTldFile)
+                .filter(Files::isRegularFile)
+                .filter(FileID::isTld)
                 .iterator();
             while (it.hasNext())
             {
@@ -707,18 +709,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
         }
         return tlds;
-    }
-
-    private static boolean isTldFile(Path path)
-    {
-        if (!Files.isRegularFile(path))
-            return false;
-        if (path.getNameCount() < 2)
-            return false;
-        if (!path.getName(0).toString().equalsIgnoreCase("META-INF"))
-            return false;
-        String filename = path.getFileName().toString();
-        return filename.toLowerCase(Locale.ENGLISH).endsWith(".tld");
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
@@ -871,6 +861,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private boolean isFileSupported(Resource resource)
     {
-        return Resource.isArchive(resource.getURI());
+        return FileID.isArchive(resource.getURI());
     }
 }

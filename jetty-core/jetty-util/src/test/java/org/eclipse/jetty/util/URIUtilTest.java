@@ -38,11 +38,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -518,31 +520,7 @@ public class URIUtilTest
         assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
-    public static Stream<Arguments> getJarSourceStringSource()
-    {
-        return Stream.of(
-            // Common cases
-            Arguments.of("file:///tmp/", "file:///tmp/"),
-            Arguments.of("jar:file:///tmp/foo.jar", "file:///tmp/foo.jar"),
-            Arguments.of("jar:file:///tmp/foo.jar!/some/path", "file:///tmp/foo.jar"),
-            // Bad File.toURL cases
-            Arguments.of("file:/tmp/", "file:/tmp/"),
-            Arguments.of("jar:file:/tmp/foo.jar", "file:/tmp/foo.jar"),
-            Arguments.of("jar:file:/tmp/foo.jar!/some/path", "file:/tmp/foo.jar")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("getJarSourceStringSource")
-    public void testJarSourceURI(String uri, String expectedJarUri)
-    {
-        URI input = URI.create(uri);
-        URI expected = URI.create(expectedJarUri);
-        URI actual = URIUtil.getJarSource(input);
-        assertThat(actual.toASCIIString(), is(expected.toASCIIString()));
-    }
-
-    public static Stream<Arguments> badJavaIoFileUrlCases()
+    public static Stream<Arguments> correctBadFileURICases()
     {
         return Stream.of(
             // Already valid URIs
@@ -573,19 +551,19 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @MethodSource("badJavaIoFileUrlCases")
-    public void testFixBadJavaIoFileUrl(String input, String expected)
+    @MethodSource("correctBadFileURICases")
+    public void testCorrectFileURI(String input, String expected)
     {
         URI inputUri = URI.create(input);
-        URI actualUri = URIUtil.fixBadJavaIoFileUrl(inputUri);
+        URI actualUri = URIUtil.correctFileURI(inputUri);
         URI expectedUri = URI.create(expected);
         assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     @Test
-    public void testFixBadJavaIoFileUrlActualFile() throws Exception
+    public void testCorrectBadFileURIActualFile() throws Exception
     {
-        File file = MavenTestingUtils.getTargetFile("testFixBadJavaIoFileUrlActualFile.txt");
+        File file = MavenTestingUtils.getTargetFile("testCorrectBadFileURIActualFile.txt");
         FS.touch(file);
 
         URI expectedUri = file.toPath().toUri();
@@ -599,8 +577,8 @@ public class URIUtilTest
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
         assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
 
-        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
-        assertThat(URIUtil.fixBadJavaIoFileUrl(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpacesSource()
@@ -752,7 +730,7 @@ public class URIUtilTest
         final String TEST_RESOURCE_JAR = "test-base-resource.jar";
         List<Arguments> arguments = new ArrayList<>();
         Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
-        URI jarFileUri = Resource.toJarFileUri(testJar.toUri());
+        URI jarFileUri = URIUtil.toJarFileUri(testJar.toUri());
 
         try (Resource.Mount jarMount = Resource.mount(jarFileUri))
         {
@@ -870,5 +848,175 @@ public class URIUtilTest
     {
         final URI inputURI = input == null ? null : URI.create(input);
         assertThrows(IllegalArgumentException.class, () -> URIUtil.uriJarPrefix(inputURI, suffix));
+    }
+
+    public static Stream<Arguments> jarFileUriCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        String expected = "jar:file:/path/company-1.0.jar!/";
+        cases.add(Arguments.of("file:/path/company-1.0.jar", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/", expected));
+        cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected + "META-INF/services"));
+
+        expected = "jar:file:/opt/jetty/webapps/app.war!/";
+        cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/", expected));
+        cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected + "WEB-INF/classes"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("jarFileUriCases")
+    public void testToJarFileUri(String inputRawUri, String expectedRawUri)
+    {
+        URI actual = URIUtil.toJarFileUri(URI.create(inputRawUri));
+        assertNotNull(actual);
+        assertThat(actual.toASCIIString(), is(expectedRawUri));
+    }
+
+    public static Stream<Arguments> unwrapContainerCases()
+    {
+        return Stream.of(
+            Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"),
+            Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"),
+            Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"),
+            Arguments.of("jar:file:///path/to/bar.jar!/internal.txt", "file:///path/to/bar.jar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unwrapContainerCases")
+    public void testUnwrapContainer(String inputRawUri, String expected)
+    {
+        URI input = Resource.toURI(inputRawUri);
+        URI actual = URIUtil.unwrapContainer(input);
+        assertThat(actual.toASCIIString(), is(expected));
+    }
+
+    @Test
+    public void testSplitSingleJar()
+    {
+        // Bad java file.uri syntax
+        String input = "file:/home/user/lib/acme.jar";
+        List<URI> uris = URIUtil.split(input);
+        String expected = String.format("jar:%s!/", input);
+        assertThat(uris.get(0).toString(), is(expected));
+    }
+
+    @Test
+    public void testSplitSinglePath()
+    {
+        String input = "/home/user/lib/acme.jar";
+        List<URI> uris = URIUtil.split(input);
+        String expected = String.format("jar:file://%s!/", input);
+        assertThat(uris.get(0).toString(), is(expected));
+    }
+
+    @Test
+    public void testSplitOnComma()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s,%s,%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = URIUtil.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnPipe()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s|%s|%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = URIUtil.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnSemicolon()
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+
+        // This represents the user-space raw configuration
+        String config = String.format("%s;%s;%s", dir, foo, bar);
+
+        // Split using commas
+        List<URI> uris = URIUtil.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            bar.toUri()
+        };
+        assertThat(uris, contains(expected));
+    }
+
+    @Test
+    public void testSplitOnPipeWithGlob() throws IOException
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dir = base.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path foo = dir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Path bar = dir.resolve("bar");
+        FS.ensureDirExists(bar);
+        FS.touch(bar.resolve("lib-foo.jar"));
+        FS.touch(bar.resolve("lib-zed.zip"));
+
+        // This represents the user-space raw configuration with a glob
+        String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
+
+        // Split using commas
+        List<URI> uris = URIUtil.split(config);
+
+        URI[] expected = new URI[] {
+            dir.toUri(),
+            foo.toUri(),
+            // Should see the two archives as `jar:file:` URI entries
+            URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
+            URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+        };
+        assertThat(uris, contains(expected));
     }
 }

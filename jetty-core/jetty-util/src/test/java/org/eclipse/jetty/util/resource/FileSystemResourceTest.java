@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -224,7 +223,7 @@ public class FileSystemResourceTest
             // valid path for unix and OSX
             assertThat("Readable Root Dir", rrd.exists(), is(false));
         }
-        catch (MalformedURLException | InvalidPathException e)
+        catch (InvalidPathException e)
         {
             // valid path on Windows
         }
@@ -830,7 +829,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo' bar"));
+        Resource test = base.resolve("foo'%20bar");
+        assertTrue(test.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo' bar"));
     }
 
     @Test
@@ -851,7 +852,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo` bar"));
+        Resource file = base.resolve("foo%60%20bar");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo` bar"));
     }
 
     @Test
@@ -872,7 +875,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo[1]"));
+        Resource file = base.resolve("foo%5B1%5D");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo[1]"));
     }
 
     @Test
@@ -893,7 +898,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo.{bar}.txt"));
+        Resource file = base.resolve("foo.%7Bbar%7D.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo.{bar}.txt"));
     }
 
     @Test
@@ -914,7 +921,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo^3.txt"));
+        Resource file = base.resolve("foo%5E3.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo^3.txt"));
     }
 
     @Test
@@ -935,7 +944,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo|bar.txt"));
+        Resource file = base.resolve("foo%7Cbar.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo|bar.txt"));
     }
 
     /**
@@ -1096,7 +1107,7 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1138,7 +1149,7 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1168,7 +1179,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("Exists: " + r, r.exists(), is(true));
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1198,7 +1209,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1230,7 +1241,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));

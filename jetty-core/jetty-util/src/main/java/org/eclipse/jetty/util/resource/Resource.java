@@ -36,17 +36,14 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
@@ -144,7 +141,7 @@ public abstract class Resource implements ResourceFactory
         String scheme = uri.getScheme();
         if (scheme == null)
             return null;
-        if (!isArchive(uri))
+        if (!FileID.isArchive(uri))
             return null;
         try
         {
@@ -171,7 +168,7 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mount(URI uri) throws IOException
     {
-        if (!isArchive(uri))
+        if (!FileID.isArchive(uri))
             throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("jar"))
             throw new IllegalArgumentException("not an allowed URI: " + uri);
@@ -186,12 +183,12 @@ public abstract class Resource implements ResourceFactory
      */
     public static Resource.Mount mountJar(Path path) throws IOException
     {
-        if (!isArchive(path))
+        if (!FileID.isArchive(path))
             throw new IllegalArgumentException("Path is not a Java Archive: " + path);
         URI pathUri = path.toUri();
         if (!pathUri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + path);
-        URI jarUri = toJarFileUri(pathUri);
+        URI jarUri = URIUtil.toJarFileUri(pathUri);
         if (jarUri == null)
             throw new IllegalArgumentException("Not a mountable archive: " + path);
         return FileSystemPool.INSTANCE.mount(jarUri);
@@ -223,136 +220,6 @@ public abstract class Resource implements ResourceFactory
             throw new IllegalArgumentException("No resources");
 
         return new ResourceCollection(List.of(resources));
-    }
-
-    /**
-     * Test if Path is a Java Archive (ends in {@code .jar}, {@code .war}, or {@code .zip}).
-     *
-     * @param path the path to test
-     * @return true if path is a {@link Files#isRegularFile(Path, LinkOption...)} and name ends with {@code .jar}, {@code .war}, or {@code .zip}
-     */
-    public static boolean isArchive(Path path)
-    {
-        if (path == null)
-            return false;
-        if (!Files.isRegularFile(path))
-            return false;
-        String filename = path.getFileName().toString().toLowerCase(Locale.ENGLISH);
-        return (filename.endsWith(".jar") || filename.endsWith(".war") || filename.endsWith(".zip"));
-    }
-
-    /**
-     * Test if URI is a Java Archive. (ends with {@code .jar}, {@code .war}, or {@code .zip}).
-     *
-     * @param uri the URI to test
-     * @return true if the URI has a path that seems to point to a ({@code .jar}, {@code .war}, or {@code .zip}).
-     */
-    public static boolean isArchive(URI uri)
-    {
-        if (uri == null)
-            return false;
-        if (uri.getScheme() == null)
-            return false;
-        String path = uri.getPath();
-        int idxEnd = path == null ? -1 : path.length();
-        if (uri.getScheme().equalsIgnoreCase("jar"))
-        {
-            String ssp = uri.getRawSchemeSpecificPart();
-            path = URI.create(ssp).getPath();
-            idxEnd = path.length();
-            // look for `!/` split
-            int jarEnd = path.indexOf("!/");
-            if (jarEnd >= 0)
-                idxEnd = jarEnd;
-        }
-        if (path == null)
-            return false;
-        int idxLastSlash = path.lastIndexOf('/', idxEnd);
-        if (idxLastSlash < 0)
-            return false; // no last slash, can't possibly be a valid jar/war/zip
-        // look for filename suffix
-        int idxSuffix = path.lastIndexOf('.', idxEnd);
-        if (idxSuffix < 0)
-            return false; // no suffix found, can't possibly be a jar/war/zip
-        if (idxSuffix < idxLastSlash)
-            return false; // last dot is before last slash, eg ("/path.to/something")
-        String suffix = path.substring(idxSuffix, idxEnd).toLowerCase(Locale.ENGLISH);
-        return suffix.equals(".jar") || suffix.equals(".war") || suffix.equals(".zip");
-    }
-
-    /**
-     * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
-     *
-     * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
-     *
-     * @param uri the URI to mutate to a {@code jar:file:...} URI.
-     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
-     * @see #isArchive(URI)
-     */
-    public static URI toJarFileUri(URI uri)
-    {
-        Objects.requireNonNull(uri, "URI");
-        String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
-
-        if (!isArchive(uri))
-            return null;
-
-        boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
-
-        if (scheme.equalsIgnoreCase("jar"))
-        {
-            if (uri.getRawSchemeSpecificPart().startsWith("file:"))
-            {
-                // Looking good as a jar:file: URI
-                if (hasInternalReference)
-                    return uri; // is all good, no changes needed.
-                else
-                    // add the internal reference indicator to the root of the archive
-                    return URI.create(uri.toASCIIString() + "!/");
-            }
-        }
-        else if (scheme.equalsIgnoreCase("file"))
-        {
-            String rawUri = uri.toASCIIString();
-            if (hasInternalReference)
-                return URI.create("jar:" + rawUri);
-            else
-                return URI.create("jar:" + rawUri + "!/");
-        }
-
-        // shouldn't be possible to reach this point
-        throw new IllegalArgumentException("Cannot make %s into `jar:file:` URI".formatted(uri));
-    }
-
-    // TODO: will be removed in MultiReleaseJarFile PR, as AnnotationParser is the only thing using this,
-    // and it doesn't need to recreate the URI that it will already have.
-    public static String toJarPath(String jarFile, String pathInJar)
-    {
-        return "jar:" + jarFile + URIUtil.addPaths("!/", pathInJar);
-    }
-
-    /**
-     * Unwrap a URI to expose its container path reference.
-     *
-     * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
-     *
-     * @param uri the input URI
-     * @return the container String if a {@code jar} scheme, or just the URI untouched.
-     * TODO: reconcile with URIUtil.getJarSource(URI)
-     */
-    public static URI unwrapContainer(URI uri)
-    {
-        Objects.requireNonNull(uri);
-
-        String scheme = uri.getScheme();
-        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
-            return uri;
-
-        String spec = uri.getRawSchemeSpecificPart();
-        int sep = spec.indexOf("!/");
-        if (sep != -1)
-            spec = spec.substring(0, sep);
-        return URI.create(spec);
     }
 
     /**
@@ -405,9 +272,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource A URL or filename.
      * @return A Resource object.
-     * @throws IOException Problem accessing URI
      */
-    public static Resource newResource(String resource) throws IOException
+    public static Resource newResource(String resource)
     {
         return newResource(toURI(resource));
     }
@@ -464,9 +330,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource Resource as string representation
      * @return The new Resource
-     * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource) throws IOException
+    public static Resource newSystemResource(String resource)
     {
         return newSystemResource(resource, null);
     }
@@ -479,9 +344,8 @@ public abstract class Resource implements ResourceFactory
      * @param resource Resource as string representation
      * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
      * @return The new Resource
-     * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer) throws IOException
+    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer)
     {
         URL url = null;
         // Try to format as a URL?
@@ -569,9 +433,8 @@ public abstract class Resource implements ResourceFactory
      * @param r the contained resource
      * @param containingResource the containing resource
      * @return true if the Resource is contained, false otherwise
-     * @throws IOException Problem accessing resource
      */
-    public static boolean isContainedIn(Resource r, Resource containingResource) throws IOException
+    public static boolean isContainedIn(Resource r, Resource containingResource)
     {
         return r.isContainedIn(containingResource);
     }
@@ -589,9 +452,8 @@ public abstract class Resource implements ResourceFactory
      *
      * @param r the containing resource
      * @return true if this Resource is contained, false otherwise
-     * @throws IOException Problem accessing resource
      */
-    public abstract boolean isContainedIn(Resource r) throws IOException;
+    public abstract boolean isContainedIn(Resource r);
 
     /**
      * Return true if the passed Resource represents the same resource as the Resource.
@@ -803,14 +665,14 @@ public abstract class Resource implements ResourceFactory
     /**
      * {@inheritDoc}
      */
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource resolve(String subUriPath)
     {
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
         // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
         if (URIUtil.normalizePath(subUriPath) == null)
-            throw new IOException(subUriPath);
+            throw new IllegalArgumentException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))
             return this;
@@ -840,28 +702,16 @@ public abstract class Resource implements ResourceFactory
             if (!subUri.getPath().endsWith(URIUtil.SLASH))
                 subUri = URI.create(subUri + URIUtil.SLASH);
 
-            URI subUriResolved = uriResolve(subUri, subUriPath);
+            URI subUriResolved = subUri.resolve(subUriPath);
             resolvedUri = URI.create(scheme + ":" + subUriResolved);
         }
         else
         {
             if (!uri.getPath().endsWith(URIUtil.SLASH))
                 uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uriResolve(uri, subUriPath);
+            resolvedUri = uri.resolve(subUriPath);
         }
         return newResource(resolvedUri);
-    }
-
-    private static URI uriResolve(URI uri, String subUriPath) throws IOException
-    {
-        try
-        {
-            return uri.resolve(subUriPath);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            throw new IOException(iae);
-        }
     }
 
     /**
@@ -887,9 +737,8 @@ public abstract class Resource implements ResourceFactory
      * @param parent True if the parent directory should be included
      * @param query query params
      * @return String of HTML
-     * @throws IOException on failure to generate a list.
      */
-    public String getListHTML(String base, boolean parent, String query) throws IOException // TODO: move to helper class
+    public String getListHTML(String base, boolean parent, String query)  // TODO: move to helper class
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
@@ -1325,75 +1174,6 @@ public abstract class Resource implements ResourceFactory
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
-     * <p>
-     *     Each part of the input string could be path references (unix or windows style), or string URI references.
-     * </p>
-     * <p>
-     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
-     * </p>
-     *
-     * @param str the input string of references
-     * @see #toJarFileUri(URI)
-     */
-    public static List<URI> split(String str)
-    {
-        List<URI> uris = new ArrayList<>();
-
-        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
-        while (tokenizer.hasMoreTokens())
-        {
-            String reference = tokenizer.nextToken();
-            try
-            {
-                // Is this a glob reference?
-                if (reference.endsWith("/*") || reference.endsWith("\\*"))
-                {
-                    String dir = reference.substring(0, reference.length() - 2);
-                    Path pathDir = Paths.get(dir);
-                    // Use directory
-                    if (Files.exists(pathDir) && Files.isDirectory(pathDir))
-                    {
-                        // To obtain the list of entries
-                        try (Stream<Path> listStream = Files.list(pathDir))
-                        {
-                            listStream
-                                .filter(Files::isRegularFile)
-                                .filter(Resource::isArchive)
-                                .sorted(Comparator.naturalOrder())
-                                .forEach(path -> uris.add(toJarFileUri(path.toUri())));
-                        }
-                        catch (IOException e)
-                        {
-                            throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
-                        }
-                    }
-                }
-                else
-                {
-                    // Simple reference
-                    URI refUri = toURI(reference);
-                    // Is this a Java Archive that can be mounted?
-                    URI jarFileUri = toJarFileUri(refUri);
-                    if (jarFileUri != null)
-                        // add as mountable URI
-                        uris.add(jarFileUri);
-                    else
-                        // add as normal URI
-                        uris.add(refUri);
-
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Invalid Resource Reference: " + reference);
-                throw e;
-            }
-        }
-        return uris;
     }
 
     /**

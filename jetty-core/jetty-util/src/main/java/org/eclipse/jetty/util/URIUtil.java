@@ -13,15 +13,25 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +46,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see UrlEncoded
  */
-public class URIUtil
-    implements Cloneable
+public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
     public static final String SLASH = "/";
@@ -1647,25 +1656,28 @@ public class URIUtil
         return query1 + '&' + query2;
     }
 
-    public static URI getJarSource(URL url)
-    {
-        return getJarSource(URI.create(url.toString()));
-    }
-
-    public static URI getJarSource(URI uri)
-    {
-        if (!"jar".equals(uri.getScheme()))
-            return uri;
-
-        // Get SSP (retaining encoded form)
-        String s = uri.getRawSchemeSpecificPart();
-        int bangSlash = s.indexOf("!/");
-        if (bangSlash >= 0)
-            s = s.substring(0, bangSlash);
-        return URI.create(s);
-    }
-
-    public static URI fixBadJavaIoFileUrl(URI uri)
+    /**
+     * <p>
+     * Corrects any bad {@code file} based URIs (even within a {@code jar:file:} based URIs) from the bad out-of-spec
+     * format that various older Java APIs creates (most notably: {@link java.io.File} creates with it's {@link File#toURL()}
+     * and {@link File#toURI()}, along with the side effects of using {@link URL#toURI()})
+     * </p>
+     *
+     * <p>
+     *     This correction is limited to only the {@code file:/} substring in the URI.
+     *     If there is a {@code file:/<not-a-slash>} detected, that substring is corrected to
+     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@core file:}
+     *     substring are left alone.
+     * </p>
+     *
+     * <p>
+     *     Note that Windows UNC based URIs are left alone, along with non-absolute URIs.
+     * </p>
+     *
+     * @param uri the URI to (possibly) correct
+     * @return the new URI with the {@code file:/} substring corrected, or the original URI.
+     */
+    public static URI correctFileURI(URI uri)
     {
         if ((uri == null) || (uri.getScheme() == null))
             return uri;
@@ -1690,6 +1702,142 @@ public class URIUtil
         if (end >= 0)
             return URI.create(rawURI.substring(0, colon) + ":///" + rawURI.substring(end));
         return uri;
+    }
+
+    /**
+     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
+     * <p>
+     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
+     * </p>
+     *
+     * @param str the input string of references
+     * @see #toJarFileUri(URI)
+     */
+    public static List<URI> split(String str)
+    {
+        List<URI> uris = new ArrayList<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        while (tokenizer.hasMoreTokens())
+        {
+            String reference = tokenizer.nextToken();
+            try
+            {
+                // Is this a glob reference?
+                if (reference.endsWith("/*") || reference.endsWith("\\*"))
+                {
+                    String dir = reference.substring(0, reference.length() - 2);
+                    Path pathDir = Paths.get(dir);
+                    // Use directory
+                    if (Files.exists(pathDir) && Files.isDirectory(pathDir))
+                    {
+                        // To obtain the list of entries
+                        try (Stream<Path> listStream = Files.list(pathDir))
+                        {
+                            listStream
+                                .filter(Files::isRegularFile)
+                                .filter(FileID::isArchive)
+                                .sorted(Comparator.naturalOrder())
+                                .forEach(path -> uris.add(toJarFileUri(path.toUri())));
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException("Unable to process directory glob listing: " + reference, e);
+                        }
+                    }
+                }
+                else
+                {
+                    // Simple reference
+                    URI refUri = Resource.toURI(reference);
+                    // Is this a Java Archive that can be mounted?
+                    URI jarFileUri = toJarFileUri(refUri);
+                    if (jarFileUri != null)
+                        // add as mountable URI
+                        uris.add(jarFileUri);
+                    else
+                        // add as normal URI
+                        uris.add(refUri);
+
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Invalid Resource Reference: " + reference);
+                throw e;
+            }
+        }
+        return uris;
+    }
+
+    /**
+     * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
+     *
+     * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
+     *
+     * @param uri the URI to mutate to a {@code jar:file:...} URI.
+     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
+     * @see FileID#isArchive(URI)
+     */
+    public static URI toJarFileUri(URI uri)
+    {
+        Objects.requireNonNull(uri, "URI");
+        String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
+
+        if (!FileID.isArchive(uri))
+            return null;
+
+        boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
+
+        if (scheme.equalsIgnoreCase("jar"))
+        {
+            if (uri.getRawSchemeSpecificPart().startsWith("file:"))
+            {
+                // Looking good as a jar:file: URI
+                if (hasInternalReference)
+                    return uri; // is all good, no changes needed.
+                else
+                    // add the internal reference indicator to the root of the archive
+                    return URI.create(uri.toASCIIString() + "!/");
+            }
+        }
+        else if (scheme.equalsIgnoreCase("file"))
+        {
+            String rawUri = uri.toASCIIString();
+            if (hasInternalReference)
+                return URI.create("jar:" + rawUri);
+            else
+                return URI.create("jar:" + rawUri + "!/");
+        }
+
+        // shouldn't be possible to reach this point
+        throw new IllegalArgumentException("Cannot make %s into `jar:file:` URI".formatted(uri));
+    }
+
+    /**
+     * Unwrap a URI to expose its container path reference.
+     *
+     * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
+     *
+     * @param uri the input URI
+     * @return the container String if a {@code jar} scheme, or just the URI untouched.
+     */
+    public static URI unwrapContainer(URI uri)
+    {
+        Objects.requireNonNull(uri);
+
+        String scheme = uri.getScheme();
+        if ((scheme == null) || !scheme.equalsIgnoreCase("jar"))
+            return uri;
+
+        String spec = uri.getRawSchemeSpecificPart();
+        int sep = spec.indexOf("!/");
+        if (sep != -1)
+            spec = spec.substring(0, sep);
+        return URI.create(spec);
     }
 
     /**
@@ -1740,7 +1888,9 @@ public class URIUtil
         URL[] urls = urlClassLoader.getURLs();
         return Stream.of(urls)
             .filter(Objects::nonNull)
-            .map(URIUtil::getJarSource)
-            .map(URIUtil::fixBadJavaIoFileUrl);
-        }
+            .map(URL::toString)
+            .map(URI::create)
+            .map(URIUtil::unwrapContainer)
+            .map(URIUtil::correctFileURI);
+    }
 }

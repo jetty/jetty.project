@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
@@ -816,8 +817,7 @@ public class AnnotationParser
         if (jarResource == null)
             return;
 
-        // TODO: what if the input is "FOO.JAR" or "Bar.Jar" ? - need to use FileID.isArchive() or FileID.isJar()
-        if (jarResource.toString().endsWith(".jar"))
+        if (FileID.isJavaArchive(jarResource.getPath()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning jar {}", jarResource);
@@ -826,9 +826,9 @@ public class AnnotationParser
             try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getPath());
                  Stream<Path> jarEntryStream = jarFile.stream()
                      .filter(Files::isRegularFile)
-                     .filter(MultiReleaseJarFile::skipModuleInfoClass)
-                     .filter(MultiReleaseJarFile::skipMetaInfVersions)
-                     .filter(MultiReleaseJarFile::isClassFile)
+                     .filter(FileID::isNotModuleInfoClass)
+                     .filter(FileID::isNotMetaInfVersions)
+                     .filter(FileID::isClassFile)
             )
             {
                 jarEntryStream.forEach(e ->
@@ -917,7 +917,7 @@ public class AnnotationParser
      *
      * @param name the class file name
      * @return whether the class file name is valid
-     * TODO: does multiple things, we should be able to move this FileID in future PR
+     * TODO: does multiple things, we should be able to eliminate this in future PR by consolidating the ZipFS and Directory scanning behaviors into a single Files.walk() stream
      */
     public boolean isValidClassFileName(String name)
     {
@@ -926,7 +926,7 @@ public class AnnotationParser
             return false;
 
         // skip anything that is not a class file
-        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
+        // TODO: exists in FileID.isClassFile(Path) use consistently in both ZipFS and Directory cases
         String lc = name.toLowerCase(Locale.ENGLISH);
         if (!lc.endsWith(".class"))
         {
@@ -935,7 +935,7 @@ public class AnnotationParser
             return false;
         }
 
-        // TODO: exists in MultiReleaseJarFile.notModuleInfoClass(Path)
+        // TODO: exists in FileID.notModuleInfoClass(Path) use consistently in both ZipFS and Directory cases
         if (lc.equals("module-info.class"))
         {
             if (LOG.isDebugEnabled())
@@ -944,7 +944,7 @@ public class AnnotationParser
         }
 
         // skip any classfiles that are not a valid java identifier
-        // TODO: exists in MultiReleaseJarFile.isClassFile(Path)
+        // TODO: exists in FileID.isClassFile(Path)  use consistently in both ZipFS and Directory cases
         int c0 = 0;
         int ldir = name.lastIndexOf('/', name.length() - 6);
         c0 = (ldir > -1 ? ldir + 1 : c0);
@@ -963,7 +963,7 @@ public class AnnotationParser
      *
      * @param path the class file path
      * @return whether the class file path is valid
-     * TODO: remove, handled by MultiReleaseJarFile.skipHiddenDirs
+     * TODO: remove, handled by FileID.skipHiddenDirs
      */
     public boolean isValidClassFilePath(String path)
     {

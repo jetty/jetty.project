@@ -32,34 +32,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiReleaseJarFileTest
 {
     public WorkDir workDir;
-    private static FileSystem metaInfVersionTestFileSystem;
-
-    @AfterAll
-    public static void closeFileSystems()
-    {
-        IO.close(metaInfVersionTestFileSystem);
-    }
 
     private void createExampleJar(Path outputJar) throws IOException
     {
@@ -204,155 +189,5 @@ public class MultiReleaseJarFileTest
         };
 
         assertThat(entries, Matchers.containsInAnyOrder(expected));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "foo/Bar.class",
-        "Zed.class",
-        "META-INF/versions/9/foo/Bar.class",
-        "META-INF/versions/9/foo/module-info.class/Zed.class", // as path segment
-        "", // no segment
-    })
-    public void testSkipModuleInfoClassTrue(String input)
-    {
-        Path path = workDir.getPath().resolve(input);
-        assertTrue(MultiReleaseJarFile.skipModuleInfoClass(path), "skipModuleInfoClass(" + path + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "foo/module-info.class",
-        "module-info.class",
-        "Module-Info.Class", // case differences
-        "META-INF/versions/17/module-info.class"
-    })
-    public void testSkipModuleInfoClassFalse(String input)
-    {
-        Path path = workDir.getPath().resolve(input);
-        assertFalse(MultiReleaseJarFile.skipModuleInfoClass(path), "skipModuleInfoClass(" + path + ")");
-    }
-
-    /**
-     * Create an empty ZipFs FileSystem useful for testing skipMetaInfVersions and isMetaInfVersions rules
-     */
-    private static FileSystem getMetaInfVersionTestJar() throws IOException
-    {
-        if (metaInfVersionTestFileSystem != null)
-            return metaInfVersionTestFileSystem;
-
-        Path outputJar = MavenTestingUtils.getTargetTestingPath("getMetaInfVersionTestJar").resolve("metainf-versions.jar");
-        FS.ensureEmpty(outputJar.getParent());
-
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
-        metaInfVersionTestFileSystem = FileSystems.newFileSystem(uri, env);
-
-        // this is an empty FileSystem, I don't need to create the files for the skipMetaInfVersions() tests
-
-        return metaInfVersionTestFileSystem;
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "/root.txt",
-        "/META-INF/MANIFEST.MF",
-        "/META-INF/services/versions/foo.txt",
-        "/META-INF/versions/", // root, no version
-        "/META-INF/versions/Zed.class", // root, no version
-        "/meta-inf/versions/10/Foo.class", // not following case sensitivity rules in Java spec
-        "/meta-inf/VERSIONS/10/Zed.class", // not following case sensitivity rules in Java spec
-    })
-    public void testNotMetaInfVersions(String input) throws IOException
-    {
-        FileSystem zipfs = getMetaInfVersionTestJar();
-        Path testPath = zipfs.getPath(input);
-        assertTrue(MultiReleaseJarFile.skipMetaInfVersions(testPath), "skipMetaInfVersions(" + testPath + ")");
-        assertFalse(MultiReleaseJarFile.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "/META-INF/versions/9/foo.txt",
-        "/META-INF/versions/17/org/eclipse/demo/Util.class",
-        "/META-INF/versions/17/WEB-INF/web.xml",
-        "/META-INF/versions/10/module-info.class"
-    })
-    public void testIsMetaInfVersions(String input) throws IOException
-    {
-        FileSystem zipfs = getMetaInfVersionTestJar();
-        Path testPath = zipfs.getPath(input);
-        assertTrue(MultiReleaseJarFile.isMetaInfVersions(testPath), "isMetaInfVersions(" + testPath + ")");
-        assertFalse(MultiReleaseJarFile.skipMetaInfVersions(testPath), "skipMetaInfVersions(" + testPath + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "Foo.class",
-        "org/eclipse/jetty/demo/Zed.class",
-        "org/eclipse/jetty/demo/Zed$Inner.class"
-    })
-    public void testIsClassFileTrue(String input)
-    {
-        Path base = MavenTestingUtils.getTargetTestingPath();
-        Path testPath = base.resolve(input);
-        assertTrue(MultiReleaseJarFile.isClassFile(testPath), "isClassFile(" + testPath + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        // Doesn't end in class
-        "Foo.txt",
-        // No name
-        ".class",
-        // Illegal characters
-        "tab\tcharacter.class",
-        // Doesn't start with identifier
-        "42.class",
-        "org/eclipse/jetty/demo/123Foo.class",
-        // Has spaces
-        "org/eclipse/jetty/demo/A $ Inner.class"
-    })
-    public void testIsClassFileFalse(String input)
-    {
-        Path base = MavenTestingUtils.getTargetTestingPath();
-        Path testPath = base.resolve(input);
-        assertFalse(MultiReleaseJarFile.isClassFile(testPath), "isClassFile(" + testPath + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        ".dir/foo.txt",
-        ".bar",
-        "a/b/c/.d/e/f/g.jpeg"
-    })
-    @EnabledOnOs({OS.LINUX, OS.MAC})
-    public void testIsHiddenTrue(String input) throws IOException
-    {
-        Path base = MavenTestingUtils.getTargetTestingPath("testIsHiddenTrue");
-        Path path = base.resolve(input);
-        FS.ensureDirExists(path.getParent());
-        FS.touch(path);
-
-        assertTrue(MultiReleaseJarFile.isHidden(base, path), "isHidden(" + input + ")");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "dir/foo.txt",
-        "bar",
-        "zed.png",
-        "a/b/c/d/e/f/g.jpeg"
-    })
-    public void testIsHiddenFalse(String input) throws IOException
-    {
-        Path base = MavenTestingUtils.getTargetTestingPath("testIsHiddenFalse");
-        Path path = base.resolve(input);
-        FS.ensureDirExists(path.getParent());
-        FS.touch(path);
-
-        assertFalse(MultiReleaseJarFile.isHidden(base, path), "isHidden(" + input + ")");
     }
 }

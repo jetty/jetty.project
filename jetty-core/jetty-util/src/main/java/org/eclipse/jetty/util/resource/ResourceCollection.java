@@ -140,12 +140,10 @@ public class ResourceCollection extends Resource
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource resolve(String subUriPath)
     {
-        if (subUriPath == null)
-        {
-            throw new MalformedURLException("null path");
-        }
+        if (URIUtil.normalizePath(subUriPath) == null)
+            throw new IllegalArgumentException(subUriPath);
 
         if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))
         {

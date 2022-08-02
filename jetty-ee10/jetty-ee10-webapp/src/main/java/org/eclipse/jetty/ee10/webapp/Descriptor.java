@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 public abstract class Descriptor
 {
@@ -52,7 +53,7 @@ public abstract class Descriptor
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
             }
-            catch (IOException e)
+            catch (SAXException | IOException e)
             {
                 LOG.warn("Unable to parse {}", _xml, e);
                 throw e;

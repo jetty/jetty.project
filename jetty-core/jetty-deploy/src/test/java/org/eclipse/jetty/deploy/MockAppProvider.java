@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.File;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
@@ -26,7 +25,7 @@ import org.eclipse.jetty.util.component.Environment;
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private DeploymentManager deployMan;
-    private File webappsDir;
+    private Path webappsDir;
 
     @Override
     public String getEnvironmentName()
@@ -43,7 +42,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     @Override
     public void doStart()
     {
-        this.webappsDir = MavenTestingUtils.getTestResourceDir("webapps");
+        this.webappsDir = MavenTestingUtils.getTestResourcePathDir("webapps");
     }
 
     public App createWebapp(String name)
@@ -54,15 +53,15 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     }
 
     @Override
-    public ContextHandler createContextHandler(App app) throws Exception
+    public ContextHandler createContextHandler(App app)
     {
         ContextHandler contextHandler = new ContextHandler();
 
         String name = app.getPath().toString();
         name = name.substring(name.lastIndexOf("-")  + 1);
-        File war = new File(webappsDir, name);
+        Path war = webappsDir.resolve(name);
 
-        String path = war.getName();
+        String path = war.toString();
 
         if (FileID.isWebArchive(war))
         {

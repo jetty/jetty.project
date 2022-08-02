@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -127,16 +126,9 @@ public class ResourceAliasTest
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
 
-            try
-            {
-                resource = dir.resolve("test.txt\0");
-                assertTrue(resource.exists());
-                assertNotNull(resource.getAlias());
-            }
-            catch (MalformedURLException e)
-            {
-                assertTrue(true);
-            }
+            resource = dir.resolve("test.txt\0");
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
         }
         catch (InvalidPathException e)
         {
