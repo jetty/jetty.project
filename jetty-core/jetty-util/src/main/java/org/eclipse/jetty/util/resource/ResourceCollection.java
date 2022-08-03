@@ -81,10 +81,6 @@ public class ResourceCollection extends Resource
                     throw new IllegalArgumentException("Does not exist: " + r);
                 }
 
-                if (!r.isDirectory())
-                {
-                    throw new IllegalArgumentException("Not a directory: " + r);
-                }
                 unique.add(r);
             }
         }
@@ -130,6 +126,9 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
+            if (res.isDirectory())
+                continue; // skip can't do anything useful with this
+
             addedResource = res.resolve(subUriPath);
             if (!addedResource.exists())
                 continue;
