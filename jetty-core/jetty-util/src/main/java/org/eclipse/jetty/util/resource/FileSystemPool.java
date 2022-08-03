@@ -204,14 +204,16 @@ public class FileSystemPool implements Dumpable
         Bucket bucket = pool.get(fsUri);
         if (bucket == null)
         {
-            LOG.debug("Pooling new FS {}", fileSystem);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pooling new FS {}", fileSystem);
             bucket = new Bucket(fsUri, fileSystem, mount);
             pool.put(fsUri, bucket);
         }
         else
         {
             int count = bucket.counter.incrementAndGet();
-            LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
         }
     }
 
