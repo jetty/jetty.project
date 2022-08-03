@@ -381,13 +381,4 @@ public class ResourceTest
         assertNotNull(same);
         assertTrue(same.isAlias());
     }
-
-    @Test
-    public void testJarReferenceAsURINotYetMounted()
-    {
-        Path jar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        URI jarFileUri = URIUtil.toJarFileUri(jar.toUri());
-        assertNotNull(jarFileUri);
-        assertThrows(IllegalStateException.class, () -> resourceFactory.newResource(jarFileUri));
-    }
 }
