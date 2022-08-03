@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -152,17 +153,26 @@ public class MetaInfConfigurationTest
     {
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*servlet-api-[^/]*\\.jar$|.*/foo-bar-janb.jar");
-        WebAppClassLoader loader = new WebAppClassLoader(context);
-        context.setClassLoader(loader);
-        config.findAndFilterContainerPaths(context);
-        List<Resource> containerResources = context.getMetaData().getContainerResources();
-
-        assertEquals(2, containerResources.size());
-        for (Resource r : containerResources)
+        context.setServer(new Server());
+        config.preConfigure(context);
+        try
         {
-            String s = r.toString();
-            assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("servlet-api"));
+            context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*servlet-api-[^/]*\\.jar$|.*/foo-bar-janb.jar");
+            WebAppClassLoader loader = new WebAppClassLoader(context);
+            context.setClassLoader(loader);
+            config.findAndFilterContainerPaths(context);
+            List<Resource> containerResources = context.getMetaData().getContainerResources();
+
+            assertEquals(2, containerResources.size());
+            for (Resource r : containerResources)
+            {
+                String s = r.toString();
+                assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("servlet-api"));
+            }
+        }
+        finally
+        {
+            config.postConfigure(context);
         }
     }
 }
