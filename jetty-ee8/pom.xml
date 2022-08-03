@@ -83,6 +83,9 @@
             <nonFilteredFileExtension>br</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
             <nonFilteredFileExtension>jsp</nonFilteredFileExtension>
+            <nonFilteredFileExtension>icon</nonFilteredFileExtension>
+            <nonFilteredFileExtension>png</nonFilteredFileExtension>
+            <nonFilteredFileExtension>webp</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>

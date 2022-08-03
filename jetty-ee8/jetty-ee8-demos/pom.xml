@@ -14,19 +14,30 @@
 
   <properties>
     <sonar.skip>true</sonar.skip>
+    <warSourceDirectory>${project.build.directory}/webapp</warSourceDirectory>
   </properties>
 
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
-          <excludePackageNames>bogus.*</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
+            <excludePackageNames>bogus.*</excludePackageNames>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <warSourceDirectory>${warSourceDirectory}</warSourceDirectory>
+            <failOnMissingWebXml>true</failOnMissingWebXml>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <modules>
@@ -45,4 +56,45 @@
 <!--    <module>jetty-ee9-demo-spec</module>-->
 <!--    <module>jetty-ee9-demo-template</module>-->
   </modules>
+
+  <profiles>
+    <profile>
+      <id>demo-webapp-module</id>
+      <activation>
+        <file>
+          <exists>src/main/config/modules/demo.d</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-ee8-webapp-resources</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <mavenFilteringHints>
+                    <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
+                  </mavenFilteringHints>
+                  <outputDirectory>${project.build.directory}/webapp</outputDirectory>
+                  <resources>
+                    <resource>
+                      <filtering>true</filtering>
+                      <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/webapp</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

@@ -16,7 +16,7 @@
     <bundle-symbolic-name>${project.groupId}.simple</bundle-symbolic-name>
   </properties>
 
-  <!-- FIXME we should be able to reuse some files from the original ee9 src/main/webapp path -->
+
 
   <dependencies>
     <dependency>
