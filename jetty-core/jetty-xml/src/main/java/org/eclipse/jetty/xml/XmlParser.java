@@ -70,45 +70,13 @@ public class XmlParser
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
-
-        initDefaultEntities();
+        XmlEntities.registerXmlDefaults(this);
     }
 
     public XmlParser(boolean validating)
     {
         setValidating(validating);
-        initDefaultEntities();
-    }
-
-    /**
-     * Initialize common XML Entities needed for generic XML parsing needs.
-     */
-    private void initDefaultEntities()
-    {
-        final URL schemadtd = getRequiredResource("XMLSchema.dtd");
-        redirectEntity("XMLSchema.dtd", schemadtd);
-        redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN", schemadtd);
-        redirectEntity("http://www.w3.org/2001/XMLSchema.dtd", schemadtd);
-        redirectEntity("https://www.w3.org/2001/XMLSchema.dtd", schemadtd);
-
-        final URL xmlxsd = getRequiredResource("xml.xsd");
-        redirectEntity("xml.xsd", xmlxsd);
-        redirectEntity("http://www.w3.org/2001/xml.xsd", xmlxsd);
-        redirectEntity("https://www.w3.org/2001/xml.xsd", xmlxsd);
-
-        final URL datatypesdtd = getRequiredResource("datatypes.dtd");
-        redirectEntity("datatypes.dtd", datatypesdtd);
-        redirectEntity("http://www.w3.org/2001/datatypes.dtd", datatypesdtd);
-        redirectEntity("https://www.w3.org/2001/datatypes.dtd", datatypesdtd);
-    }
-
-    private URL getRequiredResource(String name)
-    {
-        // using Class.getResource(String) here to satisfy JPMS rules
-        URL url = XmlParser.class.getResource(name);
-        if (url == null)
-            throw new IllegalStateException("Missing required resource: " + name);
-        return url;
+        XmlEntities.registerXmlDefaults(this);
     }
 
     AutoLock lock()
