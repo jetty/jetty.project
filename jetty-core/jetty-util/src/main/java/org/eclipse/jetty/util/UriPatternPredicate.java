@@ -57,7 +57,7 @@ public class UriPatternPredicate implements Predicate<URI>
 
     public UriPatternPredicate(String regex, boolean isNullInclusive)
     {
-        this(Pattern.compile(regex), isNullInclusive);
+        this(regex == null ? null : Pattern.compile(regex), isNullInclusive);
     }
 
     public UriPatternPredicate(Pattern pattern, boolean isNullInclusive)
