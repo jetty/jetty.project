@@ -425,7 +425,7 @@ public class DelayedHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
-            assertThat(content, containsString("null"));
+            assertThat(content, containsString("[]"));
 
             output.write("""
                 POST / HTTP/1.1
