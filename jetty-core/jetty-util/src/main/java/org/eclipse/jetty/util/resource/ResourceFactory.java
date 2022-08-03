@@ -18,7 +18,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface ResourceFactory
 {
-    Logger LOG = LoggerFactory.getLogger(Resource.class);
+    Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
 
     Resource newResource(URI uri);
 
@@ -75,7 +74,7 @@ public interface ResourceFactory
 
         if (url == null)
         {
-            loader = Resource.class.getClassLoader();
+            loader = ResourceFactory.class.getClassLoader();
             if (loader != null)
             {
                 url = loader.getResource(resource);
@@ -117,7 +116,7 @@ public interface ResourceFactory
      */
     default Resource newClassPathResource(String resource)
     {
-        URL url = Resource.class.getResource(resource);
+        URL url = ResourceFactory.class.getResource(resource);
 
         if (url == null)
             url = Loader.getResource(resource);
@@ -144,7 +143,7 @@ public interface ResourceFactory
         return newResource(path.toUri());
     }
 
-    default ResourceCollection newResource(Collection<URI> uris)
+    default ResourceCollection newResource(List<URI> uris)
     {
         return Resource.combine(uris.stream().map(this::newResource).toList());
     }
@@ -215,6 +214,7 @@ public interface ResourceFactory
     {
         Objects.requireNonNull(container);
 
+        // TODO this needs to be made thread-safe; the getBean/addBean pair must be atomic
         LifeCycle factory = container.getBean(LifeCycle.class);
         if (factory == null)
         {
@@ -226,6 +226,7 @@ public interface ResourceFactory
                 @Override
                 public void lifeCycleStopped(org.eclipse.jetty.util.component.LifeCycle event)
                 {
+                    container.removeBean(this);
                     container.removeBean(finalFactory);
                 }
             });

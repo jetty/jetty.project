@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
@@ -98,7 +97,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection combine(Collection<Resource> resources)
+    public static ResourceCollection combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
             throw new IllegalArgumentException("No resources");

@@ -66,7 +66,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      * Constructor.
      *
      * @param parent the parent resource cache
-     * @param factory the resource
+     * @param factory the resource factory
      * @param mimeTypes Mimetype to use for meta data
      * @param useFileMappedBuffer true to file memory mapped buffers
      * @param etags true to support etags
