@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -697,35 +696,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
             return null;
 
-        List<Resource> jarResources = new ArrayList<Resource>();
-        Resource webInfLib = webInf.resolve("/lib");
-        if (webInfLib.exists() && webInfLib.isDirectory())
+        Path libDir = webInf.getPath().resolve("lib");
+        if (!Files.exists(libDir) || !Files.isDirectory(libDir))
+            return null;
+
+        try (Stream<Path> libStream = Files.list(libDir))
         {
-            List<String> files = webInfLib.list();
-            if (files != null)
-            {
-                files.sort(Comparator.naturalOrder());
-            }
-            for (int f = 0; files != null && f < files.size(); f++)
-            {
-                try
-                {
-                    Resource file = webInfLib.resolve(files.get(f));
-                    String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
-                    int dot = fnlc.lastIndexOf('.');
-                    String extension = (dot < 0 ? null : fnlc.substring(dot));
-                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-                    {
-                        jarResources.add(file);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn("Unable to load WEB-INF file {}", files.get(f), ex);
-                }
-            }
+            return libStream
+                .filter(Files::isRegularFile)
+                .filter(FileID::isArchive)
+                .map(Path::toUri)
+                .sorted(Comparator.naturalOrder())
+                .map(URIUtil::wrapArchiveToJarFileUri)
+                .map(uri -> _resourceFactory.newResource(uri))
+                .toList();
         }
-        return jarResources;
     }
 
     /**

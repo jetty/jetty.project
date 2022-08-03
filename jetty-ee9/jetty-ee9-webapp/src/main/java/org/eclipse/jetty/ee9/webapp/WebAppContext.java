@@ -1242,12 +1242,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        List<URI> uris = URIUtil.split(extraClasspath);
+        // Split, but only take the containers, as deep `jar:file:` references are not used in URLClassLoader.
+        List<URI> uris = URIUtil.split(extraClasspath).stream().map(URIUtil::unwrapContainer).toList();
         setExtraClasspath(ResourceFactory.of(this).newResource(uris));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)
     {
+        if (extraClasspath != null)
+        {
+            // ensure given Resources are supported by URLClassLoader.
+            // So only support "file:" and not a "jar:file:" base resource
+            for (Resource resource: extraClasspath.getResources())
+            {
+                URI uri = resource.getURI();
+                if (!"file".equals(uri.getScheme()))
+                    throw new IllegalArgumentException("Unsupported ExtraClasspath Resource Type: " + uri);
+            }
+        }
         _extraClasspath = extraClasspath;
     }
 

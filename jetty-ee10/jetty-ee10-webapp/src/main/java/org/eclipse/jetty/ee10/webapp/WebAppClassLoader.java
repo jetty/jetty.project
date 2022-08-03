@@ -38,6 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -244,12 +245,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             Path path = resource.getPath();
             if (path != null)
             {
-                URL url = resource.getURI().toURL();
+                URL url = path.toUri().toURL();
                 addURL(url);
-            }
-            else if (resource.isDirectory())
-            {
-                addURL(resource.getURI().toURL());
             }
             else
             {
@@ -305,37 +302,38 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addJars(Resource lib)
     {
-        if (lib.exists() && lib.isDirectory())
+        Path libDir = lib.getPath();
+        if (!Files.exists(libDir) || !Files.isDirectory(libDir))
+            return;
+
+        Path dir = lib.getPath();
+
+        try (Stream<Path> streamEntries = Files.list(dir))
         {
-            Path dir = lib.getPath();
+            List<Path> jars = streamEntries
+                .filter(Files::isRegularFile)
+                .filter(FileID::isJavaArchive)
+                .sorted(Comparator.naturalOrder())
+                .toList();
 
-            try (Stream<Path> streamEntries = Files.list(dir))
+            for (Path jar: jars)
             {
-                List<Path> jars = streamEntries
-                    .filter(Files::isRegularFile)
-                    .filter(this::isFileSupported)
-                    .sorted(Comparator.naturalOrder())
-                    .toList();
-
-                for (Path jar: jars)
+                try
                 {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("addJar - {}", jar);
-                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
-                        addClassPath(jarUri.toASCIIString());
-                    }
-                    catch (Exception ex)
-                    {
-                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("addJar - {}", jar);
+                    URI jarUri = URIUtil.toJarFileUri(jar.toUri());
+                    addClassPath(jarUri.toASCIIString());
+                }
+                catch (Exception ex)
+                {
+                    LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
                 }
             }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
-            }
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
         }
     }
 
