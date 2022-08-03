@@ -43,7 +43,7 @@
   <modules>
     <module>jetty-ee8-demo-simple-webapp</module>
     <module>jetty-ee8-demo-async-rest</module>
-<!--    <module>jetty-ee9-demo-jaas-webapp</module>-->
+    <module>jetty-ee8-demo-jaas-webapp</module>
 <!--    <module>jetty-ee9-demo-jndi-webapp</module>-->
 <!--    <module>jetty-ee9-demo-jetty-webapp</module>-->
 
