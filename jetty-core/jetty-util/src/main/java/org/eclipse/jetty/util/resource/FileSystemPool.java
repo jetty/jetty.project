@@ -51,6 +51,17 @@ public class FileSystemPool implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
+    interface Listener
+    {
+        void retain(URI uri);
+
+        void increment(URI uri);
+
+        void decrement(URI uri);
+
+        void close(URI uri);
+    }
+
     private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
 
     static
@@ -63,6 +74,8 @@ public class FileSystemPool implements Dumpable
 
     private final Map<URI, Bucket> pool = new HashMap<>();
     private final AutoLock poolLock = new AutoLock();
+
+    private Listener listener;
 
     private FileSystemPool()
     {
@@ -126,11 +139,15 @@ public class FileSystemPool implements Dumpable
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
                 IO.close(bucket.fileSystem);
                 pool.remove(fsUri);
+                if (listener != null)
+                    listener.close(fsUri);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decremented ref counter to {} for FS {}", count, bucket);
+                if (listener != null)
+                    listener.decrement(fsUri);
             }
         }
         catch (FileSystemNotFoundException fsnfe)
@@ -208,12 +225,54 @@ public class FileSystemPool implements Dumpable
                 LOG.debug("Pooling new FS {}", fileSystem);
             bucket = new Bucket(fsUri, fileSystem, mount);
             pool.put(fsUri, bucket);
+            if (listener != null)
+                listener.retain(fsUri);
         }
         else
         {
             int count = bucket.counter.incrementAndGet();
             if (LOG.isDebugEnabled())
                 LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
+            if (listener != null)
+                listener.increment(fsUri);
+        }
+    }
+
+    public void setListener(Listener listener)
+    {
+        this.listener = listener;
+    }
+
+    public static class StackLoggingListener implements Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(StackLoggingListener.class);
+
+        @Override
+        public void retain(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Retain {}", uri, new Throwable("Retain"));
+        }
+
+        @Override
+        public void increment(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Increment {}", uri, new Throwable("Increment"));
+        }
+
+        @Override
+        public void decrement(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decrement {}", uri, new Throwable("Decrement"));
+        }
+
+        @Override
+        public void close(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Close {}", uri, new Throwable("Close"));
         }
     }
 
