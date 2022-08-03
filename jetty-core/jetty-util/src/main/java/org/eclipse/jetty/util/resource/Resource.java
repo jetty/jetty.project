@@ -42,7 +42,6 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -276,35 +275,6 @@ public abstract class Resource
         catch (URISyntaxException e)
         {
             throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
-    }
-
-    /**
-     * Find a classpath resource.
-     * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
-     * found, then the {@link Loader#getResource(String)} method is used.
-     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
-     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
-     *
-     * @param resource the relative name of the resource
-     * @return Resource or null
-     * TODO move to ResourceFactory
-     */
-    public static Resource newClassPathResource(String resource)
-    {
-        URL url = Resource.class.getResource(resource);
-
-        if (url == null)
-            url = Loader.getResource(resource);
-        if (url == null)
-            return null;
-        try
-        {
-            return createResource(url.toURI());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException(e);
         }
     }
 

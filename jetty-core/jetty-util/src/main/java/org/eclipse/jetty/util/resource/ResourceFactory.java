@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
@@ -39,6 +40,34 @@ import org.slf4j.LoggerFactory;
 public interface ResourceFactory
 {
     Logger LOG = LoggerFactory.getLogger(Resource.class);
+
+    /**
+     * Find a classpath resource.
+     * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
+     * found, then the {@link Loader#getResource(String)} method is used.
+     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
+     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
+     *
+     * @param resource the relative name of the resource
+     * @return Resource or null
+     */
+    default Resource newClassPathResource(String resource)
+    {
+        URL url = Resource.class.getResource(resource);
+
+        if (url == null)
+            url = Loader.getResource(resource);
+        if (url == null)
+            return null;
+        try
+        {
+            return Resource.createResource(url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
     Resource newResource(URI uri);
 
