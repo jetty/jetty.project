@@ -609,7 +609,7 @@ public class AnnotationParser
                 {
                     try
                     {
-                        parseClassFile(handlers, baseResource, dir, classFile);
+                        parseClass(handlers, baseResource, classFile);
                     }
                     catch (Exception ex)
                     {
@@ -647,15 +647,6 @@ public class AnnotationParser
         }
     }
 
-    private void parseClassFile(Set<? extends Handler> handlers, Resource jar, Path root, Path entry) throws IOException
-    {
-        String relativeName = root.relativize(entry).toString();
-        String shortName = StringUtil.replace(relativeName, '/', '.').substring(0, relativeName.length() - 6);
-        URI location = entry.toUri();
-        addParsedClass(shortName, location);
-        parseClass(handlers, jar, entry);
-    }
-
     /**
      * Use ASM on a class
      *
@@ -669,10 +660,17 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Parse class from {}", classFile.toUri());
 
+        URI location = classFile.toUri();
+
         try (InputStream in = Files.newInputStream(classFile))
         {
             ClassReader reader = new ClassReader(in);
             reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+            String classname = reader.getClassName();
+            URI existing = _parsedClassNames.putIfAbsent(classname, location);
+            if (existing != null)
+                LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
         }
         catch (IllegalArgumentException | IOException e)
         {
