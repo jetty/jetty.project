@@ -419,19 +419,6 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Return true if the Resource r is contained in the Resource containingResource, either because
-     * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
-     *
-     * @param r the contained resource
-     * @param containingResource the containing resource
-     * @return true if the Resource is contained, false otherwise
-     */
-    public static boolean isContainedIn(Resource r, Resource containingResource)
-    {
-        return r.isContainedIn(containingResource);
-    }
-
-    /**
      * Return the Path corresponding to this resource.
      *
      * @return the path.
