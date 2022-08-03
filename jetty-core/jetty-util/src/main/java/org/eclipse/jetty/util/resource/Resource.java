@@ -363,7 +363,10 @@ public abstract class Resource
     /**
      * @return The canonical Alias of this resource or null if none.
      */
-    public abstract URI getAlias();
+    public URI getAlias()
+    {
+        return null;
+    }
 
     /**
      * Copy the Resource to the new destination file.
