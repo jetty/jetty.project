@@ -107,7 +107,7 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void release(URI fsUri)
+    private void unmount(URI fsUri)
     {
         try (AutoLock ignore = poolLock.lock())
         {
@@ -151,8 +151,13 @@ public class FileSystemPool implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        Collection<Bucket> values;
+        try (AutoLock ignore = poolLock.lock())
+        {
+            values = pool.values();
+        }
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("mounts", mounts()));
+            new DumpableCollection("buckets", values));
     }
 
     @ManagedOperation(value = "Sweep the pool for deleted mount points", impact = "ACTION")
@@ -248,7 +253,7 @@ public class FileSystemPool implements Dumpable
         @Override
         public String toString()
         {
-            return fileSystem.toString();
+            return fileSystem.toString() + "#" + counter;
         }
     }
 
@@ -271,7 +276,7 @@ public class FileSystemPool implements Dumpable
         @Override
         public void close()
         {
-            FileSystemPool.INSTANCE.release(fsUri);
+            FileSystemPool.INSTANCE.unmount(fsUri);
         }
 
         @Override

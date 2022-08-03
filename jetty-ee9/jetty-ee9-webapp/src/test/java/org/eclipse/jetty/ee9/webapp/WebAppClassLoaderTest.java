@@ -27,6 +27,7 @@ import java.util.List;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -58,9 +59,8 @@ public class WebAppClassLoaderTest
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        Resource webapp = ResourceFactory.root().newResource(testWebappDir);
-
         _context = new WebAppContext();
+        Resource webapp = ResourceFactory.of(_context).newResource(testWebappDir);
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
         _context.setExtraClasspath("target/test-classes/ext/*");
@@ -71,11 +71,15 @@ public class WebAppClassLoaderTest
         _loader.setName("test");
 
         _context.setServer(new Server());
+        LifeCycle.start(_context);
     }
 
     @AfterEach
-    public void afterEach()
+    public void afterEach() throws Exception
     {
+        IO.close(_loader);
+        LifeCycle.stop(_context);
+        FileSystemPool.INSTANCE.dump(System.err, "* ");
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
