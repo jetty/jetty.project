@@ -399,7 +399,7 @@ public class BufferUtilTest
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource jarResource = resourceFactory.newResource(testZip);
+            Resource jarResource = resourceFactory.newJarFileResource(testZip.toUri());
             assertThat(BufferUtil.toMappedBuffer(jarResource), nullValue());
         }
     }
