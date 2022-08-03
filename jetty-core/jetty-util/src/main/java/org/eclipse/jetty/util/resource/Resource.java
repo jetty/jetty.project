@@ -40,10 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract resource class.
  * <p>
- * This class provides a resource abstraction, where a resource may be
- * a file, a URL or an entry in a jar file.
+ * A Resource is a wrapper over a {@link Path} object pointing to a file or directory that can be represented by a{@link java.nio.file.FileSystem}.
+ * </p>
+ * <p>
+ * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
 public abstract class Resource
@@ -362,10 +363,7 @@ public abstract class Resource
     /**
      * @return The canonical Alias of this resource or null if none.
      */
-    public URI getAlias()
-    {
-        return null;
-    }
+    public abstract URI getAlias();
 
     /**
      * Copy the Resource to the new destination file.
