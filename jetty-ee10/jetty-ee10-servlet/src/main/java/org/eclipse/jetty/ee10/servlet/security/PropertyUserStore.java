@@ -94,7 +94,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         {
             if (!FileID.isArchive(uri))
             {
-                _configPath = Path.of(uri);
+                _configPath = Path.of(config);
             }
             else
             {
