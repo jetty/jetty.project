@@ -42,6 +42,68 @@ public interface ResourceFactory
     Logger LOG = LoggerFactory.getLogger(Resource.class);
 
     /**
+     * Construct a system resource from a string.
+     * The resource is tried as classloader resource before being
+     * treated as a normal resource.
+     *
+     * @param resource Resource as string representation
+     * @return The new Resource
+     */
+    default Resource newSystemResource(String resource)
+    {
+        URL url = null;
+        // Try to format as a URL?
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        if (loader != null)
+        {
+            try
+            {
+                url = loader.getResource(resource);
+                if (url == null && resource.startsWith("/"))
+                    url = loader.getResource(resource.substring(1));
+            }
+            catch (IllegalArgumentException e)
+            {
+                LOG.trace("IGNORED", e);
+                // Catches scenario where a bad Windows path like "C:\dev" is
+                // improperly escaped, which various downstream classloaders
+                // tend to have a problem with
+                url = null;
+            }
+        }
+        if (url == null)
+        {
+            loader = Resource.class.getClassLoader();
+            if (loader != null)
+            {
+                url = loader.getResource(resource);
+                if (url == null && resource.startsWith("/"))
+                    url = loader.getResource(resource.substring(1));
+            }
+        }
+
+        if (url == null)
+        {
+            url = ClassLoader.getSystemResource(resource);
+            if (url == null && resource.startsWith("/"))
+                url = ClassLoader.getSystemResource(resource.substring(1));
+        }
+
+        if (url == null)
+            return null;
+
+        try
+        {
+            URI uri = url.toURI();
+            return newResource(uri);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
+    }
+
+    /**
      * Find a classpath resource.
      * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
      * found, then the {@link Loader#getResource(String)} method is used.
@@ -61,7 +123,8 @@ public interface ResourceFactory
             return null;
         try
         {
-            return Resource.createResource(url.toURI());
+            URI uri = url.toURI();
+            return Resource.createResource(uri);
         }
         catch (URISyntaxException e)
         {
@@ -136,6 +199,13 @@ public interface ResourceFactory
         return new Closeable();
     }
 
+    static ResourceFactory.ContainerResourceFactory container()
+    {
+        ContainerResourceFactory factory = new ContainerResourceFactory();
+        LifeCycle.start(factory);
+        return factory;
+    }
+
     static ResourceFactory of(Container container)
     {
         Objects.requireNonNull(container);
@@ -143,8 +213,7 @@ public interface ResourceFactory
         ContainerResourceFactory factory = container.getBean(ContainerResourceFactory.class);
         if (factory == null)
         {
-            factory = new ContainerResourceFactory();
-            LifeCycle.start(factory);
+            factory = container();
             container.addBean(factory, true);
         }
         return factory;
@@ -174,6 +243,7 @@ public interface ResourceFactory
         }
     };
 
+    // TODO make this an interface and move impl somewhere private
     class Closeable implements ResourceFactory, java.io.Closeable
     {
         private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
@@ -196,6 +266,7 @@ public interface ResourceFactory
         }
     }
 
+    // TODO make this an interface and move impl somewhere private
     class ContainerResourceFactory extends AbstractLifeCycle implements ResourceFactory, Dumpable
     {
         private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();

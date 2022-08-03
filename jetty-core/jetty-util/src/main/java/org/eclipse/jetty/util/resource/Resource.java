@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
@@ -37,7 +36,6 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
@@ -188,93 +186,6 @@ public abstract class Resource
         catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {
             throw new IllegalArgumentException(ex);
-        }
-    }
-
-    /**
-     * Construct a system resource from a string.
-     * The resource is tried as classloader resource before being
-     * treated as a normal resource.
-     *
-     * @param resource Resource as string representation
-     * @return The new Resource
-     * TODO move to ResourceFactory
-     */
-    public static Resource newSystemResource(String resource)
-    {
-        return newSystemResource(resource, null);
-    }
-
-    /**
-     * Construct a system resource from a string.
-     * The resource is tried as classloader resource before being
-     * treated as a normal resource.
-     *
-     * @param resource Resource as string representation
-     * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
-     * @return The new Resource
-     * TODO move to ResourceFactory
-     */
-    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer)
-    {
-        URL url = null;
-        // Try to format as a URL?
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader != null)
-        {
-            try
-            {
-                url = loader.getResource(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
-            }
-            catch (IllegalArgumentException e)
-            {
-                LOG.trace("IGNORED", e);
-                // Catches scenario where a bad Windows path like "C:\dev" is
-                // improperly escaped, which various downstream classloaders
-                // tend to have a problem with
-                url = null;
-            }
-        }
-        if (url == null)
-        {
-            loader = Resource.class.getClassLoader();
-            if (loader != null)
-            {
-                url = loader.getResource(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
-            }
-        }
-
-        if (url == null)
-        {
-            url = ClassLoader.getSystemResource(resource);
-            if (url == null && resource.startsWith("/"))
-                url = ClassLoader.getSystemResource(resource.substring(1));
-        }
-
-        if (url == null)
-            return null;
-
-        try
-        {
-            URI uri = url.toURI();
-            if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
-            {
-                Mount mount = mountIfNeeded(uri);
-                if (mount != null)
-                {
-                    mountConsumer.accept(mount);
-                    return mount.root();
-                }
-            }
-            return createResource(uri);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
     }
 
@@ -739,6 +650,7 @@ public abstract class Resource
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
+     * TODO this is now an implementation detail hidden by ResourceFactory. Move it somewhere private.
      */
     public interface Mount extends Closeable
     {

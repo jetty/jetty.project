@@ -163,7 +163,7 @@ public class X509Test
     public void testServerClassWithoutSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.ROOT.newSystemResource("keystore.p12");
         serverSsl.setKeyStoreResource(keystoreResource);
         serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
@@ -173,7 +173,7 @@ public class X509Test
     public void testClientClassWithoutSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.ROOT.newSystemResource("keystore.p12");
         clientSsl.setKeyStoreResource(keystoreResource);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();
