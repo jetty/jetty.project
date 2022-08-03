@@ -117,7 +117,7 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
