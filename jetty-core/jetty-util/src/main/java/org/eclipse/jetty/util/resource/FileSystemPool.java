@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -67,7 +68,7 @@ public class FileSystemPool implements Dumpable
     {
     }
 
-    public Resource.Mount mount(URI uri) throws IOException
+    Mount mount(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
@@ -139,7 +140,7 @@ public class FileSystemPool implements Dumpable
     }
 
     @ManagedAttribute("The mounted FileSystems")
-    public Collection<Resource.Mount> mounts()
+    public Collection<Mount> mounts()
     {
         try (AutoLock ignore = poolLock.lock())
         {
@@ -169,13 +170,6 @@ public class FileSystemPool implements Dumpable
             Bucket bucket = entry.getValue();
             FileSystem fileSystem = bucket.fileSystem;
 
-            if (bucket.path == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Filesystem {} not backed by a file", bucket);
-                return;
-            }
-
             try (AutoLock ignore = poolLock.lock())
             {
                 // We must check if the FS is still open under the lock as a concurrent thread may have closed it.
@@ -198,7 +192,7 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void retain(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
+    private void retain(URI fsUri, FileSystem fileSystem, Mount mount)
     {
         assert poolLock.isHeldByCurrentThread();
 
@@ -223,9 +217,9 @@ public class FileSystemPool implements Dumpable
         private final FileTime lastModifiedTime;
         private final long size;
         private final Path path;
-        private final Resource.Mount mount;
+        private final Mount mount;
 
-        private Bucket(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
+        private Bucket(URI fsUri, FileSystem fileSystem, Mount mount)
         {
             URI containerUri = URIUtil.unwrapContainer(fsUri);
             Path path = Paths.get(containerUri);
@@ -258,7 +252,7 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private static class Mount implements Resource.Mount
+    public static class Mount implements Closeable
     {
         private final URI fsUri;
         private final Resource root;
@@ -275,7 +269,7 @@ public class FileSystemPool implements Dumpable
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             FileSystemPool.INSTANCE.release(fsUri);
         }

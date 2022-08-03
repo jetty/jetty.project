@@ -13,33 +13,30 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ResourceFactory.
  */
 public interface ResourceFactory
 {
-    Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
-
+    /**
+     * Construct a resource from a uri.
+     *
+     * @param uri A URI.
+     * @return A Resource object.
+     */
     Resource newResource(URI uri);
 
     /**
@@ -65,7 +62,6 @@ public interface ResourceFactory
             }
             catch (IllegalArgumentException e)
             {
-                LOG.trace("IGNORED", e);
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
@@ -133,16 +129,34 @@ public interface ResourceFactory
         }
     }
 
+    /**
+     * Construct a resource from a string.
+     *
+     * @param resource A URL or filename.
+     * @return A Resource object.
+     */
     default Resource newResource(String resource)
     {
         return newResource(Resource.toURI(resource));
     }
 
+    /**
+     * Construct a Resource from provided path
+     *
+     * @param path the path
+     * @return the Resource for the provided path
+     */
     default Resource newResource(Path path)
     {
         return newResource(path.toUri());
     }
 
+    /**
+     * Construct a ResourceCollection from a list of URIs
+     *
+     * @param uris the URIs
+     * @return the Resource for the provided path
+     */
     default ResourceCollection newResource(List<URI> uris)
     {
         return Resource.combine(uris.stream().map(this::newResource).toList());
@@ -171,17 +185,17 @@ public interface ResourceFactory
 
     static ResourceFactory root()
     {
-        return __ROOT;
+        return ResourceFactoryInternals.ROOT;
     }
 
     static ResourceFactory.Closeable closeable()
     {
-        return new Closeable();
+        return new ResourceFactoryInternals.Closeable();
     }
 
     static ResourceFactory.LifeCycle lifecycle()
     {
-        LifeCycle factory = new LifeCycle();
+        LifeCycle factory = new ResourceFactoryInternals.LifeCycle();
         org.eclipse.jetty.util.component.LifeCycle.start(factory);
         return factory;
     }
@@ -234,80 +248,13 @@ public interface ResourceFactory
         return factory;
     }
 
-    // TODO move somewhere else as a private field
-    ResourceFactory __ROOT = new ResourceFactory()
+    interface Closeable extends ResourceFactory, java.io.Closeable
     {
         @Override
-        public Resource newResource(URI uri)
-        {
-            Resource.Mount mount = Resource.mountIfNeeded(uri);
-            if (mount != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Leaked {} for {}", mount, uri, new Throwable());
-                else
-                    LOG.warn("Leaked {} for {}", mount, uri);
-            }
-            return Resource.create(uri);
-        }
-
-        @Override
-        public Resource newResource(String resource)
-        {
-            return newResource(Resource.toURI(resource));
-        }
-    };
-
-    // TODO make this an interface and move impl somewhere private
-    class Closeable implements ResourceFactory, java.io.Closeable
-    {
-        private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
-
-        @Override
-        public Resource newResource(URI uri)
-        {
-            Resource.Mount mount = Resource.mountIfNeeded(uri);
-            if (mount != null)
-                _mounts.add(mount);
-            return Resource.create(uri);
-        }
-
-        @Override
-        public void close()
-        {
-            for (Resource.Mount mount : _mounts)
-                IO.close(mount);
-            _mounts.clear();
-        }
+        void close();
     }
 
-    // TODO make this an interface and move impl somewhere private
-    class LifeCycle extends AbstractLifeCycle implements ResourceFactory, Dumpable
+    interface LifeCycle extends org.eclipse.jetty.util.component.LifeCycle, ResourceFactory, Dumpable
     {
-        private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
-
-        @Override
-        public Resource newResource(URI uri)
-        {
-            Resource.Mount mount = Resource.mountIfNeeded(uri);
-            if (mount != null)
-                _mounts.add(mount);
-            return Resource.create(uri);
-        }
-
-        @Override
-        protected void doStop() throws Exception
-        {
-            for (Resource.Mount mount : _mounts)
-                IO.close(mount);
-            _mounts.clear();
-            super.doStop();
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
-        }
     }
 }

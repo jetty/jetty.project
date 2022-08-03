@@ -81,7 +81,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private final Set<String> _extensions = new HashSet<String>();
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
-    private final ResourceFactory.Closeable _resourceFactory = new ResourceFactory.Closeable();
+    private final ResourceFactory.Closeable _resourceFactory = ResourceFactory.closeable();
 
     /**
      * The Context in which the classloader operates.

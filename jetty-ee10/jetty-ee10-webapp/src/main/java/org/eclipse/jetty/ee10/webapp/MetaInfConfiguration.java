@@ -162,7 +162,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        _resourceFactory = new ResourceFactory.Closeable();
+        _resourceFactory = ResourceFactory.closeable();
 
         //find container jars/modules and select which ones to scan
         findAndFilterContainerPaths(context);

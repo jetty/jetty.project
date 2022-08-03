@@ -75,7 +75,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
@@ -817,15 +816,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             }
             _programmaticListeners.clear();
-
-            // cleanup any Mounts associated with the ContextHandler on stop.
-            // TODO: but what if the context is restarted? how do we remount? do we care?
-            java.util.Collection<Resource.Mount> mounts = getBeans(Resource.Mount.class);
-            mounts.forEach((mount) ->
-            {
-                IO.close(mount);
-                removeBean(mount);
-            });
         }
         finally
         {

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,31 +64,6 @@ public abstract class Resource
         .with("jrt:")
         .with("jar:")
         .build();
-
-    /**
-     * <p>Mount a URI if it is needed.</p>
-     *
-     * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from a mounted resource.
-     * @throws IllegalArgumentException If the uri could not be mounted.
-     */
-    static Resource.Mount mountIfNeeded(URI uri)
-    {
-        if (uri == null)
-            return null;
-        String scheme = uri.getScheme();
-        if (scheme == null || !scheme.equalsIgnoreCase("jar"))
-            return null;
-        try
-        {
-            return FileSystemPool.INSTANCE.mount(uri);
-        }
-        catch (IOException ioe)
-        {
-            throw new IllegalArgumentException(ioe);
-        }
-    }
 
     /**
      * <p>Make a Resource containing a collection of other resources</p>
@@ -633,22 +607,5 @@ public abstract class Resource
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Certain {@link Resource}s (e.g.: JAR files) require mounting before they can be used. This class is the representation
-     * of such mount allowing the use of more {@link Resource}s.
-     * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
-     * be released.
-     * TODO this is now an implementation detail hidden by ResourceFactory. Move it somewhere private.
-     */
-    public interface Mount extends Closeable
-    {
-        /**
-         * Return the root {@link Resource} made available by this mount.
-         *
-         * @return the resource.
-         */
-        Resource root();
     }
 }
