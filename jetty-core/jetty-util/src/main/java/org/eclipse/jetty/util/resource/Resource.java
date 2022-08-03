@@ -80,9 +80,7 @@ public abstract class Resource
         if (uri == null)
             return null;
         String scheme = uri.getScheme();
-        if (scheme == null)
-            return null;
-        if (!FileID.isArchive(uri))
+        if (scheme == null || !scheme.equalsIgnoreCase("jar"))
             return null;
         try
         {
