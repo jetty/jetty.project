@@ -44,7 +44,8 @@
     <module>jetty-ee8-demo-simple-webapp</module>
     <module>jetty-ee8-demo-async-rest</module>
     <module>jetty-ee8-demo-jaas-webapp</module>
-<!--    <module>jetty-ee9-demo-jndi-webapp</module>-->
+    <module>jetty-ee8-demo-mock-resources</module>
+    <module>jetty-ee8-demo-jndi-webapp</module>
 <!--    <module>jetty-ee9-demo-jetty-webapp</module>-->
 
     <!-- Needs jetty-ee9-proxy                      -->
@@ -52,7 +53,7 @@
     <!-- module>jetty-ee9-demo-embedded</module     -->
 
 <!--    <module>jetty-ee9-demo-jsp-webapp</module>-->
-<!--    <module>jetty-ee9-demo-mock-resources</module>-->
+
 <!--    <module>jetty-ee9-demo-spec</module>-->
 <!--    <module>jetty-ee9-demo-template</module>-->
   </modules>
@@ -85,7 +86,7 @@
                   <resources>
                     <resource>
                       <filtering>true</filtering>
-                      <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/webapp</directory>
+                      <directory>${ee9.module.path}/src/main/webapp</directory>
                     </resource>
                   </resources>
                 </configuration>

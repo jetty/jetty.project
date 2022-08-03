@@ -23,6 +23,7 @@
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
+    <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <modify-sources-plugin.version>1.0.0-SNAPSHOT</modify-sources-plugin.version>
   </properties>
 
@@ -111,7 +112,7 @@
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/resources</directory>
+                  <directory>${ee9.module.path}/src/main/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -131,7 +132,7 @@
 <!--              <resources>-->
 <!--                <resource>-->
 <!--                  <filtering>true</filtering>-->
-<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/config</directory>-->
+<!--                  <directory>${ee9.module.path}/src/main/config</directory>-->
 <!--                </resource>-->
 <!--              </resources>-->
 <!--            </configuration>-->
@@ -150,7 +151,7 @@
               <resources>
                 <resource>
                   <filtering>true</filtering>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
+                  <directory>${ee9.module.path}/src/test/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -168,7 +169,7 @@
               <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
             <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/java</sourceProjectLocation>
+              <sourceProjectLocation>${ee9.module.path}/src/main/java</sourceProjectLocation>
               <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
             </configuration>
           </execution>
@@ -180,7 +181,7 @@
             </goals>
             <configuration>
               <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/java</sourceProjectLocation>
+              <sourceProjectLocation>${ee9.module.path}/src/test/java</sourceProjectLocation>
               <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
             </configuration>
           </execution>
@@ -323,6 +324,11 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8.websocket</groupId>
           <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.demos</groupId>
+          <artifactId>jetty-ee8-demo-mock-resources</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
