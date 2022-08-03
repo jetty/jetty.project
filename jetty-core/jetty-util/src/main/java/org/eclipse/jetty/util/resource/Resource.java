@@ -86,12 +86,7 @@ public abstract class Resource
             return null;
         try
         {
-            if (scheme.equalsIgnoreCase("jar"))
-            {
-                return FileSystemPool.INSTANCE.mount(uri);
-            }
-            // TODO: review contract, should this be null, or an empty mount?
-            return null;
+            return FileSystemPool.INSTANCE.mount(uri);
         }
         catch (IOException ioe)
         {
