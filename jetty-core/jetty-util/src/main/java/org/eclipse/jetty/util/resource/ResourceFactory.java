@@ -137,7 +137,7 @@ public interface ResourceFactory
      */
     default Resource newResource(String resource)
     {
-        return newResource(Resource.toURI(resource));
+        return newResource(URIUtil.toURI(resource));
     }
 
     /**

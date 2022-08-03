@@ -32,6 +32,7 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
@@ -185,7 +186,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (String i : values)
                 {
                     String entry = normalizer.expand(i);
-                    tlds.add(Resource.toURI(entry).toURL());
+                    tlds.add(URIUtil.toURI(entry).toURL());
                 }
 
                 //empty list signals that tlds were prescanned but none found.
@@ -196,7 +197,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             {
                 List<URI> uris = values.stream()
                     .map(normalizer::expand)
-                    .map(Resource::toURI)
+                    .map(URIUtil::toURI)
                     .toList();
 
                 for (URI uri : uris)

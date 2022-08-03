@@ -33,10 +33,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,13 +51,6 @@ public abstract class Resource
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
-
-    private static final Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file:")
-        .with("jrt:")
-        .with("jar:")
-        .build();
 
     /**
      * <p>Make a Resource containing a collection of other resources</p>
@@ -85,26 +76,6 @@ public abstract class Resource
         if (resources == null || resources.length == 0)
             throw new IllegalArgumentException("No resources");
         return new ResourceCollection(List.of(resources));
-    }
-
-    /**
-     * <p>Convert a String into a URI suitable for use as a Resource.</p>
-     *
-     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
-     * @return The {@link URI} form of the resource.
-     */
-    // TODO move to URIUtil
-    public static URI toURI(String resource)
-    {
-        Objects.requireNonNull(resource);
-
-        // Only try URI for string for known schemes, otherwise assume it is a Path
-        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
-            ? URI.create(resource)
-            : Paths.get(resource).toUri();
-
-        return uri;
     }
 
     public static String dump(Resource resource)

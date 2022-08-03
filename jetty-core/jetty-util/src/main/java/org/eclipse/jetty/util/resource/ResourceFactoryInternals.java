@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -48,7 +49,7 @@ class ResourceFactoryInternals
         @Override
         public Resource newResource(String resource)
         {
-            return newResource(Resource.toURI(resource));
+            return newResource(URIUtil.toURI(resource));
         }
     };
 
