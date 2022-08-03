@@ -30,10 +30,10 @@ public class WebDescriptorTest
     public WorkDir workDir;
 
     /**
-     * Test to ensure that the XMLParser mapResources is functioning properly.
+     * Test to ensure that the XMLParser XML entity mapping is functioning properly.
      */
     @Test
-    public void testMapResourcesXmlWithXsd() throws Exception
+    public void testXmlWithXsd() throws Exception
     {
         Path xml = workDir.getEmptyPathDir().resolve("test.xml");
         Files.writeString(xml, """

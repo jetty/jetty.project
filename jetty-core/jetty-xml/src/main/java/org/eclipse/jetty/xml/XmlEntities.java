@@ -57,84 +57,65 @@ public final class XmlEntities
      * </p>
      *
      * @param xmlParser the XmlParser to configure
+     * @param scope the class / package scope to look for the resources
      * @param servletMajorVersion the servlet major version to register against.
      */
-    public static void registerWebEntities(XmlParser xmlParser, int servletMajorVersion)
+    public static void registerWebEntities(XmlParser xmlParser, Class<?> scope, int servletMajorVersion)
     {
-        final URL dtd22 = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_2.dtd");
-        final URL dtd23 = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_3.dtd");
-        final URL j2ee14xsd = Loader.getRequiredResource("jakarta/servlet/resources/j2ee_1_4.xsd");
-        final URL javaee5 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_5.xsd");
-        final URL javaee6 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_6.xsd");
-        final URL javaee7 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_7.xsd");
-        final URL javaee8 = Loader.getRequiredResource("jakarta/servlet/resources/javaee_8.xsd");
-        final URL jakartaee10 = Loader.getRequiredResource("jakarta/servlet/resources/jakartaee_9.xsd");
+        String prefix = scope.getPackageName().replace('.', '/');
 
-        final URL webapp24xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_4.xsd");
-        final URL webapp25xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_2_5.xsd");
-        final URL webapp30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_0.xsd");
-        final URL webapp31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_3_1.xsd");
-        final URL webapp40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-app_4_0.xsd");
+        final URL dtd22 = getRequiredResource(prefix + "/resources/web-app_2_2.dtd");
+        final URL dtd23 = getRequiredResource(prefix + "/resources/web-app_2_3.dtd");
 
-        final URL webcommon30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_0.xsd");
-        final URL webcommon31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_3_1.xsd");
-        final URL webcommon40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-common_4_0.xsd");
+        final URL j2ee14xsd = getRequiredResource(prefix + "/resources/j2ee_1_4.xsd");
+        final URL javaee5 = getRequiredResource(prefix + "/resources/javaee_5.xsd");
+        final URL javaee6 = getRequiredResource(prefix + "/resources/javaee_6.xsd");
+        final URL javaee7 = getRequiredResource(prefix + "/resources/javaee_7.xsd");
+        final URL javaee8 = getRequiredResource(prefix + "/resources/javaee_8.xsd");
 
-        final URL webfragment30xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
-        final URL webfragment31xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
-        final URL webfragment40xsd = Loader.getRequiredResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
+        final URL webapp24xsd = getRequiredResource(prefix + "/resources/web-app_2_4.xsd");
+        final URL webapp25xsd = getRequiredResource(prefix + "/resources/web-app_2_5.xsd");
+        final URL webapp30xsd = getRequiredResource(prefix + "/resources/web-app_3_0.xsd");
+        final URL webapp31xsd = getRequiredResource(prefix + "/resources/web-app_3_1.xsd");
+        final URL webapp40xsd = getRequiredResource(prefix + "/resources/web-app_4_0.xsd");
 
-        final URL webservice11xsd = Loader.getRequiredResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
-        final URL webservice12xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_2.xsd");
-        final URL webservice13xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_3.xsd");
-        final URL webservice14xsd = Loader.getRequiredResource("jakarta/servlet/resources/javaee_web_services_client_1_4.xsd");
+        final URL webcommon30xsd = getRequiredResource(prefix + "/resources/web-common_3_0.xsd");
+        final URL webcommon31xsd = getRequiredResource(prefix + "/resources/web-common_3_1.xsd");
+        final URL webcommon40xsd = getRequiredResource(prefix + "/resources/web-common_4_0.xsd");
 
-        URL jsp20xsd = null;
-        URL jsp21xsd = null;
-        URL jsp22xsd = null;
-        URL jsp23xsd = null;
-        URL jsp30xsd = null;
-        try
-        {
-            // try both jakarta/servlet/resources and jakarta/servlet/jsp/resources to load
-            jsp20xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_0.xsd");
-            jsp21xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_1.xsd");
-            jsp22xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_2.xsd");
-            jsp23xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_3.xsd");
-            jsp30xsd = Loader.getResource("jakarta/servlet/resources/jsp_3_0.xsd");
-        }
-        catch (Exception ignored)
-        {
-            // ignored
-        }
-        finally
-        {
-            if (jsp20xsd == null)
-                jsp20xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_0.xsd");
-            if (jsp21xsd == null)
-                jsp21xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_1.xsd");
-            if (jsp22xsd == null)
-                jsp22xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_2.xsd");
-            if (jsp23xsd == null)
-                jsp23xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_3.xsd");
-            if (jsp30xsd == null)
-                jsp30xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_3_0.xsd");
-        }
+        final URL webfragment30xsd = getRequiredResource(prefix + "/resources/web-fragment_3_0.xsd");
+        final URL webfragment31xsd = getRequiredResource(prefix + "/resources/web-fragment_3_1.xsd");
+        final URL webfragment40xsd = getRequiredResource(prefix + "/resources/web-fragment_4_0.xsd");
 
-        if (jsp20xsd == null)
-            throw new IllegalStateException("Unable to find required resource: jsp_2_0.xsd");
-        if (jsp21xsd == null)
-            throw new IllegalStateException("Unable to find required resource: jsp_2_1.xsd");
-        if (jsp22xsd == null)
-            throw new IllegalStateException("Unable to find required resource: jsp_2_2.xsd");
-        if (jsp23xsd == null)
-            throw new IllegalStateException("Unable to find required resource: jsp_2_3.xsd");
-        if (jsp30xsd == null)
-            throw new IllegalStateException("Unable to find required resource: jsp_3_0.xsd");
+        final URL webservice11xsd = getRequiredResource(prefix + "/resources/j2ee_web_services_client_1_1.xsd");
+        final URL webservice12xsd = getRequiredResource(prefix + "/resources/javaee_web_services_client_1_2.xsd");
+        final URL webservice13xsd = getRequiredResource(prefix + "/resources/javaee_web_services_client_1_3.xsd");
+        final URL webservice14xsd = getRequiredResource(prefix + "/resources/javaee_web_services_client_1_4.xsd");
 
         // Servlet 5 Support
         if (servletMajorVersion >= 5)
         {
+            // TODO: These JSP resources do not exist in jetty-servlet-api-<ver>.jar (where do we get them from?)
+            // They only exist in the jakarta-servlet-api-5.jar (or newer)
+
+            // try both <servlet>/resources and <servlet>/jsp/resources for these
+            final URL jsp20xsd = findRequiredResource(prefix + "/resources/jsp_2_0.xsd", prefix + "/jsp/resources/jsp_2_0.xsd");
+            final URL jsp21xsd = findRequiredResource(prefix + "/resources/jsp_2_1.xsd", prefix + "/jsp/resources/jsp_2_1.xsd");
+            final URL jsp22xsd = findRequiredResource(prefix + "/resources/jsp_2_2.xsd", prefix + "/jsp/resources/jsp_2_2.xsd");
+            final URL jsp23xsd = findRequiredResource(prefix + "/resources/jsp_2_3.xsd", prefix + "/jsp/resources/jsp_2_3.xsd");
+            final URL jsp30xsd = findRequiredResource(prefix + "/resources/jsp_3_0.xsd", prefix + "/jsp/resources/jsp_3_0.xsd");
+
+            xmlParser.redirectEntity("jsp_2_0.xsd", jsp20xsd);
+            xmlParser.redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd", jsp20xsd);
+            xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd", jsp21xsd);
+            xmlParser.redirectEntity("jsp_2_2.xsd", jsp22xsd);
+            xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd", jsp22xsd);
+            xmlParser.redirectEntity("jsp_2_3.xsd", jsp23xsd);
+            xmlParser.redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd", jsp23xsd);
+            xmlParser.redirectEntity("jsp_3_0.xsd", jsp30xsd);
+            xmlParser.redirectEntity("https://jakarta.ee/xml/ns/jakartaee/jsp_3_0.xsd", jsp30xsd);
+
+            // Servlet 5+ resources are always in scope "jakarta/servlet"
             final URL jakartaee9 = Loader.getResource("jakarta/servlet/resources/jakartaee_9.xsd");
             xmlParser.redirectEntity("https://javax.ee/xml/ns/javaxee/javaee_9.xsd", jakartaee9);
 
@@ -160,6 +141,8 @@ public final class XmlEntities
         // Servlet 6 Support
         if (servletMajorVersion >= 6)
         {
+            // Servlet 6+ resources are always in scope "jakarta/servlet"
+
             // TODO: verify if this is needed, as it seems to be missing from servlet-api-6.jar (the ee9 version was in servlet-api-5.jar)
             /*
             final URL jakartaee10 = Loader.getResource("jakarta/servlet/resources/jakartaee_10.xsd");
@@ -181,21 +164,12 @@ public final class XmlEntities
             xmlParser.redirectEntity("https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_0.xsd", webfragment60xsd);
         }
 
+        // Now map the found resources to their public id / system ids
         xmlParser.redirectEntity("web-app_2_2.dtd", dtd22);
         xmlParser.redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN", dtd22);
         xmlParser.redirectEntity("web.dtd", dtd23);
         xmlParser.redirectEntity("web-app_2_3.dtd", dtd23);
         xmlParser.redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN", dtd23);
-
-        xmlParser.redirectEntity("jsp_2_0.xsd", jsp20xsd);
-        xmlParser.redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd", jsp20xsd);
-        xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd", jsp21xsd);
-        xmlParser.redirectEntity("jsp_2_2.xsd", jsp22xsd);
-        xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd", jsp22xsd);
-        xmlParser.redirectEntity("jsp_2_3.xsd", jsp23xsd);
-        xmlParser.redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd", jsp23xsd);
-        xmlParser.redirectEntity("jsp_3_0.xsd", jsp30xsd);
-        xmlParser.redirectEntity("https://jakarta.ee/xml/ns/jakartaee/jsp_3_0.xsd", jsp30xsd);
 
         xmlParser.redirectEntity("j2ee_1_4.xsd", j2ee14xsd);
         xmlParser.redirectEntity("http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd", j2ee14xsd);
@@ -203,7 +177,6 @@ public final class XmlEntities
         xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_6.xsd", javaee6);
         xmlParser.redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd", javaee7);
         xmlParser.redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd", javaee8);
-        xmlParser.redirectEntity("https://jakarta.ee/xml/ns/jakartaee/javaee_9.xsd", jakartaee10);
 
         xmlParser.redirectEntity("web-common_3_0.xsd", webcommon30xsd);
         xmlParser.redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd", webcommon30xsd);
@@ -248,6 +221,27 @@ public final class XmlEntities
     }
 
     /**
+     * Find the RequiredResource from the provided list of potential names.
+     *
+     * @param names the list of possible names of the resource
+     * @return the resource as a URL
+     * @throws IllegalStateException if unable to find the resource on any name
+     */
+    private static URL findRequiredResource(String... names)
+    {
+        URL url;
+
+        for (String name : names)
+        {
+            url = Loader.getResource(name);
+            if (url != null)
+                return url;
+        }
+
+        throw new IllegalStateException("Unable to find required resource: names=[" + String.join(", ", names) + "]");
+    }
+
+    /**
      * Get the RequiredResource from the provided Scope.
      * Using the same scope's JPMS rules and Package namespace.
      *
@@ -262,6 +256,31 @@ public final class XmlEntities
         URL url = scope.getResource(name);
         if (url == null)
             throw new IllegalStateException("Missing required resource: " + name);
+        return url;
+    }
+
+    /**
+     * Similar to {@link Loader#getResource(String)}, but throws an {@link IllegalStateException} if the requested resource
+     * is not found in the classloaders.
+     *
+     * @param name the resource to look up
+     * @return the URL to the resource
+     * @throws IllegalStateException if unable to find the resource
+     */
+    public static URL getRequiredResource(String name)
+    {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        URL url = null;
+
+        if (loader != null)
+            url = loader.getResource(name);
+
+        if (url == null)
+            url = ClassLoader.getSystemResource(name);
+
+        if (url == null)
+            throw new IllegalStateException("Missing required resource: " + name);
+
         return url;
     }
 }

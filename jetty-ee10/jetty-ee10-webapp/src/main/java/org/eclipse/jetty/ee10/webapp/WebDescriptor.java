@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlEntities;
@@ -87,7 +88,7 @@ public class WebDescriptor extends Descriptor
             {
                 if (!mapped)
                 {
-                    XmlEntities.registerWebEntities(this, ServletContextHandler.ServletContextApi.SERVLET_MAJOR_VERSION);
+                    XmlEntities.registerWebEntities(this, Servlet.class, ServletContextHandler.ServletContextApi.SERVLET_MAJOR_VERSION);
                     mapped = true;
                 }
                 return super.resolveEntity(pid, sid);
