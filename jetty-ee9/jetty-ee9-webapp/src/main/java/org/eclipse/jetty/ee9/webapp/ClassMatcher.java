@@ -134,7 +134,7 @@ public class ClassMatcher extends AbstractSet<String>
             if (!getName().startsWith("file:"))
                 throw new IllegalArgumentException(name);
 
-            _path = ResourceFactory.ROOT.newResource(getName()).getPath();
+            _path = ResourceFactory.root().newResource(getName()).getPath();
         }
 
         public Path getPath()

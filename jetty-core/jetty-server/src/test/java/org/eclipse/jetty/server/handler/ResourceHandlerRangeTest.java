@@ -63,7 +63,7 @@ public class ResourceHandlerRangeTest
 
         ContextHandler contextHandler = new ContextHandler();
         ResourceHandler contentResourceHandler = new ResourceHandler();
-        contextHandler.setBaseResource(ResourceFactory.ROOT.newResource(dir.getAbsolutePath()));
+        contextHandler.setBaseResource(ResourceFactory.root().newResource(dir.getAbsolutePath()));
         contextHandler.setHandler(contentResourceHandler);
         contextHandler.setContextPath("/");
 

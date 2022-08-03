@@ -570,7 +570,7 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(realPath));
         assertTrue(Files.isSymbolicLink(linkPath));
 
-        Resource link = ResourceFactory.ROOT.newResource(dir.toPath()).resolve("link");
+        Resource link = ResourceFactory.root().newResource(dir.toPath()).resolve("link");
         assertThat(link.isAlias(), is(true));
     }
 

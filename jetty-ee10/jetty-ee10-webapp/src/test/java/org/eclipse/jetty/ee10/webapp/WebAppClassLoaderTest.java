@@ -54,7 +54,7 @@ public class WebAppClassLoaderTest
     public void init() throws Exception
     {
         this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        Resource webapp = ResourceFactory.ROOT.newResource(testWebappDir);
+        Resource webapp = ResourceFactory.root().newResource(testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp.getPath());

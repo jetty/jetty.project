@@ -118,7 +118,7 @@ public class BrowserDebugTool
     {
         Path path = MavenTestingUtils.getTestResourcePathDir("browser-debug-tool");
         LOG.info("Static Resources: {}", path);
-        return ResourceFactory.ROOT.newResource(path);
+        return ResourceFactory.root().newResource(path);
     }
 
     public void start() throws Exception

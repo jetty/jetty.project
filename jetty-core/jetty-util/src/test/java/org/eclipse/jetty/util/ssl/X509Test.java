@@ -144,7 +144,7 @@ public class X509Test
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        serverSsl.setKeyStoreResource(ResourceFactory.ROOT.newResource(keystorePath));
+        serverSsl.setKeyStoreResource(ResourceFactory.root().newResource(keystorePath));
         serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
     }
@@ -154,7 +154,7 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        clientSsl.setKeyStoreResource(ResourceFactory.ROOT.newResource(keystorePath));
+        clientSsl.setKeyStoreResource(ResourceFactory.root().newResource(keystorePath));
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();
     }
@@ -163,7 +163,7 @@ public class X509Test
     public void testServerClassWithoutSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        Resource keystoreResource = ResourceFactory.ROOT.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.root().newSystemResource("keystore.p12");
         serverSsl.setKeyStoreResource(keystoreResource);
         serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
@@ -173,7 +173,7 @@ public class X509Test
     public void testClientClassWithoutSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
-        Resource keystoreResource = ResourceFactory.ROOT.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.root().newSystemResource("keystore.p12");
         clientSsl.setKeyStoreResource(keystoreResource);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();

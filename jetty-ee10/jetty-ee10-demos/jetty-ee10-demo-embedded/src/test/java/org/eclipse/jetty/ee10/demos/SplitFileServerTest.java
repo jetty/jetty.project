@@ -41,8 +41,8 @@ public class SplitFileServerTest extends AbstractEmbeddedTest
     {
         Path path0 = Paths.get("src/test/resources/dir0");
         Path path1 = Paths.get("src/test/resources/dir1");
-        Resource resource0 = ResourceFactory.ROOT.newResource(path0);
-        Resource resource1 = ResourceFactory.ROOT.newResource(path1);
+        Resource resource0 = ResourceFactory.root().newResource(path0);
+        Resource resource1 = ResourceFactory.root().newResource(path1);
 
         server = SplitFileServer.createServer(0, resource0, resource1);
         server.start();

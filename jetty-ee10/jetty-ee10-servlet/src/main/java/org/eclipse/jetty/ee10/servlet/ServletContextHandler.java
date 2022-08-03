@@ -924,7 +924,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource newResource(URI uri) throws IOException
     {
-        return ResourceFactory.ROOT.newResource(uri);
+        return ResourceFactory.root().newResource(uri);
     }
 
     /**

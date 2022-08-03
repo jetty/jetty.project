@@ -674,7 +674,7 @@ public class ResourceHandlerTest
         _server.addConnector(_local);
 
         _rootResourceHandler = new ResourceHandler();
-        _rootResourceHandler.setBaseResource(ResourceFactory.ROOT.newResource(docRoot));
+        _rootResourceHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
         _rootResourceHandler.setRedirectWelcome(false);
 
@@ -3258,7 +3258,7 @@ public class ResourceHandlerTest
         Path altIndex = altDir.resolve("index.html");
 
         ResourceHandler altResourceHandler = new ResourceHandler();
-        altResourceHandler.setBaseResource(ResourceFactory.ROOT.newResource(altRoot));
+        altResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         altResourceHandler.setDirAllowed(false); // Cannot see listings
         altResourceHandler.setRedirectWelcome(false);
         altResourceHandler.setWelcomeFiles("index.html", "index.htm");
@@ -3268,7 +3268,7 @@ public class ResourceHandlerTest
         altContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         ResourceHandler otherResourceHandler = new ResourceHandler();
-        otherResourceHandler.setBaseResource(ResourceFactory.ROOT.newResource(altRoot));
+        otherResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         otherResourceHandler.setDirAllowed(true); // Can see listings
         otherResourceHandler.setRedirectWelcome(false);
         otherResourceHandler.setWelcomeFiles("index.html", "index.htm");

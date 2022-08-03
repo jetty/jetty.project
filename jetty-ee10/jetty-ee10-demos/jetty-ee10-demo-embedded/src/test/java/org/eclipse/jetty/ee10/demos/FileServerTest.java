@@ -54,7 +54,7 @@ public class FileServerTest extends AbstractEmbeddedTest
             writer.write(TEXT_CONTENT);
         }
 
-        server = FileServer.createServer(0, ResourceFactory.ROOT.newResource(baseDir));
+        server = FileServer.createServer(0, ResourceFactory.root().newResource(baseDir));
         server.start();
     }
 

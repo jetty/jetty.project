@@ -315,7 +315,7 @@ public class XmlConfigurationTest
         {
             writer.write(rawXml);
         }
-        return new XmlConfiguration(ResourceFactory.ROOT.newResource(testFile));
+        return new XmlConfiguration(ResourceFactory.root().newResource(testFile));
     }
 
     @Test

@@ -194,7 +194,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         // TODO do this some other way.  It is expensive to mount a whole jar when we could
         //      just read the resource from the URL. We also leak the Mount.
         URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        return ResourceFactory.ROOT.newResource(css);
+        return ResourceFactory.root().newResource(css);
     }
 
     public String[] getWelcomeFiles()

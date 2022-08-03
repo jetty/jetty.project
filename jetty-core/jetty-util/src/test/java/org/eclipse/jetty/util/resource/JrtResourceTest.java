@@ -39,7 +39,7 @@ public class JrtResourceTest
     public void testResourceModule()
         throws Exception
     {
-        Resource resource = ResourceFactory.ROOT.newResource("jrt:/java.base");
+        Resource resource = ResourceFactory.root().newResource("jrt:/java.base");
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));
@@ -50,7 +50,7 @@ public class JrtResourceTest
     public void testResourceAllModules()
         throws Exception
     {
-        Resource resource = ResourceFactory.ROOT.newResource("jrt:/");
+        Resource resource = ResourceFactory.root().newResource("jrt:/");
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));

@@ -79,8 +79,8 @@ public class SplitFileServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Resource resource0 = ResourceFactory.ROOT.newResource(Paths.get("src/test/resources/dir0"));
-        Resource resource1 = ResourceFactory.ROOT.newResource(Paths.get("src/test/resources/dir1"));
+        Resource resource0 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir0"));
+        Resource resource1 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir1"));
 
         Server server = createServer(port, resource0, resource1);
 

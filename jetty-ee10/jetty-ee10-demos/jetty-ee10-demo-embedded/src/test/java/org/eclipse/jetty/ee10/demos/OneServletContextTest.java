@@ -54,7 +54,7 @@ public class OneServletContextTest extends AbstractEmbeddedTest
             writer.write(TEXT_CONTENT);
         }
 
-        server = OneServletContext.createServer(0, ResourceFactory.ROOT.newResource(baseDir));
+        server = OneServletContext.createServer(0, ResourceFactory.root().newResource(baseDir));
         server.start();
     }
 

@@ -47,7 +47,7 @@ public class ServerListener implements LifeCycle.Listener
         {
             try
             {
-                Resource r = ResourceFactory.ROOT.newResource(_tokenFile); // TODO leak
+                Resource r = ResourceFactory.root().newResource(_tokenFile); // TODO leak
                 Files.createFile(r.getPath());
             }
             catch (Exception e)

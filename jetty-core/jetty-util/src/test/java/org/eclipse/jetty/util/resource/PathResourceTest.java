@@ -107,7 +107,7 @@ public class PathResourceTest
     public void testDefaultFileSystemGetFile()
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource resource = (PathResource)ResourceFactory.ROOT.newResource(exampleJar);
+        PathResource resource = (PathResource)ResourceFactory.root().newResource(exampleJar);
 
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
@@ -118,8 +118,8 @@ public class PathResourceTest
     {
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource rPathResource = (PathResource)ResourceFactory.ROOT.newResource(rpath);
-        PathResource ePathResource = (PathResource)ResourceFactory.ROOT.newResource(epath);
+        PathResource rPathResource = (PathResource)ResourceFactory.root().newResource(rpath);
+        PathResource ePathResource = (PathResource)ResourceFactory.root().newResource(epath);
 
         assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
         assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
@@ -128,7 +128,7 @@ public class PathResourceTest
         try
         {
             Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
-            ePathResource2 = (PathResource)ResourceFactory.ROOT.newResource(epath2);
+            ePathResource2 = (PathResource)ResourceFactory.root().newResource(epath2);
         }
         catch (Throwable th)
         {

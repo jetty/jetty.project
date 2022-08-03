@@ -219,8 +219,13 @@ public interface ResourceFactory
         return factory;
     }
 
-    // TODO move somewhere else as a private field, and expose via root() method instead
-    ResourceFactory ROOT = new ResourceFactory()
+    static ResourceFactory root()
+    {
+        return __ROOT;
+    }
+
+    // TODO move somewhere else as a private field
+    ResourceFactory __ROOT = new ResourceFactory()
     {
         @Override
         public Resource newResource(URI uri)

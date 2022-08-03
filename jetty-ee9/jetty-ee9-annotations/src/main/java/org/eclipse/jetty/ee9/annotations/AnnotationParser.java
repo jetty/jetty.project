@@ -573,7 +573,7 @@ public class AnnotationParser
         URL resource = Loader.getResource(classRef);
         if (resource != null)
         {
-            Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
+            Resource r = ResourceFactory.root().newResource(resource); // TODO leak
             addParsedClass(className, r.getURI());
             try (InputStream is = Files.newInputStream(r.getPath()))
             {
@@ -599,7 +599,7 @@ public class AnnotationParser
             URL resource = Loader.getResource(nameAsResource);
             if (resource != null)
             {
-                Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
+                Resource r = ResourceFactory.root().newResource(resource); // TODO leak
                 addParsedClass(clazz.getName(), r.getURI());
                 try (InputStream is = Files.newInputStream(r.getPath()))
                 {
@@ -648,7 +648,7 @@ public class AnnotationParser
                 URL resource = Loader.getResource(classRef);
                 if (resource != null)
                 {
-                    Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
+                    Resource r = ResourceFactory.root().newResource(resource); // TODO leak
                     addParsedClass(className, r.getURI());
                     try (InputStream is = Files.newInputStream(r.getPath()))
                     {
@@ -704,7 +704,7 @@ public class AnnotationParser
         if (uri == null)
             return;
 
-        parse(handlers, ResourceFactory.ROOT.newResource(uri)); // TODO leak
+        parse(handlers, ResourceFactory.root().newResource(uri)); // TODO leak
     }
 
     /**
@@ -786,7 +786,7 @@ public class AnnotationParser
                         addParsedClass(str, r.getURI());
                         try (InputStream is = Files.newInputStream(path))
                         {
-                            scanClass(handlers, ResourceFactory.ROOT.newResource(path.getParent()), is);
+                            scanClass(handlers, ResourceFactory.root().newResource(path.getParent()), is);
                         }
                     }
                     catch (Exception ex)

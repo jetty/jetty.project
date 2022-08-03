@@ -38,7 +38,7 @@ public class TestRunAsAnnotation
     {
         Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
         Files.createFile(dummyXml);
-        Resource dummyXmlResource = ResourceFactory.ROOT.newResource(dummyXml);
+        Resource dummyXmlResource = ResourceFactory.root().newResource(dummyXml);
 
         WebAppContext wac = new WebAppContext();
         

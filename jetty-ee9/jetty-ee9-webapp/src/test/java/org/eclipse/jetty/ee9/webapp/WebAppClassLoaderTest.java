@@ -58,7 +58,7 @@ public class WebAppClassLoaderTest
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        Resource webapp = ResourceFactory.ROOT.newResource(testWebappDir);
+        Resource webapp = ResourceFactory.root().newResource(testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp);

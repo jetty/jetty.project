@@ -38,7 +38,7 @@ public class TestAnnotationDecorator
     {
         public TestWebDescriptor(MetaData.Complete metadata)
         {
-            super(ResourceFactory.ROOT.newResource(Path.of(".")));
+            super(ResourceFactory.root().newResource(Path.of(".")));
             _metaDataComplete = metadata;
         }
 

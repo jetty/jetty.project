@@ -705,7 +705,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     // TODO inline this ???
     public void setBaseResource(Path path)
     {
-        setBaseResource(path == null ? null : ResourceFactory.ROOT.newResource(path));
+        setBaseResource(path == null ? null : ResourceFactory.root().newResource(path));
     }
 
     /**

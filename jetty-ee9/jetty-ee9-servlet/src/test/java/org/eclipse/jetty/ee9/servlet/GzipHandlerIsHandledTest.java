@@ -82,7 +82,7 @@ public class GzipHandlerIsHandledTest
         Handler.Collection handlers = new Handler.Collection();
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.ROOT.newResource(workDir.getPath()));
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(workDir.getPath()));
         resourceHandler.setDirAllowed(true);
         resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));
 

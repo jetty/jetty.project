@@ -77,7 +77,7 @@ public class ForcedServletTest
 
 
         // Use the new base
-        context.setWarResource(ResourceFactory.ROOT.newResource(basePath));
+        context.setWarResource(ResourceFactory.root().newResource(basePath));
 
         server.setHandler(context);
         // server.setDumpAfterStart(true);

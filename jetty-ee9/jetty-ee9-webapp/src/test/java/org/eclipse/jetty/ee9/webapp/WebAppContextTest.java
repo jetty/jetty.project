@@ -284,7 +284,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(ResourceFactory.ROOT.newResource(tempDir));
+        context.setBaseResource(ResourceFactory.root().newResource(tempDir));
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -318,7 +318,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.ROOT.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -382,7 +382,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.ROOT.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
         contexts.addHandler(context);
 
@@ -405,7 +405,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.ROOT.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -435,7 +435,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.ROOT.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);

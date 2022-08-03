@@ -96,7 +96,7 @@ public class OverlayManager
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                Resource resource = ResourceFactory.ROOT.newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
                 SelectiveJarResource r = new SelectiveJarResource(resource);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
@@ -110,7 +110,7 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource resource = ResourceFactory.ROOT.newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
                 Overlay overlay = new Overlay(null, resource);
                 overlays.add(overlay);
             }
@@ -152,6 +152,6 @@ public class OverlayManager
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content
-        return ResourceFactory.ROOT.newResource(unpackDir.getCanonicalPath()); // TODO leak
+        return ResourceFactory.root().newResource(unpackDir.getCanonicalPath()); // TODO leak
     }
 }

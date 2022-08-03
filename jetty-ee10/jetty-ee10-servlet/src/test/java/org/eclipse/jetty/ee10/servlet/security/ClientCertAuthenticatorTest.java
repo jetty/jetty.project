@@ -147,8 +147,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
-        cf.setKeyStoreResource(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
+        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);

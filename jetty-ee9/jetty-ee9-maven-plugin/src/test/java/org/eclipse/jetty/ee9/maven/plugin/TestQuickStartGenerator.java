@@ -34,7 +34,7 @@ public class TestQuickStartGenerator
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
-        webApp.setBaseResource(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTestResourcePathDir("root")));
+        webApp.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("root")));
         File quickstartFile = new File(MavenTestingUtils.getTargetTestingDir(), "quickstart-web.xml");
         QuickStartGenerator generator = new QuickStartGenerator(quickstartFile, webApp);
         generator.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());

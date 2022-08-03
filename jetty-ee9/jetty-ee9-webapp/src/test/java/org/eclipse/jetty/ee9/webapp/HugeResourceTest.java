@@ -191,7 +191,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(ResourceFactory.ROOT.newResource(staticBase));
+        context.setBaseResource(ResourceFactory.root().newResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");

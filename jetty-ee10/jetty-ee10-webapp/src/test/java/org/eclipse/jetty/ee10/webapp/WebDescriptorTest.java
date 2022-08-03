@@ -48,7 +48,7 @@ public class WebDescriptorTest
             </web-app>
             """, StandardCharsets.UTF_8);
 
-        Resource xmlRes = ResourceFactory.ROOT.newResource(xml);
+        Resource xmlRes = ResourceFactory.root().newResource(xml);
         WebDescriptor webDescriptor = new WebDescriptor(xmlRes);
         XmlParser xmlParser = WebDescriptor.newParser(true);
         // This should not throw an exception, if it does then you have a bad state.

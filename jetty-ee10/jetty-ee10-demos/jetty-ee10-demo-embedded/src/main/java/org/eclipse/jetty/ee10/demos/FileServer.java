@@ -57,7 +57,7 @@ public class FileServer
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path userDir = Paths.get(System.getProperty("user.dir"));
-        Resource pathResource = ResourceFactory.ROOT.newResource(userDir);
+        Resource pathResource = ResourceFactory.root().newResource(userDir);
 
         Server server = createServer(port, pathResource);
 

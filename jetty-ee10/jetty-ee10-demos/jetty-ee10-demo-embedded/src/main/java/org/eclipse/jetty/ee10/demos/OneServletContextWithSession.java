@@ -62,7 +62,7 @@ public class OneServletContextWithSession
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path dir = Paths.get(System.getProperty("user.dir"));
-        Resource baseResource = ResourceFactory.ROOT.newResource(dir);
+        Resource baseResource = ResourceFactory.root().newResource(dir);
         Server server = createServer(port, baseResource);
 
         server.start();

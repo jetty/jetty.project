@@ -78,7 +78,7 @@ public class OneServletContext
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
 
-        Server server = createServer(port, ResourceFactory.ROOT.newResource(tempDir));
+        Server server = createServer(port, ResourceFactory.root().newResource(tempDir));
 
         server.start();
         server.dumpStdErr();

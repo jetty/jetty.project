@@ -55,7 +55,7 @@ public class OneServletContextWithSessionTest extends AbstractEmbeddedTest
             writer.write(TEXT_CONTENT);
         }
 
-        server = OneServletContextWithSession.createServer(0, ResourceFactory.ROOT.newResource(baseDir));
+        server = OneServletContextWithSession.createServer(0, ResourceFactory.root().newResource(baseDir));
         server.start();
     }
 

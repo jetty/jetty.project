@@ -50,7 +50,7 @@ public class EnvironmentBuilder
         {
             try
             {
-                _classpath.add(ResourceFactory.ROOT.newResource(classPath).getURI().toURL());
+                _classpath.add(ResourceFactory.root().newResource(classPath).getURI().toURL());
             }
             catch (IOException e)
             {

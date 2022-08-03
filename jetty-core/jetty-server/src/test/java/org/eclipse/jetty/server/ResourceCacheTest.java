@@ -133,7 +133,7 @@ public class ResourceCacheTest
 
         List<Resource> resourceList = Stream.of("one", "two", "three")
             .map(basePath::resolve)
-            .map(ResourceFactory.ROOT::newResource)
+            .map(ResourceFactory.root()::newResource)
             .toList();
 
         ResourceCollection rc = Resource.of(resourceList);
@@ -165,7 +165,7 @@ public class ResourceCacheTest
 
         List<Resource> resourceList = Stream.of("one", "two", "three")
             .map(basePath::resolve)
-            .map(ResourceFactory.ROOT::newResource)
+            .map(ResourceFactory.root()::newResource)
             .toList();
 
         ResourceCollection rc = Resource.of(resourceList);
@@ -223,7 +223,7 @@ public class ResourceCacheTest
             names[i] = tmpFile.getFileName().toString();
         }
 
-        directory = ResourceFactory.ROOT.newResource(files[0].getParentFile().getAbsolutePath());
+        directory = ResourceFactory.root().newResource(files[0].getParentFile().getAbsolutePath());
 
         cache = new CachedContentFactory(null, directory, new MimeTypes(), false, false, CompressedContentFormat.NONE);
 
@@ -372,7 +372,7 @@ public class ResourceCacheTest
     {
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
-        Resource resource = ResourceFactory.ROOT.newResource(basePath.resolve("four"));
+        Resource resource = ResourceFactory.root().newResource(basePath.resolve("four"));
         MimeTypes mime = new MimeTypes();
 
         CachedContentFactory cache = new CachedContentFactory(null, resource, mime, false, false, CompressedContentFormat.NONE);

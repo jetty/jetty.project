@@ -88,7 +88,7 @@ public class TestAnnotationDecorator
     {
         Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
         Files.createFile(dummyXml);
-        Resource dummyXmlResource = ResourceFactory.ROOT.newResource(dummyXml);
+        Resource dummyXmlResource = ResourceFactory.root().newResource(dummyXml);
 
         assertThrows(NullPointerException.class, () ->
         {
