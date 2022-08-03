@@ -16,7 +16,10 @@ package org.eclipse.jetty.client.util;
 import java.util.Random;
 
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.io.Content;
 
 /**
  * <p>A {@link Request.Content} for form uploads with the {@code "multipart/form-data"}
@@ -73,5 +76,21 @@ public class MultiPartRequestContent extends MultiPart.ContentSource implements 
     public String getContentType()
     {
         return contentType;
+    }
+
+    @Override
+    protected HttpFields customizePartHeaders(MultiPart.Part part)
+    {
+        HttpFields headers = super.customizePartHeaders(part);
+        if (headers.contains(HttpHeader.CONTENT_TYPE))
+            return headers;
+        Content.Source partContent = part.getContent();
+        if (partContent instanceof Request.Content requestContent)
+        {
+            String contentType = requestContent.getContentType();
+            if (contentType != null)
+                return HttpFields.build(headers).put(HttpHeader.CONTENT_TYPE, contentType);
+        }
+        return headers;
     }
 }

@@ -360,11 +360,11 @@ public class MultiPartTest
         assertEquals(2, listener.parts.size());
 
         MultiPart.Part part1 = listener.parts.get(0);
-        assertEquals("value", part1.getHttpFields().get("name"));
+        assertEquals("value", part1.getHeaders().get("name"));
         assertEquals("Hello", Content.Source.asString(part1.getContent()));
 
         MultiPart.Part part2 = listener.parts.get(1);
-        assertEquals("9001", part2.getHttpFields().get("powerLevel"));
+        assertEquals("9001", part2.getHeaders().get("powerLevel"));
         assertEquals("secondary\r\ncontent", Content.Source.asString(part2.getContent()));
 
         assertEquals(0, data.remaining());
@@ -396,11 +396,11 @@ public class MultiPartTest
         assertEquals(2, listener.parts.size());
 
         MultiPart.Part part1 = listener.parts.get(0);
-        assertEquals("value", part1.getHttpFields().get("name"));
+        assertEquals("value", part1.getHeaders().get("name"));
         assertEquals("Hello", Content.Source.asString(part1.getContent()));
 
         MultiPart.Part part2 = listener.parts.get(1);
-        assertEquals("9001", part2.getHttpFields().get("powerLevel"));
+        assertEquals("9001", part2.getHeaders().get("powerLevel"));
         assertEquals("secondary\ncontent", Content.Source.asString(part2.getContent()));
 
         assertEquals(0, data.remaining());
@@ -456,7 +456,7 @@ public class MultiPartTest
         assertThat(data.remaining(), is(0));
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
-        assertEquals("value", part.getHttpFields().get("name"));
+        assertEquals("value", part.getHeaders().get("name"));
         assertEquals("", Content.Source.asString(part.getContent()));
     }
 
@@ -476,7 +476,7 @@ public class MultiPartTest
         assertThat(data.remaining(), is(0));
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
-        assertEquals("value", part.getHttpFields().get("name"));
+        assertEquals("value", part.getHeaders().get("name"));
         assertEquals("", Content.Source.asString(part.getContent()));
     }
 
@@ -507,7 +507,7 @@ public class MultiPartTest
         assertThat(data.remaining(), is(0));
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
-        assertEquals("value", part.getHttpFields().get("name"));
+        assertEquals("value", part.getHeaders().get("name"));
         assertThat(Content.Source.asString(part.getContent()), is("""
             Hello\r
             this is not a --BOUNDARY\r
@@ -556,7 +556,7 @@ public class MultiPartTest
         assertThat(data.remaining(), is(0));
         assertEquals(1, listener.parts.size());
         MultiPart.Part part = listener.parts.get(0);
-        assertEquals("value", part.getHttpFields().get("name"));
+        assertEquals("value", part.getHeaders().get("name"));
         assertEquals("Hello", Content.Source.asString(part.getContent()));
     }
 

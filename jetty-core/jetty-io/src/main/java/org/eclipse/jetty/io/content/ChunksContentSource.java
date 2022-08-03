@@ -20,7 +20,13 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
-public class ChunkContentSource implements Content.Source
+/**
+ * <p>A {@link Content.Source} backed by one or more {@link Content.Chunk}s.</p>
+ * <p>The chunks passed in the constructor are made available as chunks
+ * via {@link #read()} and must be {@link Content.Chunk#release() released}
+ * by the code that reads from objects of this class.</p>
+ */
+public class ChunksContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
@@ -30,7 +36,7 @@ public class ChunkContentSource implements Content.Source
     private Content.Chunk terminated;
     private Runnable demandCallback;
 
-    public ChunkContentSource(Collection<Content.Chunk> chunks)
+    public ChunksContentSource(Collection<Content.Chunk> chunks)
     {
         this.chunks = chunks;
         this.length = chunks.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
@@ -65,18 +71,7 @@ public class ChunkContentSource implements Content.Source
             if (last)
                 terminated = Content.Chunk.EOF;
         }
-        return chunk.slice(last);
-    }
-
-    public boolean rewind()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            iterator = null;
-            terminated = null;
-            demandCallback = null;
-            return true;
-        }
+        return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
     }
 
     @Override

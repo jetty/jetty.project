@@ -195,9 +195,7 @@ public class MultiPartHandlerTest
                         {
                             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getBoundary()));
                             MultiPart.ContentSource source = parts.toContentSource();
-                            source.setByteBufferPool(request.getComponents().getByteBufferPool());
-                            source.setUseDirectByteBuffers(true);
-                            source.setHeadersMaxLength(1024);
+                            source.setPartHeadersMaxLength(1024);
                             Content.copy(source, response, callback);
                         }
                         else
@@ -303,7 +301,7 @@ public class MultiPartHandlerTest
             assertNotNull(boundary);
 
             MultiParts multiParts = new MultiParts(boundary);
-            multiParts.setFileDirectory(tempDir);
+            multiParts.setFilesDirectory(tempDir);
             multiParts.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
             MultiParts.Parts parts = multiParts.join();
 
@@ -314,7 +312,7 @@ public class MultiPartHandlerTest
             MultiPart.Part part2 = parts.get(1);
             assertEquals("part2", part2.getName());
             assertEquals("file2.bin", part2.getFileName());
-            HttpFields headers2 = part2.getHttpFields();
+            HttpFields headers2 = part2.getHeaders();
             assertEquals(2, headers2.size());
             assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
             assertEquals(32, part2.getContent().getLength());

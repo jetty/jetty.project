@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
+import org.eclipse.jetty.io.internal.ContentSourceByteBuffers;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
@@ -154,6 +156,19 @@ public class Content
             {
                 throw IO.rethrow(x);
             }
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source, copying each chunk's
+         * {@code ByteBuffer} into a new {@code ByteBuffer} that is added to
+         * a list returned as result.</p>
+         *
+         * @param source the source to read
+         * @param promise the promise to notify when the whole content has been read into a list of ByteBuffers
+         */
+        static void asByteBuffers(Source source, Promise<List<ByteBuffer>> promise)
+        {
+            new ContentSourceByteBuffers(source, promise).run();
         }
 
         /**
@@ -335,6 +350,18 @@ public class Content
          * @param failure the cause of the failure
          */
         void fail(Throwable failure);
+
+        /**
+         * <p>Rewinds this content, if possible, so that subsequent reads return
+         * chunks starting from the beginning of this content.</p>
+         *
+         * @return true if this content has been rewound, false if this content
+         * cannot be rewound
+         */
+        default boolean rewind()
+        {
+            return false;
+        }
     }
 
     /**
@@ -434,17 +461,6 @@ public class Content
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
             return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
-        }
-
-        public static Chunk from(Chunk chunk, boolean last)
-        {
-            chunk.retain();
-            return from(chunk.getByteBuffer().slice(), last, chunk);
-        }
-
-        public static Chunk from(byte[] buffer, boolean last)
-        {
-            return from(ByteBuffer.wrap(buffer), last);
         }
 
         /**
@@ -554,16 +570,17 @@ public class Content
          * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
          * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
          *
-         * @param source the original chunk
          * @param position the position at which the slice begins
          * @param limit the limit at which the slice ends
          * @param last whether the new Chunk is last
          * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
          * of the source {@code Chunk}'s {@code ByteBuffer}
          */
-        default Chunk slice(Chunk source, int position, int limit, boolean last)
+        default Chunk slice(int position, int limit, boolean last)
         {
-            ByteBuffer sourceBuffer = source.getByteBuffer();
+            if (isTerminal())
+                return this;
+            ByteBuffer sourceBuffer = getByteBuffer();
             int sourceLimit = sourceBuffer.limit();
             sourceBuffer.limit(limit);
             int sourcePosition = sourceBuffer.position();
@@ -571,8 +588,8 @@ public class Content
             ByteBuffer slice = sourceBuffer.slice();
             sourceBuffer.limit(sourceLimit);
             sourceBuffer.position(sourcePosition);
-            source.retain();
-            return from(slice, last, source);
+            retain();
+            return from(slice, last, this);
         }
 
         /**
@@ -634,11 +651,6 @@ public class Content
         default boolean isTerminal()
         {
             return this instanceof Error || isLast() && !hasRemaining();
-        }
-
-        default Chunk slice(boolean last)
-        {
-            return Chunk.from(this, last);
         }
 
         /**

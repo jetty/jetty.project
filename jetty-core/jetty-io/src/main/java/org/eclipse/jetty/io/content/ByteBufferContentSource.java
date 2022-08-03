@@ -81,6 +81,7 @@ public class ByteBufferContentSource implements Content.Source
         return Content.Chunk.from(buffer, last);
     }
 
+    @Override
     public boolean rewind()
     {
         try (AutoLock ignored = lock.lock())

@@ -77,7 +77,7 @@ public class MultiPartsTest
             "\r\n";
 
         MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -106,7 +106,7 @@ public class MultiPartsTest
             "--" + boundary + "--" + eol;
 
         MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -131,7 +131,7 @@ public class MultiPartsTest
             "--" + boundary + "--" + eol;
 
         MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -178,7 +178,7 @@ public class MultiPartsTest
             """;
 
         MultiParts multiParts = new MultiParts("");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -264,7 +264,7 @@ public class MultiPartsTest
             """;
 
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -300,7 +300,7 @@ public class MultiPartsTest
             """;
 
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(1024);
         multiParts.setMaxLength(3072);
         multiParts.setMaxMemoryFileSize(50);
@@ -320,7 +320,7 @@ public class MultiPartsTest
     public void testDefaultLimits() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         String body = """
             --AaB03x\r
             Content-Disposition: form-data; name="file"; filename="file.txt"\r
@@ -347,7 +347,7 @@ public class MultiPartsTest
     public void testRequestContentTooBig() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxLength(16);
 
         String body = """
@@ -372,7 +372,7 @@ public class MultiPartsTest
     public void testFileTooBig() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxFileSize(16);
 
         String body = """
@@ -397,7 +397,7 @@ public class MultiPartsTest
     public void testTwoFilesOneInMemoryOneOnDisk() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         multiParts.setMaxMemoryFileSize(chunk.length() + 1);
 
@@ -421,7 +421,7 @@ public class MultiPartsTest
         assertEquals(2, parts.size());
 
         MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ChunkPart.class));
+        assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
         assertEquals(chunk, Content.Source.asString(part1.getContent()));
 
         MultiPart.Part part2 = parts.get(1);
@@ -435,7 +435,7 @@ public class MultiPartsTest
     public void testPartWrite() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         multiParts.setMaxMemoryFileSize(chunk.length() + 1);
 
@@ -459,7 +459,7 @@ public class MultiPartsTest
         assertEquals(2, parts.size());
 
         MultiPart.Part part1 = parts.get(0);
-        assertThat(part1, instanceOf(MultiPart.ChunkPart.class));
+        assertThat(part1, instanceOf(MultiPart.ChunksPart.class));
         Path newPath1 = _tmpDir.resolve("file1.2.txt");
         part1.writeTo(newPath1);
         assertTrue(Files.exists(newPath1));
@@ -479,7 +479,7 @@ public class MultiPartsTest
     public void testPathPartDelete() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
 
         String body = """
             --AaB03x\r
@@ -507,7 +507,7 @@ public class MultiPartsTest
     public void testAbort()
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxMemoryFileSize(32);
 
         String body = """
@@ -540,8 +540,8 @@ public class MultiPartsTest
     public void testMaxHeaderLength() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
-        multiParts.setHeadersMaxLength(32);
+        multiParts.setFilesDirectory(_tmpDir);
+        multiParts.setPartHeadersMaxLength(32);
 
         String body = """
             --AaB03x\r
@@ -565,7 +565,7 @@ public class MultiPartsTest
     public void testDefaultCharset() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxMemoryFileSize(-1);
 
         String body1 = """
@@ -615,7 +615,7 @@ public class MultiPartsTest
     public void testPartWithBackSlashInFileName() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxMemoryFileSize(-1);
 
         String contents = """
@@ -639,7 +639,7 @@ public class MultiPartsTest
     public void testPartWithWindowsFileName() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxMemoryFileSize(-1);
 
         String contents = """
@@ -663,7 +663,7 @@ public class MultiPartsTest
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setMaxMemoryFileSize(-1);
 
         String contents = """
@@ -687,7 +687,7 @@ public class MultiPartsTest
     public void testWriteFilesForPartWithoutFileName() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
         multiParts.setUseFilesForPartsWithoutFileName(true);
 
         String body = """
@@ -714,7 +714,7 @@ public class MultiPartsTest
     public void testPartsWithSameName() throws Exception
     {
         MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFileDirectory(_tmpDir);
+        multiParts.setFilesDirectory(_tmpDir);
 
         String sameNames = """
             --AaB03x\r

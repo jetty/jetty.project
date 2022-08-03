@@ -32,13 +32,29 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * <p>Servlet specific class for multipart content support.</p>
+ * <p>Use {@link #from(ServletContextRequest.ServletApiRequest)} to
+ * parse multipart request content into a {@link Parts} object that can
+ * be used to access Servlet {@link Part} objects.</p>
+ *
+ * @see Parts
+ */
 public class ServletMultiParts
 {
-    public static Parts forRequest(ServletContextRequest.ServletApiRequest request) throws IOException
+    /**
+     * <p>Parses the request content assuming it is a multipart content,
+     * and returns a {@link Parts} objects that can be used to access
+     * individual {@link Part}s.</p>
+     *
+     * @param request the HTTP request with multipart content
+     * @return a {@link Parts} object to access the individual {@link Part}s
+     * @throws IOException if reading the request content fails
+     */
+    public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
     {
         try
         {
@@ -69,12 +85,12 @@ public class ServletMultiParts
         if (!StringUtil.isBlank(fileLocation))
             tmpDirFile = new File(fileLocation);
 
-        multiParts.setFileDirectory(tmpDirFile.toPath());
+        multiParts.setFilesDirectory(tmpDirFile.toPath());
         multiParts.setMaxMemoryFileSize(config.getFileSizeThreshold());
         multiParts.setMaxFileSize(config.getMaxFileSize());
         multiParts.setMaxLength(config.getMaxRequestSize());
         ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
-        multiParts.setHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
+        multiParts.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
@@ -85,7 +101,7 @@ public class ServletMultiParts
             int read = input.read(buffer);
             if (read < 0)
             {
-                multiParts.parse(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
+                multiParts.parse(Content.Chunk.EOF);
                 break;
             }
             multiParts.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
@@ -94,6 +110,9 @@ public class ServletMultiParts
         return new Parts(multiParts);
     }
 
+    /**
+     * <p>An ordered list of {@link Part}s that can be accessed by name.</p>
+     */
     public static class Parts
     {
         private final List<Part> parts = new ArrayList<>();
@@ -142,7 +161,7 @@ public class ServletMultiParts
         @Override
         public String getContentType()
         {
-            return _part.getHttpFields().get(HttpHeader.CONTENT_TYPE);
+            return _part.getHeaders().get(HttpHeader.CONTENT_TYPE);
         }
 
         @Override
@@ -168,7 +187,7 @@ public class ServletMultiParts
         {
             Path filePath = Path.of(fileName);
             if (!filePath.isAbsolute())
-                filePath = _multiParts.getFileDirectory().resolve(filePath).normalize();
+                filePath = _multiParts.getFilesDirectory().resolve(filePath).normalize();
             _part.writeTo(filePath);
         }
 
@@ -182,19 +201,19 @@ public class ServletMultiParts
         @Override
         public String getHeader(String name)
         {
-            return _part.getHttpFields().get(name);
+            return _part.getHeaders().get(name);
         }
 
         @Override
         public Collection<String> getHeaders(String name)
         {
-            return _part.getHttpFields().getValuesList(name);
+            return _part.getHeaders().getValuesList(name);
         }
 
         @Override
         public Collection<String> getHeaderNames()
         {
-            return _part.getHttpFields().getFieldNamesCollection();
+            return _part.getHeaders().getFieldNamesCollection();
         }
 
         @Override

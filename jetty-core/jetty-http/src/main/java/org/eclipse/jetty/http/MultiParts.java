@@ -37,10 +37,49 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
+/**
+ * <p>A {@link CompletableFuture} that is completed when a multipart/form-data content
+ * has been parsed asynchronously from a {@link Content.Source} via {@link #parse(Content.Source)}
+ * or from one or more {@link Content.Chunk}s via {@link #parse(Content.Chunk)}.</p>
+ * <p>Once the parsing of the multipart/form-data content completes successfully,
+ * objects of this class are completed with a {@link Parts} object.</p>
+ * <p>Objects of this class may be configured to save multipart files in a configurable
+ * directory, and configure the max size of such files, etc.</p>
+ * <p>Typical usage:</p>
+ * <pre>{@code
+ * // Some headers that include Content-Type.
+ * HttpFields headers = ...;
+ * String boundary = MultiParts.extractBoundary(headers.get(HttpHeader.CONTENT_TYPE));
+ *
+ * // Some multipart/form-data content.
+ * Content.Source content = ...;
+ *
+ * // Create and configure MultiParts.
+ * MultiParts multiParts = new MultiParts(boundary);
+ * // Where to store the files.
+ * multiParts.setFilesDirectory(Path.of("/tmp"));
+ * // Max 1 MiB files.
+ * multiParts.setMaxFileSize(1024 * 1024);
+ *
+ * // Parse the content.
+ * multiParts.parse(content)
+ *     // When complete, use the parts.
+ *     .thenAccept(parts -> ...);
+ * }</pre>
+ *
+ * @see Parts
+ */
 public class MultiParts extends CompletableFuture<MultiParts.Parts>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiParts.class);
 
+    /**
+     * <p>Extracts the value of the {@code boundary} parameter
+     * from the {@code Content-Type} header value.</p>
+     *
+     * @param contentType the {@code Content-Type} header value
+     * @return the value of the {@code boundary} parameter
+     */
     public static String extractBoundary(String contentType)
     {
         Map<String, String> parameters = new HashMap<>();
@@ -52,7 +91,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
     private final PartsListener listener = new PartsListener();
     private final MultiPart.Parser parser;
     private boolean useFilesForPartsWithoutFileName;
-    private Path fileDirectory;
+    private Path filesDirectory;
     private long maxFileSize = -1;
     private long maxMemoryFileSize;
     private long maxLength = -1;
@@ -63,11 +102,22 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
     }
 
+    /**
+     * @return the boundary string
+     */
     public String getBoundary()
     {
         return parser.getBoundary();
     }
 
+    /**
+     * <p>Parses the given multipart/form-data content.</p>
+     * <p>Returns this {@code MultiParts} object, so that it can be used
+     * in the typical "fluent" style of {@link CompletableFuture}.</p>
+     *
+     * @param content the multipart/form-data content to parse
+     * @return this {@code MultiParts} object
+     */
     public MultiParts parse(Content.Source content)
     {
         new Runnable()
@@ -98,6 +148,13 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         return this;
     }
 
+    /**
+     * <p>Parses the given chunk containing multipart/form-data bytes.</p>
+     * <p>One or more chunks may be passed to this method, until the parsing
+     * of the multipart/form-data content completes.</p>
+     *
+     * @param chunk the {@link Content.Chunk} to parse.
+     */
     public void parse(Content.Chunk chunk)
     {
         if (listener.isFailed())
@@ -129,14 +186,20 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
             .orElse(null);
     }
 
-    public int getHeadersMaxLength()
+    /**
+     * @return the max length of a {@link MultiPart.Part} headers, in bytes, or -1 for unlimited length
+     */
+    public int getPartHeadersMaxLength()
     {
-        return parser.getHeadersMaxLength();
+        return parser.getPartHeadersMaxLength();
     }
 
-    public void setHeadersMaxLength(int headersMaxLength)
+    /**
+     * @param partHeadersMaxLength the max length of a {@link MultiPart.Part} headers, in bytes, or -1 for unlimited length
+     */
+    public void setPartHeadersMaxLength(int partHeadersMaxLength)
     {
-        parser.setHeadersMaxLength(headersMaxLength);
+        parser.setPartHeadersMaxLength(partHeadersMaxLength);
     }
 
     /**
@@ -158,19 +221,19 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
     /**
      * @return the directory where files are saved
      */
-    public Path getFileDirectory()
+    public Path getFilesDirectory()
     {
-        return fileDirectory;
+        return filesDirectory;
     }
 
     /**
      * <p>Sets the directory where the files uploaded in the parts will be saved.</p>
      *
-     * @param fileDirectory the directory where files are saved
+     * @param filesDirectory the directory where files are saved
      */
-    public void setFileDirectory(Path fileDirectory)
+    public void setFilesDirectory(Path filesDirectory)
     {
-        this.fileDirectory = fileDirectory;
+        this.filesDirectory = filesDirectory;
     }
 
     /**
@@ -198,8 +261,8 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
     }
 
     /**
-     * <p>Sets the maximum memory file size in bytes, after which files will be save
-     * in the directory specified by {@link #setFileDirectory(Path)}.</p>
+     * <p>Sets the maximum memory file size in bytes, after which files will be saved
+     * in the directory specified by {@link #setFilesDirectory(Path)}.</p>
      * <p>Use value {@code 0} to always save the files in the directory.</p>
      * <p>Use value {@code -1} to never save the files in the directory.</p>
      *
@@ -239,6 +302,10 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         return listener.getParts();
     }
 
+    /**
+     * <p>An ordered list of {@link MultiPart.Part}s that can
+     * be accessed by index or by name, or iterated over.</p>
+     */
     public static class Parts implements Iterable<MultiPart.Part>
     {
         private final String boundary;
@@ -250,16 +317,34 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
             this.parts = parts;
         }
 
+        /**
+         * @return the boundary string
+         */
         public String getBoundary()
         {
             return boundary;
         }
 
+        /**
+         * <p>Returns the {@link MultiPart.Part}  at the given index, a number
+         * between {@code 0} included and the value returned by {@link #size()}
+         * excluded.</p>
+         *
+         * @param index the index of the {@code MultiPart.Part} to return
+         * @return the {@code MultiPart.Part} at the given index
+         */
         public MultiPart.Part get(int index)
         {
             return parts.get(index);
         }
 
+        /**
+         * <p>Returns the first {@link MultiPart.Part} with the given name, or
+         * {@code null} if no {@code MultiPart.Part} with that name exists.</p>
+         *
+         * @param name the {@code MultiPart.Part} name
+         * @return the first {@code MultiPart.Part} with the given name, or {@code null}
+         */
         public MultiPart.Part getFirst(String name)
         {
             return parts.stream()
@@ -268,6 +353,12 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                 .orElse(null);
         }
 
+        /**
+         * <p>Returns all the {@link MultiPart.Part}s with the given name.</p>
+         *
+         * @param name the {@code MultiPart.Part}s name
+         * @return all the {@code MultiPart.Part}s with the given name
+         */
         public List<MultiPart.Part> getAll(String name)
         {
             return parts.stream()
@@ -275,6 +366,10 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                 .toList();
         }
 
+        /**
+         * @return the number of parts
+         * @see #get(int)
+         */
         public int size()
         {
             return parts.size();
@@ -286,6 +381,12 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
             return parts.iterator();
         }
 
+        /**
+         * <p>Returns a new {@link MultiPart.ContentSource} with the same boundary
+         * as this object, and containing all the parts contained in this object.</p>
+         *
+         * @return a new {@link MultiPart.ContentSource} with all the parts of this object
+         */
         public MultiPart.ContentSource toContentSource()
         {
             MultiPart.ContentSource result = new MultiPart.ContentSource(getBoundary());
@@ -317,6 +418,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                 if (maxFileSize >= 0 && fileSize > maxFileSize)
                 {
                     onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
+                    chunk.release();
                     return;
                 }
 
@@ -337,6 +439,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                             }
                         }
                         write(buffer);
+                        chunk.release();
                         if (chunk.isLast())
                             close();
                         return;
@@ -382,12 +485,12 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         }
 
         @Override
-        protected MultiPart.Part newPart(String name, String fileName, HttpFields headers)
+        protected MultiPart.Part newPart(String name, String fileName, HttpFields headers, List<Content.Chunk> content)
         {
             if (fileChannel != null)
                 return new MultiPart.PathPart(name, fileName, headers, filePath);
             else
-                return super.newPart(name, fileName, headers);
+                return super.newPart(name, fileName, headers, content);
         }
 
         @Override
@@ -481,7 +584,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         {
             try
             {
-                Path directory = getFileDirectory();
+                Path directory = getFilesDirectory();
                 Files.createDirectories(directory);
                 String fileName = "MultiPart";
                 filePath = Files.createTempFile(directory, fileName, "");

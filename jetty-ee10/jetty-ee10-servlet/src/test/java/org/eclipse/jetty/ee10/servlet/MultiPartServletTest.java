@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -238,7 +239,7 @@ public class MultiPartServletTest
         MultiParts multiParts = new MultiParts(boundary);
 
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        multiParts.parse(Content.Chunk.from(IO.readBytes(inputStream), true));
+        multiParts.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));
         MultiParts.Parts parts = multiParts.join();
 
         assertThat(parts.size(), is(1));

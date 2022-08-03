@@ -770,7 +770,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
                 throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
             if (_multiParts == null)
-                _multiParts = ServletMultiParts.forRequest(this);
+                _multiParts = ServletMultiParts.from(this);
             return _multiParts.getParts();
         }
 

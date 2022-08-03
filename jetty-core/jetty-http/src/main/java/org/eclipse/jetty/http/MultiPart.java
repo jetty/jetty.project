@@ -29,10 +29,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.ChunkContentSource;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -48,8 +47,24 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * <p>Namespace class for interrelated classes that provide
+ * support for parsing and generating multipart bytes.</p>
+ * <p>Most applications should make use of {@link MultiParts}
+ * as it provides a simpler API.</p>
+ * <p>Multipart parsing is provided by {@link Parser}.</p>
+ * <p>Multipart generation is provided by {@link ContentSource}.</p>
+ * <p>A single part of a multipart content is represented by {@link Part}
+ * and its subclasses.</p>
+ *
+ * @see MultiParts
+ */
 public class MultiPart
 {
+    private MultiPart()
+    {
+    }
+
     /**
      * <p>A single part of a multipart content.</p>
      * <p>A part has an optional name, an optional fileName,
@@ -65,14 +80,14 @@ public class MultiPart
         {
             this.name = name;
             this.fileName = fileName;
-            this.fields = fields;
+            this.fields = fields != null ? fields : HttpFields.EMPTY;
         }
 
         /**
          * <p>Returns the name of this part, as specified by the
          * {@link HttpHeader#CONTENT_DISPOSITION}'s {@code name} parameter.</p>
          * <p>While the {@code name} parameter is mandatory per RFC 7578,
-         * older clients may not send it.</p>
+         * older HTTP clients may not send it.</p>
          *
          * @return the name of this part, or {@code null} if there is no name
          */
@@ -85,7 +100,7 @@ public class MultiPart
          * <p>Returns the file name of this part, as specified by the
          * {@link HttpHeader#CONTENT_DISPOSITION}'s {@code filename} parameter.</p>
          * <p>While the {@code filename} parameter is mandatory per RFC 7578 when
-         * uploading files, older clients may not send it.</p>
+         * uploading files, older HTTP clients may not send it.</p>
          * <p>The file name may be absent if the part is not a file upload.</p>
          *
          * @return the file name of this part, or {@code null} if there is no file name
@@ -98,7 +113,7 @@ public class MultiPart
         /**
          * <p>Returns the content of this part.</p>
          * <p>The content type and content encoding are specified in this part's
-         * {@link #getHttpFields() headers}.</p>
+         * {@link #getHeaders() headers}.</p>
          * <p>The content encoding may be specified by the part named {@code _charset_},
          * as specified in
          * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
@@ -124,7 +139,7 @@ public class MultiPart
         {
             try
             {
-                String contentType = getHttpFields().get(HttpHeader.CONTENT_TYPE);
+                String contentType = getHeaders().get(HttpHeader.CONTENT_TYPE);
                 String charsetName = MimeTypes.getCharsetFromContentType(contentType);
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
@@ -140,11 +155,17 @@ public class MultiPart
         /**
          * @return the headers associated with this part
          */
-        public HttpFields getHttpFields()
+        public HttpFields getHeaders()
         {
             return fields;
         }
 
+        /**
+         * <p>Writes the content of this part to the given path.</p>
+         *
+         * @param path the Path to write this part's content to
+         * @throws IOException if the write fails
+         */
         public void writeTo(Path path) throws IOException
         {
             try (OutputStream out = Files.newOutputStream(path))
@@ -155,7 +176,8 @@ public class MultiPart
     }
 
     /**
-     * <p>A {@link Part} that holds its content in memory.</p>
+     * <p>A {@link Part} that holds its content in memory,
+     * in one or more {@code ByteBuffer}s.</p>
      */
     public static class ByteBufferPart extends Part
     {
@@ -194,24 +216,24 @@ public class MultiPart
     }
 
     /**
-     * <p>A {@link Part} that holds its content in retainable memory.</p>
+     * <p>A {@link Part} that holds its content in one or more {@link Content.Chunk}s.</p>
      */
-    public static class ChunkPart extends Part
+    public static class ChunksPart extends Part
     {
-        private final List<Content.Chunk> content;
+        private final Content.Source content;
         private final long length;
 
-        public ChunkPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
+        public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
-            this.content = content;
+            this.content = new ChunksContentSource(content);
             this.length = content.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
         }
 
         @Override
         public Content.Source getContent()
         {
-            return new ChunkContentSource(content);
+            return content;
         }
 
         @Override
@@ -228,7 +250,7 @@ public class MultiPart
     }
 
     /**
-     * <p>A {@link Part} that holds its content in the file-system.</p>
+     * <p>A {@link Part} that holds its content in a file-system path.</p>
      */
     public static class PathPart extends Part
     {
@@ -290,6 +312,9 @@ public class MultiPart
         }
     }
 
+    /**
+     * <p>A {@link Part} whose content is a {@link Content.Source}.</p>
+     */
     public static class ContentSourcePart extends Part
     {
         private final Content.Source content;
@@ -319,12 +344,42 @@ public class MultiPart
         }
     }
 
+    /**
+     * <p>An asynchronous {@link Content.Source} where {@link Part}s can
+     * be added to it to form a multipart content.</p>
+     * <p>When this {@link Content.Source} is read, it will produce the
+     * bytes (including boundary separators) in the {@code multipart/form-data}
+     * format, as specified by
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7578">RFC 7578</a>.</p>
+     * <p>Typical asynchronous usage is the following:</p>
+     * <pre>{@code
+     * // Create a ContentSource specifying the boundary string.
+     * ContentSource source = new ContentSource("my_boundary");
+     *
+     * // Add parts to the ContentSource.
+     * source.addPart(new ByteBufferPart());
+     * source.addPart(new PathPart());
+     *
+     * // Close the ContentSource to signal
+     * // that no more parts will be added.
+     * source.close();
+     *
+     * // The Sink where this ContentSource is written to.
+     * Content.Sink sink = ...;
+     *
+     * // Copy this ContentSource to the Sink.
+     * Content.copy(source, sink, Callback.from(...));
+     * }</pre>
+     * <p>Reading from {@code ContentSource} may be performed at any time,
+     * even if not all the parts have been added yet.</p>
+     * <p>Adding parts and calling {@link #close()} may be done asynchronously
+     * from other threads.</p>
+     * <p>Eventually, reading from {@code ContentSource} will produce a last
+     * chunk when all the parts have been added and this {@code ContentSource}
+     * has been closed.</p>
+     */
     public static class ContentSource implements Content.Source, Closeable
     {
-        private static final byte[] CONTENT_DISPOSITION_BYTES = "Content-Disposition: form-data".getBytes(US_ASCII);
-        private static final byte[] CONTENT_DISPOSITION_NAME_BYTES = "; name=\"".getBytes(US_ASCII);
-        private static final byte[] CONTENT_DISPOSITION_FILENAME_BYTES = "; filename=\"".getBytes(US_ASCII);
-
         private final AutoLock lock = new AutoLock();
         private final SerializedInvoker invoker = new SerializedInvoker();
         private final Queue<Part> parts = new ArrayDeque<>();
@@ -333,9 +388,7 @@ public class MultiPart
         private final ByteBuffer middleBoundary;
         private final ByteBuffer onlyBoundary;
         private final ByteBuffer lastBoundary;
-        private ByteBufferPool byteBufferPool;
-        private boolean useDirectByteBuffers = true;
-        private int headersMaxLength = -1;
+        private int partHeadersMaxLength = -1;
         private State state = State.FIRST;
         private boolean closed;
         private Runnable demand;
@@ -344,7 +397,11 @@ public class MultiPart
 
         public ContentSource(String boundary)
         {
-            this.boundary = Objects.requireNonNull(boundary);
+            if (boundary.isBlank() || boundary.length() > 70)
+                throw new IllegalArgumentException("Invalid boundary: must consists of 1 to 70 characters");
+            // RFC 2046 requires the boundary to not end with a space.
+            boundary = boundary.stripTrailing();
+            this.boundary = boundary;
             String firstBoundaryLine = "--" + boundary + "\r\n";
             this.firstBoundary = ByteBuffer.wrap(firstBoundaryLine.getBytes(US_ASCII));
             String middleBoundaryLine = "\r\n" + firstBoundaryLine;
@@ -355,41 +412,42 @@ public class MultiPart
             this.lastBoundary = ByteBuffer.wrap(lastBoundaryLine.getBytes(US_ASCII));
         }
 
+        /**
+         * @return the boundary string
+         */
         public String getBoundary()
         {
             return boundary;
         }
 
-        public ByteBufferPool getByteBufferPool()
+        /**
+         * @return the max length of a {@link Part} headers, in bytes, or -1 for unlimited length
+         */
+        public int getPartHeadersMaxLength()
         {
-            return byteBufferPool;
+            return partHeadersMaxLength;
         }
 
-        public void setByteBufferPool(ByteBufferPool byteBufferPool)
+        /**
+         * @param partHeadersMaxLength the max length of a {@link Part} headers, in bytes, or -1 for unlimited length
+         */
+        public void setPartHeadersMaxLength(int partHeadersMaxLength)
         {
-            this.byteBufferPool = byteBufferPool;
+            this.partHeadersMaxLength = partHeadersMaxLength;
         }
 
-        public boolean isUseDirectByteBuffers()
-        {
-            return useDirectByteBuffers;
-        }
-
-        public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
-        {
-            this.useDirectByteBuffers = useDirectByteBuffers;
-        }
-
-        public int getHeadersMaxLength()
-        {
-            return headersMaxLength;
-        }
-
-        public void setHeadersMaxLength(int headersMaxLength)
-        {
-            this.headersMaxLength = headersMaxLength;
-        }
-
+        /**
+         * <p>Adds, if possible, the given {@link Part} to this {@code ContentSource}.</p>
+         * <p>{@code Part}s may be added until this {@code ContentSource} is
+         * {@link #close() closed}.</p>
+         * <p>This method returns {@code true} if the part was added, {@code false}
+         * if the part cannot be added because this {@code ContentSource} is
+         * already closed, or because it has been {@link #fail(Throwable) failed}.</p>
+         *
+         * @param part the {@link Part} to add
+         * @return whether the part has been added
+         * @see #close()
+         */
         public boolean addPart(Part part)
         {
             boolean wasEmpty;
@@ -405,6 +463,12 @@ public class MultiPart
             return true;
         }
 
+        /**
+         * <p>Closes this {@code ContentSource} so that no more parts may be added.</p>
+         * <p>Once this method is called, reading from this {@code ContentSource}
+         * will eventually produce a terminal multipart/form-data boundary,
+         * when all the part bytes have been read.</p>
+         */
         @Override
         public void close()
         {
@@ -487,31 +551,8 @@ public class MultiPart
                 }
                 case HEADERS ->
                 {
+                    HttpFields headers = customizePartHeaders(part);
                     Utf8StringBuilder builder = new Utf8StringBuilder(4096);
-                    HttpFields headers = part.getHttpFields();
-                    // Content-Disposition is mandatory.
-                    if (!headers.contains(HttpHeader.CONTENT_DISPOSITION))
-                    {
-                        builder.append(CONTENT_DISPOSITION_BYTES);
-                        String name = part.getName();
-                        if (name != null)
-                        {
-                            builder.append(CONTENT_DISPOSITION_NAME_BYTES);
-                            builder.append(name);
-                            builder.append("\"");
-                            checkHeadersLength(builder);
-                        }
-                        String fileName = part.getFileName();
-                        if (fileName != null)
-                        {
-                            builder.append(CONTENT_DISPOSITION_FILENAME_BYTES);
-                            builder.append(fileName);
-                            builder.append("\"");
-                            checkHeadersLength(builder);
-                        }
-                        builder.append("\r\n");
-                    }
-                    // Encode all the headers.
                     headers.forEach(field ->
                     {
                         HttpHeader header = field.getHeader();
@@ -524,18 +565,18 @@ public class MultiPart
                             builder.append(field.getName());
                             builder.append(": ");
                         }
-                        checkHeadersLength(builder);
+                        checkPartHeadersLength(builder);
                         String value = field.getValue();
                         if (value != null)
                         {
                             builder.append(value);
-                            checkHeadersLength(builder);
+                            checkPartHeadersLength(builder);
                         }
                         builder.append("\r\n");
                     });
                     builder.append("\r\n");
 
-                    // TODO: use the ByteBufferPool and useDirectByteBuffers!
+                    // TODO: use a ByteBuffer pool and direct ByteBuffers?
                     ByteBuffer byteBuffer = UTF_8.encode(builder.toString());
                     state = State.CONTENT;
                     yield Content.Chunk.from(byteBuffer, false);
@@ -547,7 +588,15 @@ public class MultiPart
                         yield chunk;
                     if (chunk.isLast())
                     {
-                        chunk = chunk.slice(false);
+                        if (!chunk.hasRemaining())
+                        {
+                            chunk.release();
+                            chunk = Content.Chunk.EMPTY;
+                        }
+                        else
+                        {
+                            chunk = Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
+                        }
                         state = State.MIDDLE;
                     }
                     yield chunk;
@@ -556,9 +605,24 @@ public class MultiPart
             };
         }
 
-        private void checkHeadersLength(Utf8StringBuilder builder)
+        protected HttpFields customizePartHeaders(Part part)
         {
-            int max = getHeadersMaxLength();
+            HttpFields headers = part.getHeaders();
+            if (headers.contains(HttpHeader.CONTENT_DISPOSITION))
+                return headers;
+            String value = "form-data";
+            String name = part.getName();
+            if (name != null)
+                value += "; name=" + QuotedStringTokenizer.quote(name);
+            String fileName = part.getFileName();
+            if (fileName != null)
+                value += "; filename=" + QuotedStringTokenizer.quote(fileName);
+            return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
+        }
+
+        private void checkPartHeadersLength(Utf8StringBuilder builder)
+        {
+            int max = getPartHeadersMaxLength();
             if (max > 0 && builder.length() > max)
                 throw new IllegalStateException("headers max length exceeded: %d".formatted(max));
         }
@@ -566,13 +630,28 @@ public class MultiPart
         @Override
         public void demand(Runnable demandCallback)
         {
-            boolean invoke;
+            boolean invoke = false;
             try (AutoLock ignored = lock.lock())
             {
                 if (this.demand != null)
                     throw new IllegalStateException("demand pending");
                 this.demand = Objects.requireNonNull(demandCallback);
-                invoke = !parts.isEmpty() || closed || errorChunk != null;
+
+                if (state == State.CONTENT)
+                {
+                    part.getContent().demand(() ->
+                    {
+                        try (AutoLock ignoredAgain = lock.lock())
+                        {
+                            this.demand = null;
+                        }
+                        demandCallback.run();
+                    });
+                }
+                else
+                {
+                    invoke = !parts.isEmpty() || closed || errorChunk != null;
+                }
             }
             if (invoke)
                 invoker.run(this::invokeDemandCallback);
@@ -635,6 +714,8 @@ public class MultiPart
      * <p>The parser emits events specified by {@link Listener}, that can be
      * implemented to support specific logic (for example, the max content
      * length of a part, etc.</p>
+     *
+     * @see #parse(Content.Chunk)
      */
     public static class Parser
     {
@@ -645,8 +726,8 @@ public class MultiPart
         private final String boundary;
         private final SearchPattern boundaryFinder;
         private final Listener listener;
-        private int headerLength;
-        private int headersMaxLength = -1;
+        private int partHeadersLength;
+        private int partHeadersMaxLength = -1;
         private State state;
         private int partialBoundaryMatch;
         private boolean crFlag;
@@ -669,20 +750,29 @@ public class MultiPart
             return boundary;
         }
 
-        public int getHeadersMaxLength()
+        /**
+         * @return the max length of a {@link Part} headers, in bytes, or -1 for unlimited length
+         */
+        public int getPartHeadersMaxLength()
         {
-            return headersMaxLength;
+            return partHeadersMaxLength;
         }
 
-        public void setHeadersMaxLength(int headersMaxLength)
+        /**
+         * @param partHeadersMaxLength the max length of a {@link Part} headers, in bytes, or -1 for unlimited length
+         */
+        public void setPartHeadersMaxLength(int partHeadersMaxLength)
         {
-            this.headersMaxLength = headersMaxLength;
+            this.partHeadersMaxLength = partHeadersMaxLength;
         }
 
+        /**
+         * <p>Resets this parser to make it ready to parse again a multipart/form-data content.</p>
+         */
         public void reset()
         {
             text.reset();
-            headerLength = 0;
+            partHeadersLength = 0;
             state = State.PREAMBLE;
             // Skip initial LF for the first boundary.
             partialBoundaryMatch = 1;
@@ -693,6 +783,19 @@ public class MultiPart
             fieldValue = null;
         }
 
+        /**
+         * <p>Parses the multipart/form-data bytes contained in the given {@link Content.Chunk}.</p>
+         * <p>Parsing the bytes will emit events to a {@link Listener}.</p>
+         * <p>The multipart/form-data content may be split into multiple chunks; each chunk should
+         * be passed to this method when it is available, with the last chunk signaling that the
+         * whole multipart/form-data content has been given to this parser, which will eventually
+         * emit the {@link Listener#onComplete() complete} event.</p>
+         * <p>In case of parsing errors, the {@link Listener#onFailure(Throwable) failure} event
+         * will be emitted.</p>
+         *
+         * @param chunk the {@link Content.Chunk} to parse
+         * @see Listener
+         */
         public void parse(Content.Chunk chunk)
         {
             ByteBuffer buffer = chunk.getByteBuffer();
@@ -725,7 +828,7 @@ public class MultiPart
                                 state = State.HEADER_START;
                                 trailingWhiteSpaces = 0;
                                 text.reset();
-                                headerLength = 0;
+                                partHeadersLength = 0;
                             }
                             else if (token.getByte() == '-')
                             {
@@ -909,7 +1012,7 @@ public class MultiPart
                         else
                         {
                             // Beginning of a field name.
-                            incrementAndCheckHeadersLength();
+                            incrementAndCheckPartHeadersLength();
                             text.append(token.getByte());
                             return State.HEADER_NAME;
                         }
@@ -929,7 +1032,7 @@ public class MultiPart
                     case COLON ->
                     {
                         // End of field name.
-                        incrementAndCheckHeadersLength();
+                        incrementAndCheckPartHeadersLength();
                         fieldName = text.toString();
                         trailingWhiteSpaces = 0;
                         text.reset();
@@ -940,7 +1043,7 @@ public class MultiPart
                         byte current = token.getByte();
                         if (trailingWhiteSpaces > 0)
                             throw new BadMessageException("invalid header name");
-                        incrementAndCheckHeadersLength();
+                        incrementAndCheckPartHeadersLength();
                         text.append(current);
                     }
                     default ->
@@ -948,7 +1051,7 @@ public class MultiPart
                         byte current = token.getByte();
                         if (Character.isWhitespace(current))
                         {
-                            incrementAndCheckHeadersLength();
+                            incrementAndCheckPartHeadersLength();
                             ++trailingWhiteSpaces;
                         }
                         else
@@ -986,7 +1089,7 @@ public class MultiPart
                     default ->
                     {
                         byte current = token.getByte();
-                        incrementAndCheckHeadersLength();
+                        incrementAndCheckPartHeadersLength();
                         if (Character.isWhitespace(current))
                         {
                             // Ignore leading whitespace.
@@ -1003,11 +1106,11 @@ public class MultiPart
             return false;
         }
 
-        private void incrementAndCheckHeadersLength()
+        private void incrementAndCheckPartHeadersLength()
         {
-            ++headerLength;
-            int max = getHeadersMaxLength();
-            if (max > 0 && headerLength > max)
+            ++partHeadersLength;
+            int max = getPartHeadersMaxLength();
+            if (max > 0 && partHeadersLength > max)
                 throw new IllegalStateException("headers max length exceeded: %d".formatted(max));
         }
 
@@ -1025,7 +1128,7 @@ public class MultiPart
                         // The boundary was fully matched.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
-                        notifyPartContent(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
+                        notifyPartContent(Content.Chunk.EOF);
                         notifyPartEnd();
                         return true;
                     }
@@ -1065,13 +1168,10 @@ public class MultiPart
             int boundaryOffset = boundaryFinder.match(buffer);
             if (boundaryOffset >= 0)
             {
-                int limit = buffer.limit();
                 int sliceLimit = buffer.position() + boundaryOffset;
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                     --sliceLimit;
-                buffer.limit(sliceLimit);
-                Content.Chunk content = chunk.slice(true);
-                buffer.limit(limit);
+                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, true);
                 buffer.position(buffer.position() + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
                 notifyPartEnd();
@@ -1082,18 +1182,15 @@ public class MultiPart
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
             if (partialBoundaryMatch > 0)
             {
-                int limit = buffer.limit();
-                int sliceLimit = limit - partialBoundaryMatch;
+                int sliceLimit = buffer.limit() - partialBoundaryMatch;
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                 {
                     // Remember that there was a CR in case there will be a boundary mismatch.
                     crContent = true;
                     --sliceLimit;
                 }
-                buffer.limit(sliceLimit);
-                Content.Chunk content = chunk.slice(false);
-                buffer.limit(limit);
-                buffer.position(limit);
+                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
+                buffer.position(buffer.limit());
                 if (content.hasRemaining())
                     notifyPartContent(content);
                 return false;
@@ -1105,17 +1202,14 @@ public class MultiPart
                 crContent = false;
                 notifyPartContent(Content.Chunk.from(CR.slice(), false));
             }
-            int limit = buffer.limit();
-            int sliceLimit = limit;
+            int sliceLimit = buffer.limit();
             if (buffer.get(sliceLimit - 1) == '\r')
             {
                 crContent = true;
                 --sliceLimit;
             }
-            buffer.limit(sliceLimit);
-            Content.Chunk content = chunk.slice(false);
-            buffer.limit(limit);
-            buffer.position(limit);
+            Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
+            buffer.position(buffer.limit());
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
@@ -1242,7 +1336,9 @@ public class MultiPart
             }
 
             /**
-             * <p>Callback method invoked when a part content chunk has been parsed.</p>
+             * <p>Callback method invoked when a part content {@code Chunk} has been parsed.</p>
+             * <p>The {@code Chunk} must be {@link Content.Chunk#release() released} when it
+             * has been consumed.</p>
              *
              * @param chunk the part content chunk, must be released after use
              */
@@ -1283,7 +1379,7 @@ public class MultiPart
     /**
      * <p>A {@link Parser.Listener} that emits {@link Part} objects.</p>
      * <p>The part content is stored in memory.</p>
-     * <p>Subclasses should just implement {@link #onPart(Part)} to
+     * <p>Subclasses may just implement {@link #onPart(Part)} to
      * receive the parts of the multipart content.</p>
      */
     public abstract static class AbstractPartsListener implements Parser.Listener
@@ -1375,7 +1471,7 @@ public class MultiPart
         @Override
         public void onPartEnd()
         {
-            Part part = newPart(getName(), getFileName(), fields.takeAsImmutable());
+            Part part = newPart(getName(), getFileName(), fields.takeAsImmutable(), List.copyOf(content));
             content.clear();
             name = null;
             fileName = null;
@@ -1389,9 +1485,9 @@ public class MultiPart
          */
         public abstract void onPart(Part part);
 
-        protected Part newPart(String name, String fileName, HttpFields headers)
+        protected Part newPart(String name, String fileName, HttpFields headers, List<Content.Chunk> content)
         {
-            return new ChunkPart(name, fileName, headers, List.copyOf(content));
+            return new ChunksPart(name, fileName, headers, content);
         }
 
         private void notifyPart(Part part)
