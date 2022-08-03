@@ -124,7 +124,7 @@ public interface ResourceFactory
         try
         {
             URI uri = url.toURI();
-            return Resource.createResource(uri);
+            return Resource.create(uri);
         }
         catch (URISyntaxException e)
         {
@@ -238,7 +238,7 @@ public interface ResourceFactory
                 else
                     LOG.warn("Leaked {} for {}", mount, uri);
             }
-            return Resource.createResource(uri);
+            return Resource.create(uri);
         }
 
         @Override
@@ -259,7 +259,7 @@ public interface ResourceFactory
             Resource.Mount mount = Resource.mountIfNeeded(uri);
             if (mount != null)
                 _mounts.add(mount);
-            return Resource.createResource(uri);
+            return Resource.create(uri);
         }
 
         @Override
@@ -282,7 +282,7 @@ public interface ResourceFactory
             Resource.Mount mount = Resource.mountIfNeeded(uri);
             if (mount != null)
                 _mounts.add(mount);
-            return Resource.createResource(uri);
+            return Resource.create(uri);
         }
 
         @Override

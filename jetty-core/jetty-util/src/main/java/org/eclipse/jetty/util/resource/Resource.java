@@ -161,7 +161,7 @@ public abstract class Resource
      * @param uri A URI.
      * @return A Resource object.
      */
-    static Resource createResource(URI uri)
+    static Resource create(URI uri)
     {
         try
         {
@@ -474,7 +474,7 @@ public abstract class Resource
                 uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uri.resolve(subUriPath);
         }
-        return createResource(resolvedUri);
+        return create(resolvedUri);
     }
 
     /**
