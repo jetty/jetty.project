@@ -27,11 +27,11 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -104,7 +104,7 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileUnMounted() throws Exception
+    public void testJarFileUnMounted()
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
@@ -119,10 +119,10 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileDeleted(@TempDir Path tempDir) throws Exception
+    public void testJarFileDeleted() throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
         Resource resource;
@@ -137,12 +137,11 @@ public class JarResourceTest
     }
 
     @Test
-    public void testDumpAndSweep(@TempDir Path tempDir) throws Exception
+    public void testDumpAndSweep() throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
-        URI uri = URI.create(s);
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
+        URI uri = URIUtil.uriJarPrefix(testZip.toUri(), "!/subdir/");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newResource(uri);
@@ -150,24 +149,22 @@ public class JarResourceTest
 
             String dump = FileSystemPool.INSTANCE.dump();
             assertThat(dump, containsString("FileSystemPool"));
-            assertThat(dump, containsString("mounts size=1"));
-            assertThat(dump, containsString("Mount[uri=jar:file:/"));
-            assertThat(dump, containsString("test.zip!/subdir"));
+            assertThat(dump, containsString("buckets size=1"));
+            assertThat(dump, containsString("+> " + testZip));
 
             Files.delete(testZip);
             FileSystemPool.INSTANCE.sweep();
 
             dump = FileSystemPool.INSTANCE.dump();
             assertThat(dump, containsString("FileSystemPool"));
-            assertThat(dump, containsString("mounts size=0"));
+            assertThat(dump, containsString("buckets size=0"));
 
             assertThrows(ClosedFileSystemException.class, resource::exists);
         }
     }
 
     @Test
-    public void testJarFileGetAllResoures()
-        throws Exception
+    public void testJarFileGetAllResources()
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
@@ -183,7 +180,6 @@ public class JarResourceTest
 
     @Test
     public void testJarFileIsContainedIn()
-        throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
@@ -219,7 +215,6 @@ public class JarResourceTest
 
     @Test
     public void testEncodedFileName()
-        throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt");
@@ -231,7 +226,7 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileResourceList() throws Exception
+    public void testJarFileResourceList()
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
@@ -261,7 +256,7 @@ public class JarResourceTest
      * Where the JAR entries contain names that are URI encoded / escaped
      */
     @Test
-    public void testJarFileResourceListPreEncodedEntries() throws Exception
+    public void testJarFileResourceListPreEncodedEntries()
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
@@ -287,7 +282,7 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileResourceListDirWithSpace() throws Exception
+    public void testJarFileResourceListDirWithSpace()
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
