@@ -535,19 +535,6 @@ public class AnnotationParser
     }
 
     /**
-     * Add a class as having been parsed.
-     *
-     * @param classname the name of the class
-     * @param location the fully qualified location of the class
-     */
-    private void addParsedClass(String classname, URI location)
-    {
-        URI existing = _parsedClassNames.putIfAbsent(classname, location);
-        if (existing != null)
-            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
-    }
-
-    /**
      * Parse a resource
      *
      * @param handlers the handlers to look for classes in
@@ -570,7 +557,7 @@ public class AnnotationParser
 
         if (r.isDirectory())
         {
-            parseDir(handlers, r, r.getPath());
+            parseDir(handlers, r);
             return;
         }
 
@@ -587,12 +574,13 @@ public class AnnotationParser
      * Parse all classes in a directory
      *
      * @param handlers the set of handlers to look for classes in
-     * @param baseResource the resource representing the baseResource being scanned (jar, dir, etc)
-     * @param dir the directory root to start the scanning of classes for
+     * @param dirResource the resource representing the baseResource being scanned (jar, dir, etc)
      * @throws Exception if unable to parse
      */
-    private void parseDir(Set<? extends Handler> handlers, Resource baseResource, Path dir) throws Exception
+    private void parseDir(Set<? extends Handler> handlers, Resource dirResource) throws Exception
     {
+        Path dir = dirResource.getPath();
+
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", dir.toUri());
 
@@ -609,7 +597,7 @@ public class AnnotationParser
                 {
                     try
                     {
-                        parseClass(handlers, baseResource, classFile);
+                        parseClass(handlers, dirResource, classFile);
                     }
                     catch (Exception ex)
                     {
@@ -642,8 +630,7 @@ public class AnnotationParser
         Path jarPath = jarResource.getPath();
         try (Resource.Mount jarMount = Resource.mountJar(jarPath))
         {
-            Path root = jarMount.root().getPath();
-            parseDir(handlers, jarResource, root);
+            parseDir(handlers, jarMount.root());
         }
     }
 
