@@ -407,7 +407,7 @@ public class FileSystemResourceTest
         Resource res = base.resolve("foo");
         assertThat("foo.exists", res.exists(), is(true));
         // delete it
-        assertThat("foo.delete", res.delete(), is(true));
+        Files.delete(res.getPath());
         // is it there?
         assertThat("foo.exists", res.exists(), is(false));
     }
@@ -423,7 +423,7 @@ public class FileSystemResourceTest
         Resource res = base.resolve("foo");
         assertThat("foo.exists", res.exists(), is(false));
         // delete it
-        assertThat("foo.delete", res.delete(), is(false));
+        Files.deleteIfExists(res.getPath());
         // is it there?
         assertThat("foo.exists", res.exists(), is(false));
     }
@@ -1276,7 +1276,7 @@ public class FileSystemResourceTest
         assertThat("Specials URL", res.getURI().toASCIIString(), containsString("a%20file%20with,spe%23ials"));
         assertThat("Specials Filename", res.getPath().toString(), containsString("a file with,spe#ials"));
 
-        res.delete();
+        Files.delete(res.getPath());
         assertThat("File should have been deleted.", res.exists(), is(false));
     }
 

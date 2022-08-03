@@ -52,12 +52,6 @@ public class OrderingTest
         }
 
         @Override
-        public boolean delete() throws SecurityException
-        {
-            return false;
-        }
-
-        @Override
         public boolean exists()
         {
             return true;
@@ -121,12 +115,6 @@ public class OrderingTest
         public List<String> list()
         {
             return null;
-        }
-
-        @Override
-        public boolean renameTo(Resource dest) throws SecurityException
-        {
-            return false;
         }
     }
 
