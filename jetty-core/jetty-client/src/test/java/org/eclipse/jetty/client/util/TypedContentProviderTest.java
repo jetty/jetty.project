@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Fields;
@@ -55,7 +55,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             {
                 assertEquals("POST", request.getMethod());
                 assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new FutureFormFields(request).whenComplete((fields, failure) ->
+                FormFields.from(request).whenComplete((fields, failure) ->
                 {
                     assertEquals(value1, fields.get(name1).getValue());
                     List<String> values = fields.get(name2).getValues();

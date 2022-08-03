@@ -19,19 +19,15 @@ import java.util.Queue;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DelayedHandler.class);
-
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
@@ -103,11 +99,11 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
 
-            Charset charset = FutureFormFields.getFormEncodedCharset(request);
+            Charset charset = FormFields.getFormEncodedCharset(request);
             if (charset == null)
                 return processor;
 
-            return new UntilFormFieldsProcessor(request, processor, charset);
+            return new UntilFormFieldsProcessor(request, processor);
         }
     }
 
@@ -115,15 +111,13 @@ public abstract class DelayedHandler extends Handler.Wrapper
     {
         private final Request _request;
         private final Request.Processor _processor;
-        private final Charset _charset;
         private Response _response;
         private Callback _callback;
 
-        public UntilFormFieldsProcessor(Request request, Request.Processor processor, Charset charset)
+        public UntilFormFieldsProcessor(Request request, Request.Processor processor)
         {
             _processor = processor;
             _request = request;
-            _charset = charset;
         }
 
         @Override
@@ -131,16 +125,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
-
-            // TODO get the max sizes
-            FutureFormFields futureFormFields = new FutureFormFields(_request, _charset, -1, -1);
-            _request.setAttribute(FutureFormFields.class.getName(), futureFormFields);
-            futureFormFields.run();
-
-            if (futureFormFields.isDone())
-                _processor.process(_request, response, callback);
-            else
-                futureFormFields.whenComplete(this);
+            FormFields.from(_request).whenComplete(this);
         }
 
         @Override

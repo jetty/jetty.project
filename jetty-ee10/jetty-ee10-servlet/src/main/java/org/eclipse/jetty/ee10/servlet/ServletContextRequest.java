@@ -66,7 +66,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1000,7 +1000,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 {
                     try
                     {
-                        _contentParameters =  FutureFormFields.forRequest(getRequest()).get();
+                        _contentParameters =  FormFields.from(getRequest()).get();
                         if (_contentParameters == null || _contentParameters.isEmpty())
                             _contentParameters = NO_PARAMS;
                     }
