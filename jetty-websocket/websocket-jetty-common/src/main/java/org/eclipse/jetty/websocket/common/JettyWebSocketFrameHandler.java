@@ -13,24 +13,38 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.api.*;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.exception.*;
-import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -357,30 +371,24 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            // Automatically respond if output is open.
-            if (coreSession.isOutputOpen())
+            // Automatically respond.
+            getSession().getRemote().sendPong(frame.getPayload(), new WriteCallback()
             {
-                ByteBuffer payload = BufferUtil.copy(frame.getPayload());
-                getSession().getRemote().sendPong(payload, new WriteCallback()
+                @Override
+                public void writeSuccess()
                 {
-                    @Override
-                    public void writeSuccess() {
-                        callback.succeeded();
-                        demand();
-                    }
+                    callback.succeeded();
+                    demand();
+                }
 
-                    @Override
-                    public void writeFailed(Throwable x) {
-                        callback.failed(x);
-                        demand();
-                    }
-                });
-            }
-            else
-            {
-                callback.succeeded();
-                demand();
-            }
+                @Override
+                public void writeFailed(Throwable x)
+                {
+                    // Ignore failures, we might be output closed and receive ping.
+                    callback.succeeded();
+                    demand();
+                }
+            });
         }
     }
 
