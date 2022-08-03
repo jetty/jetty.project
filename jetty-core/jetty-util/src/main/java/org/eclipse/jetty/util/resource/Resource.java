@@ -100,11 +100,10 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(List<Resource> resources)
+    public static ResourceCollection combine(Collection<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
             throw new IllegalArgumentException("No resources");
-
         return new ResourceCollection(resources);
     }
 
@@ -114,11 +113,10 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(Resource... resources)
+    public static ResourceCollection combine(Resource... resources)
     {
         if (resources == null || resources.length == 0)
             throw new IllegalArgumentException("No resources");
-
         return new ResourceCollection(List.of(resources));
     }
 

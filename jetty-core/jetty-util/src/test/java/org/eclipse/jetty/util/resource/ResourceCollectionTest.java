@@ -70,7 +70,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -91,7 +91,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -113,7 +113,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = Resource.of(
+        ResourceCollection rc = Resource.combine(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
                 resourceFactory.newResource(three)
@@ -139,7 +139,7 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = Resource.of(
+        ResourceCollection rc1 = Resource.combine(
             List.of(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
@@ -147,7 +147,7 @@ public class ResourceCollectionTest
             )
         );
 
-        ResourceCollection rc2 = Resource.of(
+        ResourceCollection rc2 = Resource.combine(
             List.of(
                 // the original ResourceCollection
                 rc1,

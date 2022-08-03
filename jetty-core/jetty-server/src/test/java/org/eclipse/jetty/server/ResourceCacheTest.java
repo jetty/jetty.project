@@ -136,7 +136,7 @@ public class ResourceCacheTest
             .map(ResourceFactory.root()::newResource)
             .toList();
 
-        ResourceCollection rc = Resource.of(resourceList);
+        ResourceCollection rc = Resource.combine(resourceList);
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -168,7 +168,7 @@ public class ResourceCacheTest
             .map(ResourceFactory.root()::newResource)
             .toList();
 
-        ResourceCollection rc = Resource.of(resourceList);
+        ResourceCollection rc = Resource.combine(resourceList);
 
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();

@@ -779,7 +779,7 @@ public class HTTPServerDocs
         ResourceHandler handler = new ResourceHandler();
 
         // For multiple directories, use ResourceCollection.
-        Resource resource = Resource.of(
+        Resource resource = Resource.combine(
             ResourceFactory.of(handler).newResource("/path/to/static/resources/"),
             ResourceFactory.of(handler).newResource("/another/path/to/static/resources/")
         );
