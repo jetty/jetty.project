@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory;
 public interface ResourceFactory
 {
     Logger LOG = LoggerFactory.getLogger(Resource.class);
+
+    Resource newResource(URI uri);
 
     /**
      * Construct a system resource from a string.
@@ -68,9 +70,9 @@ public interface ResourceFactory
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
-                url = null;
             }
         }
+
         if (url == null)
         {
             loader = Resource.class.getClassLoader();
@@ -132,8 +134,6 @@ public interface ResourceFactory
         }
     }
 
-    Resource newResource(URI uri);
-
     default Resource newResource(String resource)
     {
         return newResource(Resource.toURI(resource));
@@ -144,9 +144,9 @@ public interface ResourceFactory
         return newResource(path.toUri());
     }
 
-    default ResourceCollection newResource(List<URI> uris)
+    default ResourceCollection newResource(Collection<URI> uris)
     {
-        return new ResourceCollection(uris.stream().map(this::newResource).toList());
+        return Resource.combine(uris.stream().map(this::newResource).toList());
     }
 
     default Resource newResource(URL url)
@@ -168,6 +168,23 @@ public interface ResourceFactory
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    static ResourceFactory root()
+    {
+        return __ROOT;
+    }
+
+    static ResourceFactory.Closeable closeable()
+    {
+        return new Closeable();
+    }
+
+    static ResourceFactory.LifeCycle lifecycle()
+    {
+        LifeCycle factory = new LifeCycle();
+        org.eclipse.jetty.util.component.LifeCycle.start(factory);
+        return factory;
     }
 
     static ResourceFactory of(Resource baseResource)
@@ -194,34 +211,26 @@ public interface ResourceFactory
         };
     }
 
-    static ResourceFactory.Closeable closeable()
-    {
-        return new Closeable();
-    }
-
-    static ResourceFactory.ContainerResourceFactory container()
-    {
-        ContainerResourceFactory factory = new ContainerResourceFactory();
-        LifeCycle.start(factory);
-        return factory;
-    }
-
     static ResourceFactory of(Container container)
     {
         Objects.requireNonNull(container);
 
-        ContainerResourceFactory factory = container.getBean(ContainerResourceFactory.class);
+        LifeCycle factory = container.getBean(LifeCycle.class);
         if (factory == null)
         {
-            factory = container();
+            factory = lifecycle();
             container.addBean(factory, true);
+            final LifeCycle finalFactory = factory;
+            container.addEventListener(new org.eclipse.jetty.util.component.LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopped(org.eclipse.jetty.util.component.LifeCycle event)
+                {
+                    container.removeBean(finalFactory);
+                }
+            });
         }
         return factory;
-    }
-
-    static ResourceFactory root()
-    {
-        return __ROOT;
     }
 
     // TODO move somewhere else as a private field
@@ -272,7 +281,7 @@ public interface ResourceFactory
     }
 
     // TODO make this an interface and move impl somewhere private
-    class ContainerResourceFactory extends AbstractLifeCycle implements ResourceFactory, Dumpable
+    class LifeCycle extends AbstractLifeCycle implements ResourceFactory, Dumpable
     {
         private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
 

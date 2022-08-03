@@ -34,7 +34,7 @@ public class FileServerXml
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/fileserver.xml
-        ResourceFactory.ContainerResourceFactory resourceFactory = ResourceFactory.container();
+        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle(container);
         Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
         XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
         configuration.getProperties().put("http.port", Integer.toString(port));
