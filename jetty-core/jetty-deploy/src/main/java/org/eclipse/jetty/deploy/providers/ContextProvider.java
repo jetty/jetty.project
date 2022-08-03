@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
 
@@ -311,7 +312,7 @@ public class ContextProvider extends ScanningAppProvider
         initializeContextPath(contextHandler, path);
 
         if (Files.isDirectory(path))
-            contextHandler.setBaseResource(Resource.newResource(path));
+            contextHandler.setBaseResource(ResourceFactory.of(this).newResource(path));
 
         //TODO think of better way of doing this
         //pass through properties as attributes directly
@@ -359,7 +360,7 @@ public class ContextProvider extends ScanningAppProvider
             // Handle a context XML file
             if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(path, null, properties)
+                XmlConfiguration xmlc = new XmlConfiguration(ResourceFactory.of(this).newResource(path), null, properties)
                 {
                     @Override
                     public void initializeDefaults(Object context)

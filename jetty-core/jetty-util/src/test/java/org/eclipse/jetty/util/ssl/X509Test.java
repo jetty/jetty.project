@@ -17,15 +17,31 @@ import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class X509Test
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testIsCertSignNormal()
     {
@@ -128,7 +144,7 @@ public class X509Test
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        serverSsl.setKeyStoreResource(Resource.newResource(keystorePath));
+        serverSsl.setKeyStoreResource(ResourceFactory.ROOT.newResource(keystorePath));
         serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
     }
@@ -138,7 +154,7 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
-        clientSsl.setKeyStoreResource(Resource.newResource(keystorePath));
+        clientSsl.setKeyStoreResource(ResourceFactory.ROOT.newResource(keystorePath));
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();
     }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
@@ -21,7 +20,6 @@ import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -43,6 +41,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +55,14 @@ public class ResourceTest
 {
     private static final boolean DIR = true;
     private static final boolean EXISTS = true;
-    private static final List<Closeable> TO_CLOSE = new ArrayList<>();
+    private static final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
+
+    @AfterAll
+    public static void afterAll()
+    {
+        resourceFactory.close();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
 
     static class Scenario
     {
@@ -88,7 +94,7 @@ public class ResourceTest
             this.test = url.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(url);
+            resource = resourceFactory.newResource(url);
         }
 
         Scenario(String url, boolean exists, boolean dir)
@@ -96,7 +102,7 @@ public class ResourceTest
             this.test = url;
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(url);
+            resource = resourceFactory.newResource(url);
         }
 
         Scenario(URI uri, boolean exists, boolean dir)
@@ -104,7 +110,7 @@ public class ResourceTest
             this.test = uri.toASCIIString();
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(uri);
+            resource = resourceFactory.newResource(uri);
         }
 
         Scenario(File file, boolean exists, boolean dir)
@@ -112,7 +118,7 @@ public class ResourceTest
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = Resource.newResource(file.toPath());
+            resource = resourceFactory.newResource(file.toPath());
         }
 
         @Override
@@ -210,7 +216,7 @@ public class ResourceTest
         cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
         String urlRef = cases.uriRef.toASCIIString();
-        TO_CLOSE.add(Resource.mount(URI.create("jar:" + urlRef + "TestData/test.zip!/")));
+        resourceFactory.newResource(URI.create("jar:" + urlRef + "TestData/test.zip!/"));
         Scenario zdata = new Scenario("jar:" + urlRef + "TestData/test.zip!/", EXISTS, DIR);
         cases.addCase(zdata);
 
@@ -241,13 +247,6 @@ public class ResourceTest
     }
 
     public WorkDir workDir;
-
-    @AfterAll
-    public static void tearDown()
-    {
-        TO_CLOSE.forEach(IO::close);
-        TO_CLOSE.clear();
-    }
 
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -296,7 +295,7 @@ public class ResourceTest
         try
         {
             String globReference = testDir.toAbsolutePath() + File.separator + '*';
-            Resource globResource = Resource.newResource(globReference);
+            Resource globResource = resourceFactory.newResource(globReference);
             assertNotNull(globResource, "Should have produced a Resource");
         }
         catch (InvalidPathException e)
@@ -314,8 +313,8 @@ public class ResourceTest
         URI a = new URI("file:/C:/foo/bar");
         URI b = new URI("file:///C:/foo/bar");
 
-        Resource ra = Resource.newResource(a);
-        Resource rb = Resource.newResource(b);
+        Resource ra = resourceFactory.newResource(a);
+        Resource rb = resourceFactory.newResource(b);
 
         assertEquals(rb, ra);
     }
@@ -327,8 +326,8 @@ public class ResourceTest
         URI a = new URI("file:///c:/foo/bar");
         URI b = new URI("file:///C:/foo/bar");
         
-        Resource ra = Resource.newResource(a);
-        Resource rb = Resource.newResource(b);
+        Resource ra = resourceFactory.newResource(a);
+        Resource rb = resourceFactory.newResource(b);
 
         assertEquals(rb, ra);
     }
@@ -336,14 +335,14 @@ public class ResourceTest
     @Test
     public void testResourceExtraSlashStripping()
     {
-        Resource ra = Resource.newResource("file:/a/b/c");
+        Resource ra = resourceFactory.newResource("file:/a/b/c");
         Resource rb = ra.resolve("///");
         Resource rc = ra.resolve("///d/e///f");
 
         assertEquals(ra, rb);
         assertEquals(rc.getURI().getPath(), "/a/b/c/d/e/f");
 
-        Resource rd = Resource.newResource("file:///a/b/c");
+        Resource rd = resourceFactory.newResource("file:///a/b/c");
         Resource re = rd.resolve("///");
         Resource rf = rd.resolve("///d/e///f");
 
@@ -356,9 +355,9 @@ public class ResourceTest
     public void testWindowsResourceFromString()
     {
         // Check strings that look like URIs but actually are paths.
-        Resource ra = Resource.newResource("C:\\foo\\bar");
-        Resource rb = Resource.newResource("C:/foo/bar");
-        Resource rc = Resource.newResource("C:///foo/bar");
+        Resource ra = resourceFactory.newResource("C:\\foo\\bar");
+        Resource rb = resourceFactory.newResource("C:/foo/bar");
+        Resource rc = resourceFactory.newResource("C:///foo/bar");
 
         assertEquals(rb, ra);
         assertEquals(rb, rc);
@@ -367,7 +366,7 @@ public class ResourceTest
     @Test
     public void testClimbAboveBase()
     {
-        Resource resource = Resource.newResource("/foo/bar");
+        Resource resource = resourceFactory.newResource("/foo/bar");
         assertThrows(IllegalArgumentException.class, () -> resource.resolve(".."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./.."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./../bar"));
@@ -377,7 +376,7 @@ public class ResourceTest
     @Disabled
     public void testDotAlias()
     {
-        Resource resource = Resource.newResource("/foo/bar");
+        Resource resource = resourceFactory.newResource("/foo/bar");
         Resource same = resource.resolve(".");
         assertNotNull(same);
         assertTrue(same.isAlias());
@@ -389,6 +388,6 @@ public class ResourceTest
         Path jar = MavenTestingUtils.getTestResourcePathFile("example.jar");
         URI jarFileUri = URIUtil.toJarFileUri(jar.toUri());
         assertNotNull(jarFileUri);
-        assertThrows(IllegalStateException.class, () -> Resource.newResource(jarFileUri));
+        assertThrows(IllegalStateException.class, () -> resourceFactory.newResource(jarFileUri));
     }
 }

@@ -20,9 +20,7 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collection;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
@@ -31,7 +29,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Constraint;
@@ -176,7 +174,10 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      */
     protected KeyStore getKeyStore(String storePath, String storeType, String storeProvider, String storePassword) throws Exception
     {
-        return CertificateUtils.getKeyStore(Resource.newResource(storePath), storeType, storeProvider, storePassword);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            return CertificateUtils.getKeyStore(resourceFactory.newResource(storePath), storeType, storeProvider, storePassword);
+        }
     }
 
     /**

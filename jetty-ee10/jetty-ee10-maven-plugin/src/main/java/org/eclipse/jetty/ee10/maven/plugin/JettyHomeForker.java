@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * JettyHomeBaseForker
@@ -412,9 +413,9 @@ public class JettyHomeForker extends AbstractForker
 
         if (jettyHome == null)
         {
-            try (Resource.Mount mount = Resource.mountJar(jettyHomeZip.toPath()))
+            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
             {
-                Resource res = mount.root();
+                Resource res = resourceFactory.newJarFileResource(jettyHomeZip.toPath().toUri());
                 res.copyTo(baseDir.toPath()); // TODO: Resource.copyTo() cannot copy dir to dir, only file to file
             }
             //zip will unpack to target/jetty-home-<VERSION>

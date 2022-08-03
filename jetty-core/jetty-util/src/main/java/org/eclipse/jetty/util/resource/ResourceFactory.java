@@ -15,29 +15,184 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ResourceFactory.
  */
 public interface ResourceFactory
 {
-    /**
-     * <p>
-     * Returns the resource contained inside the current resource with the
-     * given name, which may or may not exist.
-     * </p>
-     * <p>
-     * The {@code subUriPath} parameter is interpreted like {@link URI#resolve(String)} would, except for a few convenient differences:
-     * <ul>
-     *     <li>{@code subUriPath} must not contain URI-invalid characters (<code>', [, %, ?</code> ...)</li>
-     *     <li>{@code subUriPath} can contain escaped characters that are going to be correctly interpreted</li>
-     *     <li>All prepended slashes are ignored</li>
-     *     <li>If the resulting resource provably points to an existing directory, a / is automatically appended</li>
-     * </ul>
-     *</p>
-     * @param subUriPath The path segment to add.
-     * @return the Resource for the resolved path within this Resource, never null
-     * @throws IOException if unable to resolve the path
-     */
-    Resource resolve(String subUriPath) throws IOException;
+    Logger LOG = LoggerFactory.getLogger(Resource.class);
+
+    Resource newResource(URI uri);
+
+    default Resource newResource(String resource)
+    {
+        return newResource(Resource.toURI(resource));
+    }
+
+    default Resource newResource(Path path)
+    {
+        return newResource(path.toUri());
+    }
+
+    default ResourceCollection newResource(List<URI> uris)
+    {
+        return new ResourceCollection(uris.stream().map(this::newResource).toList());
+    }
+
+    default Resource newResource(URL url)
+    {
+        try
+        {
+            return newResource(url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
+    }
+
+    default Resource newJarFileResource(URI uri)
+    {
+        if (!FileID.isArchive(uri))
+            throw new IllegalArgumentException("Path is not a Java Archive: " + uri);
+        if (!uri.getScheme().equalsIgnoreCase("file"))
+            throw new IllegalArgumentException("Not an allowed path: " + uri);
+        return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    static ResourceFactory of(Resource baseResource)
+    {
+        Objects.requireNonNull(baseResource);
+
+        if (baseResource instanceof ResourceFactory resourceFactory)
+            return resourceFactory;
+
+        return new ResourceFactory()
+        {
+            @Override
+            public Resource newResource(URI resource)
+            {
+                // TODO add an optimized pathway that keeps the URI and doesn't go via String
+                return newResource(resource.toString());
+            }
+
+            @Override
+            public Resource newResource(String resource)
+            {
+                return baseResource.resolve(resource);
+            }
+        };
+    }
+
+    static ResourceFactory.Closeable closeable()
+    {
+        return new Closeable();
+    }
+
+    static ResourceFactory of(Container container)
+    {
+        Objects.requireNonNull(container);
+
+        ContainerResourceFactory factory = container.getBean(ContainerResourceFactory.class);
+        if (factory == null)
+        {
+            factory = new ContainerResourceFactory();
+            LifeCycle.start(factory);
+            container.addBean(factory, true);
+        }
+        return factory;
+    }
+
+    // TODO move somewhere else as a private field, and expose via root() method instead
+    ResourceFactory ROOT = new ResourceFactory()
+    {
+        @Override
+        public Resource newResource(URI uri)
+        {
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Leaked {} for {}", mount, uri, new Throwable());
+                else
+                    LOG.warn("Leaked {} for {}", mount, uri);
+            }
+            return Resource.createResource(uri);
+        }
+
+        @Override
+        public Resource newResource(String resource)
+        {
+            return newResource(Resource.toURI(resource));
+        }
+    };
+
+    class Closeable implements ResourceFactory, java.io.Closeable
+    {
+        private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
+
+        @Override
+        public Resource newResource(URI uri)
+        {
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+                _mounts.add(mount);
+            return Resource.createResource(uri);
+        }
+
+        @Override
+        public void close()
+        {
+            for (Resource.Mount mount : _mounts)
+                IO.close(mount);
+            _mounts.clear();
+        }
+    }
+
+    class ContainerResourceFactory extends AbstractLifeCycle implements ResourceFactory, Dumpable
+    {
+        private final List<Resource.Mount> _mounts = new CopyOnWriteArrayList<>();
+
+        @Override
+        public Resource newResource(URI uri)
+        {
+            Resource.Mount mount = Resource.mountIfNeeded(uri);
+            if (mount != null)
+                _mounts.add(mount);
+            return Resource.createResource(uri);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            for (Resource.Mount mount : _mounts)
+                IO.close(mount);
+            _mounts.clear();
+            super.doStop();
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
+        }
+    }
 }

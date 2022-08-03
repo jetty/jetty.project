@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +54,7 @@ public class WebAppClassLoaderTest
     public void init() throws Exception
     {
         this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        Resource webapp = Resource.newResource(testWebappDir);
+        Resource webapp = ResourceFactory.ROOT.newResource(testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp.getPath());

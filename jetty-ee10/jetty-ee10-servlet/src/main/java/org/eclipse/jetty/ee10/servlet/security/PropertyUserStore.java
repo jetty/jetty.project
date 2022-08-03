@@ -28,11 +28,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,18 +90,15 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         }
 
         URI uri = URI.create(config);
-        try (Resource.Mount mount = Resource.mountIfNeeded(uri))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            if (mount == null)
+            if (!FileID.isArchive(uri))
             {
-                Path configPath = Resource.newResource(uri).getPath();
-                if (configPath == null)
-                    throw new IllegalArgumentException(config);
-                _configPath = configPath;
+                _configPath = Path.of(uri);
             }
             else
             {
-                Resource configResource = mount.root();
+                Resource configResource = resourceFactory.newResource(uri);
                 _configPath = extractPackedFile(configResource);
             }
         }
@@ -178,7 +177,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         if (_configPath == null)
             return null;
-        return Resource.newResource(_configPath);
+        return ResourceFactory.ROOT.newResource(_configPath);
     }
 
     /**

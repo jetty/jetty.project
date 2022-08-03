@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpContent.ContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * An HttpContent.Factory for transient content (not cached).  The HttpContent's created by
@@ -36,14 +35,14 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 //TODO remove
 public class ResourceContentFactory implements ContentFactory
 {
-    private final ResourceFactory _factory;
+    private final Resource _resource;
     private final MimeTypes _mimeTypes;
     private final List<CompressedContentFormat> _precompressedFormats;
 
-    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, List<CompressedContentFormat> precompressedFormats)
+    public ResourceContentFactory(Resource resource, MimeTypes mimeTypes, List<CompressedContentFormat> precompressedFormats)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _factory = factory;
+        _resource = resource;
         _mimeTypes = mimeTypes;
         _precompressedFormats = precompressedFormats;
     }
@@ -54,7 +53,7 @@ public class ResourceContentFactory implements ContentFactory
         try
         {
             // try loading the content from our factory.
-            Resource resource = _factory.resolve(pathInContext);
+            Resource resource = this._resource.resolve(pathInContext);
             return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)
@@ -90,7 +89,7 @@ public class ResourceContentFactory implements ContentFactory
             for (CompressedContentFormat format : _precompressedFormats)
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
-                Resource compressedResource = _factory.resolve(compressedPathInContext);
+                Resource compressedResource = this._resource.resolve(compressedPathInContext);
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
@@ -105,6 +104,6 @@ public class ResourceContentFactory implements ContentFactory
     @Override
     public String toString()
     {
-        return "ResourceContentFactory[" + _factory + "]@" + hashCode();
+        return "ResourceContentFactory[" + _resource + "]@" + hashCode();
     }
 }

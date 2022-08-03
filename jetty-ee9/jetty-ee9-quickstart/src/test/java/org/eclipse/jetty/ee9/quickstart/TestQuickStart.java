@@ -23,7 +23,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -240,7 +240,7 @@ public class TestQuickStart
         quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
 
         //apply the context xml file
-        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTargetFile("test-classes/context.xml").toPath()));
+        XmlConfiguration xmlConfig = new XmlConfiguration(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTargetFile("test-classes/context.xml").toPath()));
         xmlConfig.configure(quickstart);
 
         //generate the quickstart

@@ -78,9 +78,10 @@ import javax.net.ssl.X509TrustManager;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
@@ -95,7 +96,7 @@ import org.slf4j.LoggerFactory;
  * and {@link Client} to configure HTTP or WebSocket clients.</p>
  */
 @ManagedObject
-public abstract class SslContextFactory extends AbstractLifeCycle implements Dumpable
+public abstract class SslContextFactory extends ContainerLifeCycle implements Dumpable
 {
     public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509ExtendedTrustManagerWrapper(null)};
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
@@ -631,14 +632,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void setKeyStorePath(String keyStorePath)
     {
-        try
-        {
-            _keyStoreResource = Resource.newResource(keyStorePath);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        _keyStoreResource = ResourceFactory.of(this).newResource(keyStorePath);
     }
 
     /**
@@ -709,21 +703,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        if (StringUtil.isEmpty(trustStorePath))
-        {
-            _trustStoreResource = null;
-        }
-        else
-        {
-            try
-            {
-                _trustStoreResource = Resource.newResource(trustStorePath);
-            }
-            catch (Exception e)
-            {
-                throw new IllegalArgumentException(e);
-            }
-        }
+        _trustStoreResource = StringUtil.isEmpty(trustStorePath) ? null : ResourceFactory.of(this).newResource(trustStorePath);
     }
 
     /**

@@ -69,6 +69,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -756,7 +757,7 @@ public class HTTPServerDocs
         // Create and configure a ResourceHandler.
         ResourceHandler handler = new ResourceHandler();
         // Configure the directory where static resources are located.
-        handler.setBaseResource(Resource.newResource("/path/to/static/resources/"));
+        handler.setBaseResource(ResourceFactory.of(handler).newResource("/path/to/static/resources/"));
         // Configure directory listing.
         // TODO: is the directoriesListed feature still present?
 //        handler.setDirectoriesListed(false);
@@ -779,8 +780,8 @@ public class HTTPServerDocs
 
         // For multiple directories, use ResourceCollection.
         Resource resource = Resource.of(
-            Resource.newResource("/path/to/static/resources/"),
-            Resource.newResource("/another/path/to/static/resources/")
+            ResourceFactory.of(handler).newResource("/path/to/static/resources/"),
+            ResourceFactory.of(handler).newResource("/another/path/to/static/resources/")
         );
         handler.setBaseResource(resource);
         // end::multipleResourcesHandler[]

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -71,6 +70,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,9 +81,8 @@ public class DefaultServlet extends HttpServlet
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
 
-    private Resource.Mount _resourceBaseMount;
+    private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private Resource.Mount _stylesheetMount;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
 
@@ -102,9 +101,8 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                URI resourceUri = Resource.toURI(rb);
-                _resourceBaseMount = Resource.mountIfNeeded(resourceUri);
-                _baseResource = Resource.newResource(resourceUri);
+                _resourceFactory = ResourceFactory.closeable();
+                _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)
             {
@@ -173,9 +171,7 @@ public class DefaultServlet extends HttpServlet
         {
             if (stylesheet != null)
             {
-                URI uri = Resource.toURI(stylesheet);
-                _stylesheetMount = Resource.mountIfNeeded(uri);
-                _stylesheet = Resource.newResource(uri);
+                _stylesheet = _resourceFactory.newResource(stylesheet);
                 if (!_stylesheet.exists())
                 {
                     LOG.warn("Stylesheet {} does not exist", stylesheet);
@@ -234,8 +230,7 @@ public class DefaultServlet extends HttpServlet
     public void destroy()
     {
         super.destroy();
-        IO.close(_stylesheetMount);
-        IO.close(_resourceBaseMount);
+        IO.close(_resourceFactory);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)

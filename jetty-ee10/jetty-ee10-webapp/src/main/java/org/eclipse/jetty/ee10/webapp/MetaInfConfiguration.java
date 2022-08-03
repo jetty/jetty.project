@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String METAINF_RESOURCES = "org.eclipse.jetty.resources";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
-    public static final List<String> __allScanTypes = (List<String>)Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
+    public static final List<String> __allScanTypes = Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
 
     /**
      * ContainerPathNameMatcher
@@ -106,9 +107,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
 
         @Override
-        public void matched(URI uri) throws Exception
+        public void matched(URI uri)
         {
-            _context.getMetaData().addContainerResource(Resource.newResource(uri));
+            _context.getMetaData().addContainerResource(_resourceFactory.newResource(uri));
         }
     }
 
@@ -139,9 +140,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
 
         @Override
-        public void matched(URI uri) throws Exception
+        public void matched(URI uri)
         {
-            _context.getMetaData().addWebInfResource(Resource.newResource(uri));
+            _context.getMetaData().addWebInfResource(_resourceFactory.newResource(uri));
         }
     }
 
@@ -151,7 +152,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
-    private List<Resource.Mount> _mountedResources;
+    private ResourceFactory.Closeable _resourceFactory;
 
     public MetaInfConfiguration()
     {
@@ -161,6 +162,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
+        _resourceFactory = new ResourceFactory.Closeable();
+
         //find container jars/modules and select which ones to scan
         findAndFilterContainerPaths(context);
 
@@ -176,11 +179,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        if (_mountedResources != null)
-        {
-            _mountedResources.forEach(IO::close);
-            _mountedResources.clear();
-        }
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
         super.deconfigure(context);
     }
 
@@ -475,19 +475,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 // Resource represents a packed jar
                 URI uri = target.getURI();
-                URI jarBaseUri = URIUtil.uriJarPrefix(uri, "!/META-INF/resources");
-                Resource.Mount mount = Resource.mountIfNeeded(jarBaseUri);
-                if (mount != null)
-                {
-                    resourcesDir = mount.root();
-                    if (_mountedResources == null)
-                        _mountedResources = new ArrayList<>();
-                    _mountedResources.add(mount);
-                }
-                else
-                {
-                    resourcesDir = Resource.newResource(jarBaseUri);
-                }
+                resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
             if (cache != null)
@@ -554,12 +542,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
-                webFrag = Resource.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
+                webFrag = _resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
             }
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+                webFrag = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
             if (cache != null)
@@ -708,11 +696,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public Collection<URL> getTlds(URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource.Mount mount = Resource.mount(URIUtil.uriJarPrefix(uri, "!/"));
-        if (_mountedResources == null)
-            _mountedResources = new ArrayList<>();
-        _mountedResources.add(mount);
-        try (Stream<Path> stream = Files.walk(mount.root().getPath()))
+        Resource r = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/"));
+        try (Stream<Path> stream = Files.walk(r.getPath()))
         {
             Iterator<Path> it = stream
                 .filter(Files::isRegularFile)

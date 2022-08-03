@@ -54,7 +54,8 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -68,6 +69,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 @Tag("large-disk-resource")
@@ -86,6 +88,7 @@ public class HugeResourceTest
     @BeforeAll
     public static void prepareStaticFiles() throws IOException
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         staticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-static-base");
         FS.ensureDirExists(staticBase);
 
@@ -128,6 +131,7 @@ public class HugeResourceTest
         quietlyDelete(staticBase);
         quietlyDelete(outputDir);
         quietlyDelete(multipartTempDir);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private static void quietlyDelete(Path path)
@@ -187,7 +191,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(Resource.newResource(staticBase));
+        context.setBaseResource(ResourceFactory.ROOT.newResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");

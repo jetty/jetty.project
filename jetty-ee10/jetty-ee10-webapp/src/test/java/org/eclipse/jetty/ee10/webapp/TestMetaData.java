@@ -21,13 +21,16 @@ import java.util.List;
 import org.acme.webapp.TestAnnotation;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,7 +43,7 @@ public class TestMetaData
     File nonFragFile;
     Resource fragResource;
     Resource nonFragResource;
-    Resource.Mount mount;
+    ResourceFactory.Closeable resourceFactory;
     Resource webfragxml;
     Resource containerDir;
     Resource webInfClassesDir;
@@ -55,18 +58,19 @@ public class TestMetaData
     @BeforeEach
     public void setUp() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         File jarDir = new File(MavenTestingUtils.getTestResourcesDir(), "fragments");
         assertTrue(jarDir.exists());
         fragFile = new File(jarDir, "zeta.jar");
         assertTrue(fragFile.exists());
-        fragResource = Resource.newResource(fragFile.toPath());
+        resourceFactory = ResourceFactory.closeable();
+        fragResource = resourceFactory.newResource(fragFile.toPath());
         nonFragFile = new File(jarDir, "sigma.jar");
-        nonFragResource = Resource.newResource(nonFragFile.toPath());
+        nonFragResource = resourceFactory.newResource(nonFragFile.toPath());
         assertTrue(nonFragFile.exists());
-        mount = Resource.mountJar(fragFile.toPath());
-        webfragxml = mount.root().resolve("/META-INF/web-fragment.xml");
-        containerDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
-        webInfClassesDir = Resource.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
+        webfragxml = resourceFactory.newResource(fragFile.toPath()).resolve("/META-INF/web-fragment.xml");
+        containerDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
+        webInfClassesDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
         wac = new WebAppContext();
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);
@@ -79,7 +83,8 @@ public class TestMetaData
     @AfterEach
     public void tearDown()
     {
-        IO.close(mount);
+        IO.close(resourceFactory);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

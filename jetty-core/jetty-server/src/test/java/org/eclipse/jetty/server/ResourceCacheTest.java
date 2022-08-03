@@ -32,8 +32,12 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +47,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -53,6 +58,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ResourceCacheTest
 {
     public WorkDir workDir;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
 
     public Path createUtilTestResources(Path basePath) throws IOException
     {
@@ -116,7 +133,7 @@ public class ResourceCacheTest
 
         List<Resource> resourceList = Stream.of("one", "two", "three")
             .map(basePath::resolve)
-            .map(Resource::newResource)
+            .map(ResourceFactory.ROOT::newResource)
             .toList();
 
         ResourceCollection rc = Resource.of(resourceList);
@@ -148,7 +165,7 @@ public class ResourceCacheTest
 
         List<Resource> resourceList = Stream.of("one", "two", "three")
             .map(basePath::resolve)
-            .map(Resource::newResource)
+            .map(ResourceFactory.ROOT::newResource)
             .toList();
 
         ResourceCollection rc = Resource.of(resourceList);
@@ -206,7 +223,7 @@ public class ResourceCacheTest
             names[i] = tmpFile.getFileName().toString();
         }
 
-        directory = Resource.newResource(files[0].getParentFile().getAbsolutePath());
+        directory = ResourceFactory.ROOT.newResource(files[0].getParentFile().getAbsolutePath());
 
         cache = new CachedContentFactory(null, directory, new MimeTypes(), false, false, CompressedContentFormat.NONE);
 
@@ -355,7 +372,7 @@ public class ResourceCacheTest
     {
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
-        Resource resource = Resource.newResource(basePath.resolve("four"));
+        Resource resource = ResourceFactory.ROOT.newResource(basePath.resolve("four"));
         MimeTypes mime = new MimeTypes();
 
         CachedContentFactory cache = new CachedContentFactory(null, resource, mime, false, false, CompressedContentFormat.NONE);

@@ -29,18 +29,34 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectionOpenCloseTest extends AbstractHttpTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testOpenClose() throws Exception
     {
@@ -156,7 +172,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore.toPath()));
+        sslContextFactory.setKeyStoreResource(ResourceFactory.ROOT.newResource(keystore.toPath()));
         sslContextFactory.setKeyStorePassword("storepwd");
         server.addBean(sslContextFactory);
 

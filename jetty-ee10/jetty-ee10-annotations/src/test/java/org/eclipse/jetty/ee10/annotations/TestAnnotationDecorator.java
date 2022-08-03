@@ -26,6 +26,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +88,7 @@ public class TestAnnotationDecorator
     {
         Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
         Files.createFile(dummyXml);
-        Resource dummyXmlResource = Resource.newResource(dummyXml);
+        Resource dummyXmlResource = ResourceFactory.ROOT.newResource(dummyXml);
 
         assertThrows(NullPointerException.class, () ->
         {

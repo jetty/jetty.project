@@ -27,9 +27,12 @@ import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -37,6 +40,18 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class PathResourceTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testNonDefaultFileSystemGetInputStream() throws URISyntaxException, IOException
     {
@@ -52,7 +67,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = (PathResource)Resource.newResource(manifestPath);
+            PathResource resource = (PathResource)ResourceFactory.ROOT.newResource(manifestPath);
 
             try (InputStream inputStream = resource.newInputStream())
             {
@@ -76,7 +91,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            PathResource resource = (PathResource)Resource.newResource(manifestPath);
+            PathResource resource = (PathResource)ResourceFactory.ROOT.newResource(manifestPath);
 
             try (ReadableByteChannel channel = resource.newReadableByteChannel())
             {
@@ -100,7 +115,7 @@ public class PathResourceTest
             Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
             assertThat(manifestPath, is(not(nullValue())));
 
-            Resource resource = Resource.newResource(manifestPath);
+            Resource resource = ResourceFactory.ROOT.newResource(manifestPath);
             Path path = resource.getPath();
             assertThat("Path should not be null even for non-default FileSystem", path, notNullValue());
         }
@@ -110,7 +125,7 @@ public class PathResourceTest
     public void testDefaultFileSystemGetFile() throws Exception
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource resource = (PathResource)Resource.newResource(exampleJar);
+        PathResource resource = (PathResource)ResourceFactory.ROOT.newResource(exampleJar);
 
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
@@ -121,8 +136,8 @@ public class PathResourceTest
     {
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource rPathResource = (PathResource)Resource.newResource(rpath);
-        PathResource ePathResource = (PathResource)Resource.newResource(epath);
+        PathResource rPathResource = (PathResource)ResourceFactory.ROOT.newResource(rpath);
+        PathResource ePathResource = (PathResource)ResourceFactory.ROOT.newResource(epath);
 
         assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
         assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
@@ -131,7 +146,7 @@ public class PathResourceTest
         try
         {
             Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
-            ePathResource2 = (PathResource)Resource.newResource(epath2);
+            ePathResource2 = (PathResource)ResourceFactory.ROOT.newResource(epath2);
         }
         catch (Throwable th)
         {

@@ -37,13 +37,15 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ForcedServletTest
@@ -54,6 +56,7 @@ public class ForcedServletTest
     @BeforeEach
     public void setup() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -74,13 +77,19 @@ public class ForcedServletTest
 
 
         // Use the new base
-        context.setWarResource(Resource.newResource(basePath));
+        context.setWarResource(ResourceFactory.ROOT.newResource(basePath));
 
         server.setHandler(context);
         // server.setDumpAfterStart(true);
         server.start();
     }
 
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+    
     private void copyClass(Class<?> clazz, Path destClasses) throws IOException
     {
         String classRelativeFilename = clazz.getName().replace('.', '/') + ".class";

@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -146,8 +147,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
-        cf.setKeyStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
+        cf.setTrustStoreResource(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
+        cf.setKeyStoreResource(ResourceFactory.ROOT.newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);

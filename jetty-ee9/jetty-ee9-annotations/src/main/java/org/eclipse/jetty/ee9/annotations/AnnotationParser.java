@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -572,7 +573,7 @@ public class AnnotationParser
         URL resource = Loader.getResource(classRef);
         if (resource != null)
         {
-            Resource r = Resource.newResource(resource);
+            Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
             addParsedClass(className, r.getURI());
             try (InputStream is = Files.newInputStream(r.getPath()))
             {
@@ -598,7 +599,7 @@ public class AnnotationParser
             URL resource = Loader.getResource(nameAsResource);
             if (resource != null)
             {
-                Resource r = Resource.newResource(resource);
+                Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
                 addParsedClass(clazz.getName(), r.getURI());
                 try (InputStream is = Files.newInputStream(r.getPath()))
                 {
@@ -647,7 +648,7 @@ public class AnnotationParser
                 URL resource = Loader.getResource(classRef);
                 if (resource != null)
                 {
-                    Resource r = Resource.newResource(resource);
+                    Resource r = ResourceFactory.ROOT.newResource(resource); // TODO leak
                     addParsedClass(className, r.getURI());
                     try (InputStream is = Files.newInputStream(r.getPath()))
                     {
@@ -703,7 +704,7 @@ public class AnnotationParser
         if (uri == null)
             return;
 
-        parse(handlers, Resource.newResource(uri));
+        parse(handlers, ResourceFactory.ROOT.newResource(uri)); // TODO leak
     }
 
     /**
@@ -785,7 +786,7 @@ public class AnnotationParser
                         addParsedClass(str, r.getURI());
                         try (InputStream is = Files.newInputStream(path))
                         {
-                            scanClass(handlers, Resource.newResource(path.getParent()), is);
+                            scanClass(handlers, ResourceFactory.ROOT.newResource(path.getParent()), is);
                         }
                     }
                     catch (Exception ex)

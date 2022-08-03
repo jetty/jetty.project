@@ -97,6 +97,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -903,7 +904,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     /**
-     * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
+     * Convert URL to Resource wrapper for {@link ResourceFactory#newResource(URL)} enables extensions to provide alternate resource implementations.
      *
      * @param url the url to convert to a Resource
      * @return the Resource for that url
@@ -911,11 +912,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource newResource(URL url) throws IOException
     {
-        return Resource.newResource(url);
+        return ResourceFactory.of(this).newResource(url);
     }
 
     /**
-     * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
+     * Convert URL to Resource wrapper for {@link ResourceFactory#newResource(URL)} enables extensions to provide alternate resource implementations.
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
@@ -923,11 +924,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource newResource(URI uri) throws IOException
     {
-        return Resource.newResource(uri);
+        return ResourceFactory.ROOT.newResource(uri);
     }
 
     /**
-     * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link Resource#newResource(String)}.
+     * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link ResourceFactory#newResource(String)}.
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
@@ -935,7 +936,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource newResource(String urlOrPath) throws IOException
     {
-        return Resource.newResource(urlOrPath);
+        return ResourceFactory.of(this).newResource(urlOrPath);
     }
 
     public Set<String> getResourcePaths(String path)
@@ -3115,7 +3116,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                Resource r = Resource.newResource(url);
+                Resource r = ResourceFactory.of(ServletContextHandler.this).newResource(url);
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;

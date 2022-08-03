@@ -28,8 +28,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,6 @@ import static org.hamcrest.Matchers.is;
 public class JarServerTest extends AbstractEmbeddedTest
 {
     private Server server;
-    private Resource.Mount mount;
 
     @BeforeEach
     public void startServer() throws Exception
@@ -50,10 +48,9 @@ public class JarServerTest extends AbstractEmbeddedTest
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
 
-        mount = Resource.mountJar(jarFile);
         server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
-        context.setBaseResource(mount.root().getPath());
+        context.setBaseResource(ResourceFactory.of(context).newResource(jarFile));
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
         server.setHandler(new Handler.Collection(context, new DefaultHandler()));
         server.start();
@@ -63,7 +60,6 @@ public class JarServerTest extends AbstractEmbeddedTest
     public void stopServer() throws Exception
     {
         server.stop();
-        IO.close(mount);
     }
 
     @Test

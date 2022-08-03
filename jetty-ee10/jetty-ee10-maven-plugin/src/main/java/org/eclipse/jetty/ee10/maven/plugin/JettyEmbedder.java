@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * JettyEmbedded
@@ -283,7 +283,7 @@ public class JettyEmbedder extends AbstractLifeCycle
             Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
             if (Files.exists(qs) && Files.isRegularFile(qs))
             {
-                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(qs));
+                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, ResourceFactory.of(webApp).newResource(qs));
                 webApp.addConfiguration(new MavenQuickStartConfiguration());
                 webApp.setAttribute(QuickStartConfiguration.MODE, Mode.QUICKSTART);
             }

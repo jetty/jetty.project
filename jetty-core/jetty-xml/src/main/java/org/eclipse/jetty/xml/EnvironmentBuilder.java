@@ -22,6 +22,7 @@ import java.util.List;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * A Builder of {@link Environment}s intended to be used in XML
@@ -49,7 +50,7 @@ public class EnvironmentBuilder
         {
             try
             {
-                _classpath.add(Resource.newResource(classPath).getURI().toURL());
+                _classpath.add(ResourceFactory.ROOT.newResource(classPath).getURI().toURL());
             }
             catch (IOException e)
             {

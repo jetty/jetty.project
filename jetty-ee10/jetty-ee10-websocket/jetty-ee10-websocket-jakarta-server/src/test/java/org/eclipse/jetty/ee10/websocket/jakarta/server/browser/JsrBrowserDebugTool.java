@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public class JsrBrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResource(Resource.newResource(urlBase).getPath());
+        context.setBaseResource(ResourceFactory.of(server).newResource(urlBase).getPath());
 
         ServletHolder holder = context.addServlet(DefaultServlet.class, "/");
         holder.setInitParameter("dirAllowed", "true");

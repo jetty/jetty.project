@@ -35,10 +35,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.FileID;
@@ -59,7 +57,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * a file, a URL or an entry in a jar file.
  * </p>
  */
-public abstract class Resource implements ResourceFactory
+public abstract class Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -73,64 +71,14 @@ public abstract class Resource implements ResourceFactory
         .build();
 
     /**
-     * <p>Create a ResourceCollection from an unknown set of URIs.</p>
-     *
-     * <p>
-     *     Use this if you are working with URIs from an unknown source,
-     *     such as a user configuration.  As some of the entries
-     *     might need mounting, but we cannot determine that yet.
-     * </p>
-     *
-     * @param uris collection of URIs to mount into a {@code ResourceCollection}
-     * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
-     */
-    public static Resource.Mount mountCollection(Collection<URI> uris)
-    {
-        List<Resource> resources = new ArrayList<>();
-        List<Resource.Mount> mounts = new ArrayList<>();
-
-        try
-        {
-            // track URIs that have been seen, to avoid adding duplicates.
-            Set<URI> seenUris = new HashSet<>();
-
-            for (URI uri : uris)
-            {
-                if (seenUris.contains(uri))
-                    continue; // skip this one
-                Resource.Mount mount = Resource.mountIfNeeded(uri);
-                if (mount != null)
-                {
-                    mounts.add(mount);
-                    resources.add(mount.root()); // use mounted resource that has Path with proper FileSystem reference in it.
-                }
-                else
-                {
-                    resources.add(Resource.newResource(uri));
-                }
-                seenUris.add(uri);
-            }
-
-            return new ResourceCollection.Mount(resources, mounts);
-        }
-        catch (Throwable t)
-        {
-            // can't create ResourceCollection.Mount, so let's unmount and rethrow.
-            mounts.forEach(IO::close);
-            throw t;
-        }
-    }
-
-    /**
      * <p>Mount a URI if it is needed.</p>
      *
      * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
      * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
      * they no longer require any resources from a mounted resource.
      * @throws IllegalArgumentException If the uri could not be mounted.
-     * @see #mount(URI)
      */
-    public static Resource.Mount mountIfNeeded(URI uri)
+    static Resource.Mount mountIfNeeded(URI uri)
     {
         if (uri == null)
             return null;
@@ -152,42 +100,6 @@ public abstract class Resource implements ResourceFactory
         {
             throw new IllegalArgumentException(ioe);
         }
-    }
-
-    /**
-     * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the uri could not be mounted.
-     * @throws IllegalArgumentException If the URI does not require a mount.
-     * @see #mountIfNeeded(URI)
-     */
-    public static Resource.Mount mount(URI uri) throws IOException
-    {
-        if (!FileID.isArchive(uri))
-            throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
-        if (!uri.getScheme().equalsIgnoreCase("jar"))
-            throw new IllegalArgumentException("not an allowed URI: " + uri);
-        return FileSystemPool.INSTANCE.mount(uri);
-    }
-
-    /**
-     * @param path The path to a jar file to be mounted (e.g. "file:/tmp/some.jar")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the path could not be mounted
-     */
-    public static Resource.Mount mountJar(Path path) throws IOException
-    {
-        if (!FileID.isArchive(path))
-            throw new IllegalArgumentException("Path is not a Java Archive: " + path);
-        URI pathUri = path.toUri();
-        if (!pathUri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("Not an allowed path: " + path);
-        URI jarUri = URIUtil.toJarFileUri(pathUri);
-        if (jarUri == null)
-            throw new IllegalArgumentException("Not a mountable archive: " + path);
-        return FileSystemPool.INSTANCE.mount(jarUri);
     }
 
     /**
@@ -225,6 +137,7 @@ public abstract class Resource implements ResourceFactory
      * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
      */
+    // TODO move to URIUtil
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
@@ -246,41 +159,12 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Construct a resource from a url.
-     *
-     * @param url A URL.
-     * @return A Resource object.
-     */
-    public static Resource newResource(URL url)
-    {
-        try
-        {
-            return newResource(url.toURI());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
-    }
-
-    /**
-     * Construct a resource from a string.
-     *
-     * @param resource A URL or filename.
-     * @return A Resource object.
-     */
-    public static Resource newResource(String resource)
-    {
-        return newResource(toURI(resource));
-    }
-
-    /**
      * Construct a resource from a uri.
      *
      * @param uri A URI.
      * @return A Resource object.
      */
-    public static Resource newResource(URI uri)
+    static Resource createResource(URI uri)
     {
         try
         {
@@ -309,23 +193,13 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Construct a Resource from provided path
-     *
-     * @param path the path
-     * @return the Resource for the provided path
-     */
-    public static Resource newResource(Path path)
-    {
-        return newResource(path.toUri());
-    }
-
-    /**
      * Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.
      *
      * @param resource Resource as string representation
      * @return The new Resource
+     * TODO move to ResourceFactory
      */
     public static Resource newSystemResource(String resource)
     {
@@ -340,6 +214,7 @@ public abstract class Resource implements ResourceFactory
      * @param resource Resource as string representation
      * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
      * @return The new Resource
+     * TODO move to ResourceFactory
      */
     public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer)
     {
@@ -389,13 +264,16 @@ public abstract class Resource implements ResourceFactory
             URI uri = url.toURI();
             if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
             {
-                Mount mount = mount(uri);
-                mountConsumer.accept(mount);
-                return mount.root();
+                Mount mount = mountIfNeeded(uri);
+                if (mount != null)
+                {
+                    mountConsumer.accept(mount);
+                    return mount.root();
+                }
             }
-            return newResource(uri);
+            return createResource(uri);
         }
-        catch (IOException | URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
         }
@@ -410,6 +288,7 @@ public abstract class Resource implements ResourceFactory
      *
      * @param resource the relative name of the resource
      * @return Resource or null
+     * TODO move to ResourceFactory
      */
     public static Resource newClassPathResource(String resource)
     {
@@ -419,7 +298,14 @@ public abstract class Resource implements ResourceFactory
             url = Loader.getResource(resource);
         if (url == null)
             return null;
-        return newResource(url);
+        try
+        {
+            return createResource(url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /**
@@ -707,7 +593,7 @@ public abstract class Resource implements ResourceFactory
                 uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uri.resolve(subUriPath);
         }
-        return newResource(resolvedUri);
+        return createResource(resolvedUri);
     }
 
     /**
@@ -883,9 +769,6 @@ public abstract class Resource implements ResourceFactory
      * of such mount allowing the use of more {@link Resource}s.
      * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
      * be released.
-     *
-     * @see #mount(URI)
-     * @see #mountJar(Path)
      */
     public interface Mount extends Closeable
     {

@@ -22,7 +22,7 @@ import org.eclipse.jetty.ee9.webapp.MetaData;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ public class TestAnnotationDecorator
     {
         public TestWebDescriptor(MetaData.Complete metadata)
         {
-            super(Resource.newResource(Path.of(".")));
+            super(ResourceFactory.ROOT.newResource(Path.of(".")));
             _metaDataComplete = metadata;
         }
 

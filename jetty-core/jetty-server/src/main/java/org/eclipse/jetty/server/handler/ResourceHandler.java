@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Resource Handler.
@@ -163,8 +164,7 @@ public class ResourceHandler extends Handler.Wrapper
         // TODO do this some other way.  It is expensive to mount a whole jar when we could
         //      just read the resource from the URL. We also leak the Mount.
         URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        Resource.mountIfNeeded(css);
-        return Resource.newResource(css);
+        return ResourceFactory.ROOT.newResource(css);
     }
 
     public List<String> getWelcomeFiles()

@@ -36,11 +36,11 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,12 +98,6 @@ public class MavenWebAppContext extends WebAppContext
      * current project is added first or last in list of overlaid resources
      */
     private boolean _baseAppFirst = true;
-
-    /**
-     * Used to track any resource bases that are mounted
-     * as a result of calling {@link #setResourceBases(String[])}
-     */
-    private Resource.Mount _mountedResourceBases;
 
     public MavenWebAppContext() throws Exception
     {
@@ -236,9 +230,8 @@ public class MavenWebAppContext extends WebAppContext
             List<URI> uris = Stream.of(resourceBases)
                 .map(URI::create)
                 .toList();
-            _mountedResourceBases = Resource.mountCollection(uris);
 
-            setBaseResource(_mountedResourceBases.root());
+            setBaseResource(ResourceFactory.of(this).newResource(uris));
         }
         catch (Throwable t)
         {
@@ -325,7 +318,7 @@ public class MavenWebAppContext extends WebAppContext
             for (Configuration c : configurations)
             {
                 if (c instanceof EnvConfiguration)
-                    ((EnvConfiguration)c).setJettyEnvResource(Resource.newResource(getJettyEnvXml()));
+                    ((EnvConfiguration)c).setJettyEnvResource(ResourceFactory.of(this).newResource(getJettyEnvXml()));
             }
         }
 
@@ -362,8 +355,6 @@ public class MavenWebAppContext extends WebAppContext
         getServletHandler().setFilterMappings(new FilterMapping[0]);
         getServletHandler().setServlets(new ServletHolder[0]);
         getServletHandler().setServletMappings(new ServletMapping[0]);
-
-        IO.close(_mountedResourceBases);
     }
 
     @Override
@@ -391,9 +382,9 @@ public class MavenWebAppContext extends WebAppContext
                     // return the resource matching the web-inf classes
                     // rather than the test classes
                     if (_classes != null)
-                        return Resource.newResource(_classes.toPath());
+                        return ResourceFactory.of(this).newResource(_classes.toPath());
                     else if (_testClasses != null)
-                        return Resource.newResource(_testClasses.toPath());
+                        return ResourceFactory.of(this).newResource(_testClasses.toPath());
                 }
                 else
                 {
@@ -403,7 +394,7 @@ public class MavenWebAppContext extends WebAppContext
                     while (res == null && (i < _webInfClasses.size()))
                     {
                         String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
-                        res = Resource.newResource(newPath);
+                        res = ResourceFactory.of(this).newResource(newPath);
                         if (!res.exists())
                         {
                             res = null;
@@ -424,7 +415,7 @@ public class MavenWebAppContext extends WebAppContext
                     return null;
                 File jarFile = _webInfJarMap.get(jarName);
                 if (jarFile != null)
-                    return Resource.newResource(jarFile.getPath());
+                    return ResourceFactory.of(this).newResource(jarFile.getPath());
 
                 return null;
             }

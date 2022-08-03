@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,9 +75,9 @@ public class DefaultHandler extends Handler.Processor
             if (fav != null)
             {
                 URI uri = fav.toURI();
-                try (Resource.Mount mount = Resource.mountIfNeeded(uri))
+                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                 {
-                    Resource resource = mount == null ? Resource.newResource(uri) : mount.root();
+                    Resource resource = resourceFactory.newResource(uri);
                     try (InputStream is = Files.newInputStream(resource.getPath()))
                     {
                         favbytes = IO.readBytes(is);

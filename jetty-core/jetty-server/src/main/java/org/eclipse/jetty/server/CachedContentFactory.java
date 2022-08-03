@@ -37,9 +37,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     private final ConcurrentMap<String, CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
-    private final ResourceFactory _factory;
+    private final Resource _resource;
     private final CachedContentFactory _parent;
     private final MimeTypes _mimeTypes;
     private final boolean _etags;
@@ -67,15 +65,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      * Constructor.
      *
      * @param parent the parent resource cache
-     * @param factory the resource factory
+     * @param resource the resource
      * @param mimeTypes Mimetype to use for meta data
      * @param useFileMappedBuffer true to file memory mapped buffers
      * @param etags true to support etags
      * @param precompressedFormats array of precompression formats to support
      */
-    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
+    public CachedContentFactory(CachedContentFactory parent, Resource resource, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
     {
-        _factory = factory;
+        _resource = resource;
         _cache = new ConcurrentHashMap<>();
         _cachedSize = new AtomicInteger();
         _cachedFiles = new AtomicInteger();
@@ -173,7 +171,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             return content;
 
         // try loading the content from our factory.
-        Resource resource = _factory.resolve(pathInContext);
+        Resource resource = _resource.resolve(pathInContext);
         HttpContent loaded = load(pathInContext, resource, maxBufferSize);
         if (loaded != null)
             return loaded;
@@ -228,7 +226,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     if (compressedContent == null || compressedContent.isValid())
                     {
                         compressedContent = null;
-                        Resource compressedResource = _factory.resolve(compressedPathInContext);
+                        Resource compressedResource = _resource.resolve(compressedPathInContext);
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                             compressedResource.length() < resource.length())
                         {
@@ -274,7 +272,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
-                Resource compressedResource = _factory.resolve(compressedPathInContext);
+                Resource compressedResource = _resource.resolve(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
@@ -367,7 +365,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     @Override
     public String toString()
     {
-        return "ResourceCache[" + _parent + "," + _factory + "]@" + hashCode();
+        return "ResourceCache[" + _parent + "," + _resource + "]@" + hashCode();
     }
 
     /**

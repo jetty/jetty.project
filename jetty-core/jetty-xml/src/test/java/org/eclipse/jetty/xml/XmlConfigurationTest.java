@@ -45,10 +45,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -86,13 +89,28 @@ public class XmlConfigurationTest
     private static final String STRING_ARRAY_XML = "<Array type=\"String\"><Item type=\"String\">String1</Item><Item type=\"String\">String2</Item></Array>";
     private static final String INT_ARRAY_XML = "<Array type=\"int\"><Item type=\"int\">1</Item><Item type=\"int\">2</Item></Array>";
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testMortBay() throws Exception
     {
         URL url = XmlConfigurationTest.class.getResource("mortbay.xml");
-        Resource resource = Resource.newResource(url);
-        XmlConfiguration configuration = new XmlConfiguration(resource);
-        configuration.configure();
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(url);
+            XmlConfiguration configuration = new XmlConfiguration(resource);
+            configuration.configure();
+        }
     }
 
     public static String[] xmlConfigs()
@@ -109,77 +127,80 @@ public class XmlConfigurationTest
         TestConfiguration.VALUE = 77;
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
         assertNotNull(url);
-        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
-        TestConfiguration tc = new TestConfiguration("tc");
-        configuration.getProperties().putAll(properties);
-        configuration.configure(tc);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            XmlConfiguration configuration = new XmlConfiguration(resourceFactory.newResource(url));
+            TestConfiguration tc = new TestConfiguration("tc");
+            configuration.getProperties().putAll(properties);
+            configuration.configure(tc);
 
-        assertEquals("SetValue", tc.testObject, "Set String");
-        assertEquals(2, tc.testInt, "Set Type");
+            assertEquals("SetValue", tc.testObject, "Set String");
+            assertEquals(2, tc.testInt, "Set Type");
 
-        assertEquals(18080, tc.propValue);
+            assertEquals(18080, tc.propValue);
 
-        assertEquals("PutValue", tc.get("Test"), "Put");
-        assertEquals("2", tc.get("TestDft"), "Put dft");
-        assertEquals(2, tc.get("TestInt"), "Put type");
+            assertEquals("PutValue", tc.get("Test"), "Put");
+            assertEquals("2", tc.get("TestDft"), "Put dft");
+            assertEquals(2, tc.get("TestInt"), "Put type");
 
-        assertEquals("PutValue", tc.get("Trim"), "Trim");
-        assertNull(tc.get("Null"), "Null");
-        assertNull(tc.get("NullTrim"), "NullTrim");
+            assertEquals("PutValue", tc.get("Trim"), "Trim");
+            assertNull(tc.get("Null"), "Null");
+            assertNull(tc.get("NullTrim"), "NullTrim");
 
-        assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
-        assertEquals("-1String", tc.get("Objects"), "Objects");
-        assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
-        assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
-        assertEquals("", tc.get("NullString"), "NullString");
-        assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
-        assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
-        assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
-        assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
+            assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
+            assertEquals("-1String", tc.get("Objects"), "Objects");
+            assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
+            assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
+            assertEquals("", tc.get("NullString"), "NullString");
+            assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
+            assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
+            assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
+            assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
 
-        assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
-        assertEquals(System.getenv("HOME"), tc.get("Env"), "Env");
+            assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
+            assertEquals(System.getenv("HOME"), tc.get("Env"), "Env");
 
-        assertEquals("xxx", tc.get("Property"), "Property");
+            assertEquals("xxx", tc.get("Property"), "Property");
 
-        assertEquals("Yes", tc.get("Called"), "Called");
+            assertEquals("Yes", tc.get("Called"), "Called");
 
-        assertTrue(TestConfiguration.called);
+            assertTrue(TestConfiguration.called);
 
-        assertEquals("Blah", tc.oa[0], "oa[0]");
-        assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
-        assertEquals(1.2345, tc.oa[2], "oa[2]");
-        assertNull(tc.oa[3], "oa[3]");
+            assertEquals("Blah", tc.oa[0], "oa[0]");
+            assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
+            assertEquals(1.2345, tc.oa[2], "oa[2]");
+            assertNull(tc.oa[3], "oa[3]");
 
-        assertEquals(1, tc.ia[0], "ia[0]");
-        assertEquals(2, tc.ia[1], "ia[1]");
-        assertEquals(3, tc.ia[2], "ia[2]");
-        assertEquals(0, tc.ia[3], "ia[3]");
+            assertEquals(1, tc.ia[0], "ia[0]");
+            assertEquals(2, tc.ia[1], "ia[1]");
+            assertEquals(3, tc.ia[2], "ia[2]");
+            assertEquals(0, tc.ia[3], "ia[3]");
 
-        TestConfiguration tc2 = tc.nested;
-        assertNotNull(tc2);
-        assertEquals(true, tc2.get("Arg"), "Called(bool)");
+            TestConfiguration tc2 = tc.nested;
+            assertNotNull(tc2);
+            assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
-        assertNull(tc.get("Arg"), "nested config");
-        assertEquals(true, tc2.get("Arg"), "nested config");
+            assertNull(tc.get("Arg"), "nested config");
+            assertEquals(true, tc2.get("Arg"), "nested config");
 
-        assertEquals("Call1", tc2.testObject, "nested config");
-        assertEquals(4, tc2.testInt, "nested config");
-        assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
+            assertEquals("Call1", tc2.testObject, "nested config");
+            assertEquals(4, tc2.testInt, "nested config");
+            assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
 
-        assertEquals(tc.testField1, 77, "static to field");
-        assertEquals(tc.testField2, 2, "field to field");
-        assertEquals(TestConfiguration.VALUE, 42, "literal to static");
+            assertEquals(tc.testField1, 77, "static to field");
+            assertEquals(tc.testField2, 2, "field to field");
+            assertEquals(TestConfiguration.VALUE, 42, "literal to static");
 
-        @SuppressWarnings("unchecked")
-        Map<String, String> map = (Map<String, String>)configuration.getIdMap().get("map");
-        assertEquals(map.get("key0"), "value0");
-        assertEquals(map.get("key1"), "value1");
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>)configuration.getIdMap().get("map");
+            assertEquals(map.get("key0"), "value0");
+            assertEquals(map.get("key1"), "value1");
 
-        @SuppressWarnings("unchecked")
-        Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
-        assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
-        assertEquals(concurrentMap.get("KEY"), "ITEM");
+            @SuppressWarnings("unchecked")
+            Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
+            assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
+            assertEquals(concurrentMap.get("KEY"), "ITEM");
+        }
     }
 
     @ParameterizedTest
@@ -193,82 +214,85 @@ public class XmlConfigurationTest
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
         assertNotNull(url);
         AtomicInteger count = new AtomicInteger(0);
-        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            @Override
-            public void initializeDefaults(Object object)
+            XmlConfiguration configuration = new XmlConfiguration(resourceFactory.newResource(url))
             {
-                if (object instanceof TestConfiguration)
+                @Override
+                public void initializeDefaults(Object object)
                 {
-                    count.incrementAndGet();
-                    ((TestConfiguration)object).setNested(null);
-                    ((TestConfiguration)object).setTestString("NEW DEFAULT");
+                    if (object instanceof TestConfiguration)
+                    {
+                        count.incrementAndGet();
+                        ((TestConfiguration)object).setNested(null);
+                        ((TestConfiguration)object).setTestString("NEW DEFAULT");
+                    }
                 }
-            }
-        };
-        configuration.getProperties().putAll(properties);
-        TestConfiguration tc = (TestConfiguration)configuration.configure();
+            };
+            configuration.getProperties().putAll(properties);
+            TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-        assertEquals(3, count.get());
+            assertEquals(3, count.get());
 
-        assertEquals("NEW DEFAULT", tc.getTestString());
-        assertEquals("nested", tc.getNested().getTestString());
-        assertEquals("NEW DEFAULT", tc.getNested().getNested().getTestString());
+            assertEquals("NEW DEFAULT", tc.getTestString());
+            assertEquals("nested", tc.getNested().getTestString());
+            assertEquals("NEW DEFAULT", tc.getNested().getNested().getTestString());
 
-        assertEquals("SetValue", tc.testObject, "Set String");
-        assertEquals(2, tc.testInt, "Set Type");
+            assertEquals("SetValue", tc.testObject, "Set String");
+            assertEquals(2, tc.testInt, "Set Type");
 
-        assertEquals(18080, tc.propValue);
+            assertEquals(18080, tc.propValue);
 
-        assertEquals("PutValue", tc.get("Test"), "Put");
-        assertEquals("2", tc.get("TestDft"), "Put dft");
-        assertEquals(2, tc.get("TestInt"), "Put type");
+            assertEquals("PutValue", tc.get("Test"), "Put");
+            assertEquals("2", tc.get("TestDft"), "Put dft");
+            assertEquals(2, tc.get("TestInt"), "Put type");
 
-        assertEquals("PutValue", tc.get("Trim"), "Trim");
-        assertNull(tc.get("Null"), "Null");
-        assertNull(tc.get("NullTrim"), "NullTrim");
+            assertEquals("PutValue", tc.get("Trim"), "Trim");
+            assertNull(tc.get("Null"), "Null");
+            assertNull(tc.get("NullTrim"), "NullTrim");
 
-        assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
-        assertEquals("-1String", tc.get("Objects"), "Objects");
-        assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
-        assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
-        assertEquals("", tc.get("NullString"), "NullString");
-        assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
-        assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
-        assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
-        assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
+            assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
+            assertEquals("-1String", tc.get("Objects"), "Objects");
+            assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
+            assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
+            assertEquals("", tc.get("NullString"), "NullString");
+            assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
+            assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
+            assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
+            assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
 
-        assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
-        assertEquals("xxx", tc.get("Property"), "Property");
+            assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
+            assertEquals("xxx", tc.get("Property"), "Property");
 
-        assertEquals("Yes", tc.get("Called"), "Called");
+            assertEquals("Yes", tc.get("Called"), "Called");
 
-        assertTrue(TestConfiguration.called);
+            assertTrue(TestConfiguration.called);
 
-        assertEquals("Blah", tc.oa[0], "oa[0]");
-        assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
-        assertEquals(1.2345, tc.oa[2], "oa[2]");
-        assertNull(tc.oa[3], "oa[3]");
+            assertEquals("Blah", tc.oa[0], "oa[0]");
+            assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
+            assertEquals(1.2345, tc.oa[2], "oa[2]");
+            assertNull(tc.oa[3], "oa[3]");
 
-        assertEquals(1, tc.ia[0], "ia[0]");
-        assertEquals(2, tc.ia[1], "ia[1]");
-        assertEquals(3, tc.ia[2], "ia[2]");
-        assertEquals(0, tc.ia[3], "ia[3]");
+            assertEquals(1, tc.ia[0], "ia[0]");
+            assertEquals(2, tc.ia[1], "ia[1]");
+            assertEquals(3, tc.ia[2], "ia[2]");
+            assertEquals(0, tc.ia[3], "ia[3]");
 
-        TestConfiguration tc2 = tc.nested;
-        assertNotNull(tc2);
-        assertEquals(true, tc2.get("Arg"), "Called(bool)");
+            TestConfiguration tc2 = tc.nested;
+            assertNotNull(tc2);
+            assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
-        assertNull(tc.get("Arg"), "nested config");
-        assertEquals(true, tc2.get("Arg"), "nested config");
+            assertNull(tc.get("Arg"), "nested config");
+            assertEquals(true, tc2.get("Arg"), "nested config");
 
-        assertEquals("Call1", tc2.testObject, "nested config");
-        assertEquals(4, tc2.testInt, "nested config");
-        assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
+            assertEquals("Call1", tc2.testObject, "nested config");
+            assertEquals(4, tc2.testInt, "nested config");
+            assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
 
-        assertEquals(71, tc.testField1, "static to field");
-        assertEquals(2, tc.testField2, "field to field");
-        assertEquals(42, TestConfiguration.VALUE, "literal to static");
+            assertEquals(71, tc.testField1, "static to field");
+            assertEquals(2, tc.testField2, "field to field");
+            assertEquals(42, TestConfiguration.VALUE, "literal to static");
+        }
     }
 
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
@@ -291,7 +315,7 @@ public class XmlConfigurationTest
         {
             writer.write(rawXml);
         }
-        return new XmlConfiguration(Resource.newResource(testFile));
+        return new XmlConfiguration(ResourceFactory.ROOT.newResource(testFile));
     }
 
     @Test

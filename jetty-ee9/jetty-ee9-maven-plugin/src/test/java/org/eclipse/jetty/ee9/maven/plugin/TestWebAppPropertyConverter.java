@@ -27,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -94,7 +95,7 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourcePathDir("root")));
+        webApp.setBaseResource(ResourceFactory.of(webApp).newResource(MavenTestingUtils.getTestResourcePathDir("root")));
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);

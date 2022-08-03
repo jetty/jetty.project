@@ -57,7 +57,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -96,7 +96,7 @@ public class DispatcherTest
         contextCollection.addHandler(_contextHandler);
         ResourceHandler resourceHandler = new ResourceHandler();
         Path basePath = MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest");
-        resourceHandler.setBaseResource(Resource.newResource(basePath));
+        resourceHandler.setBaseResource(ResourceFactory.ROOT.newResource(basePath));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         contextCollection.addHandler(resourceContextHandler);

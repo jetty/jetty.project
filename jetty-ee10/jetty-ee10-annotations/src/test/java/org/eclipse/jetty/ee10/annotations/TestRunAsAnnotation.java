@@ -22,6 +22,7 @@ import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -37,7 +38,7 @@ public class TestRunAsAnnotation
     {
         Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
         Files.createFile(dummyXml);
-        Resource dummyXmlResource = Resource.newResource(dummyXml);
+        Resource dummyXmlResource = ResourceFactory.ROOT.newResource(dummyXml);
 
         WebAppContext wac = new WebAppContext();
         

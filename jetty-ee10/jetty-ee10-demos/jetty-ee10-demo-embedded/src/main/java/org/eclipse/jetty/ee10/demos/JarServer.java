@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Example of serving content from a JAR file.
@@ -52,9 +53,9 @@ public class JarServer
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
 
-        try (Resource.Mount mount = Resource.mountJar(jarFile))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Server server = createServer(port, mount.root());
+            Server server = createServer(port, resourceFactory.newResource(jarFile));
             server.start();
             server.join();
         }
