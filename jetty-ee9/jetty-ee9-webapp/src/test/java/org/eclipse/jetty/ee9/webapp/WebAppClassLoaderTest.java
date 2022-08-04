@@ -50,17 +50,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class WebAppClassLoaderTest
 {
-    private Path testWebappDir;
+    private Path _testWebappDir;
     private WebAppContext _context;
     protected WebAppClassLoader _loader;
+    private Server _server;
 
     @BeforeEach
     public void init() throws Exception
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
+        _server = new Server();
+
+        _testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
         _context = new WebAppContext();
-        Resource webapp = ResourceFactory.of(_context).newResource(testWebappDir);
+        Resource webapp = ResourceFactory.of(_context).newResource(_testWebappDir);
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
         _context.setExtraClasspath("target/test-classes/ext/*");
@@ -70,16 +73,15 @@ public class WebAppClassLoaderTest
         _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
-        _context.setServer(new Server());
-        LifeCycle.start(_context);
+        _server.setHandler(_context);
+        _server.start();
     }
 
     @AfterEach
     public void afterEach() throws Exception
     {
         IO.close(_loader);
-        LifeCycle.stop(_context);
-        FileSystemPool.INSTANCE.dump(System.err, "* ");
+        LifeCycle.stop(_server);
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
@@ -308,8 +310,8 @@ public class WebAppClassLoaderTest
         List<URL> resources;
 
         // Expected Locations
-        URL webappWebInfLibAcme = new URI("jar:" + testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
-        URL webappWebInfClasses = testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
+        URL webappWebInfLibAcme = new URI("jar:" + _testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
+        URL webappWebInfClasses = _testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
         // (from parent classloader)
         URL targetTestClasses = this.getClass().getClassLoader().getResource("org/acme/resource.txt");
 

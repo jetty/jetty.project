@@ -59,6 +59,7 @@ public class TempDirTest
     @BeforeEach
     public void before()
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         jettyBase = workDir.getEmptyPathDir().resolve("base");
         FS.ensureEmpty(jettyBase);
         System.setProperty("jetty.base", jettyBase.toString());
@@ -82,6 +83,7 @@ public class TempDirTest
     {
         if (server != null)
             server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
