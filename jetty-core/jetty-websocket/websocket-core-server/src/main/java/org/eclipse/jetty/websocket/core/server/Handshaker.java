@@ -29,5 +29,7 @@ public interface Handshaker
         return new HandshakerSelector();
     }
 
+    boolean isWebSocketUpgradeRequest(Request request);
+
     boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException;
 }

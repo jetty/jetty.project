@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 public class RFC8441Handshaker extends AbstractHandshaker
 {
     @Override
-    protected boolean validateRequest(Request request)
+    public boolean isWebSocketUpgradeRequest(Request request)
     {
         if (!HttpMethod.CONNECT.is(request.getMethod()))
         {
@@ -48,7 +48,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
             return false;
         }
 
-        return true;
+        return super.isWebSocketUpgradeRequest(request);
     }
 
     @Override

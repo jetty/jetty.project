@@ -40,7 +40,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
 
     @Override
-    protected boolean validateRequest(Request request)
+    public boolean isWebSocketUpgradeRequest(Request request)
     {
         if (!HttpMethod.GET.is(request.getMethod()))
         {
@@ -56,7 +56,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
             return false;
         }
 
-        return true;
+        return super.isWebSocketUpgradeRequest(request);
     }
 
     @Override
