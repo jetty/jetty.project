@@ -133,6 +133,36 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
+    public Resource newResource(String path)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
+
+        Resource r = null;
+
+        if (_baseResource != null)
+        {
+            r = _baseResource.resolve(path);
+        }
+        else if (_context != null)
+        {
+            Resource contextBase = _context.getBaseResource();
+            if (contextBase != null)
+                r = contextBase.resolve(path);
+        }
+
+        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+            r = getStylesheet();
+
+        if (r == null)
+        {
+            throw new IllegalArgumentException("Resource: " + path);
+        }
+
+        return r;
+    }
+
+    @Override
     public Resource newResource(URI uri)
     {
         if (LOG.isDebugEnabled())
