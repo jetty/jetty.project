@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
@@ -47,15 +46,9 @@ public class OrderingTest
         }
 
         @Override
-        public Resource resolve(String subUriPath) throws IOException, MalformedURLException
+        public Resource resolve(String subUriPath)
         {
             return null;
-        }
-
-        @Override
-        public boolean delete() throws SecurityException
-        {
-            return false;
         }
 
         @Override
@@ -95,7 +88,7 @@ public class OrderingTest
         }
 
         @Override
-        public boolean isContainedIn(Resource r) throws MalformedURLException
+        public boolean isContainedIn(Resource r)
         {
             return false;
         }
@@ -122,12 +115,6 @@ public class OrderingTest
         public List<String> list()
         {
             return null;
-        }
-
-        @Override
-        public boolean renameTo(Resource dest) throws SecurityException
-        {
-            return false;
         }
     }
 

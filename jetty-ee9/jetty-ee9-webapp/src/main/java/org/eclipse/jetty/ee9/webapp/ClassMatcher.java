@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -135,14 +133,8 @@ public class ClassMatcher extends AbstractSet<String>
             super(name, inclusive);
             if (!getName().startsWith("file:"))
                 throw new IllegalArgumentException(name);
-            try
-            {
-                _path = Resource.newResource(getName()).getPath();
-            }
-            catch (IOException e)
-            {
-                throw new UncheckedIOException(e);
-            }
+
+            _path = Resource.newResource(getName()).getPath();
         }
 
         public Path getPath()
@@ -738,7 +730,7 @@ public class ClassMatcher extends AbstractSet<String>
         {
             try
             {
-                return URIUtil.getJarSource(url.toURI());
+                return URIUtil.unwrapContainer(url.toURI());
             }
             catch (URISyntaxException ignored)
             {

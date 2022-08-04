@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.start.config;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -114,7 +114,7 @@ public class CommandLineConfigSource implements ConfigSource
                 // ${jetty.home} is relative to found BaseHome class
                 try
                 {
-                    Path home = new File(new URI(m.group(1))).getParentFile().toPath();
+                    Path home = Paths.get(new URI(m.group(1))).getParent();
                     setProperty(BaseHome.JETTY_HOME, home.toString(), ORIGIN_INTERNAL_FALLBACK);
                     return home;
                 }

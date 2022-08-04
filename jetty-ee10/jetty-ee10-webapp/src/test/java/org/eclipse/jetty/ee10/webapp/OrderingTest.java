@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
@@ -47,21 +46,15 @@ public class OrderingTest
         }
 
         @Override
-        public Resource resolve(String subUriPath) throws IOException, MalformedURLException
+        public Resource resolve(String subUriPath)
         {
             return null;
         }
 
         @Override
-        public boolean delete() throws SecurityException
-        {
-            return false;
-        }
-
-        @Override
         public boolean exists()
         {
-            return false;
+            return true;
         }
 
         @Override
@@ -95,7 +88,7 @@ public class OrderingTest
         }
 
         @Override
-        public boolean isContainedIn(Resource r) throws MalformedURLException
+        public boolean isContainedIn(Resource r)
         {
             return false;
         }
@@ -122,12 +115,6 @@ public class OrderingTest
         public List<String> list()
         {
             return null;
-        }
-
-        @Override
-        public boolean renameTo(Resource dest) throws SecurityException
-        {
-            return false;
         }
     }
 
@@ -743,12 +730,12 @@ public class OrderingTest
     public void testRelativeOrderingWithPlainJars()
         throws Exception
     {
-        //B,A,C other jars with no fragments
+        // B,A,C other jars with no fragments
         List<Resource> resources = new ArrayList<Resource>();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
-        //A: after others, before C
+        // A: after others, before C
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");

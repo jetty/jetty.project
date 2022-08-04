@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.FileID;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}.

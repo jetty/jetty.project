@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -60,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
@@ -190,7 +188,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddPathClass() throws Exception
+    public void testResolvePathClass() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
 
@@ -206,13 +204,13 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddRootPath() throws Exception
+    public void testResolveRootPath() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Path subdir = dir.resolve("sub");
         Files.createDirectories(subdir);
 
-        String readableRootDir = findRootDir(dir.getFileSystem());
+        String readableRootDir = findAnyDirectoryOffRoot(dir.getFileSystem());
         assumeTrue(readableRootDir != null, "Readable Root Dir found");
 
         Resource base = Resource.newResource(dir);
@@ -225,7 +223,7 @@ public class FileSystemResourceTest
             // valid path for unix and OSX
             assertThat("Readable Root Dir", rrd.exists(), is(false));
         }
-        catch (MalformedURLException | InvalidPathException e)
+        catch (InvalidPathException e)
         {
             // valid path on Windows
         }
@@ -236,7 +234,7 @@ public class FileSystemResourceTest
     {
         Path dir = workDir.getEmptyPathDir();
 
-        String readableRootDir = findRootDir(dir.getFileSystem());
+        String readableRootDir = findAnyDirectoryOffRoot(dir.getFileSystem());
         assumeTrue(readableRootDir != null, "Readable Root Dir found");
 
         Path subdir = dir.resolve("sub");
@@ -267,9 +265,14 @@ public class FileSystemResourceTest
         assertThat("Ref O1 contents", toString(refO1), is("hi o-with-two-dots"));
     }
 
-    private String findRootDir(FileSystem fs)
+    /**
+     * Best effort discovery a directory off the provided FileSystem.
+     * @param fs the provided FileSystem.
+     * @return a directory off the root FileSystem.
+     */
+    private String findAnyDirectoryOffRoot(FileSystem fs)
     {
-        // look for a directory off of a root path
+        // look for anything that's a directory off of any root paths of the provided FileSystem
         for (Path rootDir : fs.getRootDirectories())
         {
             try (DirectoryStream<Path> dir = Files.newDirectoryStream(rootDir))
@@ -284,7 +287,9 @@ public class FileSystemResourceTest
             }
             catch (Exception ignored)
             {
-                // FIXME why ignoring exceptions??
+                // Don't care if there's an error, we'll just try the next possible root directory.
+                // if no directories are found, then that means the users test environment is
+                // super odd, and we cannot continue these tests anyway, and are skipped with an assume().
             }
         }
 
@@ -387,7 +392,7 @@ public class FileSystemResourceTest
         Resource res = base.resolve("foo");
         assertThat("foo.exists", res.exists(), is(true));
         // delete it
-        assertThat("foo.delete", res.delete(), is(true));
+        Files.delete(res.getPath());
         // is it there?
         assertThat("foo.exists", res.exists(), is(false));
     }
@@ -403,7 +408,7 @@ public class FileSystemResourceTest
         Resource res = base.resolve("foo");
         assertThat("foo.exists", res.exists(), is(false));
         // delete it
-        assertThat("foo.delete", res.delete(), is(false));
+        Files.deleteIfExists(res.getPath());
         // is it there?
         assertThat("foo.exists", res.exists(), is(false));
     }
@@ -824,7 +829,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo' bar"));
+        Resource test = base.resolve("foo'%20bar");
+        assertTrue(test.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo' bar"));
     }
 
     @Test
@@ -845,7 +852,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo` bar"));
+        Resource file = base.resolve("foo%60%20bar");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo` bar"));
     }
 
     @Test
@@ -866,7 +875,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo[1]"));
+        Resource file = base.resolve("foo%5B1%5D");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo[1]"));
     }
 
     @Test
@@ -887,7 +898,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo.{bar}.txt"));
+        Resource file = base.resolve("foo.%7Bbar%7D.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo.{bar}.txt"));
     }
 
     @Test
@@ -908,7 +921,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo^3.txt"));
+        Resource file = base.resolve("foo%5E3.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo^3.txt"));
     }
 
     @Test
@@ -929,7 +944,9 @@ public class FileSystemResourceTest
         }
 
         Resource base = Resource.newResource(dir);
-        assertThrows(IOException.class, () -> base.resolve("foo|bar.txt"));
+        Resource file = base.resolve("foo%7Cbar.txt");
+        assertTrue(file.exists());
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo|bar.txt"));
     }
 
     /**
@@ -1055,7 +1072,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddPathWindowsSlash() throws Exception
+    public void testResolveWindowsSlash() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1090,7 +1107,7 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1098,7 +1115,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddPathWindowsExtensionLess() throws Exception
+    public void testResolveWindowsExtensionLess() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1132,7 +1149,7 @@ public class FileSystemResourceTest
                 assertThat("Exists: " + r, r.exists(), is(false));
             }
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1140,7 +1157,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddInitialSlash() throws Exception
+    public void testResolveInitialSlash() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1162,7 +1179,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("Exists: " + r, r.exists(), is(true));
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1170,7 +1187,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddInitialDoubleSlash() throws Exception
+    public void testResolveInitialDoubleSlash() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1192,7 +1209,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1200,7 +1217,7 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testAddDoubleSlash() throws Exception
+    public void testResolveDoubleSlash() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1224,7 +1241,7 @@ public class FileSystemResourceTest
             assertThat("isAlias()", r.isAlias(), is(false));
             assertThat("getAlias()", r.getAlias(), nullValue());
         }
-        catch (IOException e)
+        catch (IllegalArgumentException e)
         {
             // Exception is acceptable
             assertThat(e.getCause(), instanceOf(InvalidPathException.class));
@@ -1244,7 +1261,7 @@ public class FileSystemResourceTest
         assertThat("Specials URL", res.getURI().toASCIIString(), containsString("a%20file%20with,spe%23ials"));
         assertThat("Specials Filename", res.getPath().toString(), containsString("a file with,spe#ials"));
 
-        res.delete();
+        Files.delete(res.getPath());
         assertThat("File should have been deleted.", res.exists(), is(false));
     }
 

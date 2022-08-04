@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -634,7 +635,7 @@ public class ResourceService
 
         byte[] data = null;
         String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
-        String dir = resource.getListHTML(base, pathInContext.length() > 1, request.getQueryString());
+        String dir = ResourceListing.getAsHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,

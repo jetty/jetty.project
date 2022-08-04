@@ -51,7 +51,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,7 +59,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@Disabled("A lot of the test expectations are now broken because of the request wrapping done by Jetty 12 implementation.")
 public class AsyncServletTest
 {
     protected AsyncServlet _servlet = new AsyncServlet();
@@ -244,6 +242,7 @@ public class AsyncServletTest
             "onTimeout",
             "dispatch",
             "ASYNC /ctx/path/info?start=200&timeout=dispatch",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
 
@@ -263,6 +262,7 @@ public class AsyncServletTest
             "onTimeout",
             "error",
             "ERROR /ctx/error/custom?start=200&timeout=error",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
 
@@ -296,6 +296,7 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=200&dispatch=10",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertFalse(__history.contains("onTimeout"));
@@ -312,6 +313,7 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=200&dispatch=0",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
     }
@@ -328,6 +330,7 @@ public class AsyncServletTest
             "start",
             "onError",
             "ERROR /ctx/error/custom?start=200&throw=1",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("ERROR DISPATCH: /ctx/error/custom", response);
@@ -376,11 +379,13 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&dispatch2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&dispatch2=10",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -397,6 +402,7 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&complete2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
@@ -417,11 +423,13 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
             "onTimeout",
             "ERROR /ctx/error/custom?start=1000&dispatch=10&start2=10",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("ERROR DISPATCH: /ctx/error/custom", response);
@@ -438,11 +446,13 @@ public class AsyncServletTest
             "start",
             "onTimeout",
             "ERROR /ctx/error/custom?start=10&start2=1000&dispatch2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
             "dispatch",
             "ASYNC /ctx/path/info?start=10&start2=1000&dispatch2=10",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -459,6 +469,7 @@ public class AsyncServletTest
             "start",
             "onTimeout",
             "ERROR /ctx/error/custom?start=10&start2=1000&complete2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
@@ -480,11 +491,13 @@ public class AsyncServletTest
             "start",
             "onTimeout",
             "ERROR /ctx/path/error?start=10&start2=10",
+            "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
             "onTimeout",
             "ERROR /ctx/path/error?start=10&start2=10",
+            "wrapped REQ",
             "!initial",
             "onComplete")); // Error Page Loop!
         assertContains("AsyncContext timeout", response);
@@ -518,6 +531,7 @@ public class AsyncServletTest
             "start",
             "dispatch",
             "ASYNC /ctx/p%20th3?start=200&dispatch=20&path=/p%20th3",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -531,11 +545,14 @@ public class AsyncServletTest
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20",
             "FORWARD /ctx/path1?forward=true",
+            "wrapped REQ",
             "initial",
             "start",
             "dispatch",
             "FWD ASYNC /ctx/fwd/info?start=200&dispatch=20",
+            "wrapped REQ",
             "FORWARD /ctx/path1?forward=true",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -549,10 +566,12 @@ public class AsyncServletTest
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20&path=/path2",
             "FORWARD /ctx/path1?forward=true",
+            "wrapped REQ",
             "initial",
             "start",
             "dispatch",
             "ASYNC /ctx/path2?start=200&dispatch=20&path=/path2",
+            "wrapped REQ",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -566,6 +585,7 @@ public class AsyncServletTest
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?wrap=true&start=200&dispatch=20",
             "FORWARD /ctx/path1?forward=true",
+            "wrapped REQ",
             "initial",
             "start",
             "dispatch",
@@ -584,6 +604,7 @@ public class AsyncServletTest
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?wrap=true&start=200&dispatch=20&path=/path2",
             "FORWARD /ctx/path1?forward=true",
+            "wrapped REQ",
             "initial",
             "start",
             "dispatch",
@@ -622,6 +643,7 @@ public class AsyncServletTest
                 "async-read=10",
                 "dispatch",
                 "ASYNC /ctx/path/info?start=2000&dispatch=1500",
+                "wrapped REQ",
                 "!initial",
                 "onComplete"));
         }

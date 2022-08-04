@@ -183,8 +183,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public void errorClose()
     {
         // TODO Actually make the response status and headers immutable temporarily
-        // TODO: This soft close breaks ErrorPageTest, AsyncContextTest
-        // _response.getHttpOutput().softClose();
+        _response.getHttpOutput().softClose();
     }
 
     public boolean isHead()
@@ -203,6 +202,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public void setQueryEncoding(String queryEncoding)
     {
         _queryEncoding = Charset.forName(queryEncoding);
+    }
+
+    public Charset getQueryEncoding()
+    {
+        return _queryEncoding;
     }
 
     @Override
@@ -334,6 +338,18 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (httpSession instanceof Session.APISession apiSession)
                 return apiSession.getCoreSession();
             return null;
+        }
+
+        public Fields getQueryParams()
+        {
+            extractQueryParameters();
+            return _queryParameters;
+        }
+
+        public Fields getContentParams()
+        {
+            extractContentParameters();
+            return _contentParameters;
         }
         
         public void setAuthentication(Authentication authentication)
@@ -949,33 +965,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
         private Fields getParameters()
         {
-            if (!_contentParamsExtracted)
-            {
-                // content parameters need boolean protection as they can only be read
-                // once, but may be reset to null by a reset
-                _contentParamsExtracted = true;
-
-                // Extract content parameters; these cannot be replaced by a forward()
-                // once extracted and may have already been extracted by getParts() or
-                // by a processing happening after a form-based authentication.
-                if (_contentParameters == null)
-                {
-                    try
-                    {
-                        extractContentParameters();
-                    }
-                    catch (IllegalStateException | IllegalArgumentException | ExecutionException | InterruptedException e)
-                    {
-                        LOG.warn(e.toString());
-                        throw new BadMessageException("Unable to parse form content", e);
-                    }
-                }
-            }
-
-            // Extract query string parameters; these may be replaced by a forward()
-            // and may have already been extracted by mergeQueryParameters().
-            if (_queryParameters == null)
-                extractQueryParameters();
+            extractContentParameters();
+            extractQueryParameters();
 
             // Do parameters need to be combined?
             if (isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
@@ -994,28 +985,54 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return parameters == null ? NO_PARAMS : parameters;
         }
 
-        private void extractContentParameters() throws ExecutionException, InterruptedException
+        private void extractContentParameters() throws BadMessageException
         {
-            _contentParameters =  FutureFormFields.forRequest(getRequest()).get();
-            if (_contentParameters == null || _contentParameters.isEmpty())
-                _contentParameters = NO_PARAMS;
+            if (!_contentParamsExtracted)
+            {
+                // content parameters need boolean protection as they can only be read
+                // once, but may be reset to null by a reset
+                _contentParamsExtracted = true;
+
+                // Extract content parameters; these cannot be replaced by a forward()
+                // once extracted and may have already been extracted by getParts() or
+                // by a processing happening after a form-based authentication.
+                if (_contentParameters == null)
+                {
+                    try
+                    {
+                        _contentParameters =  FutureFormFields.forRequest(getRequest()).get();
+                        if (_contentParameters == null || _contentParameters.isEmpty())
+                            _contentParameters = NO_PARAMS;
+                    }
+                    catch (IllegalStateException | IllegalArgumentException | ExecutionException | InterruptedException e)
+                    {
+                        LOG.warn(e.toString());
+                        throw new BadMessageException("Unable to parse form content", e);
+                    }
+                }
+            }
         }
 
-        private void extractQueryParameters()
+        private void extractQueryParameters() throws BadMessageException
         {
-            HttpURI httpURI = ServletContextRequest.this.getHttpURI();
-            if (httpURI == null || StringUtil.isEmpty(httpURI.getQuery()))
-                _queryParameters = NO_PARAMS;
-            else
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
             {
-                try
+                HttpURI httpURI = ServletContextRequest.this.getHttpURI();
+                if (httpURI == null || StringUtil.isEmpty(httpURI.getQuery()))
+                    _queryParameters = NO_PARAMS;
+                else
                 {
-                    _queryParameters = Request.extractQueryParameters(ServletContextRequest.this, _queryEncoding);
-                }
-                catch (IllegalStateException | IllegalArgumentException e)
-                {
-                    _queryParameters = BAD_PARAMS;
-                    throw new BadMessageException("Unable to parse URI query", e);
+                    try
+                    {
+                        _queryParameters = Request.extractQueryParameters(ServletContextRequest.this, _queryEncoding);
+                    }
+                    catch (IllegalStateException | IllegalArgumentException e)
+                    {
+                        _queryParameters = BAD_PARAMS;
+                        throw new BadMessageException("Unable to parse URI query", e);
+                    }
                 }
             }
         }

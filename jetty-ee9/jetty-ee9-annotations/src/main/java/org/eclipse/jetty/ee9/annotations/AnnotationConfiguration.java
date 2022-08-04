@@ -505,11 +505,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected void scanForAnnotations(WebAppContext context)
         throws Exception
     {
-        int javaPlatform = 0;
-        Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
-        if (target != null)
-            javaPlatform = Integer.parseInt(target.toString());
-        AnnotationParser parser = createAnnotationParser(javaPlatform);
+        AnnotationParser parser = createAnnotationParser();
         _parserTasks = new ArrayList<ParserTask>();
 
         if (LOG.isDebugEnabled())
@@ -575,13 +571,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * @param javaPlatform The java platform to scan for.
      * @return a new AnnotationParser. This method can be overridden to use a different implementation of
      * the AnnotationParser. Note that this is considered internal API.
      */
-    protected AnnotationParser createAnnotationParser(int javaPlatform)
+    protected AnnotationParser createAnnotationParser()
     {
-        return new AnnotationParser(javaPlatform);
+        return new AnnotationParser();
     }
 
     /**

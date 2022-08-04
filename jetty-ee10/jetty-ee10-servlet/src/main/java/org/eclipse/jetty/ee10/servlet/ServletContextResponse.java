@@ -134,9 +134,15 @@ public class ServletContextResponse extends ContextResponse
 
     public void resetForForward()
     {
-        _httpOutput.resetBuffer();
-        _httpOutput.reopen();
+        _httpServletResponse.resetBuffer();
         _outputType = OutputType.NONE;
+    }
+
+    public void included()
+    {
+        if (_outputType == OutputType.WRITER)
+            _writer.reopen();
+        _httpOutput.reopen();
     }
 
     public void completeOutput(Callback callback)
@@ -218,7 +224,7 @@ public class ServletContextResponse extends ContextResponse
     {
         super.reset();
 
-        _httpOutput.resetBuffer();
+        _httpServletResponse.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;
@@ -695,6 +701,7 @@ public class ServletContextResponse extends ContextResponse
          */
         public void sendRedirect(int code, String location) throws IOException
         {
+            resetBuffer();
             FutureCallback callback = new FutureCallback();
             Response.sendRedirect(_request, ServletContextResponse.this, callback, code, location, false);
             callback.block();

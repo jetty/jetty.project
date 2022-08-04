@@ -15,6 +15,8 @@ package org.eclipse.jetty.start;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +24,6 @@ import java.util.List;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ public class BaseHomeTest
         List<String> actual = new ArrayList<>();
         for (Path path : finder.getHits())
         {
-            actual.add(hb.toShortForm(path.toFile()));
+            actual.add(hb.toShortForm(path));
         }
 
         if (actual.size() != expected.size())
@@ -63,7 +64,7 @@ public class BaseHomeTest
         List<String> actual = new ArrayList<>();
         for (Path path : paths)
         {
-            actual.add(hb.toShortForm(path.toFile()));
+            actual.add(hb.toShortForm(path));
         }
 
         if (actual.size() != expected.size())
@@ -82,16 +83,6 @@ public class BaseHomeTest
         assertThat(message + ": " + Utils.join(actual, ", "), actual, containsInAnyOrder(expected.toArray()));
     }
 
-    public static void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
-    {
-        List<String> actual = new ArrayList<>();
-        for (File file : files)
-        {
-            actual.add(hb.toShortForm(file));
-        }
-        assertThat(message + ": " + Utils.join(actual, ", "), actual, containsInAnyOrder(expected.toArray()));
-    }
-
     @Test
     public void testGetPathOnlyHome() throws IOException
     {
@@ -106,7 +97,7 @@ public class BaseHomeTest
         String ref = hb.toShortForm(startIni);
         assertThat("Reference", ref, startsWith("${jetty.home}"));
 
-        String contents = IO.readToString(startIni.toFile());
+        String contents = Files.readString(startIni, StandardCharsets.UTF_8);
         assertThat("Contents", contents, containsString("Home Ini"));
     }
 
@@ -203,7 +194,7 @@ public class BaseHomeTest
         String ref = hb.toShortForm(startIni);
         assertThat("Reference", ref, startsWith("${jetty.base}"));
 
-        String contents = IO.readToString(startIni.toFile());
+        String contents = Files.readString(startIni, StandardCharsets.UTF_8);
         assertThat("Contents", contents, containsString("Base Ini"));
     }
 }

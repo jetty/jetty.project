@@ -15,38 +15,33 @@ package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,6 +179,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (_mountedResources != null)
         {
             _mountedResources.forEach(IO::close);
+            _mountedResources.clear();
         }
         super.deconfigure(context);
     }
@@ -295,7 +291,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (jars != null)
         {
             List<URI> uris = new ArrayList<>();
-            int i = 0;
             for (Resource r : jars)
             {
                 uris.add(r.getURI());
@@ -304,20 +299,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    protected List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
+    protected List<URI> getAllContainerJars(final WebAppContext context)
     {
-        List<URI> uris = new ArrayList<>();
         ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
+        List<URI> uris = new ArrayList<>();
         while (loader != null)
         {
-            if (loader instanceof URLClassLoader)
+            if (loader instanceof URLClassLoader urlCL)
             {
-                URL[] urls = ((URLClassLoader)loader).getURLs();
-                if (urls != null)
-                {
-                    for (URL url : urls)
-                        uris.add(new URI(url.toString().replaceAll(" ", "%20")));
-                }
+                URIUtil.streamOf(urlCL).forEach(uris::add);
             }
             loader = loader.getParent();
         }
@@ -327,20 +317,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-
         // Look for extra resource
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources != null && !resources.isEmpty())
         {
-            Resource[] collection = new Resource[resources.size() + 1];
-            int i = 0;
-            collection[i++] = context.getBaseResource();
-            for (Resource resource : resources)
-            {
-                collection[i++] = resource;
-            }
-            context.setBaseResource(new ResourceCollection(collection));
+            List<Resource> collection = new ArrayList<>();
+            collection.add(context.getBaseResource());
+            collection.addAll(resources);
+            context.setBaseResource(Resource.of(collection));
         }
     }
 
@@ -482,7 +467,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 //Resource represents a packed jar
                 URI uri = target.getURI();
-                Resource.Mount mount = Resource.mount(uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource.Mount mount = Resource.mount(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
                 resourcesDir = mount.root();
                 if (_mountedResources == null)
                     _mountedResources = new ArrayList<>();
@@ -558,7 +543,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 URI uri = jar.getURI();
-                webFrag = Resource.newResource(uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+                webFrag = Resource.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
             if (cache != null)
@@ -680,28 +665,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (dir == null || !Files.isDirectory(dir))
             return Collections.emptySet();
 
-        HashSet<URL> tlds = new HashSet<>();
+        Set<URL> tlds = new HashSet<>();
 
-        final Path rootDir = dir;
-        Files.walkFileTree(dir, new SimpleFileVisitor<>()
+        try (Stream<Path> entries = Files.walk(dir)
+            .filter(Files::isRegularFile)
+            .filter(FileID::isTld))
         {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+            Iterator<Path> iter = entries.iterator();
+            while (iter.hasNext())
             {
-                if (!Files.isSameFile(rootDir, dir))
-                    tlds.addAll(getTlds(dir));
-                return FileVisitResult.SKIP_SUBTREE;
+                Path entry = iter.next();
+                tlds.add(entry.toUri().toURL());
             }
+        }
 
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException
-            {
-                String name = f.normalize().toString();
-                if (name.contains("META-INF") && name.endsWith(".tld"))
-                    tlds.add(f.toUri().toURL());
-                return FileVisitResult.CONTINUE;
-            }
-        });
         return tlds;
     }
 
@@ -714,25 +691,23 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public Collection<URL> getTlds(URI uri) throws IOException
     {
-        HashSet<URL> tlds = new HashSet<URL>();
-
-        URI jarUri = uriJarPrefix(uri, "!/");
-        URL url = jarUri.toURL();
-        JarURLConnection jarConn = (JarURLConnection)url.openConnection();
-        jarConn.setUseCaches(Resource.getDefaultUseCaches());
-        JarFile jarFile = jarConn.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements())
+        HashSet<URL> tlds = new HashSet<>();
+        Resource.Mount mount = Resource.mount(URIUtil.uriJarPrefix(uri, "!/"));
+        if (_mountedResources == null)
+            _mountedResources = new ArrayList<>();
+        _mountedResources.add(mount);
+        try (Stream<Path> stream = Files.walk(mount.root().getPath()))
         {
-            JarEntry e = entries.nextElement();
-            String name = e.getName();
-            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            Iterator<Path> it = stream
+                .filter(Files::isRegularFile)
+                .filter(FileID::isTld)
+                .iterator();
+            while (it.hasNext())
             {
-                tlds.add(new URL(jarUri + name));
+                Path entry = it.next();
+                tlds.add(entry.toUri().toURL());
             }
         }
-        if (!Resource.getDefaultUseCaches())
-            jarFile.close();
         return tlds;
     }
 
@@ -833,6 +808,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
@@ -877,45 +853,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        return context.getExtraClasspath()
+        return context.getExtraClasspath().getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
     }
 
-    private URI uriJarPrefix(URI uri, String suffix)
-    {
-        String uriString = uri.toString();
-        if (uriString.startsWith("jar:"))
-        {
-            return URI.create(uriString + suffix);
-        }
-        else
-        {
-            return URI.create("jar:" + uriString + suffix);
-        }
-    }
-
     private boolean isFileSupported(Resource resource)
     {
-        try
-        {
-            if (resource.isDirectory())
-                return false;
-
-            if (resource.getPath() == null)
-                return false;
-        }
-        catch (Throwable t)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Bad Resource reference: {}", resource, t);
-            return false;
-        }
-
-        String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
-        int dot = filenameLowercase.lastIndexOf('.');
-        String extension = (dot < 0 ? null : filenameLowercase.substring(dot));
-        return (extension != null && (extension.equals(".jar") || extension.equals(".zip")));
+        return FileID.isArchive(resource.getURI());
     }
 }

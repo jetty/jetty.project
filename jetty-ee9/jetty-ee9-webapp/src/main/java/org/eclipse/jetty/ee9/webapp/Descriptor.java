@@ -13,17 +13,22 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 public abstract class Descriptor
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Descriptor.class);
+
     protected Resource _xml;
     protected XmlParser.Node _root;
     protected String _dtd;
@@ -44,6 +49,11 @@ public abstract class Descriptor
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
+            }
+            catch (SAXException | IOException e)
+            {
+                LOG.warn("Unable to parse {}", _xml, e);
+                throw e;
             }
         }
     }

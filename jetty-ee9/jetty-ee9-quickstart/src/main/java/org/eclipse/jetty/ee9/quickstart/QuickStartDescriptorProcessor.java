@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.webapp.DefaultsDescriptor;
@@ -38,7 +36,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -226,32 +223,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             }
         }
     }
-
-    @Deprecated
-    public void visitContainerInitializer(WebAppContext context, ContainerInitializer containerInitializer)
-    {
-        if (containerInitializer == null)
-            return;
-
-        //add the ContainerInitializer to the list of container initializers
-        List<ContainerInitializer> containerInitializers = (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
-        if (containerInitializers == null)
-        {
-            containerInitializers = new ArrayList<ContainerInitializer>();
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS, containerInitializers);
-        }
-
-        containerInitializers.add(containerInitializer);
-
-        //Ensure a bean is set up on the context that will invoke the ContainerInitializers as the context starts
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter == null)
-        {
-            starter = new ServletContainerInitializersStarter(context);
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-            context.addBean(starter, true);
-        }
-    }
     
     /**
      * Ensure the ServletContainerInitializerHolder will be started by adding it to the context.
@@ -266,6 +237,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         context.addServletContainerInitializer(sciHolder);
     }
 
+    @SuppressWarnings("unchecked")
     public void visitMetaInfResource(WebAppContext context, Resource dir)
     {
         Collection<Resource> metaInfResources = (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
@@ -275,14 +247,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             context.setAttribute(MetaInfConfiguration.METAINF_RESOURCES, metaInfResources);
         }
         metaInfResources.add(dir);
+
         //also add to base resource of webapp
-        Resource[] collection = new Resource[metaInfResources.size() + 1];
-        int i = 0;
-        collection[i++] = context.getBaseResource();
-        for (Resource resource : metaInfResources)
-        {
-            collection[i++] = resource;
-        }
-        context.setBaseResource(new ResourceCollection(collection));
+        List<Resource> collection = new ArrayList<>();
+        collection.add(context.getBaseResource());
+        collection.addAll(metaInfResources);
+        context.setBaseResource(Resource.of(collection));
     }
 }

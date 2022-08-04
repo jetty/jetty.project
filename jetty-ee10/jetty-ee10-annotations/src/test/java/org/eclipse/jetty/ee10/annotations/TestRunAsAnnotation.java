@@ -13,22 +13,32 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestRunAsAnnotation
 {
+    public WorkDir workDir;
+
     @Test
     public void testRunAsAnnotation() throws Exception
     {
+        Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
+        Files.createFile(dummyXml);
+        Resource dummyXmlResource = Resource.newResource(dummyXml);
+
         WebAppContext wac = new WebAppContext();
         
         //pre-add a servlet but not by descriptor
@@ -44,8 +54,7 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        Resource fakeXml = Resource.newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml").toPath());
-        wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(fakeXml));
+        wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(dummyXmlResource));
         
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         RunAsAnnotationHandler handler = new RunAsAnnotationHandler(wac);

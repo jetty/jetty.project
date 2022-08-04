@@ -111,7 +111,7 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r) throws IOException
+    public boolean isContainedIn(Resource r)
     {
         return _delegate.isContainedIn(r);
     }

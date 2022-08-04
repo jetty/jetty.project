@@ -21,124 +21,99 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * A collection of resources (dirs).
- * Allows webapps to have multiple (static) sources.
+ * A collection of Resources.
+ * Allows webapps to have multiple sources.
  * The first resource in the collection is the main resource.
  * If a resource is not found in the main resource, it looks it up in
- * the order the resources were constructed.
+ * the order the provided in the constructors
  */
 public class ResourceCollection extends Resource
 {
-    private List<Resource> _resources;
-
-    /**
-     * Instantiates an empty resource collection.
-     * <p>
-     * This constructor is used when configuring jetty-maven-plugin.
-     */
-    public ResourceCollection()
+    static class Mount implements Resource.Mount
     {
-        _resources = new ArrayList<>();
+        private final List<Resource.Mount> _mounts;
+        private final ResourceCollection _root;
+
+        Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
+        {
+            _root = new ResourceCollection(resources);
+            _mounts = mounts;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            _mounts.forEach(IO::close);
+        }
+
+        @Override
+        public Resource root()
+        {
+            return _root;
+        }
     }
+
+    private final List<Resource> _resources;
 
     /**
      * Instantiates a new resource collection.
      *
      * @param resources the resources to be added to collection
      */
-    public ResourceCollection(Resource... resources)
+    ResourceCollection(Collection<Resource> resources)
     {
-        this(Arrays.asList(resources));
+        List<Resource> res = new ArrayList<>();
+        gatherUniqueFlatResourceList(res, resources);
+        _resources = Collections.unmodifiableList(res);
     }
 
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Collection<Resource> resources)
+    private static void gatherUniqueFlatResourceList(List<Resource> unique, Collection<Resource> resources)
     {
-        _resources = new ArrayList<>();
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("Empty Resource collection");
 
         for (Resource r : resources)
         {
             if (r == null)
             {
-                continue;
+                throw new IllegalArgumentException("Null Resource entry encountered");
             }
-            if (r instanceof ResourceCollection)
+
+            if (r instanceof ResourceCollection resourceCollection)
             {
-                _resources.addAll(((ResourceCollection)r).getResources());
+                gatherUniqueFlatResourceList(unique, resourceCollection.getResources());
             }
             else
             {
-                assertResourceValid(r);
-                _resources.add(r);
-            }
-        }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resource strings to be added to collection
-     */
-    public ResourceCollection(String[] resources)
-    {
-        _resources = new ArrayList<>();
-
-        if (resources == null || resources.length == 0)
-        {
-            return;
-        }
-
-        try
-        {
-            for (String strResource : resources)
-            {
-                if (strResource == null || strResource.length() == 0)
+                if (unique.contains(r))
                 {
-                    throw new IllegalArgumentException("empty/null resource path not supported");
+                    // skip, already seen
+                    continue;
                 }
-                Resource resource = Resource.newResource(strResource);
-                assertResourceValid(resource);
-                _resources.add(resource);
-            }
 
-            if (_resources.isEmpty())
-            {
-                throw new IllegalArgumentException("resources cannot be empty or null");
+                if (!r.exists())
+                {
+                    throw new IllegalArgumentException("Does not exist: " + r);
+                }
+
+                if (!r.isDirectory())
+                {
+                    throw new IllegalArgumentException("Not a directory: " + r);
+                }
+                unique.add(r);
             }
         }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param csvResources the string containing comma-separated resource strings
-     * @throws IOException if any listed resource is not valid
-     */
-    public ResourceCollection(String csvResources) throws IOException
-    {
-        setResources(csvResources);
     }
 
     /**
@@ -152,76 +127,8 @@ public class ResourceCollection extends Resource
     }
 
     /**
-     * Sets the resource collection's resources.
+     * Resolves a path against the resource collection.
      *
-     * @param res the resources to set
-     */
-    public void setResources(List<Resource> res)
-    {
-        _resources = new ArrayList<>();
-        if (res.isEmpty())
-        {
-            return;
-        }
-
-        _resources.addAll(res);
-    }
-
-    /**
-     * Sets the resource collection's resources.
-     *
-     * @param resources the new resource array
-     */
-    public void setResources(Resource[] resources)
-    {
-        if (resources == null || resources.length == 0)
-        {
-            _resources = null;
-            return;
-        }
-
-        List<Resource> res = new ArrayList<>();
-        for (Resource resource : resources)
-        {
-            assertResourceValid(resource);
-            res.add(resource);
-        }
-
-        setResources(res);
-    }
-
-    /**
-     * Sets the resources as string of comma-separated values.
-     * This method should be used when configuring jetty-maven-plugin.
-     *
-     * @param resources the comma-separated string containing
-     * one or more resource strings.
-     * @throws IOException if unable resource declared is not valid
-     * @see Resource#fromList(String, boolean)
-     */
-    public void setResources(String resources) throws IOException
-    {
-        if (StringUtil.isBlank(resources))
-        {
-            throw new IllegalArgumentException("String is blank");
-        }
-
-        List<Resource> list = Resource.fromList(resources, false);
-        if (list.isEmpty())
-        {
-            throw new IllegalArgumentException("String contains no entries");
-        }
-        List<Resource> ret = new ArrayList<>();
-        for (Resource resource : list)
-        {
-            assertResourceValid(resource);
-            ret.add(resource);
-        }
-        setResources(ret);
-    }
-
-    /**
-     * Add a path to the resource collection.
      * @param subUriPath The path segment to add
      * @return The resulting resource(s) :
      * <ul>
@@ -233,14 +140,10 @@ public class ResourceCollection extends Resource
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource resolve(String subUriPath)
     {
-        assertResourcesSet();
-
-        if (subUriPath == null)
-        {
-            throw new MalformedURLException("null path");
-        }
+        if (URIUtil.normalizePath(subUriPath) == null)
+            throw new IllegalArgumentException(subUriPath);
 
         if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))
         {
@@ -273,16 +176,8 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public boolean delete() throws SecurityException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean exists()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             if (r.exists())
@@ -297,7 +192,6 @@ public class ResourceCollection extends Resource
     @Override
     public Path getPath()
     {
-        assertResourcesSet();
         for (Resource r : _resources)
         {
             Path p = r.getPath();
@@ -310,8 +204,6 @@ public class ResourceCollection extends Resource
     @Override
     public InputStream newInputStream() throws IOException
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             if (!r.exists())
@@ -332,8 +224,6 @@ public class ResourceCollection extends Resource
     @Override
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             ReadableByteChannel channel = r.newReadableByteChannel();
@@ -348,8 +238,6 @@ public class ResourceCollection extends Resource
     @Override
     public String getName()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             String name = r.getName();
@@ -364,8 +252,6 @@ public class ResourceCollection extends Resource
     @Override
     public URI getURI()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             URI uri = r.getURI();
@@ -380,15 +266,12 @@ public class ResourceCollection extends Resource
     @Override
     public boolean isDirectory()
     {
-        assertResourcesSet();
         return true;
     }
 
     @Override
     public long lastModified()
     {
-        assertResourcesSet();
-
         for (Resource r : _resources)
         {
             long lm = r.lastModified();
@@ -412,7 +295,6 @@ public class ResourceCollection extends Resource
     @Override
     public List<String> list()
     {
-        assertResourcesSet();
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
@@ -427,16 +309,8 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void copyTo(Path destination) throws IOException
     {
-        assertResourcesSet();
-
         // Copy in reverse order
         for (int r = _resources.size(); r-- > 0; )
         {
@@ -445,17 +319,14 @@ public class ResourceCollection extends Resource
     }
 
     /**
-     * @return the list of resources separated by a path separator
+     * @return the list of resources
      */
     @Override
     public String toString()
     {
-        if (_resources.isEmpty())
-        {
-            return "[]";
-        }
-
-        return String.valueOf(_resources);
+        return _resources.stream()
+            .map(Resource::getName)
+            .collect(Collectors.joining(", ", "[", "]"));
     }
 
     @Override
@@ -463,26 +334,5 @@ public class ResourceCollection extends Resource
     {
         // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
         return false;
-    }
-
-    private void assertResourcesSet()
-    {
-        if (_resources == null || _resources.isEmpty())
-        {
-            throw new IllegalStateException("*resources* not set.");
-        }
-    }
-
-    private void assertResourceValid(Resource resource)
-    {
-        if (resource == null)
-        {
-            throw new IllegalStateException("Null resource not supported");
-        }
-
-        if (!resource.exists() || !resource.isDirectory())
-        {
-            throw new IllegalArgumentException(resource + " is not an existing directory.");
-        }
     }
 }

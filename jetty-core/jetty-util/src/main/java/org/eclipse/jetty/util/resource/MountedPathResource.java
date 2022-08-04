@@ -18,6 +18,8 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.util.URIUtil;
+
 /**
  * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
  * must use this class, for instance the one handling the `jar` scheme.
@@ -29,7 +31,7 @@ public class MountedPathResource extends PathResource
     MountedPathResource(URI uri) throws IOException
     {
         super(uri, true);
-        containerUri = FileSystemPool.containerUri(getURI());
+        containerUri = URIUtil.unwrapContainer(getURI());
     }
 
     @Override

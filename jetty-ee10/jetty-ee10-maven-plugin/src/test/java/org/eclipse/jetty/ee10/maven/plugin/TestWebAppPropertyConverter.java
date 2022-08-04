@@ -15,7 +15,10 @@ package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -149,7 +153,10 @@ public class TestWebAppPropertyConverter
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
         assertThat(webApp.getResourceBase(), instanceOf(ResourceCollection.class));
-        assertThat(webApp.getResourceBase().toString(), Matchers.containsString(Resource.newResource(base1.toPath()).toString()));
-        assertThat(webApp.getResourceBase().toString(), Matchers.containsString(Resource.newResource(base2.toPath()).toString()));
+
+        ResourceCollection resourceCollection = (ResourceCollection)webApp.getResourceBase();
+        List<URI> actual = resourceCollection.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
+        URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
+        assertThat(actual, containsInAnyOrder(expected));
     }
 }

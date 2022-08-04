@@ -60,6 +60,7 @@ public class ResourceService
 
     private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
+
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
@@ -488,14 +489,14 @@ public class ResourceService
         }
 
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), URIUtil.SLASH);
-        String dir = httpContent.getResource().getListHTML(base, pathInContext.length() > 1, request.getHttpURI().getQuery());
-        if (dir == null)
+        String listing = ResourceListing.getAsHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        if (listing == null)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
-        byte[] data = dir.getBytes(StandardCharsets.UTF_8);
+        byte[] data = listing.getBytes(StandardCharsets.UTF_8);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
         response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);

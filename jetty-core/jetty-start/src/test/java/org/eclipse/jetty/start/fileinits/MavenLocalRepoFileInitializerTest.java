@@ -196,7 +196,7 @@ public class MavenLocalRepoFileInitializerTest
         Files.deleteIfExists(destination);
         repo.download(coords.toCentralURI(), destination);
         assertThat(Files.exists(destination), is(true));
-        assertThat(destination.toFile().length(), is(986193L));
+        assertThat(Files.size(destination), is(986193L));
     }
 
     @Test
@@ -224,7 +224,7 @@ public class MavenLocalRepoFileInitializerTest
         Path destination = baseHome.getBasePath().resolve("jetty-rewrite-11.0.0-SNAPSHOT.jar");
         repo.download(coords, destination);
         assertThat(Files.exists(destination), is(true));
-        assertThat("Snapshot File size", destination.toFile().length(), greaterThan(10_000L));
+        assertThat("Snapshot File size", Files.size(destination), greaterThan(10_000L));
     }
 
     @Test

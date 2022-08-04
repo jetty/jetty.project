@@ -20,7 +20,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.annotations.AnnotationDecorator;
-import org.eclipse.jetty.ee10.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.StandardDescriptorProcessor;
@@ -177,14 +176,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-            //add a context bean that will run ServletContainerInitializers as the context starts
-            ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-            if (starter != null)
-                throw new IllegalStateException("ServletContainerInitializersStarter already exists");
-            starter = new ServletContainerInitializersStarter(context);
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-            context.addBean(starter, true);
-
             LOG.debug("configured {}", this);
         }
     }
@@ -193,12 +184,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public void postConfigure(WebAppContext context) throws Exception
     {
         super.postConfigure(context);
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-        {
-            context.removeBean(starter);
-            context.removeAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        }
     }
 
     @Override
@@ -247,6 +232,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource qstart;
         if (attr == null || StringUtil.isBlank(attr.toString()))
         {
+            // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/quickstart-web.xml
+            // TODO: should also never return from a META-INF/versions/#/WEB-INF/quickstart-web.xml location
             qstart = webInf.resolve("quickstart-web.xml");
         }
         else

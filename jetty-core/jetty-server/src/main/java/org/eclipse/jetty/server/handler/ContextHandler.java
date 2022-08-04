@@ -15,9 +15,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,8 +41,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -310,23 +311,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // TODO may need to handle one level of parent classloader for API ?
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
-        URL[] urls = loader.getURLs();
-        StringBuilder classpath = new StringBuilder();
-        for (URL url : urls)
-        {
-            // TODO do this without Resource?
-            Resource resource = Resource.newResource(url);
-            Path path = resource.getPath();
-            if (path != null && Files.exists(path))
-            {
-                if (classpath.length() > 0)
-                    classpath.append(File.pathSeparatorChar);
-                classpath.append(path.toAbsolutePath());
-            }
-        }
-        if (classpath.length() == 0)
+
+        String classpath = URIUtil.streamOf(loader)
+            .map(URI::toASCIIString)
+            .collect(Collectors.joining(File.pathSeparator));
+        if (StringUtil.isBlank(classpath))
             return null;
-        return classpath.toString();
+        return classpath;
     }
 
     /**
@@ -529,6 +520,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
+
+        // cleanup any Mounts associated with the ContextHandler on stop.
+        // TODO: but what if the context is restarted? how do we remount? do we care?
+        java.util.Collection<Resource.Mount> mounts = getBeans(Resource.Mount.class);
+        mounts.forEach((mount) ->
+        {
+            IO.close(mount);
+            removeBean(mount);
+        });
     }
 
     public boolean checkVirtualHost(Request request)
@@ -669,7 +669,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _contextPath = contextPath;
+        _contextPath = URIUtil.canonicalPath(contextPath);
     }
 
     /**

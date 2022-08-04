@@ -28,6 +28,16 @@ import java.util.zip.ZipFile;
 
 public class FS
 {
+    public static String separator()
+    {
+        return FileSystems.getDefault().getSeparator();
+    }
+
+    public static String pathSeparator()
+    {
+        return File.pathSeparator;
+    }
+
     public static boolean canReadDirectory(Path path)
     {
         return Files.exists(path) && Files.isDirectory(path) && Files.isReadable(path);
@@ -125,9 +135,9 @@ public class FS
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
 
-    public static String toRelativePath(File baseDir, File path)
+    public static String toRelativePath(Path baseDir, Path path)
     {
-        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
+        return baseDir.toUri().relativize(path.toUri()).toASCIIString();
     }
 
     public static boolean isPropertyFile(String filename)

@@ -101,7 +101,7 @@ public class QuickStartTest
         Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
-        WebDescriptor descriptor = new WebDescriptor(new PathResource(webXmlPath));
+        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());

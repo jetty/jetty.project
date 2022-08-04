@@ -15,13 +15,11 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -36,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -125,8 +124,16 @@ public class Dispatcher implements RequestDispatcher
     {
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
+        ServletContextResponse baseResponse = ServletContextResponse.getBaseResponse(response);
 
-        _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+        try
+        {
+            _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+        }
+        finally
+        {
+            baseResponse.included();
+        }
     }
 
     public void async(ServletRequest request, ServletResponse response) throws ServletException, IOException
@@ -139,85 +146,81 @@ public class Dispatcher implements RequestDispatcher
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper
     {
-        private Map<String, String[]> params;
+        private final MultiMap<String> _params = new MultiMap<>();
+        private boolean decodedParams = false;
+        private final HttpServletRequest _httpServletRequest;
+        private final ServletContextRequest _baseRequest;
 
         public ParameterRequestWrapper(HttpServletRequest request)
         {
             super(request);
+            _httpServletRequest = request;
+
+            // Have to assume ENCODING because we can't know otherwise.
+            String targetQuery = (_uri == null) ? null : _uri.getQuery();
+            if (targetQuery != null)
+                UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
+
+            _baseRequest = ServletContextRequest.getBaseRequest(_httpServletRequest);
+            if (_baseRequest == null)
+                throw new IllegalStateException();
+
+            Fields queryParams = _baseRequest.getServletApiRequest().getQueryParams();
+            for (Fields.Field field : queryParams)
+            {
+                _params.addValues(field.getName(), field.getValues());
+            }
+        }
+
+        private MultiMap<String> getParams()
+        {
+            if (decodedParams)
+                return _params;
+            decodedParams = true;
+
+            Fields contentParams = _baseRequest.getServletApiRequest().getContentParams();
+            for (Fields.Field field : contentParams)
+            {
+                _params.addValues(field.getName(), field.getValues());
+            }
+            return _params;
         }
 
         @Override
         public String getParameter(String name)
         {
-            String[] strings = getParameterMap().get(name);
-            if (strings == null || strings.length == 0)
-                return null;
-            return strings[0];
+            return getParams().getValue(name);
         }
 
         @Override
         public Map<String, String[]> getParameterMap()
         {
-            if (params != null)
-                return params;
-
-            Map<String, String[]> oldParams = super.getParameterMap();
-            if (_uri == null || _uri.getQuery() == null)
-            {
-                params = oldParams;
-                return oldParams;
-            }
-
-            MultiMap<String> newParams = new MultiMap<>();
-            UrlEncoded.decodeTo(_uri.getQuery(), newParams, UrlEncoded.ENCODING);
-            for (Map.Entry<String, String[]> entry : oldParams.entrySet())
-            {
-                newParams.addValues(entry.getKey(), entry.getValue());
-            }
-            params = newParams.toStringArrayMap();
-            return params;
+            return Collections.unmodifiableMap(getParams().toStringArrayMap());
         }
 
         @Override
         public Enumeration<String> getParameterNames()
         {
-            return Collections.enumeration(getParameterMap().entrySet().stream()
-                .flatMap(o -> Arrays.stream(o.getValue()))
-                .collect(Collectors.toList()));
+            return Collections.enumeration(getParams().keySet());
         }
 
         @Override
         public String[] getParameterValues(String name)
         {
-            return getParameterMap().get(name);
+            List<String> vals = getParams().getValues(name);
+            if (vals == null)
+                return null;
+            return vals.toArray(new String[0]);
         }
     }
 
     private class ForwardRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
-        private final MultiMap<String> _params = new MultiMap<>();
 
         public ForwardRequest(HttpServletRequest httpRequest)
         {
             super(httpRequest);
-
-            String targetQuery = (_uri == null) ? null : _uri.getQuery();
-            if (targetQuery != null)
-            {
-                // Have to assume ENCODING because we can't know otherwise.
-                UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
-            }
-
-            Enumeration<String> parameterNames = httpRequest.getParameterNames();
-            while (parameterNames.hasMoreElements())
-            {
-                String name = parameterNames.nextElement();
-                String[] parameterValues = httpRequest.getParameterValues(name);
-                if (parameterValues != null)
-                    _params.addValues(name, parameterValues);
-            }
-
             _httpServletRequest = httpRequest;
         }
 
@@ -259,33 +262,6 @@ public class Dispatcher implements RequestDispatcher
                     return targetQuery;
             }
             return _httpServletRequest.getQueryString();
-        }
-
-        @Override
-        public String getParameter(String name)
-        {
-            return _params.getValue(name);
-        }
-
-        @Override
-        public Map<String, String[]> getParameterMap()
-        {
-            return Collections.unmodifiableMap(_params.toStringArrayMap());
-        }
-
-        @Override
-        public Enumeration<String> getParameterNames()
-        {
-            return Collections.enumeration(_params.keySet());
-        }
-
-        @Override
-        public String[] getParameterValues(String name)
-        {
-            List<String> vals = _params.getValues(name);
-            if (vals == null)
-                return null;
-            return vals.toArray(new String[0]);
         }
 
         @Override
@@ -501,6 +477,7 @@ public class Dispatcher implements RequestDispatcher
         {
             super(httpRequest);
             _httpServletRequest = httpRequest;
+            Objects.requireNonNull(_servletPathMapping);
         }
 
         @Override
@@ -512,13 +489,22 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping).getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping).getServletPath();
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            // TODO what about a 404 dispatch?
+            return Objects.requireNonNull(_servletPathMapping);
         }
 
         @Override

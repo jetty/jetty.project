@@ -14,12 +14,13 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
@@ -58,6 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -515,32 +518,26 @@ public class WebAppContextTest
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
         Path extLibsDir = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibsDir = extLibsDir.toAbsolutePath();
-        List<Path> expectedPaths;
+
+        List<URI> expectedUris;
         try (Stream<Path> s = Files.list(extLibsDir))
         {
-            expectedPaths = s
+            expectedUris = s
                 .filter(Files::isRegularFile)
-                .filter((path) -> path.toString().endsWith(".jar"))
+                .filter((path) -> path.getFileName().toString().endsWith(".jar"))
+                .sorted(Comparator.naturalOrder())
+                .map(Path::toUri)
+                .map(URIUtil::toJarFileUri)
                 .collect(Collectors.toList());
         }
-        List<Path> actualPaths = new ArrayList<>();
+        List<URI> actualURIs = new ArrayList<>();
         for (URL url : webAppClassLoader.getURLs())
         {
-            actualPaths.add(Paths.get(url.toURI()));
+            actualURIs.add(url.toURI());
         }
-        assertThat("[" + description + "] WebAppClassLoader.urls.length", actualPaths.size(), is(expectedPaths.size()));
-        for (Path expectedPath : expectedPaths)
-        {
-            boolean found = false;
-            for (Path actualPath : actualPaths)
-            {
-                if (Files.isSameFile(actualPath, expectedPath))
-                {
-                    found = true;
-                }
-            }
-            assertTrue(found, "[" + description + "] Not able to find expected jar in WebAppClassLoader: " + expectedPath);
-        }
+        assertThat("[" + description + "] WebAppClassLoader.urls.length", actualURIs.size(), is(expectedUris.size()));
+
+        assertThat(actualURIs, contains(expectedUris.toArray()));
     }
 
     public static Stream<Arguments> extraClasspathDir()

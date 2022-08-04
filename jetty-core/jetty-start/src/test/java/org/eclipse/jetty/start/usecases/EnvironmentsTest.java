@@ -116,7 +116,7 @@ public class EnvironmentsTest extends AbstractUseCase
             Environment environment = results.getEnvironment(e);
             assertThat(environment, notNullValue());
             assertThat(environment.getName(), is(e));
-            assertThat(environment.getClasspath().getElements(), contains(baseDir.resolve("lib/%s.jar".formatted(e)).toFile()));
+            assertThat(environment.getClasspath().getElements(), contains(baseDir.resolve("lib/%s.jar".formatted(e))));
             assertThat(environment.getXmlFiles(), contains(baseDir.resolve("etc/%s.xml".formatted(e))));
             assertThat(environment.getProperties().getProp("feature.option").value, is(e));
         }

@@ -63,7 +63,7 @@ public class PasswordTest
     {
         ProcessBuilder passwordBuilder = new ProcessBuilder()
             .directory(MavenTestingUtils.getTargetDir())
-            .command("java",
+            .command("java", // TODO: use System.getProperty("java.home") here
                 "-cp", MavenTestingUtils.getTargetPath("classes").toString(),
                 Password.class.getName(),
                 "user", "password")

@@ -15,6 +15,7 @@ package org.eclipse.jetty.start;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,16 +47,16 @@ public class ModulesTest
     public void testLoadAllModules() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -142,16 +143,16 @@ public class ModulesTest
     public void testResolveServerHttp() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -205,16 +206,16 @@ public class ModulesTest
     public void testResolveNotRequiredModuleNotFound() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -254,16 +255,16 @@ public class ModulesTest
     public void testResolveNotRequiredModuleFound() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -305,16 +306,16 @@ public class ModulesTest
     public void testResolveNotRequiredModuleFoundDynamic() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path baseDir = testdir.getEmptyPathDir();
         String[] cmdLine = new String[]{"bar.type=dynamic"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);

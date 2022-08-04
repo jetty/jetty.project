@@ -41,8 +41,10 @@
     <module>jetty-ee8-quickstart</module>
     <module>jetty-ee8-openid</module>
     <module>jetty-ee8-apache-jsp</module>
+    <module>jetty-ee8-glassfish-jstl</module>
     <module>jetty-ee8-bom</module>
     <module>jetty-ee8-demos</module>
+    <module>test-ee8-sessions</module>
     <module>jetty-ee8-home</module>
   </modules>
 
@@ -80,6 +82,7 @@
             <nonFilteredFileExtension>bz2</nonFilteredFileExtension>
             <nonFilteredFileExtension>br</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jsp</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
@@ -181,6 +184,11 @@
           <execution>
             <id>modify-services-loader-ee9-to-ee8</id>
             <phase>process-resources</phase>
+            <configuration>
+              <extraFileNames>
+                <extraFileName>org.apache.juli.logging.Log</extraFileName>
+              </extraFileNames>
+            </configuration>
             <goals>
               <goal>modify-service-loader-files-ee9-to-ee8</goal>
             </goals>
@@ -215,6 +223,16 @@
           <version>${jsp.impl.version}</version>
         </dependency>
         <dependency>
+          <groupId>jakarta.servlet.jsp.jstl</groupId>
+          <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+          <version>1.2.7</version>
+        </dependency>
+        <dependency>
+          <groupId>org.glassfish.web</groupId>
+          <artifactId>jstl-impl</artifactId>
+          <version>1.2</version>
+        </dependency>
+        <dependency>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-javax-websocket-api</artifactId>
           <version>${jakarta.websocket.api.version}</version>
@@ -223,6 +241,11 @@
           <groupId>org.eclipse.jetty.orbit</groupId>
           <artifactId>javax.mail.glassfish</artifactId>
           <version>${javax.mail.glassfish.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-apache-jsp</artifactId>
+          <version>${project.version}</version>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
