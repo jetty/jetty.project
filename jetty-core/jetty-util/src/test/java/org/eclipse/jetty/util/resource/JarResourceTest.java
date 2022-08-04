@@ -149,17 +149,17 @@ public class JarResourceTest
             assertTrue(resource.exists());
 
             String dump = FileSystemPool.INSTANCE.dump();
+            System.out.println(dump);
             assertThat(dump, containsString("FileSystemPool"));
-            assertThat(dump, containsString("mounts size=1"));
-            assertThat(dump, containsString("Mount[uri=jar:file:/"));
-            assertThat(dump, containsString("test.zip!/subdir"));
+            assertThat(dump, containsString("buckets size=1"));
+            assertThat(dump, containsString("/test.zip#1"));
 
             Files.delete(testZip);
             FileSystemPool.INSTANCE.sweep();
 
             dump = FileSystemPool.INSTANCE.dump();
             assertThat(dump, containsString("FileSystemPool"));
-            assertThat(dump, containsString("mounts size=0"));
+            assertThat(dump, containsString("buckets size=0"));
 
             assertThrows(ClosedFileSystemException.class, resource::exists);
         }
