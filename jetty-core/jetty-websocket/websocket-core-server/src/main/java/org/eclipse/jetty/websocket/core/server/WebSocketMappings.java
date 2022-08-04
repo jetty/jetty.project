@@ -229,6 +229,19 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         return negotiator;
     }
 
+    /**
+     * This method returns true the WebSocket upgrade was accepted. A return value of true means this method has taken the
+     * responsibility for completing the callback, the request will be upgraded to WebSocket or a response will be
+     * sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible for completing
+     * the callback.
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback
+     * @param defaultCustomizer the customizer
+     * @return true if the WebSocket upgrade was accepted
+     * @throws IOException there is an error during the upgrade
+     */
     public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
         String target = request.getPathInContext();
@@ -239,13 +252,23 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
             request.setAttribute(PathSpec.class.getName(), pathSpec);
         });
 
-        if (negotiator == null)
-            return false;
-
-        // We have an upgrade request
-        return handshaker.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
+        return upgrade(negotiator, request, response, callback, defaultCustomizer);
     }
 
+    /**
+     * This method returns true the WebSocket upgrade was accepted. A return value of true means this method has taken the
+     * responsibility for completing the callback, the request will be upgraded to WebSocket or a response will be
+     * sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible for completing
+     * the callback.
+     *
+     * @param negotiator the negotiator
+     * @param request the request
+     * @param response the response
+     * @param callback the callback
+     * @param defaultCustomizer the customizer
+     * @return true if the WebSocket upgrade was accepted
+     * @throws IOException there is an error during the upgrade
+     */
     public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (negotiator == null)

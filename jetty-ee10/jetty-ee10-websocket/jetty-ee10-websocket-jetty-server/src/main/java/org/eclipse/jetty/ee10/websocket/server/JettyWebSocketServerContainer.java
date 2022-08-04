@@ -152,7 +152,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             try
             {
                 Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
-                cb.succeeded();
+                if (webSocket == null)
+                    cb.succeeded();
                 return webSocket;
             }
             catch (Throwable t)
