@@ -35,14 +35,15 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -115,7 +116,14 @@ public class WebSocketProxyTest
         handlers.addHandler(serverContext);
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
-        negotiator = new CreatorNegotiator((req, resp, cb) -> proxy.client2Proxy, (FrameHandlerFactory)defaultCustomizer);
+        negotiator = new WebSocketNegotiator.AbstractNegotiator(defaultCustomizer)
+        {
+            @Override
+            public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+            {
+                return proxy.client2Proxy;
+            }
+        };
         upgradeHandler = new WebSocketUpgradeHandler();
         upgradeHandler.addMapping("/*", negotiator);
         proxyContext.setHandler(upgradeHandler);
