@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketContainer;
@@ -212,16 +213,31 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
         if (baseRequest == null)
             throw new IllegalStateException("Base Request not available");
+        ServletContextResponse baseResponse = baseRequest.getResponse();
 
         WebSocketNegotiator negotiator = new CreatorNegotiator(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            boolean upgraded = handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, customizer);
-            callback.block();
-            return upgraded;
+            // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+            // are accessible when websocket-core calls back the Jetty WebSocket creator.
+            baseRequest.setAttachment(request);
+            baseResponse.setAttachment(response);
+
+            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
+            {
+                callback.block();
+                return !baseResponse.isCommitted();
+            }
         }
+        finally
+        {
+            baseRequest.setAttachment(null);
+            baseResponse.setAttachment(null);
+        }
+
+        return false;
     }
 
     @Override

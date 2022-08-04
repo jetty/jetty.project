@@ -172,7 +172,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 baseRequest.setAttachment(request);
                 baseResponse.setAttachment(response);
 
-                if (mappings.upgrade(baseRequest, baseResponse, callback, null))
+                if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
                 {
                     callback.block();
                     return;
