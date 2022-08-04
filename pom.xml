@@ -147,7 +147,7 @@
     <it.debug>false</it.debug>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.testtracker.log>false</jetty.testtracker.log>
+    <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
     <mongo.docker.version>3.2.20</mongo.docker.version>
