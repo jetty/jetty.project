@@ -21,7 +21,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public class RFC6455Negotiation extends WebSocketNegotiation
 {

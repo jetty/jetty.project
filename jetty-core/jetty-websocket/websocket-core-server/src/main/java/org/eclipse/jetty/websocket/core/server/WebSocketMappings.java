@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,7 +183,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
     {
-        mappings.put(pathSpec, WebSocketNegotiator.from(creator, factory, customizer));
+        mappings.put(pathSpec, new CreatorNegotiator(creator, factory, customizer));
     }
 
     /**

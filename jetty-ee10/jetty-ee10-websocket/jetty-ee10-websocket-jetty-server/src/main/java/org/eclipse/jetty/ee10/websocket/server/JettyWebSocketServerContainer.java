@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -212,12 +213,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (baseRequest == null)
             throw new IllegalStateException("Base Request not available");
 
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory, customizer);
+        WebSocketNegotiator negotiator = new CreatorNegotiator(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            boolean upgraded = handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, null);
+            boolean upgraded = handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, customizer);
             callback.block();
             return upgraded;
         }

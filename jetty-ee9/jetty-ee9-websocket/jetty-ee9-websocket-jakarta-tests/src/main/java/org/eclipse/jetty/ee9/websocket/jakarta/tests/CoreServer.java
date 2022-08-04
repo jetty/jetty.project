@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.function.Function;
 
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
@@ -24,10 +22,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
@@ -38,18 +38,6 @@ public class CoreServer extends ContainerLifeCycle
     private WebSocketNegotiator negotiator;
     private URI serverUri;
     private URI wsUri;
-
-    public CoreServer(Function<WebSocketNegotiation, FrameHandler> negotiationFunction)
-    {
-        this(new WebSocketNegotiator.AbstractNegotiator()
-        {
-            @Override
-            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
-            {
-                return negotiationFunction.apply(negotiation);
-            }
-        });
-    }
 
     public CoreServer(WebSocketNegotiator negotiator)
     {
@@ -99,27 +87,26 @@ public class CoreServer extends ContainerLifeCycle
     public static class EchoNegotiator extends WebSocketNegotiator.AbstractNegotiator
     {
         @Override
-        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+        public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
         {
-            List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
-
+            List<String> offeredSubProtocols = request.getSubProtocols();
             if (offeredSubProtocols.isEmpty())
             {
                 return new WholeMessageEcho();
             }
             else
             {
-                for (String offeredSubProtocol : negotiation.getOfferedSubprotocols())
+                for (String offeredSubProtocol : offeredSubProtocols)
                 {
                     if ("echo-whole".equalsIgnoreCase(offeredSubProtocol))
                     {
-                        negotiation.setSubprotocol("echo-whole");
+                        response.setAcceptedSubProtocol("echo-whole");
                         return new WholeMessageEcho();
                     }
 
                     if ("echo-frames".equalsIgnoreCase(offeredSubProtocol))
                     {
-                        negotiation.setSubprotocol("echo-frames");
+                        response.setAcceptedSubProtocol("echo-frames");
                         return new FrameEcho();
                     }
                 }

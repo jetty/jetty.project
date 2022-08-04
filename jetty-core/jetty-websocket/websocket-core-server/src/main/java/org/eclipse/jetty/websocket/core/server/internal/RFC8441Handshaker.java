@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public class RFC8441Handshaker extends AbstractHandshaker
 {

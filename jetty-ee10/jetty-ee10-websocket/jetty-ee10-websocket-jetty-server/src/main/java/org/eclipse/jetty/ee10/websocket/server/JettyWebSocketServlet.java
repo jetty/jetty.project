@@ -293,11 +293,11 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback)
+        public Object createWebSocket(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(request), new DelegatedServerUpgradeResponse(response));
                 callback.succeeded();
                 return webSocket;
             }

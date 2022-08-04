@@ -13,47 +13,29 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.io.IOException;
-import java.util.function.Function;
-
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 
 public interface WebSocketNegotiator extends Configuration.Customizer
 {
-    FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException;
+    /**
+     * Create a {@link FrameHandler} from the incoming request.
+     *
+     * <p>If the negotiator returns null it is responsible for completing the {@link Callback} and sending a response.
+     * If the negotiator intends to return non-null {@link FrameHandler}, it MUST NOT write content to the response or
+     * complete the {@link Callback}.</p>
+     *
+     * @param request the request details
+     * @param response the response details
+     * @param callback the callback, should only be completed by the creator if a null WebSocket object is returned.
+     * @return the FrameHandler, or null to take responsibility to send error response if no WebSocket is to be created.
+     */
+    FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback);
 
     @Override
     default void customize(Configuration configurable)
     {
-    }
-
-    static WebSocketNegotiator from(Function<WebSocketNegotiation, FrameHandler> negotiate)
-    {
-        return from(negotiate, null);
-    }
-
-    static WebSocketNegotiator from(Function<WebSocketNegotiation, FrameHandler> negotiate, Configuration.Customizer customizer)
-    {
-        return new AbstractNegotiator(customizer)
-        {
-            @Override
-            public FrameHandler negotiate(WebSocketNegotiation negotiation)
-            {
-                return negotiate.apply(negotiation);
-            }
-        };
-    }
-
-    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory)
-    {
-        return from(creator, factory, null);
-    }
-
-    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
-    {
-        return new CreatorNegotiator(creator, factory, customizer);
     }
 
     abstract class AbstractNegotiator extends Configuration.ConfigurationCustomizer implements WebSocketNegotiator

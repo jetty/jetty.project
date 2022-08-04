@@ -69,7 +69,7 @@ public class SimpleEchoTest
     @Test
     public void testEcho() throws Exception
     {
-        int timeout = 3;
+        int timeout = 10000;
         _client.setIdleTimeout(Duration.ofSeconds(timeout));
         _client.setConnectTimeout(Duration.ofSeconds(timeout).toMillis());
 

@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,7 @@ public abstract class AbstractHandshaker implements Handshaker
             return false;
 
         // Negotiate the FrameHandler
-        FrameHandler handler = negotiator.negotiate(negotiation);
+        FrameHandler handler = negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
         if (handler == null)
             return true;
 

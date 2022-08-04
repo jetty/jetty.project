@@ -41,6 +41,8 @@ import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
+import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -113,7 +115,7 @@ public class WebSocketProxyTest
         handlers.addHandler(serverContext);
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
-        negotiator = WebSocketNegotiator.from(negotiation -> proxy.client2Proxy, defaultCustomizer);
+        negotiator = new CreatorNegotiator((req, resp, cb) -> proxy.client2Proxy, (FrameHandlerFactory)defaultCustomizer);
         upgradeHandler = new WebSocketUpgradeHandler();
         upgradeHandler.addMapping("/*", negotiator);
         proxyContext.setHandler(upgradeHandler);

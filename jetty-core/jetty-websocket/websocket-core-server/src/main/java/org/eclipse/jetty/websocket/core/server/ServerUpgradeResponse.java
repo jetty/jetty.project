@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.internal.WebSocketHttpFieldsWrapper;
+import org.eclipse.jetty.websocket.core.server.internal.WebSocketNegotiation;
 
 /**
  * Upgrade response used for websocket negotiation.

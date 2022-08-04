@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -294,7 +295,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
         // Perform the upgrade.
         JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
+        WebSocketNegotiator negotiator = new CreatorNegotiator(creator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
