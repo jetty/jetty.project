@@ -32,10 +32,12 @@ public interface Handshaker
     boolean isWebSocketUpgradeRequest(Request request);
 
     /**
-     * This method returns true the WebSocket upgrade was accepted. A return value of true means this method has taken the
-     * responsibility for completing the callback, the request will be upgraded to WebSocket or a response will be
-     * sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible for completing
-     * the callback.
+     * This will attempt to upgrade a request to WebSocket.
+     *
+     * <p>This method returns true if a WebSocket upgrade was attempted in which case this method takes responsibility for
+     * completing the callback and generating a response, the request may be upgraded to WebSocket or some error response
+     * will be sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible
+     * for completing the callback and generating a response.</p>
      *
      * @param negotiator the negotiator
      * @param request the request
@@ -43,7 +45,7 @@ public interface Handshaker
      * @param callback the callback
      * @param components the WebSocket components
      * @param defaultCustomizer the customizer
-     * @return true if the WebSocket upgrade was accepted
+     * @return true if the WebSocket upgrade was attempted
      * @throws IOException there is an error during the upgrade
      */
     boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException;

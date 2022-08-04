@@ -30,6 +30,8 @@ import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeReq
 import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -182,13 +184,31 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         throws ServletException, IOException
     {
         // provide a null default customizer the customizer will be on the negotiator in the mapping
-        HttpChannel channel = (HttpChannel)req.getAttribute(HttpChannel.class.getName());
-        try (Blocker.Callback callback = Blocker.callback())
+        HttpChannel httpChannel = (HttpChannel)req.getAttribute(HttpChannel.class.getName());
+        ContextHandler.CoreContextRequest request = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
+        ContextHandler.CoreContextResponse response = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
+
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mapping.getHandshaker().isWebSocketUpgradeRequest(request))
         {
-            if (mapping.upgrade(channel.getCoreRequest(), channel.getCoreResponse(), callback, null))
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            try (Blocker.Callback callback = Blocker.callback())
             {
-                callback.block();
-                return;
+                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                request.setAttachment(req);
+                response.setAttachment(resp);
+
+                if (mapping.upgrade(request, response, callback, null))
+                {
+                    callback.block();
+                    return;
+                }
+            }
+            finally
+            {
+                request.setAttachment(null);
+                response.setAttachment(null);
             }
         }
 

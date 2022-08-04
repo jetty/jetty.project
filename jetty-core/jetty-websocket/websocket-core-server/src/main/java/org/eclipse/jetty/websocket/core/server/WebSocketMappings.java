@@ -229,10 +229,12 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     }
 
     /**
-     * This method returns true the WebSocket upgrade was accepted. A return value of true means this method has taken the
-     * responsibility for completing the callback, the request will be upgraded to WebSocket or a response will be
-     * sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible for completing
-     * the callback.
+     * This will attempt to find a WebSocket mapping and upgrade a request to WebSocket.
+     *
+     * <p>This method returns true if a WebSocket upgrade was attempted in which case this method takes responsibility for
+     * completing the callback and generating a response, the request may be upgraded to WebSocket or some error response
+     * will be sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible
+     * for completing the callback and generating a response.</p>
      *
      * @param request the request
      * @param response the response
@@ -255,10 +257,12 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     }
 
     /**
-     * This method returns true the WebSocket upgrade was accepted. A return value of true means this method has taken the
-     * responsibility for completing the callback, the request will be upgraded to WebSocket or a response will be
-     * sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible for completing
-     * the callback.
+     * This will attempt to upgrade a request to WebSocket.
+     *
+     * <p>This method returns true if a WebSocket upgrade was attempted in which case this method takes responsibility for
+     * completing the callback and generating a response, the request may be upgraded to WebSocket or some error response
+     * will be sent. If this method returns false the WebSocket upgrade was not accepted and the caller is still responsible
+     * for completing the callback and generating a response.</p>
      *
      * @param negotiator the negotiator
      * @param request the request

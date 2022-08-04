@@ -187,10 +187,15 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     /**
      * An immediate programmatic WebSocket upgrade that does not register a mapping or create a {@link WebSocketUpgradeFilter}.
+     *
+     * <p>A return value of true means the connection was Upgraded to WebSocket or an error response is being generated.
+     * A return value of false means that it was a bad upgrade request and couldn't be upgraded to WebSocket and the
+     * caller is responsible for generating the response.</p>
+     *
      * @param creator the WebSocketCreator to use.
      * @param request the HttpServletRequest.
      * @param response the HttpServletResponse.
-     * @return true if the connection was successfully upgraded to WebSocket.
+     * @return true if the connection could be upgraded or an error was sent.
      * @throws IOException if an I/O error occurs.
      */
     public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -228,7 +233,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
             {
                 callback.block();
-                return !baseResponse.isCommitted();
+                return true;
             }
         }
         finally

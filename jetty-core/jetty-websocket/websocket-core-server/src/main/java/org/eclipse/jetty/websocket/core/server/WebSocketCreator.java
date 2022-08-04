@@ -28,7 +28,7 @@ public interface WebSocketCreator
      * Create a websocket from the incoming request.
      *
      * <p>If the creator returns null it is responsible for completing the {@link Callback} and sending a response.
-     * If the creator intends to return non-null WebSocket object, it MUST NOT write content to the response or
+     * But if the creator intends to return non-null WebSocket object, it MUST NOT write content to the response or
      * complete the {@link Callback}.</p>
      *
      * @param request the request details

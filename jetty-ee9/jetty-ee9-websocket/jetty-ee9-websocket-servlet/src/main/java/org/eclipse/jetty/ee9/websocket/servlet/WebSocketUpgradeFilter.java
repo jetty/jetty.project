@@ -26,13 +26,13 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.FilterMapping;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -156,16 +156,31 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        HttpServletRequest httpreq = (HttpServletRequest)request;
-        HttpServletResponse httpresp = (HttpServletResponse)response;
-
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        try (Blocker.Callback callback = Blocker.callback())
+        ContextHandler.CoreContextRequest baseRequest = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
+        ContextHandler.CoreContextResponse baseResponse = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
+
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
         {
-            if (mappings.upgrade(httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, defaultCustomizer))
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            try (Blocker.Callback callback = Blocker.callback())
             {
-                callback.block();
-                return;
+                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                baseRequest.setAttachment(request);
+                baseResponse.setAttachment(response);
+
+                if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
+                {
+                    callback.block();
+                    return;
+                }
+            }
+            finally
+            {
+                baseRequest.setAttachment(null);
+                baseResponse.setAttachment(null);
             }
         }
 

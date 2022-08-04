@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -38,6 +39,8 @@ import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRes
 import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -185,10 +188,15 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     /**
      * An immediate programmatic WebSocket upgrade that does not register a mapping or create a {@link WebSocketUpgradeFilter}.
+     *
+     * <p>A return value of true means the connection was Upgraded to WebSocket or an error response is being generated.
+     * A return value of false means that it was a bad upgrade request and couldn't be upgraded to WebSocket and the
+     * caller is responsible for generating the response.</p>
+     *
      * @param creator the WebSocketCreator to use.
      * @param request the HttpServletRequest.
      * @param response the HttpServletResponse.
-     * @return true if the connection was successfully upgraded to WebSocket.
+     * @return true if the connection could be upgraded or an error was sent.
      * @throws IOException if an I/O error occurs.
      */
     public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -208,16 +216,31 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
         };
 
-        HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
         WebSocketNegotiator negotiator = new CreatorNegotiator(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
+        HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
+        ContextHandler.CoreContextRequest baseRequest = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
+        ContextHandler.CoreContextResponse baseResponse = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
         try (Blocker.Callback callback = Blocker.callback())
         {
-            boolean upgraded = handshaker.upgradeRequest(negotiator, httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, components, customizer);
-            callback.block();
-            return upgraded;
+            // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+            // are accessible when websocket-core calls back the Jetty WebSocket creator.
+            baseRequest.setAttachment(request);
+            baseResponse.setAttachment(response);
+
+            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
+            {
+                callback.block();
+                return true;
+            }
         }
+        finally
+        {
+            baseRequest.setAttachment(null);
+            baseResponse.setAttachment(null);
+        }
+        return false;
     }
 
     @Override

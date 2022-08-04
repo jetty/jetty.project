@@ -36,6 +36,8 @@ import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultCon
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -299,10 +301,24 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
+        ContextHandler.CoreContextRequest baseRequest = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
+        ContextHandler.CoreContextResponse baseResponse = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
         try (Blocker.Callback callback = Blocker.callback())
         {
-            handshaker.upgradeRequest(negotiator, httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, components, defaultCustomizer);
-            callback.block();
+            // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+            // are accessible when websocket-core calls back the Jetty WebSocket creator.
+            baseRequest.setAttachment(request);
+            baseResponse.setAttachment(response);
+
+            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
+            {
+                callback.block();
+            }
+        }
+        finally
+        {
+            baseRequest.setAttachment(null);
+            baseResponse.setAttachment(null);
         }
     }
 
