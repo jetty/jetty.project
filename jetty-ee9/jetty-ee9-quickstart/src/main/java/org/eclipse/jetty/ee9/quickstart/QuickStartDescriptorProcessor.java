@@ -46,7 +46,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
 {
     private String _originAttributeName = null;
     // possibly mounted resources that need to be cleaned up eventually
-    private ResourceFactory.Closeable _resourceFactory;
+    private ResourceFactory.Closeable _resourceFactory = ResourceFactory.closeable();
 
     /**
      *

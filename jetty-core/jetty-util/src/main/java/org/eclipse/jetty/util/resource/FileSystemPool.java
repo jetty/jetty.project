@@ -51,16 +51,34 @@ public class FileSystemPool implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
-    // TODO: document
+    /**
+     * Listener for pool events
+     */
     public interface Listener
     {
-        void retain(URI uri);
+        /**
+         * FileSystem URI is retained for the first time
+         * @param fsUri the filesystem URI
+         */
+        void onRetain(URI fsUri);
 
-        void increment(URI uri);
+        /**
+         * FileSystem URI exists in the pool and its reference count is incremented
+         * @param fsUri the filesystem URI
+         */
+        void onIncrement(URI fsUri);
 
-        void decrement(URI uri);
+        /**
+         * FileSystem URI exists in the pool and its reference count is decremented
+         * @param fsUri the filesystem URI
+         */
+        void onDecrement(URI fsUri);
 
-        void close(URI uri);
+        /**
+         * FileSystem URI exists in the pool and reached no references and has been closed
+         * @param fsUri the filesystem URI
+         */
+        void onClose(URI fsUri);
     }
 
     private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
@@ -141,14 +159,14 @@ public class FileSystemPool implements Dumpable
                 IO.close(bucket.fileSystem);
                 pool.remove(fsUri);
                 if (listener != null)
-                    listener.close(fsUri);
+                    listener.onClose(fsUri);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decremented ref counter to {} for FS {}", count, bucket);
                 if (listener != null)
-                    listener.decrement(fsUri);
+                    listener.onDecrement(fsUri);
             }
         }
         catch (FileSystemNotFoundException fsnfe)
@@ -227,7 +245,7 @@ public class FileSystemPool implements Dumpable
             bucket = new Bucket(fsUri, fileSystem, mount);
             pool.put(fsUri, bucket);
             if (listener != null)
-                listener.retain(fsUri);
+                listener.onRetain(fsUri);
         }
         else
         {
@@ -235,44 +253,53 @@ public class FileSystemPool implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
             if (listener != null)
-                listener.increment(fsUri);
+                listener.onIncrement(fsUri);
         }
     }
 
-    // TODO: document
+    /**
+     * Set a listener on the FileSystemPool to monitor for pool events.
+     *
+     * @param listener the listener for pool events
+     */
     public void setListener(Listener listener)
     {
-        this.listener = listener;
+        try (AutoLock ignore = poolLock.lock())
+        {
+            this.listener = listener;
+        }
     }
 
-    // TODO: document
+    /**
+     * Show a StackTrace
+     */
     public static class StackLoggingListener implements Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(StackLoggingListener.class);
 
         @Override
-        public void retain(URI uri)
+        public void onRetain(URI uri)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Retain {}", uri, new Throwable("Retain"));
         }
 
         @Override
-        public void increment(URI uri)
+        public void onIncrement(URI uri)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Increment {}", uri, new Throwable("Increment"));
         }
 
         @Override
-        public void decrement(URI uri)
+        public void onDecrement(URI uri)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Decrement {}", uri, new Throwable("Decrement"));
         }
 
         @Override
-        public void close(URI uri)
+        public void onClose(URI uri)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Close {}", uri, new Throwable("Close"));
