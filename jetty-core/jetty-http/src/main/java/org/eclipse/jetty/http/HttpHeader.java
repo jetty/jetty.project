@@ -40,6 +40,7 @@ public enum HttpHeader
      * Entity Fields.
      */
     ALLOW("Allow"),
+    CONTENT_DISPOSITION("Content-Disposition"),
     CONTENT_ENCODING("Content-Encoding"),
     CONTENT_LANGUAGE("Content-Language"),
     CONTENT_LENGTH("Content-Length"),

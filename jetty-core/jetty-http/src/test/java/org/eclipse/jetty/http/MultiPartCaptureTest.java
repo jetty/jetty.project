@@ -11,37 +11,48 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@ExtendWith(WorkDirExtension.class)
-@Disabled // TODO
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class MultiPartCaptureTest
 {
-    public static final int MAX_FILE_SIZE = 2 * 1024 * 1024;
-    public static final int MAX_REQUEST_SIZE = MAX_FILE_SIZE + (60 * 1024);
-    public static final int FILE_SIZE_THRESHOLD = 50;
-
     public static Stream<Arguments> data()
     {
         return Stream.of(
@@ -131,63 +142,38 @@ public class MultiPartCaptureTest
         ).map(Arguments::of);
     }
 
-    public WorkDir testingDir;
-
     @ParameterizedTest
     @MethodSource("data")
-    public void testHttpParse(String rawPrefix) throws Exception
+    public void testMultipartCapture(String fileName) throws Exception
     {
-        Path multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".raw");
-        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".expected.txt");
-        MultipartExpectations multipartExpectations = new MultipartExpectations(expectationPath);
+        Path rawPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".raw");
+        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".expected.txt");
+        MultiPartExpectations expectations = new MultiPartExpectations(expectationPath);
 
-        Path outputDir = testingDir.getEmptyPathDir();
-        /* TODO
-        MultipartConfigElement config = newMultipartConfigElement(outputDir);
-        try (InputStream in = Files.newInputStream(multipartRawFile))
-        {
-            MultiPartFormInputStream parser = new MultiPartFormInputStream(in, multipartExpectations.contentType, config, outputDir.toFile());
+        String boundaryAttribute = "boundary=";
+        int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
+        assertThat(boundaryIndex, greaterThan(0));
+        String boundary = QuotedStringTokenizer.unquoteOnly(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
 
-            multipartExpectations.checkParts(parser.getParts(), s ->
-            {
-                try
-                {
-                    return parser.getPart(s);
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-
-         */
+        TestPartsListener listener = new TestPartsListener(expectations);
+        MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
+        parser.parse(Content.Chunk.from(ByteBuffer.wrap(Files.readAllBytes(rawPath)), true));
+        listener.assertParts();
     }
 
-    /* TODO test this without any servlet stuff
-    private MultipartConfigElement newMultipartConfigElement(Path path)
+    private record NameValue(String name, String value)
     {
-        return new MultipartConfigElement(path.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
     }
 
-     */
-
-    // TODO use o.e.j.util.Field
-    public static class NameValue
-    {
-        public String name;
-        public String value;
-    }
-
-    public static class MultipartExpectations
+    private static class MultiPartExpectations
     {
         public final String contentType;
         public final int partCount;
         public final List<NameValue> partFilenames = new ArrayList<>();
-        public final List<NameValue> partSha1sums = new ArrayList<>();
+        public final List<NameValue> partSha1Sums = new ArrayList<>();
         public final List<NameValue> partContainsContents = new ArrayList<>();
 
-        public MultipartExpectations(Path expectationsPath) throws IOException
+        public MultiPartExpectations(Path expectationsPath) throws IOException
         {
             String parsedContentType = null;
             String parsedPartCount = "-1";
@@ -221,26 +207,20 @@ public class MultiPartCaptureTest
                             break;
                         case "Part-ContainsContents":
                         {
-                            NameValue pair = new NameValue();
-                            pair.name = split[1];
-                            pair.value = split[2];
+                            NameValue pair = new NameValue(split[1], split[2]);
                             partContainsContents.add(pair);
                             break;
                         }
                         case "Part-Filename":
                         {
-                            NameValue pair = new NameValue();
-                            pair.name = split[1];
-                            pair.value = split[2];
+                            NameValue pair = new NameValue(split[1], split[2]);
                             partFilenames.add(pair);
                             break;
                         }
                         case "Part-Sha1sum":
                         {
-                            NameValue pair = new NameValue();
-                            pair.name = split[1];
-                            pair.value = split[2];
-                            partSha1sums.add(pair);
+                            NameValue pair = new NameValue(split[1], split[2]);
+                            partSha1Sums.add(pair);
                             break;
                         }
                         default:
@@ -254,52 +234,50 @@ public class MultiPartCaptureTest
             this.partCount = Integer.parseInt(parsedPartCount);
         }
 
-        /* TODO
-        private void checkParts(Collection<Part> parts, Function<String, Part> getPart) throws Exception
+        private void assertParts(Map<String, List<MultiPart.Part>> allParts) throws Exception
         {
-            // Evaluate Count
             if (partCount >= 0)
-            {
-                assertThat("Mulitpart.parts.size", parts.size(), is(partCount));
-            }
+                assertThat(allParts.values().stream().mapToInt(List::size).sum(), is(partCount));
 
             String defaultCharset = UTF_8.toString();
-            Part charSetPart = getPart.apply("_charset_");
-            if (charSetPart != null)
+            List<MultiPart.Part> charSetParts = allParts.get("_charset_");
+            if (charSetParts != null)
             {
-                defaultCharset = IO.toString(charSetPart.getInputStream());
+                Promise.Completable<String> promise = new Promise.Completable<>();
+                Content.Source.asString(charSetParts.get(0).getContent(), StandardCharsets.US_ASCII, promise);
+                defaultCharset = promise.get();
             }
 
-            // Evaluate expected Contents
             for (NameValue expected : partContainsContents)
             {
-                Part part = getPart.apply(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-                try (InputStream partInputStream = part.getInputStream())
-                {
-                    String charset = getCharsetFromContentType(part.getContentType(), defaultCharset);
-                    String contents = IO.toString(partInputStream, charset);
-                    assertThat("Part[" + expected.name + "].contents", contents, containsString(expected.value));
-                }
+                List<MultiPart.Part> parts = allParts.get(expected.name);
+                assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
+                MultiPart.Part part = parts.get(0);
+                String charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
+                Promise.Completable<String> promise = new Promise.Completable<>();
+                Content.Source.asString(part.getContent(), Charset.forName(charset), promise);
+                assertThat("Part[" + expected.name + "].contents", promise.get(), containsString(expected.value));
             }
 
             // Evaluate expected filenames
             for (NameValue expected : partFilenames)
             {
-                Part part = getPart.apply(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-                assertThat("Part[" + expected.name + "]", part.getSubmittedFileName(), is(expected.value));
+                List<MultiPart.Part> parts = allParts.get(expected.name);
+                assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
+                MultiPart.Part part = parts.get(0);
+                assertThat("Part[" + expected.name + "]", part.getFileName(), is(expected.value));
             }
 
             // Evaluate expected contents checksums
-            for (NameValue expected : partSha1sums)
+            for (NameValue expected : partSha1Sums)
             {
-                Part part = getPart.apply(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
+                List<MultiPart.Part> parts = allParts.get(expected.name);
+                assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
+                MultiPart.Part part = parts.get(0);
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
-                try (InputStream partInputStream = part.getInputStream();
-                     NoOpOutputStream noop = new NoOpOutputStream();
-                     DigestOutputStream digester = new DigestOutputStream(noop, digest))
+                assertTrue(part.getContent().rewind());
+                try (InputStream partInputStream = Content.Source.asInputStream(part.getContent());
+                     DigestOutputStream digester = new DigestOutputStream(IO.getNullStream(), digest))
                 {
                     IO.copy(partInputStream, digester);
                     String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
@@ -307,14 +285,11 @@ public class MultiPartCaptureTest
                 }
             }
         }
-         */
 
         private String getCharsetFromContentType(String contentType, String defaultCharset)
         {
             if (StringUtil.isBlank(contentType))
-            {
                 return defaultCharset;
-            }
 
             QuotedStringTokenizer tok = new QuotedStringTokenizer(contentType, ";", false, false);
             while (tok.hasMoreTokens())
@@ -330,31 +305,33 @@ public class MultiPartCaptureTest
         }
     }
 
-    static class NoOpOutputStream extends OutputStream
+    private static class TestPartsListener extends MultiPart.AbstractPartsListener
     {
-        @Override
-        public void write(byte[] b) throws IOException
+        // Preserve parts order.
+        private final Map<String, List<MultiPart.Part>> parts = new LinkedHashMap<>();
+        private final MultiPartExpectations expectations;
+
+        private TestPartsListener(MultiPartExpectations expectations)
         {
+            this.expectations = expectations;
         }
 
         @Override
-        public void write(byte[] b, int off, int len) throws IOException
+        public void onPart(MultiPart.Part part)
         {
+            // Copy the part content, as we need to iterate over it multiple times.
+            Promise.Completable<List<ByteBuffer>> promise = new Promise.Completable<>();
+            Content.Source.asByteBuffers(part.getContent(), promise);
+            promise.thenAccept(byteBuffers ->
+            {
+                MultiPart.Part newPart = new MultiPart.ByteBufferPart(part.getName(), part.getFileName(), part.getHeaders(), byteBuffers);
+                parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
+            });
         }
 
-        @Override
-        public void flush() throws IOException
+        private void assertParts() throws Exception
         {
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-        }
-
-        @Override
-        public void write(int b) throws IOException
-        {
+            expectations.assertParts(parts);
         }
     }
 }

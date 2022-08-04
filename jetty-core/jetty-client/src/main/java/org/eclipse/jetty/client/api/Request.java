@@ -649,17 +649,5 @@ public interface Request
         {
             return "application/octet-stream";
         }
-
-        /**
-         * <p>Rewinds this content, if possible, so that subsequent reads return
-         * chunks starting from the beginning of this content.</p>
-         *
-         * @return true if this content has been rewound, false if this content
-         * cannot be rewound
-         */
-        public default boolean rewind()
-        {
-            return false;
-        }
     }
 }

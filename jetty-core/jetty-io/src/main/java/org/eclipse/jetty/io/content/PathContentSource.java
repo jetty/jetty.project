@@ -206,7 +206,8 @@ public class PathContentSource implements Content.Source
         }
     }
 
-    protected boolean rewind()
+    @Override
+    public boolean rewind()
     {
         try (AutoLock ignored = lock.lock())
         {
