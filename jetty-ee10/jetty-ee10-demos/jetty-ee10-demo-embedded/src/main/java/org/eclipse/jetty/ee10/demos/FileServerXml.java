@@ -34,14 +34,14 @@ public class FileServerXml
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/fileserver.xml
-        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
-        Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
-        XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
-        configuration.getProperties().put("http.port", Integer.toString(port));
-        configuration.getProperties().put("fileserver.baseresource", baseResource.toAbsolutePath().toString());
-        Server server = (Server)configuration.configure();
-        server.addBean(resourceFactory, true);
-        return server;
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
+            XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
+            configuration.getProperties().put("http.port", Integer.toString(port));
+            configuration.getProperties().put("fileserver.baseresource", baseResource.toAbsolutePath().toString());
+            return (Server)configuration.configure();
+        }
     }
 
     public static void main(String[] args) throws Exception

@@ -27,13 +27,14 @@ public class ExampleServerXml
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/exampleserver.xml
-        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
-        Resource serverXml = resourceFactory.newSystemResource("exampleserver.xml");
-        XmlConfiguration xml = new XmlConfiguration(serverXml);
-        xml.getProperties().put("http.port", Integer.toString(port));
-        Server server = (Server)xml.configure();
-        server.addBean(resourceFactory, true);
-        return server;
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource serverXml = resourceFactory.newSystemResource("exampleserver.xml");
+            XmlConfiguration xml = new XmlConfiguration(serverXml);
+            xml.getProperties().put("http.port", Integer.toString(port));
+
+            return (Server)xml.configure();
+        }
     }
 
     public static void main(String[] args) throws Exception
