@@ -145,14 +145,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
-        List<URI> containerUris = getAllContainerJars(context);
-
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
             context.getMetaData().addContainerResource(resource);
         };
 
+        List<URI> containerUris = getAllContainerJars(context);
         if (LOG.isDebugEnabled())
             LOG.debug("All container urls {}", containerUris);
         containerUris.stream()
@@ -172,6 +171,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         // We also need to examine the module path.
         // TODO need to consider the jdk.module.upgrade.path - how to resolve
+        // TODO review possible new Java 17 Module APIs that might make this easier
         // which modules will be actually used. If its possible, it can
         // only be attempted in jetty-10 with jdk-9 specific apis.
         String modulePath = System.getProperty("jdk.module.path");

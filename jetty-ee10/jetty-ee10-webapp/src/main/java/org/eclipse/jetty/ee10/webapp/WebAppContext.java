@@ -1245,10 +1245,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath)
     {
+        // TODO: document what happens if this is called more than once with different entries
+        // TODO: throw warning if replacing an existing extraClassPath?
+
         // Split, but only take the containers, as deep `jar:file:` references are not used in URLClassLoader.
         List<URI> uris = URIUtil.split(extraClasspath).stream().map(URIUtil::unwrapContainer).toList();
         setExtraClasspath(ResourceFactory.of(this).newResource(uris));
-
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)
