@@ -369,6 +369,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             ((WebAppClassLoader)classLoader).setName(name);
     }
 
+    public ResourceFactory getResourceFactory()
+    {
+        return ResourceFactory.of(this);
+    }
+
     @Override
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
