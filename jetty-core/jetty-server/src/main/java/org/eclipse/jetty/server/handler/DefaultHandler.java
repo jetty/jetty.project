@@ -66,7 +66,7 @@ public class DefaultHandler extends Handler.Processor
         byte[] favbytes = null;
         try
         {
-            Resource faviconRes = getServer().getResource("favicon.ico");
+            Resource faviconRes = getServer().getDefaultFavicon();
             if (faviconRes != null)
             {
                 try (InputStream is = faviconRes.newInputStream())

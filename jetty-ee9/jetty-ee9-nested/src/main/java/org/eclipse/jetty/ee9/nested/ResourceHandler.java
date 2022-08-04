@@ -183,15 +183,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             if (_defaultStylesheet == null)
             {
-                _defaultStylesheet = getDefaultStylesheet();
+                _defaultStylesheet = getServer().getDefaultStyleSheet();
             }
             return _defaultStylesheet;
         }
-    }
-
-    private Resource getDefaultStylesheet()
-    {
-        return getServer().getResource("jetty-dir.css");
     }
 
     public String[] getWelcomeFiles()

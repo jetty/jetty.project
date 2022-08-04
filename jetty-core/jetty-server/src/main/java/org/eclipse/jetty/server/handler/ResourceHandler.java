@@ -154,12 +154,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        return getDefaultStyleSheet();
-    }
-
-    private Resource getDefaultStyleSheet()
-    {
-        return getServer().getResource("jetty-dir.css");
+        return getServer().getDefaultStyleSheet();
     }
 
     public List<String> getWelcomeFiles()

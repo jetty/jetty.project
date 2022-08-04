@@ -221,7 +221,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             if (_stylesheet == null)
             {
-                _stylesheet = _contextHandler.getServer().getResource("jetty-dir.css");
+                _stylesheet = _contextHandler.getServer().getDefaultStyleSheet();
             }
         }
         catch (Exception e)
