@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -704,9 +703,6 @@ public class MetaData
         Objects.requireNonNull(resource);
         if (!resource.exists())
             throw new IllegalArgumentException("Resource does not exist: " + resource);
-        URI uri = resource.getURI();
-        if (FileID.isArchive(uri) && !uri.toASCIIString().startsWith("jar:file:"))
-            throw new IllegalArgumentException("Resource is an archive, referenced via raw `file:` scheme, needs to be a mounted `jar:file:` archive: " + resource);
 
         _webInfJars.add(resource);
     }

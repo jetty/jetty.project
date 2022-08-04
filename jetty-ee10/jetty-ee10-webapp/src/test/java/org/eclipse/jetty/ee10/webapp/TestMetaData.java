@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.acme.webapp.TestAnnotation;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -27,6 +30,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -37,10 +41,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestMetaData
 {
-    File fragFile;
-    File nonFragFile;
+    public WorkDir workDir;
+
+    Path fragFile;
+    Path nonFragFile;
     Resource fragResource;
     Resource nonFragResource;
     ResourceFactory.Closeable resourceFactory;
@@ -59,18 +66,24 @@ public class TestMetaData
     public void setUp() throws Exception
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        File jarDir = new File(MavenTestingUtils.getTestResourcesDir(), "fragments");
-        assertTrue(jarDir.exists());
-        fragFile = new File(jarDir, "zeta.jar");
-        assertTrue(fragFile.exists());
+        Path testRoot = workDir.getEmptyPathDir();
         resourceFactory = ResourceFactory.closeable();
-        fragResource = resourceFactory.newResource(fragFile.toPath());
-        nonFragFile = new File(jarDir, "sigma.jar");
-        nonFragResource = resourceFactory.newResource(nonFragFile.toPath());
-        assertTrue(nonFragFile.exists());
-        webfragxml = resourceFactory.newJarFileResource(fragFile.toPath().toUri()).resolve("/META-INF/web-fragment.xml");
-        containerDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
-        webInfClassesDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
+
+        fragFile = MavenTestingUtils.getTestResourcePathFile("fragments/zeta.jar");
+        nonFragFile = MavenTestingUtils.getTestResourcePathFile("fragments/sigma.jar");
+
+        fragResource = resourceFactory.newJarFileResource(fragFile.toUri());
+        nonFragResource = resourceFactory.newJarFileResource(nonFragFile.toUri());
+        webfragxml = resourceFactory.newJarFileResource(fragFile.toUri()).resolve("/META-INF/web-fragment.xml");
+
+        Path containerPath = testRoot.resolve("container");
+        FS.ensureDirExists(containerPath);
+        containerDir = resourceFactory.newResource(containerPath);
+
+        Path webinfClassesPath = testRoot.resolve("webinfclasses");
+        FS.ensureDirExists(webinfClassesPath);
+        webInfClassesDir = resourceFactory.newResource(webinfClassesPath);
+
         wac = new WebAppContext();
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);
@@ -196,7 +209,7 @@ public class TestMetaData
         wac.getMetaData().addWebInfResource(nonFragResource);
         wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
         wac.getMetaData().addContainerResource(containerDir);
-        wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
+        wac.getMetaData().setWebInfClassesResources(List.of(webInfClassesDir));
 
         wac.getMetaData().addDiscoveredAnnotation(annotationA);
         wac.getMetaData().addDiscoveredAnnotation(annotationB);
@@ -205,8 +218,9 @@ public class TestMetaData
         wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
         wac.getMetaData().resolve(wac);
-        //test that annotations are applied from resources in order:
-        //no resource associated, container resources, web-inf classes resources, web-inf lib resources
+
+        // test that annotations are applied from resources in order:
+        // no resource associated, container resources, web-inf classes resources, web-inf lib resources
         assertThat(applications, contains(annotationC, annotationD, annotationE, annotationA, annotationB));
     }
 }
