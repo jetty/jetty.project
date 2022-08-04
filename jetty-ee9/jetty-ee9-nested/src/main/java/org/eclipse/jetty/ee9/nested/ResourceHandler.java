@@ -189,12 +189,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
     }
 
-    public static Resource getDefaultStylesheet()
+    private Resource getDefaultStylesheet()
     {
-        // TODO do this some other way.  It is expensive to mount a whole jar when we could
-        //      just read the resource from the URL. We also leak the Mount.
-        URI css = URIUtil.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        return ResourceFactory.root().newResource(css);
+        return getServer().getResource("jetty-dir.css");
     }
 
     public String[] getWelcomeFiles()

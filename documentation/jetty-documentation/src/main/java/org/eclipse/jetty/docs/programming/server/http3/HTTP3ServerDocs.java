@@ -288,7 +288,7 @@ public class HTTP3ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toBuffer(Resource.newResource("/path/to/favicon.ico"), true);
+        ByteBuffer faviconBuffer = BufferUtil.toBuffer(server.getResource("favicon.ico"), true);
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {

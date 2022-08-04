@@ -16,10 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +38,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,27 +63,21 @@ public class DefaultHandler extends Handler.Processor
 
     public DefaultHandler()
     {
-        String faviconRef = "/org/eclipse/jetty/favicon.ico";
         byte[] favbytes = null;
         try
         {
-            URL fav = getClass().getResource(faviconRef);
-            if (fav != null)
+            Resource faviconRes = getServer().getResource("favicon.ico");
+            if (faviconRes != null)
             {
-                URI uri = fav.toURI();
-                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+                try (InputStream is = faviconRes.newInputStream())
                 {
-                    Resource resource = resourceFactory.newResource(uri);
-                    try (InputStream is = Files.newInputStream(resource.getPath()))
-                    {
-                        favbytes = IO.readBytes(is);
-                    }
+                    favbytes = IO.readBytes(is);
                 }
             }
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to find default favicon: {}", faviconRef, e);
+            LOG.warn("Unable to find default favicon", e);
         }
         finally
         {

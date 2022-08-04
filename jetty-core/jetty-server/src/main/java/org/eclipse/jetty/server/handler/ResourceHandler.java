@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.URI;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -155,16 +154,12 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        // TODO
         return getDefaultStyleSheet();
     }
 
-    public static Resource getDefaultStyleSheet()
+    private Resource getDefaultStyleSheet()
     {
-        // TODO do this some other way.  It is expensive to mount a whole jar when we could
-        //      just read the resource from the URL. We also leak the Mount.
-        URI css = URIUtil.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        return ResourceFactory.root().newResource(css);
+        return getServer().getResource("jetty-dir.css");
     }
 
     public List<String> getWelcomeFiles()
