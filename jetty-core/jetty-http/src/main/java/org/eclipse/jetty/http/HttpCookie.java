@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Attributes;
@@ -76,7 +79,7 @@ public class HttpCookie
     private final int _version;
     private final boolean _httpOnly;
     private final long _expiration;
-    private final SameSite _sameSite;
+    private final Map<String, String> _attributes;
 
     public HttpCookie(String name, String value)
     {
@@ -100,10 +103,16 @@ public class HttpCookie
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
-        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, null);
+        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, (SameSite)null);
     }
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
+    {
+
+        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, Collections.singletonMap("SameSite", sameSite == null ? null : sameSite.getAttributeValue()));
+    }
+    
+    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
     {
         _name = name;
         _value = value;
@@ -115,7 +124,7 @@ public class HttpCookie
         _comment = comment;
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
-        _sameSite = sameSite;
+        _attributes = (attributes == null ? Collections.emptyMap() : attributes);
     }
 
     public HttpCookie(String setCookie)
@@ -137,7 +146,14 @@ public class HttpCookie
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
         // support for SameSite values has not yet been added to java.net.HttpCookie
-        _sameSite = getSameSiteFromComment(cookie.getComment());
+        SameSite sameSite = getSameSiteFromComment(cookie.getComment());
+        if (sameSite != null)
+        {
+            _attributes = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+            _attributes.put("SameSite", sameSite.getAttributeValue());
+        }
+        else
+            _attributes = Collections.emptyMap();
     }
 
     /**
@@ -209,7 +225,10 @@ public class HttpCookie
      */
     public SameSite getSameSite()
     {
-        return _sameSite;
+        String val = _attributes.get("SameSite");
+        if (val == null)
+            return null;
+        return SameSite.valueOf(val);
     }
 
     /**
@@ -421,11 +440,15 @@ public class HttpCookie
             buf.append("; Secure");
         if (_httpOnly)
             buf.append("; HttpOnly");
-        if (_sameSite != null)
+        
+        String sameSite = _attributes.get("SameSite");
+        if (sameSite != null)
         {
             buf.append("; SameSite=");
-            buf.append(_sameSite.getAttributeValue());
+            buf.append(sameSite);
         }
+        
+        //TODO: should we be adding all the other generic attributes?
 
         return buf.toString();
     }

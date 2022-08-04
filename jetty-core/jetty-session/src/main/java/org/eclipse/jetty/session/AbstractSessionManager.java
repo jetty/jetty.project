@@ -15,10 +15,13 @@ package org.eclipse.jetty.session;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -77,6 +80,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private String _sessionDomain;
     private String _sessionPath;
     private String _sessionComment;
+    private final Map<String, String> _sessionAttributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private boolean _secureCookies = false;
     private boolean _secureRequestOnly = true;
     private int _maxCookieAge = -1;
@@ -356,28 +360,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         _refreshCookieAge = ageInSeconds;
     }
-
-    @Override
-    public HttpCookie.SameSite getSameSite()
-    {
-        // TODO do this properly
-        return HttpCookie.getSameSiteFromComment(_sessionComment);
-    }
-    
-    /**
-     * Set Session cookie sameSite mode.
-     *
-     * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
-     */
-    @Override
-    public void setSameSite(HttpCookie.SameSite sameSite)
-    {
-        // TODO this can be done properly now?
-        // Encode in comment whilst not supported by SessionConfig, so that it can be set/saved in
-        // web.xml and quickstart.
-        // Always pass false for httpOnly as it has it's own setter.
-        _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, sameSite);
-    }
     
     public abstract Server getServer();
 
@@ -479,65 +461,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         return _sessionContext;
     }
 
-    /**
-     * A session cookie is marked as secure IFF any of the following conditions are true:
-     * <ol>
-     * <li>SessionCookieConfig.setSecure == true</li>
-     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
-     * </ol>
-     * According to SessionCookieConfig javadoc, case 1 can be used when:
-     * "... even though the request that initiated the session came over HTTP,
-     * is to support a topology where the web container is front-ended by an
-     * SSL offloading load balancer. In this case, the traffic between the client
-     * and the load balancer will be over HTTPS, whereas the traffic between the
-     * load balancer and the web container will be over HTTP."
-     * <p>
-     * For case 2, you can use _secureRequestOnly to determine if you want the
-     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
-     * which is:
-     * <cite>
-     * "they shall be marked as secure only if the request that initiated the
-     * corresponding session was also secure"
-     * </cite>
-     * <p>
-     * The default for _secureRequestOnly is true, which gives the above behavior. If
-     * you set it to false, then a session cookie is NEVER marked as secure, even if
-     * the initiating request was secure.
-     *
-     * @param session the session to which the cookie should refer.
-     * @param contextPath the context to which the cookie should be linked.
-     * The client will only send the cookie value when requesting resources under this path.
-     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
-     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
-     * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
-     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
-     */
-    @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
-    {
-        if (isUsingCookies())
-        {
-            String sessionPath = (_sessionPath == null) ? contextPath : _sessionPath;
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            String id = session.getExtendedId();
-            HttpCookie cookie = new HttpCookie(
-                (_sessionCookie == null ? __DefaultSessionCookie : _sessionCookie),
-                id,
-                _sessionDomain,
-                sessionPath,
-                _maxCookieAge,
-                _httpOnly,
-                _secureCookies || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(_sessionComment),
-                0,
-                HttpCookie.getSameSiteFromComment(_sessionComment));
-
-            session.onSetCookieGenerated();
-            return cookie;
-        }
-        return null;
-    }
-
     @Override
     public String getSessionCookie()
     {
@@ -563,6 +486,21 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public void setSessionDomain(String domain)
     {
         _sessionDomain = domain;
+    }
+    
+    public void setSessionAttribute(String name, String value)
+    {
+        _sessionAttributes.put(name, value);
+    }
+    
+    public String getSessionAttribute(String name)
+    {
+        return _sessionAttributes.get(name);
+    }
+    
+    public Map<String, String> getSessionAttributes()
+    {
+        return Collections.unmodifiableMap(_sessionAttributes);
     }
     
     @Override

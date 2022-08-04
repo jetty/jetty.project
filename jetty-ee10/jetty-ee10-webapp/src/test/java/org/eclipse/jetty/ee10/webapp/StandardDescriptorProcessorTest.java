@@ -37,5 +37,30 @@ public class StandardDescriptorProcessorTest
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
+        
+        //test the attributes
+        //comment
+        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getComment());
+        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Comment"));
+        
+        //domain
+        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getDomain());
+        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Domain"));
+        
+        //path
+        assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getPath());
+        assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Path"));
+        
+        //max-age
+        assertEquals(10, wac.getSessionHandler().getSessionCookieConfig().getMaxAge());
+        assertEquals("10", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Max-Age"));
+        
+        //secure
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isSecure());
+        assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Secure"));
+        
+        //httponly
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
+        assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("HttpOnly"));
     }
 }
