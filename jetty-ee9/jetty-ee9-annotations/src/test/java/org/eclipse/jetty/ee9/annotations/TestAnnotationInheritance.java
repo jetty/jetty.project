@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,23 +28,30 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
+@ExtendWith(WorkDirExtension.class)
 public class TestAnnotationInheritance
 {
+    public WorkDir workDir;
+
     List<String> classNames = new ArrayList<String>();
 
     class SampleHandler extends AnnotationParser.AbstractHandler
@@ -91,12 +104,14 @@ public class TestAnnotationInheritance
     @Test
     public void testParseClassNames() throws Exception
     {
-        classNames.add(ClassA.class.getName());
-        classNames.add(ClassB.class.getName());
+        Path root = workDir.getEmptyPathDir();
+        copyClass(ClassA.class, root);
+        copyClass(ClassB.class, root);
 
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), classNames);
+        Resource rootResource = Resource.newResource(root);
+        parser.parse(Collections.singleton(handler), rootResource);
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -119,9 +134,14 @@ public class TestAnnotationInheritance
     @Test
     public void testParseClass() throws Exception
     {
+        Path root = workDir.getEmptyPathDir();
+        copyClass(ClassA.class, root);
+        copyClass(ClassB.class, root);
+
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), ClassB.class, true);
+
+        parser.parse(Collections.singleton(handler), Resource.newResource(root));
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -153,13 +173,14 @@ public class TestAnnotationInheritance
         {
         }
 
-        classNames.clear();
-        classNames.add(ClassA.class.getName());
-        classNames.add(ClassB.class.getName());
-        classNames.add(InterfaceD.class.getName());
-        classNames.add(Foo.class.getName());
+        Path root = workDir.getEmptyPathDir();
+        copyClass(ClassA.class, root);
+        copyClass(ClassB.class, root);
+        copyClass(InterfaceD.class, root);
+        copyClass(Foo.class, root);
 
-        parser.parse(Collections.singleton(handler), classNames);
+        Resource rootResource = Resource.newResource(root);
+        parser.parse(Collections.singleton(handler), rootResource);
 
         assertNotNull(map);
         assertFalse(map.isEmpty());
@@ -173,5 +194,17 @@ public class TestAnnotationInheritance
         classes = map.get("org.eclipse.jetty.ee9.annotations.InterfaceD");
         assertThat(classes, containsInAnyOrder("org.eclipse.jetty.ee9.annotations.ClassB",
             Foo.class.getName()));
+    }
+
+    private void copyClass(Class<?> clazz, Path outputDir) throws IOException, URISyntaxException
+    {
+        String classRef = TypeUtil.toClassReference(clazz);
+        URL url = this.getClass().getResource('/' + classRef);
+        assertThat("URL for: " + classRef, url, notNullValue());
+
+        Path srcClass = Paths.get(url.toURI());
+        Path dest = outputDir.resolve(classRef);
+        FS.ensureDirExists(dest.getParent());
+        Files.copy(srcClass, dest);
     }
 }
