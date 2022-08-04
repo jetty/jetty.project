@@ -180,7 +180,7 @@ public class TestAnnotationParser
     @Test
     public void testHiddenFilesInJar() throws Exception
     {
-        Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("bad-classes.jar");
+        Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, Resource.newResource(badClassesJar));
@@ -190,7 +190,7 @@ public class TestAnnotationParser
     @Test
     public void testModuleInfoClassInJar() throws Exception
     {
-        Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/slf4j-api-1.8.0-alpha2.jar");
+        Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/jdk9/slf4j-api-1.8.0-alpha2.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, Resource.newResource(badClassesJar));
@@ -200,7 +200,7 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJar() throws Exception
     {
-        Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/log4j-api-2.9.0.jar");
+        Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/jdk9/log4j-api-2.9.0.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, Resource.newResource(badClassesJar));
@@ -210,7 +210,7 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJarJDK10() throws Exception
     {
-        Path jdk10Jar = MavenTestingUtils.getTestResourcePathFile("jdk10/multirelease-10.jar");
+        Path jdk10Jar = MavenTestingUtils.getTargetPath("test-classes/jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -248,8 +248,8 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClassesInJars() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar").toPath());
-        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar").toPath());
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
+        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest_copy.jar"));
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -264,7 +264,7 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClasses() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar").toPath());
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
         File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
