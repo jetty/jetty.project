@@ -51,7 +51,8 @@ public class FileSystemPool implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
-    interface Listener
+    // TODO: document
+    public interface Listener
     {
         void retain(URI uri);
 
@@ -238,11 +239,13 @@ public class FileSystemPool implements Dumpable
         }
     }
 
+    // TODO: document
     public void setListener(Listener listener)
     {
         this.listener = listener;
     }
 
+    // TODO: document
     public static class StackLoggingListener implements Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(StackLoggingListener.class);

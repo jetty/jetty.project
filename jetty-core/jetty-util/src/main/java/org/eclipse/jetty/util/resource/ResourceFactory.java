@@ -193,7 +193,8 @@ public interface ResourceFactory
         return new ResourceFactoryInternals.Closeable();
     }
 
-    static ResourceFactory.LifeCycle lifecycle()
+    // TODO: consider if we need this method at all? or just inline in of(Container)
+    private static ResourceFactory.LifeCycle lifecycle()
     {
         LifeCycle factory = new ResourceFactoryInternals.LifeCycle();
         org.eclipse.jetty.util.component.LifeCycle.start(factory);
