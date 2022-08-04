@@ -77,6 +77,13 @@ public class DefaultHandler extends Handler.Processor
         if (_favicon != null)
             return;
 
+        if (getServer() == null)
+        {
+            // TODO: investigate why DefaultHandler.setServer(server) is passing null?
+            LOG.warn("favicon.ico not supported with null Server");
+            return;
+        }
+
         byte[] favbytes = null;
         try
         {
