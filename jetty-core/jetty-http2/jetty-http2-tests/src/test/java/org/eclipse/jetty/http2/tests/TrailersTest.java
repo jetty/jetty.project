@@ -146,6 +146,7 @@ public class TrailersTest extends AbstractTest
                         HttpFields trailers = contentTrailers.getTrailers();
                         assertNotNull(trailers.get("X-Trailer"));
                         _callback.succeeded();
+                        return;
                     }
                 }
             }
