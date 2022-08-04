@@ -368,7 +368,9 @@ public class Runner
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
-                                    final HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
+                                    ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
+                                    Resource statsResource = resourceFactory.newResource(_statsPropFile);
+                                    final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
                                     Constraint constraint = new Constraint();
                                     constraint.setName("Admin Only");
                                     constraint.setRoles(new String[]{"admin"});

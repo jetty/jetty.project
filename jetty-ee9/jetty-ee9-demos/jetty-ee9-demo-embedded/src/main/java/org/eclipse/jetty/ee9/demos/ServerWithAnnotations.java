@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * ServerWithAnnotations
@@ -41,12 +42,13 @@ public class ServerWithAnnotations
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
+        ResourceFactory resourceFactory = webapp.getResourceFactory();
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("demo-spec/demo-spec-webapp/target/demo-spec-webapp-@VER@.war");
+        Path warFile = JettyDemos.find("ee9-demo-spec/ee9-demo-spec-webapp/target/ee9-demo-spec-webapp-@VER@.war");
         webapp.setWar(warFile.toString());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -69,14 +71,14 @@ public class ServerWithAnnotations
 
         // Configure a LoginService
         String realmResourceName = "etc/realm.properties";
-        ClassLoader classLoader = ServerWithAnnotations.class.getClassLoader();
-        URL realmProps = classLoader.getResource(realmResourceName);
-        if (realmProps == null)
+
+        org.eclipse.jetty.util.resource.Resource realmResource = resourceFactory.newClassPathResource(realmResourceName);
+        if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig(realmProps.toExternalForm());
+        loginService.setConfig(realmResource);
         server.addBean(loginService);
         return server;
     }

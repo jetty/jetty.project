@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,13 +26,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +54,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(PropertyUserStore.class);
 
-    protected Path _configPath;
+    protected Resource _configResource;
     protected PathWatcher _pathWatcher;
     protected boolean _hotReload = false; // default is not to reload
     protected boolean _firstLoad = true; // true if first load, false from that point on
@@ -69,11 +65,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      *
      * @return the config path as a string
      */
-    public String getConfig()
+    public Resource getConfig()
     {
-        if (_configPath != null)
-            return _configPath.toString();
-        return null;
+        return _configResource;
     }
 
     /**
@@ -81,42 +75,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      *
      * @param config the config file
      */
-    public void setConfig(String config)
+    public void setConfig(Resource config)
     {
-        if (config == null)
-        {
-            _configPath = null;
-            return;
-        }
-
-        URI uri = URI.create(config);
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            if (!FileID.isArchive(uri))
-            {
-                _configPath = Path.of(config);
-            }
-            else
-            {
-                Resource configResource = resourceFactory.newResource(uri);
-                _configPath = extractPackedFile(configResource);
-            }
-        }
-        catch (Exception e)
-        {
-            _configPath = null;
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * Get the Config {@link Path} reference.
-     *
-     * @return the config path
-     */
-    public Path getConfigPath()
-    {
-        return _configPath;
+        _configResource = config;
     }
 
     private Path extractPackedFile(Resource configResource) throws IOException
@@ -148,36 +109,13 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     }
 
     /**
-     * Set the Config Path from a {@link File} reference
-     *
-     * @param configFile the config file
-     */
-    public void setConfigFile(File configFile)
-    {
-        if (configFile == null)
-            _configPath = null;
-        else
-            _configPath = configFile.toPath();
-    }
-
-    /**
-     * Set the Config Path
-     *
-     * @param configPath the config path
-     */
-    public void setConfigPath(Path configPath)
-    {
-        _configPath = configPath;
-    }
-
-    /**
      * @return the resource associated with the configured properties file, creating it if necessary
+     * @deprecated
      */
+    @Deprecated(forRemoval = true)
     public Resource getConfigResource()
     {
-        if (_configPath == null)
-            return null;
-        return ResourceFactory.root().newResource(_configPath);
+        return getConfig();
     }
 
     /**
@@ -207,18 +145,18 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     @Override
     public String toString()
     {
-        return String.format("%s[cfg=%s]", super.toString(), _configPath);
+        return String.format("%s[cfg=%s]", super.toString(), _configResource);
     }
 
     protected void loadUsers() throws IOException
     {
-        if (_configPath == null)
+        Resource config = getConfig();
+
+        if (config == null)
             throw new IllegalStateException("No config path set");
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Loading {} from {}", this, _configPath);
-
-        Resource config = getConfigResource();
+            LOG.debug("Loading {} from {}", this, config);
 
         if (!config.exists())
             throw new IllegalStateException("Config does not exist: " + config);
@@ -273,7 +211,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         _firstLoad = false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Loaded {} from {}", this,  _configPath);
+            LOG.debug("Loaded {} from {}", this,  config);
     }
 
     /**
@@ -288,10 +226,12 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         super.doStart();
 
         loadUsers();
-        if (isHotReload() && (_configPath != null))
+
+        Resource config = getConfig();
+        if (isHotReload() && (config != null))
         {
             this._pathWatcher = new PathWatcher();
-            this._pathWatcher.watch(_configPath);
+            this._pathWatcher.watch(config.getPath());
             this._pathWatcher.addListener(this);
             this._pathWatcher.setNotifyExistingOnStart(false);
             this._pathWatcher.start();
@@ -370,8 +310,8 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     public interface UserListener
     {
-        public void update(String username, Credential credential, String[] roleArray);
+        void update(String username, Credential credential, String[] roleArray);
 
-        public void remove(String username);
+        void remove(String username);
     }
 }

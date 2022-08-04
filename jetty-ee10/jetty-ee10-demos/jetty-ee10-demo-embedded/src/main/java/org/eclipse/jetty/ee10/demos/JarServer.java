@@ -38,8 +38,9 @@ public class JarServer
         Server server = new Server(port);
 
         ServletContextHandler context = new ServletContextHandler();
-        context.setBaseResource(base.getPath());
-        context.addServlet(new ServletHolder(new DefaultServlet()), "/");
+        context.setBaseResource(base);
+        ServletHolder defaultHolder = new ServletHolder("default", new DefaultServlet());
+        context.addServlet(defaultHolder, "/");
 
         server.setHandler(new Handler.Collection(context, new DefaultHandler()));
         return server;

@@ -20,14 +20,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class JarServerTest extends AbstractEmbeddedTest
@@ -44,15 +42,14 @@ public class JarServerTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
+        ResourceFactory.LifeCycle lifeCycle = ResourceFactory.lifecycle();
         Path jarFile = Paths.get("src/main/other/content.jar");
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
+        Resource jarResource = lifeCycle.newJarFileResource(jarFile.toUri());
 
-        server = new Server(0);
-        ServletContextHandler context = new ServletContextHandler();
-        context.setBaseResource(ResourceFactory.of(context).newResource(jarFile));
-        context.addServlet(new ServletHolder(new DefaultServlet()), "/");
-        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
+        server = JarServer.createServer(0, jarResource);
+        server.addBean(lifeCycle, true);
         server.start();
     }
 
@@ -60,6 +57,7 @@ public class JarServerTest extends AbstractEmbeddedTest
     public void stopServer() throws Exception
     {
         server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

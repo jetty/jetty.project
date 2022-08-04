@@ -46,31 +46,40 @@ public class QuickStartTest
     public void testStandardTestWar() throws Exception
     {
         WebAppContext webapp = new WebAppContext();
+        ResourceFactory resourceFactory = webapp.getResourceFactory();
 
         //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
-        WebDescriptor descriptor = new WebDescriptor(ResourceFactory.of(webapp).newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
+        // war file or dir to start
+        Path warRoot = PreconfigureStandardTestWar.getTargetDir();
+        assertTrue(Files.exists(warRoot), "Does not exist: " + warRoot);
+        Path quickstartXml = warRoot.resolve("WEB-INF/quickstart-web.xml");
+        assertTrue(Files.exists(quickstartXml), "Does not exist: " + quickstartXml);
+
+        WebDescriptor descriptor = new WebDescriptor(resourceFactory.newResource(quickstartXml));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
-        System.setProperty("jetty.home", "target");
-
-        //war file or dir to start
-        String war = "target/test-standard-preconfigured";
+        System.setProperty("jetty.home", MavenTestingUtils.getTargetPath().toString());
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = ResourceFactory.of(webapp).newResource("src/test/resources/test.xml");
+        Path contextXmlPath = MavenTestingUtils.getTestResourcePathFile("test.xml");
+        assertTrue(Files.exists(contextXmlPath), "Does not exist: " + contextXmlPath);
+        Resource contextXml = resourceFactory.newResource(contextXmlPath);
 
         Server server = new Server(0);
+
+        // War resource
+        Resource warResource = resourceFactory.newResource(warRoot);
 
         webapp.addConfiguration(new QuickStartConfiguration(),
             new EnvConfiguration(),
             new PlusConfiguration(),
             new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setWar(war);
+        webapp.setWarResource(warResource);
         webapp.setContextPath("/");
 
         //apply context xml file
@@ -78,6 +87,7 @@ public class QuickStartTest
         {
             // System.err.println("Applying "+contextXml);
             XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
+            xmlConfiguration.getProperties().put("webapp.root", warRoot.toString());
             xmlConfiguration.configure(webapp);
         }
 

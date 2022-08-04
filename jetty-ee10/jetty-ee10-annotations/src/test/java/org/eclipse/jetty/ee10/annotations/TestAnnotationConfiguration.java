@@ -26,13 +26,16 @@ import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -80,6 +83,7 @@ public class TestAnnotationConfiguration
     @BeforeEach
     public void setup() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         web25 = MavenTestingUtils.getTestResourceFile("web25.xml");
         web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
         web31true = MavenTestingUtils.getTestResourceFile("web31true.xml");
@@ -111,6 +115,12 @@ public class TestAnnotationConfiguration
             testSciJar.toURI().toURL(), targetClasses.getURI().toURL(), webInfClasses.getURI().toURL()
         },
             containerLoader);
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -176,6 +186,7 @@ public class TestAnnotationConfiguration
         {
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
 
             //test 3.1 webapp loads both server and app scis
@@ -229,6 +240,7 @@ public class TestAnnotationConfiguration
             MyAnnotationConfiguration config = new MyAnnotationConfiguration();
             
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
 
             context.setClassLoader(webAppLoader);
@@ -259,6 +271,7 @@ public class TestAnnotationConfiguration
         {
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
             // test a 3.1 webapp with metadata-complete=false loads both server
             // and webapp scis
@@ -306,6 +319,7 @@ public class TestAnnotationConfiguration
         {
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
             context.setClassLoader(orderedLoader);
             context.getMetaData().setWebDescriptor(new WebDescriptor(ResourceFactory.root().newResource(web31true.toPath())));
@@ -341,6 +355,7 @@ public class TestAnnotationConfiguration
             //test 2.5 webapp with configurationDiscovered=false loads only server scis
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
             context.setConfigurationDiscovered(false);
             context.setClassLoader(webAppLoader);
@@ -378,6 +393,7 @@ public class TestAnnotationConfiguration
             //test 2.5 webapp with configurationDiscovered=true loads both server and webapp scis
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
+            config.preConfigure(context);
             List<ServletContainerInitializer> scis;
             context.setConfigurationDiscovered(true);
             context.setClassLoader(webAppLoader);

@@ -14,14 +14,14 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class OneWebAppWithJsp
 {
@@ -45,8 +45,9 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
+        ResourceFactory resourceFactory = webapp.getResourceFactory();
         Path warFile = JettyDemos.find("demo-jsp-webapp/target/demo-jsp-webapp-@VER@.war");
-        webapp.setWarResource(new PathResource(warFile));
+        webapp.setWarResource(resourceFactory.newResource(warFile));
         webapp.setExtractWAR(true);
 
         // This webapp will use jsps and jstl. We need to enable the
@@ -76,14 +77,13 @@ public class OneWebAppWithJsp
         // can be started and stopped according to the lifecycle of the server
         // itself.
         String realmResourceName = "etc/realm.properties";
-        ClassLoader classLoader = OneWebAppWithJsp.class.getClassLoader();
-        URL realmProps = classLoader.getResource(realmResourceName);
-        if (realmProps == null)
+        Resource realmResource = resourceFactory.newClassPathResource(realmResourceName);
+        if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig(realmProps.toExternalForm());
+        loginService.setConfig(realmResource);
         server.addBean(loginService);
 
         return server;

@@ -42,20 +42,26 @@ import static org.hamcrest.Matchers.is;
 
 public class AttributeNormalizerTest
 {
-    private static ResourceFactory.Closeable RESOURCE_FACTORY;
+    private static ResourceFactory.Closeable resourceFactory;
 
     @BeforeEach
     public void beforeEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        RESOURCE_FACTORY = ResourceFactory.closeable();
     }
 
     @AfterEach
     public void afterEach()
     {
-        IO.close(RESOURCE_FACTORY);
+        IO.close(resourceFactory);
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    private static ResourceFactory getResourceFactory()
+    {
+        if (resourceFactory == null)
+            resourceFactory = ResourceFactory.closeable();
+        return resourceFactory;
     }
 
     public static Stream<Arguments> scenarios() throws IOException
@@ -345,7 +351,7 @@ public class AttributeNormalizerTest
                 .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
-            Resource webresource = RESOURCE_FACTORY.newResource(war);
+            Resource webresource = getResourceFactory().newResource(war);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 
