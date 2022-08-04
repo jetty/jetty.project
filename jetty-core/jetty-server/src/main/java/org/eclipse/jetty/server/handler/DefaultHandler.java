@@ -55,14 +55,28 @@ public class DefaultHandler extends Handler.Processor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
-    final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
-    final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
-    final ByteBuffer _favicon;
-    boolean _serveIcon = true;
-    boolean _showContexts = true;
+    private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
+    private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
+    private ByteBuffer _favicon;
+    private boolean _serveIcon = true;
+    private boolean _showContexts = true;
 
     public DefaultHandler()
     {
+    }
+
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        initFavIcon();
+    }
+
+    private void initFavIcon()
+    {
+        if (_favicon != null)
+            return;
+
         byte[] favbytes = null;
         try
         {
