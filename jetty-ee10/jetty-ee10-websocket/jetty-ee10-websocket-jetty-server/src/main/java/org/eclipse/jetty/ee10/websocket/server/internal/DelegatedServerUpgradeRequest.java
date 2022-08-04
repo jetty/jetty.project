@@ -52,13 +52,13 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        this(request, Request.as(request, ServletContextRequest.class).getHttpServletRequest());
-    }
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        Object attachment = servletContextRequest.getAttachment();
+        if (!(attachment instanceof HttpServletRequest))
+            throw new IllegalArgumentException("correct attachment not set on ServletContextRequest");
 
-    public DelegatedServerUpgradeRequest(ServerUpgradeRequest request, HttpServletRequest servletRequest)
-    {
         this.upgradeRequest = request;
-        this.httpServletRequest = servletRequest;
+        this.httpServletRequest = (HttpServletRequest)attachment;
         this.queryString = httpServletRequest.getQueryString();
 
         try
@@ -145,13 +145,13 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getMethod()
     {
-        return upgradeRequest.getMethod();
+        return httpServletRequest.getMethod();
     }
 
     @Override
     public String getOrigin()
     {
-        return upgradeRequest.getHeaders().get(HttpHeader.ORIGIN);
+        return httpServletRequest.getHeader(HttpHeader.ORIGIN.asString());
     }
 
     @Override

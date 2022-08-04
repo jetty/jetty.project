@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncListener;
@@ -74,6 +75,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -82,7 +84,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletContextRequest extends ContextRequest implements Runnable
+public class ServletContextRequest extends ContextRequest implements Runnable, Attachable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
@@ -122,6 +124,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     final HttpInput _httpInput;
     final String _pathInContext;
     Charset _queryEncoding;
+    final AtomicReference<Object> _attachment = new AtomicReference<>();
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
@@ -138,6 +141,18 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _mappedServlet = mappedServlet;
         _httpInput = new HttpInput(_servletChannel); // TODO recycle
         _pathInContext = pathInContext;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return _attachment.get();
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        _attachment.set(attachment);
     }
 
     @Override

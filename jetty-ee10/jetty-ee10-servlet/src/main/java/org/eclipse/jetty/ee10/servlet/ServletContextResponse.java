@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletOutputStream;
@@ -53,6 +54,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -60,7 +62,7 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
-public class ServletContextResponse extends ContextResponse
+public class ServletContextResponse extends ContextResponse implements Attachable
 {
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
@@ -85,7 +87,8 @@ public class ServletContextResponse extends ContextResponse
     private ResponseWriter _writer;
 
     private long _contentLength = -1;
-    
+    final AtomicReference<Object> _attachment = new AtomicReference<>();
+
     public static ServletContextResponse getBaseResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse)
@@ -110,6 +113,18 @@ public class ServletContextResponse extends ContextResponse
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
         _httpServletResponse = new ServletApiResponse(response);
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return _attachment.get();
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        _attachment.set(attachment);
     }
 
     public HttpOutput getHttpOutput()

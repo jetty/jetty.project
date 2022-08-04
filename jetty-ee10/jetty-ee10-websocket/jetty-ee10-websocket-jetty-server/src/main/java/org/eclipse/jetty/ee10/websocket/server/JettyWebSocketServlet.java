@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
@@ -182,22 +183,31 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         ServletContextRequest request = ServletContextRequest.getBaseRequest(req);
         if (request == null)
             throw new IllegalStateException("Base Request not available");
+        ServletContextResponse response = request.getResponse();
 
-        // provide a null default customizer the customizer will be on the negotiator in the mapping
-        try (Blocker.Callback callback = Blocker.callback())
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mapping.getHandshaker().isWebSocketUpgradeRequest(request))
         {
-            if (mapping.upgrade(request, request.getResponse(), callback, null))
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            try (Blocker.Callback callback = Blocker.callback())
             {
-                callback.block();
-                return;
+                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                request.setAttachment(req);
+                response.setAttachment(resp);
+
+                if (mapping.upgrade(request, response, callback, null))
+                {
+                    callback.block();
+                    return;
+                }
+            }
+            finally
+            {
+                request.setAttachment(null);
+                response.setAttachment(null);
             }
         }
-
-        // If we reach this point, it means we had an incoming request to upgrade
-        // but it was either not a proper websocket upgrade, or it was possibly rejected
-        // due to incoming request constraints (controlled by WebSocketCreator)
-        if (resp.isCommitted())
-            return;
 
         // Handle normally
         super.service(req, resp);

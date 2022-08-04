@@ -30,6 +30,7 @@ import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
@@ -158,16 +159,30 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
         if (baseRequest == null)
             throw new IllegalStateException("Base Request not available");
+        ServletContextResponse baseResponse = baseRequest.getResponse();
 
-        // provide a null default customizer the customizer will be on the negotiator in the mapping
-        try (Blocker.Callback callback = Blocker.callback())
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
         {
-            if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            try (Blocker.Callback callback = Blocker.callback())
             {
-                callback.block();
-                return;
+                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                baseRequest.setAttachment(request);
+                baseResponse.setAttachment(response);
+
+                if (mappings.upgrade(baseRequest, baseResponse, callback, null))
+                {
+                    callback.block();
+                    return;
+                }
             }
-            callback.succeeded(); // TODO this is wasteful making a blocker on every request, even if it is not used. At leasts should be shared... but better to detect if we might need to upgrade first?
+            finally
+            {
+                baseRequest.setAttachment(null);
+                baseResponse.setAttachment(null);
+            }
         }
 
         // If we reach this point, it means we had an incoming request to upgrade
