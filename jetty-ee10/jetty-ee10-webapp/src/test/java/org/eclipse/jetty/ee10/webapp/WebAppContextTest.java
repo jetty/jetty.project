@@ -45,7 +45,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -535,7 +534,6 @@ public class WebAppContextTest
                 .filter(FileID::isJavaArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
-                .map(URIUtil::toJarFileUri)
                 .collect(Collectors.toList());
         }
         List<URI> actualURIs = new ArrayList<>();
