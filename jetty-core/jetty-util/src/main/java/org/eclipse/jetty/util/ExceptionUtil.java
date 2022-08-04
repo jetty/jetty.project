@@ -148,16 +148,6 @@ public class ExceptionUtil
     /** Check if two {@link Throwable}s are associated.
      * @param t1 A Throwable or null
      * @param t2 Another Throwable or null
-     * @return true iff the exceptions are associated by being the same instance, sharing a cause or one suppressing the other.
-     */
-    public static boolean areAssociated(Throwable t1, Throwable t2)
-    {
-        return !areNotAssociated(t1, t2);
-    }
-
-    /** Check if two {@link Throwable}s are associated.
-     * @param t1 A Throwable or null
-     * @param t2 Another Throwable or null
      * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
      */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
