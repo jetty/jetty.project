@@ -165,7 +165,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     }
 
     @Override
-    public HttpContent getContent(String path, int maxBuffer) throws IOException
+    public HttpContent getContent(String path) throws IOException
     {
         // TODO load precompressed otherwise it is never served from cache
         CachingHttpContent cachingHttpContent = _cache.get(path);
@@ -177,7 +177,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 removeFromCache(cachingHttpContent);
         }
 
-        HttpContent httpContent = _authority.getContent(path, maxBuffer);
+        HttpContent httpContent = _authority.getContent(path);
         // Do not cache directories or files that are too big
         if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
         {

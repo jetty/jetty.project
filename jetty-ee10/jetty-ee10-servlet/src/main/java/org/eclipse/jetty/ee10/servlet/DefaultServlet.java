@@ -325,7 +325,7 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
+            HttpContent content = _resourceService.getContent(pathInContext);
             if (content == null || !content.getResource().exists())
             {
                 if (included)
@@ -906,9 +906,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public HttpContent getContent(String path, int outputBufferSize) throws IOException
+        public HttpContent getContent(String path) throws IOException
         {
-            HttpContent httpContent = super.getContent(path, outputBufferSize);
+            HttpContent httpContent = super.getContent(path);
 
             if (httpContent != null)
             {
