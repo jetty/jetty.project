@@ -46,7 +46,7 @@
     <module>jetty-ee8-demo-jaas-webapp</module>
     <module>jetty-ee8-demo-mock-resources</module>
     <module>jetty-ee8-demo-jndi-webapp</module>
-<!--    <module>jetty-ee9-demo-jetty-webapp</module>-->
+    <module>jetty-ee8-demo-jetty-webapp</module>
 
     <!-- Needs jetty-ee9-proxy                      -->
     <!-- module>jetty-ee9-demo-proxy-webapp</module -->

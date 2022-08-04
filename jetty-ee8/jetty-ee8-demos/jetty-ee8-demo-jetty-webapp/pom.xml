@@ -10,6 +10,7 @@
   <name>EE8 :: Jetty Demo :: Jetty :: WebApp</name>
   <packaging>war</packaging>
   <properties>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-jetty-webapp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
   </properties>
   <build>
@@ -60,7 +61,7 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Import-Package>javax.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
@@ -97,8 +98,8 @@
               <version>${project.version}</version>
             </dependency>
             <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>jetty-servlets</artifactId>
+              <groupId>org.eclipse.jetty.ee8</groupId>
+              <artifactId>jetty-ee8-servlet</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -116,7 +117,7 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.ee8.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>src/test/resources/test-realm.properties</config>
+                <config>${project.build.testOutputDirectory}/test-realm.properties</config>
               </loginService>
             </loginServices>
           </configuration>
@@ -132,14 +133,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
@@ -178,7 +173,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -193,7 +188,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-jakarta-server</artifactId>
+      <artifactId>jetty-ee8-websocket-javax-server</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
