@@ -35,6 +35,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -151,13 +153,10 @@ public class ResourceService
         String pathInContext = request.getPathInContext();
 
         // Is this a Range request?
-
-        Enumeration<String> reqRanges = request.getHeaders().getValues(HttpHeader.RANGE.asString());
-        if (!hasDefinedRange(reqRanges))
-            reqRanges = null;
+        List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
 
         boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
-        boolean checkPrecompressedVariants = _precompressedFormats.size() > 0 && !endsWithSlash && reqRanges == null;
+        boolean checkPrecompressedVariants = _precompressedFormats.size() > 0 && !endsWithSlash && reqRanges.isEmpty();
 
         try
         {
@@ -450,13 +449,14 @@ public class ResourceService
      * as determined by {@link ResourceService#processWelcome(Request, Response)}
      *
      * <p>
-     *     For {@link WelcomeActionType#REDIRECT} this is the resulting `Location` response header.
-     *     For {@link WelcomeActionType#SERVE} this is the resulting path to for welcome serve, note that
-     *     this is just a path, and can point to a real file, or a dynamic handler for
-     *     welcome processing (such as Jetty core Handler, or EE Servlet), it's up
-     *     to the implementation of {@link ResourceService#welcome(Request, Response, Callback)}
-     *     to handle the various action types.
+     * For {@link WelcomeActionType#REDIRECT} this is the resulting `Location` response header.
+     * For {@link WelcomeActionType#SERVE} this is the resulting path to for welcome serve, note that
+     * this is just a path, and can point to a real file, or a dynamic handler for
+     * welcome processing (such as Jetty core Handler, or EE Servlet), it's up
+     * to the implementation of {@link ResourceService#welcome(Request, Response, Callback)}
+     * to handle the various action types.
      * </p>
+     *
      * @param type the type of action
      * @param target The target URI path of the action.
      */
@@ -486,7 +486,7 @@ public class ResourceService
             {
                 // TODO : check conditional headers.
                 HttpContent c = _contentFactory.getContent(welcomeAction.target);
-                sendData(request, response, callback, c, null);
+                sendData(request, response, callback, c, List.of());
             }
         }
     }
@@ -540,133 +540,57 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
+    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         long contentLength = content.getContentLengthValue();
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));
 
-        if (reqRanges == null || !reqRanges.hasMoreElements())
+        if (reqRanges.isEmpty())
         {
-            // if there were no ranges, send entire entity
-
-            // write the headers
+            // If there are no ranges, send the entire content.
             if (contentLength >= 0)
                 putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
             else
                 putHeaders(response, content, NO_CONTENT_LENGTH);
-
-            // write the content
             writeHttpContent(request, response, callback, content);
+            return;
         }
-        else
+
+        // Parse the satisfiable ranges.
+        List<ByteRange> ranges = ByteRange.parse(reqRanges, contentLength);
+
+        // If there are no satisfiable ranges, send a 416 response.
+        if (ranges.isEmpty())
         {
-            throw new UnsupportedOperationException("TODO ranges not yet supported");
-            // TODO rewrite with ByteChannel only which should simplify HttpContentRangeWriter as HttpContent's Path always provides a SeekableByteChannel
-            //      but MultiPartOutputStream also needs to be rewritten.
-/*
-            // Parse the satisfiable ranges
-            List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, contentLength);
-
-            //  if there are no satisfiable ranges, send 416 response
-            if (ranges == null || ranges.size() == 0)
-            {
-                putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
-                response.getHeaders().put(HttpHeader.CONTENT_RANGE,
-                    InclusiveByteRange.to416HeaderRangeString(contentLength));
-                writeHttpError(request, response, callback, HttpStatus.RANGE_NOT_SATISFIABLE_416);
-                return true;
-            }
-
-            //  if there is only a single valid range (must be satisfiable
-            //  since were here now), send that range with a 216 response
-            if (ranges.size() == 1)
-            {
-                InclusiveByteRange singleSatisfiableRange = ranges.iterator().next();
-                long singleLength = singleSatisfiableRange.getSize();
-                putHeaders(response, content, singleLength);
-                response.setStatus(206);
-                if (!response.getHeaders().contains(HttpHeader.DATE.asString()))
-                    response.getHeaders().addDateField(HttpHeader.DATE.asString(), System.currentTimeMillis());
-                response.getHeaders().put(HttpHeader.CONTENT_RANGE,
-                    singleSatisfiableRange.toHeaderRangeString(contentLength));
-                writeHttpPartialContent(request, response, callback, content, singleSatisfiableRange);
-                return true;
-            }
-
-            //  multiple non-overlapping valid ranges cause a multipart
-            //  216 response which does not require an overall
-            //  content-length header
-            //
             putHeaders(response, content, NO_CONTENT_LENGTH);
-            String mimetype = content.getContentTypeValue();
-            if (mimetype == null)
-                LOG.warn("Unknown mimetype for {}", request.getHttpURI());
-            response.setStatus(206);
-            if (!response.getHeaders().contains(HttpHeader.DATE.asString()))
-                response.getHeaders().addDateField(HttpHeader.DATE.asString(), System.currentTimeMillis());
-
-            // If the request has a "Request-Range" header then we need to
-            // send an old style multipart/x-byteranges Content-Type. This
-            // keeps Netscape and acrobat happy. This is what Apache does.
-            String ctp;
-            if (request.getHeaders().get(HttpHeader.REQUEST_RANGE.asString()) != null)
-                ctp = "multipart/x-byteranges; boundary=";
-            else
-                ctp = "multipart/byteranges; boundary=";
-            MultiPartOutputStream multi = new MultiPartOutputStream(out);
-            response.setContentType(ctp + multi.getBoundary());
-
-            // calculate the content-length
-            int length = 0;
-            String[] header = new String[ranges.size()];
-            int i = 0;
-            final int CRLF = "\r\n".length();
-            final int DASHDASH = "--".length();
-            final int BOUNDARY = multi.getBoundary().length();
-            final int FIELD_SEP = ": ".length();
-            for (InclusiveByteRange ibr : ranges)
-            {
-                header[i] = ibr.toHeaderRangeString(contentLength);
-                if (i > 0) // in-part
-                    length += CRLF;
-                length += DASHDASH + BOUNDARY + CRLF;
-                if (mimetype != null)
-                    length += HttpHeader.CONTENT_TYPE.asString().length() + FIELD_SEP + mimetype.length() + CRLF;
-                length += HttpHeader.CONTENT_RANGE.asString().length() + FIELD_SEP + header[i].length() + CRLF;
-                length += CRLF;
-                length += ibr.getSize();
-                i++;
-            }
-            length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
-            response.setContentLength(length);
-
-            try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
-            {
-                i = 0;
-                for (InclusiveByteRange ibr : ranges)
-                {
-                    multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-                    rangeWriter.writeTo(multi, ibr.getFirst(), ibr.getSize());
-                    i++;
-                }
-            }
-
-            multi.close();
-             */
+            response.getHeaders().put(HttpHeader.CONTENT_RANGE, ByteRange.toNonSatisfiableHeaderValue(contentLength));
+            Response.writeError(request, response, callback, HttpStatus.RANGE_NOT_SATISFIABLE_416);
+            return;
         }
-        return true;
-    }
 
-    protected void writeHttpPartialContent(Request request, Response response, Callback callback, HttpContent content, ByteRange singleSatisfiableRange)
-    {
-        // TODO: implement this
-    }
+        // If there is only a single valid range, send that range with a 206 response.
+        if (ranges.size() == 1)
+        {
+            ByteRange range = ranges.get(0);
+            putHeaders(response, content, range.getLength());
+            response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
+            response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
+            Content.copy(new MultiPartByteRanges.PathContentSource(content.getResource().getPath(), range), response, callback);
+            return;
+        }
 
-    protected void writeHttpError(Request request, Response response, Callback callback, int statusCode)
-    {
-        Response.writeError(request, response, callback, statusCode);
+        // There are multiple non-overlapping ranges, send a multipart/byteranges 206 response.
+        putHeaders(response, content, NO_CONTENT_LENGTH);
+        response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
+        String contentType = "multipart/byteranges; boundary=";
+        String boundary = MultiPart.generateBoundary(null, 24);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
+        MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range)));
+        byteRanges.close();
+        Content.copy(byteRanges, response, callback);
     }
 
     protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
@@ -736,11 +660,6 @@ public class ResourceService
             response.getHeaders().put(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
         if (_cacheControl != null && !response.getHeaders().contains(HttpHeader.CACHE_CONTROL))
             response.getHeaders().put(_cacheControl);
-    }
-
-    private boolean hasDefinedRange(Enumeration<String> reqRanges)
-    {
-        return (reqRanges != null && reqRanges.hasMoreElements());
     }
 
     /**
@@ -874,7 +793,7 @@ public class ResourceService
          *
          * @param request the request to use to determine the matching welcome target from.
          * @return The URI path of the matching welcome target in context or null
-         *    (null means no welcome target was found)
+         * (null means no welcome target was found)
          */
         String getWelcomeTarget(Request request) throws IOException;
     }

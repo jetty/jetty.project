@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiPartsTest
+public class MultiPartFormDataTest
 {
     private static final AtomicInteger testCounter = new AtomicInteger();
 
@@ -76,14 +76,14 @@ public class MultiPartsTest
             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
             "\r\n";
 
-        MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertInstanceOf(BadMessageException.class, failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
@@ -105,14 +105,14 @@ public class MultiPartsTest
             eol +
             "--" + boundary + "--" + eol;
 
-        MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
-        multiParts.whenComplete((parts, failure) ->
+        formData.whenComplete((parts, failure) ->
         {
             // No errors and no parts.
             assertNull(failure);
@@ -130,14 +130,14 @@ public class MultiPartsTest
         String str = eol +
             "--" + boundary + "--" + eol;
 
-        MultiParts multiParts = new MultiParts(boundary);
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
-        multiParts.whenComplete((parts, failure) ->
+        formData.whenComplete((parts, failure) ->
         {
             // No errors and no parts.
             assertNull(failure);
@@ -177,14 +177,14 @@ public class MultiPartsTest
             ----\r
             """;
 
-        MultiParts multiParts = new MultiParts("");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(str), true));
+        MultiPartFormData formData = new MultiPartFormData("");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(str), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
         assertThat(parts.size(), is(4));
 
         MultiPart.Part fileName = parts.getFirst("fileName");
@@ -215,10 +215,10 @@ public class MultiPartsTest
     @Test
     public void testNoBody() throws Exception
     {
-        MultiParts multiParts = new MultiParts("boundary");
-        multiParts.parse(Content.Chunk.from(ByteBuffer.allocate(0), true));
+        MultiPartFormData formData = new MultiPartFormData("boundary");
+        formData.parse(Content.Chunk.from(ByteBuffer.allocate(0), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
@@ -229,11 +229,11 @@ public class MultiPartsTest
     @Test
     public void testBodyWithOnlyCRLF() throws Exception
     {
-        MultiParts multiParts = new MultiParts("boundary");
+        MultiPartFormData formData = new MultiPartFormData("boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
@@ -263,14 +263,14 @@ public class MultiPartsTest
             --AaB03x--\r
             """;
 
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertThat(parts.size(), is(2));
         MultiPart.Part part1 = parts.getFirst("field1");
@@ -299,14 +299,14 @@ public class MultiPartsTest
             --AaB03x--\r
             """;
 
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(1024);
-        multiParts.setMaxLength(3072);
-        multiParts.setMaxMemoryFileSize(50);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(1024);
+        formData.setMaxLength(3072);
+        formData.setMaxMemoryFileSize(50);
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         // The first boundary must be on a new line, so the first "part" is not recognized as such.
         assertThat(parts.size(), is(1));
@@ -319,8 +319,8 @@ public class MultiPartsTest
     @Test
     public void testDefaultLimits() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
         String body = """
             --AaB03x\r
             Content-Disposition: form-data; name="file"; filename="file.txt"\r
@@ -329,9 +329,9 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
         assertThat(parts.size(), is(1));
         MultiPart.Part part = parts.get(0);
         assertEquals("file", part.getName());
@@ -346,9 +346,9 @@ public class MultiPartsTest
     @Test
     public void testRequestContentTooBig() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxLength(16);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxLength(16);
 
         String body = """
             --AaB03x\r
@@ -358,9 +358,9 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("max length exceeded"));
@@ -371,9 +371,9 @@ public class MultiPartsTest
     @Test
     public void testFileTooBig() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxFileSize(16);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxFileSize(16);
 
         String body = """
             --AaB03x\r
@@ -383,9 +383,9 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("max file size exceeded"));
@@ -396,10 +396,10 @@ public class MultiPartsTest
     @Test
     public void testTwoFilesOneInMemoryOneOnDisk() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        multiParts.setMaxMemoryFileSize(chunk.length() + 1);
+        formData.setMaxMemoryFileSize(chunk.length() + 1);
 
         String body = """
             --AaB03x\r
@@ -414,9 +414,9 @@ public class MultiPartsTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
         assertEquals(2, parts.size());
 
@@ -434,10 +434,10 @@ public class MultiPartsTest
     @Test
     public void testPartWrite() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        multiParts.setMaxMemoryFileSize(chunk.length() + 1);
+        formData.setMaxMemoryFileSize(chunk.length() + 1);
 
         String body = """
             --AaB03x\r
@@ -452,9 +452,9 @@ public class MultiPartsTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
         assertEquals(2, parts.size());
 
@@ -478,8 +478,8 @@ public class MultiPartsTest
     @Test
     public void testPathPartDelete() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
 
         String body = """
             --AaB03x\r
@@ -489,9 +489,9 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
         assertNotNull(parts);
         assertEquals(1, parts.size());
 
@@ -506,9 +506,9 @@ public class MultiPartsTest
     @Test
     public void testAbort()
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxMemoryFileSize(32);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(32);
 
         String body = """
             --AaB03x\r
@@ -522,26 +522,26 @@ public class MultiPartsTest
             --AaB03x--\r
             """;
         // Parse only part of the content.
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), false));
-        assertEquals(1, multiParts.getParts().size());
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), false));
+        assertEquals(1, formData.getParts().size());
 
-        // Abort MultiParts.
-        multiParts.completeExceptionally(new IOException());
+        // Abort MultiPartFormData.
+        formData.completeExceptionally(new IOException());
 
         // Parse the rest of the content.
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
 
         // Try to get the parts, it should fail.
-        assertThrows(ExecutionException.class, () -> multiParts.get(5, TimeUnit.SECONDS));
-        assertEquals(0, multiParts.getParts().size());
+        assertThrows(ExecutionException.class, () -> formData.get(5, TimeUnit.SECONDS));
+        assertEquals(0, formData.getParts().size());
     }
 
     @Test
     public void testMaxHeaderLength() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setPartHeadersMaxLength(32);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setPartHeadersMaxLength(32);
 
         String body = """
             --AaB03x\r
@@ -551,9 +551,9 @@ public class MultiPartsTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        multiParts.handle((parts, failure) ->
+        formData.handle((parts, failure) ->
         {
             assertNotNull(failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("headers max length exceeded: 32"));
@@ -564,9 +564,9 @@ public class MultiPartsTest
     @Test
     public void testDefaultCharset() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxMemoryFileSize(-1);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
 
         String body1 = """
             --AaB03x\r
@@ -591,15 +591,15 @@ public class MultiPartsTest
             \r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body1), false));
-        multiParts.parse(Content.Chunk.from(isoCedilla, false));
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body2), false));
-        multiParts.parse(Content.Chunk.from(utfCedilla, false));
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body1), false));
+        formData.parse(Content.Chunk.from(isoCedilla, false));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body2), false));
+        formData.parse(Content.Chunk.from(utfCedilla, false));
+        formData.parse(Content.Chunk.from(UTF_8.encode(terminator), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
-        Charset defaultCharset = multiParts.getDefaultCharset();
+        Charset defaultCharset = formData.getDefaultCharset();
         assertEquals(ISO_8859_1, defaultCharset);
 
         MultiPart.Part iso = parts.getFirst("iso");
@@ -614,9 +614,9 @@ public class MultiPartsTest
     @Test
     public void testPartWithBackSlashInFileName() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxMemoryFileSize(-1);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
 
         String contents = """
             --AaB03x\r
@@ -626,9 +626,9 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertThat(parts.size(), is(1));
         MultiPart.Part part = parts.get(0);
@@ -638,9 +638,9 @@ public class MultiPartsTest
     @Test
     public void testPartWithWindowsFileName() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxMemoryFileSize(-1);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
 
         String contents = """
             --AaB03x\r
@@ -650,9 +650,9 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertThat(parts.size(), is(1));
         MultiPart.Part part = parts.get(0);
@@ -662,9 +662,9 @@ public class MultiPartsTest
     @Test
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setMaxMemoryFileSize(-1);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
 
         String contents = """
             --AaB03x\r
@@ -674,9 +674,9 @@ public class MultiPartsTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(contents), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(contents), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertThat(parts.size(), is(1));
         MultiPart.Part part = parts.get(0);
@@ -686,9 +686,9 @@ public class MultiPartsTest
     @Test
     public void testWriteFilesForPartWithoutFileName() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
-        multiParts.setUseFilesForPartsWithoutFileName(true);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setUseFilesForPartsWithoutFileName(true);
 
         String body = """
             --AaB03x\r
@@ -698,9 +698,9 @@ public class MultiPartsTest
             sssaaa\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(body), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(body), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertThat(parts.size(), is(1));
         MultiPart.Part part = parts.get(0);
@@ -713,8 +713,8 @@ public class MultiPartsTest
     @Test
     public void testPartsWithSameName() throws Exception
     {
-        MultiParts multiParts = new MultiParts("AaB03x");
-        multiParts.setFilesDirectory(_tmpDir);
+        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
 
         String sameNames = """
             --AaB03x\r
@@ -729,9 +729,9 @@ public class MultiPartsTest
             AAAAA\r
             --AaB03x--\r
             """;
-        multiParts.parse(Content.Chunk.from(UTF_8.encode(sameNames), true));
+        formData.parse(Content.Chunk.from(UTF_8.encode(sameNames), true));
 
-        MultiParts.Parts parts = multiParts.get(5, TimeUnit.SECONDS);
+        MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS);
 
         assertEquals(2, parts.size());
 
@@ -741,10 +741,10 @@ public class MultiPartsTest
 
         MultiPart.Part part1 = partsList.get(0);
         assertEquals("stuff1.txt", part1.getFileName());
-        assertEquals("00000", part1.getContentAsString(multiParts.getDefaultCharset()));
+        assertEquals("00000", part1.getContentAsString(formData.getDefaultCharset()));
 
         MultiPart.Part part2 = partsList.get(1);
         assertEquals("stuff2.txt", part2.getFileName());
-        assertEquals("AAAAA", part2.getContentAsString(multiParts.getDefaultCharset()));
+        assertEquals("AAAAA", part2.getContentAsString(formData.getDefaultCharset()));
     }
 }

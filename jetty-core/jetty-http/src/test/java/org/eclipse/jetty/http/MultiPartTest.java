@@ -673,13 +673,21 @@ public class MultiPartTest
     private static class TestPartsListener extends MultiPart.AbstractPartsListener
     {
         private final List<MultiPart.Part> parts = new ArrayList<>();
+        private final List<Content.Chunk> partContent = new ArrayList<>();
         private boolean complete;
         private Throwable failure;
 
         @Override
-        public void onPart(MultiPart.Part part)
+        public void onPartContent(Content.Chunk chunk)
         {
-            parts.add(part);
+            partContent.add(chunk);
+        }
+
+        @Override
+        public void onPart(String name, String fileName, HttpFields headers)
+        {
+            parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partContent)));
+            partContent.clear();
         }
 
         @Override

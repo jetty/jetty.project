@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
-import org.eclipse.jetty.io.internal.ContentSourceByteBuffers;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
@@ -156,19 +154,6 @@ public class Content
             {
                 throw IO.rethrow(x);
             }
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source, copying each chunk's
-         * {@code ByteBuffer} into a new {@code ByteBuffer} that is added to
-         * a list returned as result.</p>
-         *
-         * @param source the source to read
-         * @param promise the promise to notify when the whole content has been read into a list of ByteBuffers
-         */
-        static void asByteBuffers(Source source, Promise<List<ByteBuffer>> promise)
-        {
-            new ContentSourceByteBuffers(source, promise).run();
         }
 
         /**

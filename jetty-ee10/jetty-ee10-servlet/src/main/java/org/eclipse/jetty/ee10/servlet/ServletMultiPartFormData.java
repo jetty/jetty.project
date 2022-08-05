@@ -27,7 +27,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
  *
  * @see Parts
  */
-public class ServletMultiParts
+public class ServletMultiPartFormData
 {
     /**
      * <p>Parses the request content assuming it is a multipart content,
@@ -58,10 +58,10 @@ public class ServletMultiParts
     {
         try
         {
-            MultiParts multiParts = (MultiParts)request.getAttribute(MultiParts.class.getName());
-            if (multiParts != null)
-                return new Parts(multiParts);
-            return new ServletMultiParts().parse(request);
+            MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
+            if (formData != null)
+                return new Parts(formData);
+            return new ServletMultiPartFormData().parse(request);
         }
         catch (Throwable x)
         {
@@ -75,8 +75,11 @@ public class ServletMultiParts
         if (config == null)
             throw new IllegalStateException("No multipart configuration element");
 
-        String boundary = MultiParts.extractBoundary(request.getContentType());
-        MultiParts multiParts = new MultiParts(boundary);
+        String boundary = MultiPart.extractBoundary(request.getContentType());
+        if (boundary == null)
+            throw new IllegalStateException("No multipart boundary parameter in Content-Type");
+
+        MultiPartFormData formData = new MultiPartFormData(boundary);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
         if (tmpDirFile == null)
@@ -85,12 +88,12 @@ public class ServletMultiParts
         if (!StringUtil.isBlank(fileLocation))
             tmpDirFile = new File(fileLocation);
 
-        multiParts.setFilesDirectory(tmpDirFile.toPath());
-        multiParts.setMaxMemoryFileSize(config.getFileSizeThreshold());
-        multiParts.setMaxFileSize(config.getMaxFileSize());
-        multiParts.setMaxLength(config.getMaxRequestSize());
+        formData.setFilesDirectory(tmpDirFile.toPath());
+        formData.setMaxMemoryFileSize(config.getFileSizeThreshold());
+        formData.setMaxFileSize(config.getMaxFileSize());
+        formData.setMaxLength(config.getMaxRequestSize());
         ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
-        multiParts.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
+        formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
@@ -101,13 +104,13 @@ public class ServletMultiParts
             int read = input.read(buffer);
             if (read < 0)
             {
-                multiParts.parse(Content.Chunk.EOF);
+                formData.parse(Content.Chunk.EOF);
                 break;
             }
-            multiParts.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
+            formData.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
         }
 
-        return new Parts(multiParts);
+        return new Parts(formData);
     }
 
     /**
@@ -117,9 +120,9 @@ public class ServletMultiParts
     {
         private final List<Part> parts = new ArrayList<>();
 
-        public Parts(MultiParts multiParts)
+        public Parts(MultiPartFormData formData)
         {
-            multiParts.join().forEach(part -> parts.add(new ServletPart(multiParts, part)));
+            formData.join().forEach(part -> parts.add(new ServletPart(formData, part)));
         }
 
         public Part getPart(String name)
@@ -138,14 +141,14 @@ public class ServletMultiParts
 
     private static class ServletPart implements Part
     {
-        private final MultiParts _multiParts;
+        private final MultiPartFormData _formData;
         private final MultiPart.Part _part;
         private final long _length;
         private final InputStream _input;
 
-        private ServletPart(MultiParts multiParts, MultiPart.Part part)
+        private ServletPart(MultiPartFormData formData, MultiPart.Part part)
         {
-            _multiParts = multiParts;
+            _formData = formData;
             _part = part;
             Content.Source content = part.getContent();
             _length = content.getLength();
@@ -187,7 +190,7 @@ public class ServletMultiParts
         {
             Path filePath = Path.of(fileName);
             if (!filePath.isAbsolute())
-                filePath = _multiParts.getFilesDirectory().resolve(filePath).normalize();
+                filePath = _formData.getFilesDirectory().resolve(filePath).normalize();
             _part.writeTo(filePath);
         }
 

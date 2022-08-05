@@ -26,7 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.server.Handler;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiPartHandlerTest
+public class MultiPartFormDataHandlerTest
 {
     private Server server;
     private ServerConnector connector;
@@ -75,8 +75,8 @@ public class MultiPartHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String boundary = MultiParts.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiParts(boundary).parse(request)
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                new MultiPartFormData(boundary).parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -115,9 +115,9 @@ public class MultiPartHandlerTest
     }
 
     @Test
-    public void testDelayedUntilMultiPart() throws Exception
+    public void testDelayedUntilFormData() throws Exception
     {
-        DelayedHandler.UntilMultiPart delayedHandler = new DelayedHandler.UntilMultiPart();
+        DelayedHandler.UntilMultiPartFormData delayedHandler = new DelayedHandler.UntilMultiPartFormData();
         CountDownLatch processLatch = new CountDownLatch(1);
         delayedHandler.setHandler(new Handler.Processor()
         {
@@ -125,9 +125,9 @@ public class MultiPartHandlerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
-                MultiParts multiParts = (MultiParts)request.getAttribute(MultiParts.class.getName());
-                assertNotNull(multiParts);
-                MultiPart.Part part = multiParts.get().get(0);
+                MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
+                assertNotNull(formData);
+                MultiPart.Part part = formData.get().get(0);
                 Content.copy(part.getContent(), response, callback);
             }
         });
@@ -187,15 +187,17 @@ public class MultiPartHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String boundary = MultiParts.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiParts(boundary).parse(request)
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                new MultiPartFormData(boundary).parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
                         {
                             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getBoundary()));
-                            MultiPart.ContentSource source = parts.toContentSource();
+                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(parts.getBoundary());
                             source.setPartHeadersMaxLength(1024);
+                            parts.forEach(source::addPart);
+                            source.close();
                             Content.copy(source, response, callback);
                         }
                         else
@@ -251,7 +253,7 @@ public class MultiPartHandlerTest
                 String boundary = "A1B2C3";
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
 
-                MultiPart.ContentSource source = new MultiPart.ContentSource(boundary);
+                MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
                 HttpFields.Mutable headers1 = HttpFields.build().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 assertTrue(source.addPart(new MultiPart.ByteBufferPart("part1", null, headers1, UTF_8.encode("hello"))));
 
@@ -297,13 +299,13 @@ public class MultiPartHandlerTest
             String value = response.get(HttpHeader.CONTENT_TYPE);
             String contentType = HttpField.valueParameters(value, null);
             assertEquals("multipart/form-data", contentType);
-            String boundary = MultiParts.extractBoundary(value);
+            String boundary = MultiPart.extractBoundary(value);
             assertNotNull(boundary);
 
-            MultiParts multiParts = new MultiParts(boundary);
-            multiParts.setFilesDirectory(tempDir);
-            multiParts.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
-            MultiParts.Parts parts = multiParts.join();
+            MultiPartFormData formData = new MultiPartFormData(boundary);
+            formData.setFilesDirectory(tempDir);
+            formData.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
+            MultiPartFormData.Parts parts = formData.join();
 
             assertEquals(2, parts.size());
             MultiPart.Part part1 = parts.get(0);

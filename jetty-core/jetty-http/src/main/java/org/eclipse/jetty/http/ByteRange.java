@@ -14,251 +14,185 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.List;
-import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Byte range inclusive of end points.
- * <PRE>
- *
- * parses the following types of byte ranges:
- *
- * bytes=100-499
- * bytes=-300
- * bytes=100-
- * bytes=1-2,2-3,6-,-2
- *
- * given an entity length, converts range to string
- *
- * bytes 100-499/500
- *
- * </PRE>
- *
- * Based on RFC2616 3.12, 14.16, 14.35.1, 14.35.2
- * <p>
- * And yes the spec does strangely say that while 10-20, is bytes 10 to 20 and 10- is bytes 10 until the end that -20 IS NOT bytes 0-20, but the last 20 bytes of the content.
- *
- * @version $version$
+ * <p>A representation of a byte range as specified by
+ * <a href="https://datatracker.ietf.org/doc/html/rfc7233">RFC 7233</a>.</p>
+ * <p>This class parses the value of the {@code Range} request header value,
+ * for example:</p>
+ * <pre>{@code
+ * Range: bytes=100-499
+ * Range: bytes=1-10,5-25,50-,-20
+ * }</pre>
  */
-public class ByteRange
+public record ByteRange(long first, long last)
 {
     private static final Logger LOG = LoggerFactory.getLogger(ByteRange.class);
 
-    private long first;
-    private long last;
-
-    public ByteRange(long first, long last)
+    private ByteRange coalesce(ByteRange r)
     {
-        this.first = first;
-        this.last = last;
-    }
-
-    public long getFirst()
-    {
-        return first;
-    }
-
-    public long getLast()
-    {
-        return last;
-    }
-
-    private void coalesce(ByteRange r)
-    {
-        first = Math.min(first, r.first);
-        last = Math.max(last, r.last);
+        return new ByteRange(Math.min(first, r.first), Math.max(last, r.last));
     }
 
     private boolean overlaps(ByteRange range)
     {
-        return (range.first >= this.first && range.first <= this.last) ||
+        return
+            // Partial right overlap: 10-20,15-30.
+            (range.first >= this.first && range.first <= this.last) ||
+            // Partial left overlap: 20-30,15-25.
             (range.last >= this.first && range.last <= this.last) ||
+            // Full inclusion: 20-30,10-40.
             (range.first < this.first && range.last > this.last);
     }
 
-    public long getSize()
+    /**
+     * @return the length of this byte range
+     */
+    public long getLength()
     {
         return last - first + 1;
     }
 
-    public String toHeaderRangeString(long size)
+    /**
+     * <p>Returns the value for the {@code Content-Range}
+     * response header corresponding to this byte range.</p>
+     *
+     * @param length the content length
+     * @return the value for the {@code Content-Range} response header for this byte range
+     */
+    public String toHeaderValue(long length)
     {
-        StringBuilder sb = new StringBuilder(40);
-        sb.append("bytes ");
-        sb.append(first);
-        sb.append('-');
-        sb.append(last);
-        sb.append("/");
-        sb.append(size);
-        return sb.toString();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return (int)(first ^ last);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-            return false;
-
-        if (!(obj instanceof ByteRange))
-            return false;
-
-        return ((ByteRange)obj).first == this.first &&
-               ((ByteRange)obj).last == this.last;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder(60);
-        sb.append(Long.toString(first));
-        sb.append(":");
-        sb.append(Long.toString(last));
-        return sb.toString();
+        return "bytes %d-%d/%d".formatted(first, last, length);
     }
 
     /**
-     * @param headers Enumeration of Range header fields.
-     * @param size Size of the resource.
-     * @return List of satisfiable ranges
+     * <p>Parses the {@code Range} header values such as {@code byte=10-20}
+     * to obtain a list of {@code ByteRange}s.</p>
+     * <p>Returns an empty list if the parsing fails.</p>
+     *
+     * @param headers a list of range values
+     * @param length the length of the resource for which ranges are requested
+     * @return a list of {@code ByteRange}s
      */
-    public static List<ByteRange> satisfiableRanges(Enumeration<String> headers, long size)
+    public static List<ByteRange> parse(List<String> headers, long length)
     {
+        long end = length - 1;
         List<ByteRange> ranges = null;
-        final long end = size - 1;
-
-        // walk through all Range headers
-        while (headers.hasMoreElements())
+        String prefix = "bytes=";
+        for (String header : headers)
         {
-            String header = headers.nextElement();
-            StringTokenizer tok = new StringTokenizer(header, "=,", false);
-            String t = null;
             try
             {
-                // read all byte ranges for this header 
-                while (tok.hasMoreTokens())
+                String value = header.trim();
+                if (!value.startsWith(prefix))
+                    continue;
+                value = value.substring(prefix.length());
+                for (String range : value.split(","))
                 {
-                    try
+                    range = range.trim();
+                    long first = -1;
+                    long last = -1;
+                    int dash = range.indexOf('-');
+                    if (dash < 0 || range.indexOf("-", dash + 1) >= 0)
                     {
-                        t = tok.nextToken().trim();
-                        if ("bytes".equals(t))
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("bad range format: {}", range);
+                        break;
+                    }
+
+                    if (dash > 0)
+                        first = Long.parseLong(range.substring(0, dash).trim());
+                    if (dash < (range.length() - 1))
+                        last = Long.parseLong(range.substring(dash + 1).trim());
+
+                    if (first == -1)
+                    {
+                        if (last == -1)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("bad range format: {}", range);
+                            break;
+                        }
+
+                        if (last == 0)
                             continue;
 
-                        long first = -1;
-                        long last = -1;
-                        int dash = t.indexOf('-');
-                        if (dash < 0 || t.indexOf("-", dash + 1) >= 0)
-                        {
-                            ranges = null;
-                            LOG.warn("Bad range format: {}", t);
-                            break;
-                        }
-
-                        if (dash > 0)
-                            first = Long.parseLong(t.substring(0, dash).trim());
-                        if (dash < (t.length() - 1))
-                            last = Long.parseLong(t.substring(dash + 1).trim());
-
-                        if (first == -1)
-                        {
-                            if (last == -1)
-                            {
-                                ranges = null;
-                                LOG.warn("Bad range format: {}", t);
-                                break;
-                            }
-
-                            if (last == 0)
-                                continue;
-
-                            // This is a suffix range
-                            first = Math.max(0, size - last);
-                            last = end;
-                        }
-                        else
-                        {
-                            // Range starts after end
-                            if (first >= size)
-                                continue;
-
-                            if (last == -1)
-                                last = end;
-                            else if (last >= end)
-                                last = end;
-                        }
-
-                        if (last < first)
-                        {
-                            ranges = null;
-                            LOG.warn("Bad range format: {}", t);
-                            break;
-                        }
-
-                        ByteRange range = new ByteRange(first, last);
-                        if (ranges == null)
-                            ranges = new ArrayList<>();
-
-                        boolean coalesced = false;
-                        for (Iterator<ByteRange> i = ranges.listIterator(); i.hasNext(); )
-                        {
-                            ByteRange r = i.next();
-                            if (range.overlaps(r))
-                            {
-                                coalesced = true;
-                                r.coalesce(range);
-                                while (i.hasNext())
-                                {
-                                    ByteRange r2 = i.next();
-
-                                    if (r2.overlaps(r))
-                                    {
-                                        r.coalesce(r2);
-                                        i.remove();
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!coalesced)
-                            ranges.add(range);
+                        // This is a suffix range of the form "-20".
+                        first = Math.max(0, end - last + 1);
+                        last = end;
                     }
-                    catch (NumberFormatException e)
+                    else
                     {
-                        ranges = null;
-                        LOG.warn("Bad range format: {}", t);
-                        LOG.trace("IGNORED", e);
+                        // Range starts after end.
+                        if (first > end)
+                            continue;
+
+                        if (last == -1 || last > end)
+                            last = end;
                     }
+
+                    if (last < first)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("bad range format: {}", range);
+                        break;
+                    }
+
+                    ByteRange byteRange = new ByteRange(first, last);
+                    if (ranges == null)
+                        ranges = new ArrayList<>();
+                    ranges.add(byteRange);
                 }
             }
-            catch (Exception e)
+            catch (Throwable x)
             {
-                ranges = null;
-                LOG.warn("Bad range format: {}", t);
-                LOG.trace("IGNORED", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("could not parse range {}", header, x);
+                return List.of();
             }
         }
 
-        return ranges;
+        if (ranges == null)
+            return List.of();
+        if (ranges.size() == 1)
+            return ranges;
+
+        // Sort and coalesce in one pass through the list.
+        List<ByteRange> result = new ArrayList<>();
+        ranges.sort(Comparator.comparingLong(ByteRange::first));
+        ByteRange range1 = ranges.get(0);
+        for (int i = 1; i < ranges.size(); ++i)
+        {
+            ByteRange range2 = ranges.get(i);
+            if (range1.overlaps(range2))
+            {
+                range1 = range1.coalesce(range2);
+            }
+            else
+            {
+                result.add(range1);
+                range1 = range2;
+            }
+        }
+        result.add(range1);
+        return result;
     }
 
-    public static String to416HeaderRangeString(long size)
+    /**
+     * <p>Returns the value for the {@code Content-Range} response header
+     * when the range is non satisfiable and therefore the response status
+     * code is {@link HttpStatus#RANGE_NOT_SATISFIABLE_416}.</p>
+     *
+     * @param length the content length in bytes
+     * @return the non satisfiable value for the {@code Content-Range} response header
+     */
+    public static String toNonSatisfiableHeaderValue(long length)
     {
-        StringBuilder sb = new StringBuilder(40);
-        sb.append("bytes */");
-        sb.append(size);
-        return sb.toString();
+        return "bytes */" + length;
     }
 }
-
-
-
