@@ -44,7 +44,6 @@ public class StandardDescriptorProcessorTest
     public void afterEach() throws Exception
     {
         _server.stop();
-        Configurations.getKnown().forEach(System.err::println);
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
