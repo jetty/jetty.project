@@ -412,6 +412,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public Resource newResource(URI uri)
     {
+        // TODO optimised path for URI?
         return resolve(uri.toString());
     }
 
