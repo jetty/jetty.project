@@ -48,8 +48,7 @@
     <module>jetty-ee8-demo-jndi-webapp</module>
     <module>jetty-ee8-demo-jetty-webapp</module>
 
-    <!-- Needs jetty-ee9-proxy                      -->
-    <!-- module>jetty-ee9-demo-proxy-webapp</module -->
+     <module>jetty-ee8-demo-proxy-webapp</module>
     <!-- module>jetty-ee9-demo-embedded</module     -->
 
 <!--    <module>jetty-ee9-demo-jsp-webapp</module>-->

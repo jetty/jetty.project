@@ -16,11 +16,10 @@ package org.eclipse.jetty.ee9.demos;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -38,16 +37,16 @@ public class FileServer
 
         // Create the ResourceHandler. It is the object that will actually handle the request for a given file. It is
         // a Jetty Handler object so it is suitable for chaining with other handlers as you will see in other examples.
-        ResourceHandler resourceHandler = new ResourceHandler(_server);
+        ResourceHandler resourceHandler = new ResourceHandler();
 
         // Configure the ResourceHandler. Setting the resource base indicates where the files should be served out of.
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
-        resourceHandler.setDirectoriesListed(true);
-        resourceHandler.setWelcomeFiles(new String[]{"index.html"});
+        resourceHandler.setDirAllowed(true);
+        resourceHandler.setWelcomeFiles("index.html");
         resourceHandler.setBaseResource(baseResource);
 
         // Add the ResourceHandler to the server.
-        server.setHandler(new HandlerList(resourceHandler, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(resourceHandler, new DefaultHandler()));
 
         return server;
     }
@@ -56,7 +55,7 @@ public class FileServer
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path userDir = Paths.get(System.getProperty("user.dir"));
-        PathResource pathResource = new PathResource(userDir);
+        Resource pathResource = Resource.newResource(userDir);
 
         Server server = createServer(port, pathResource);
 

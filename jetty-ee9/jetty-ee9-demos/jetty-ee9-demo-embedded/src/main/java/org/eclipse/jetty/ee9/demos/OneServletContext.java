@@ -34,7 +34,6 @@ import org.eclipse.jetty.ee9.servlet.ListenerHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 import static jakarta.servlet.DispatcherType.ASYNC;
@@ -78,7 +77,7 @@ public class OneServletContext
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
 
-        Server server = createServer(port, new PathResource(tempDir));
+        Server server = createServer(port, Resource.newResource(tempDir));
 
         server.start();
         server.dumpStdErr();
