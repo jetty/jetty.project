@@ -63,7 +63,6 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -180,7 +179,7 @@ public class DefaultServlet extends HttpServlet
             }
             if (_stylesheet == null)
             {
-                _stylesheet = ResourceHandler.getDefaultStyleSheet();
+                _stylesheet = servletContextHandler.getServer().getDefaultStyleSheet();
             }
 
             // TODO the stylesheet is never actually used ?

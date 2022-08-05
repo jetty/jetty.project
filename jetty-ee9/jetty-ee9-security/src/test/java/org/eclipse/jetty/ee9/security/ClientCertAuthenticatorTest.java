@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -115,7 +114,9 @@ public class ClientCertAuthenticatorTest
 
         HashLoginService loginService = new HashLoginService();
         constraintSecurityHandler.setLoginService(loginService);
-        loginService.setConfig("target/test-classes/realm.properties");
+
+        ResourceFactory resourceFactory = ResourceFactory.of(constraintSecurityHandler);
+        loginService.setConfig(resourceFactory.newResource("target/test-classes/realm.properties"));
 
         constraintSecurityHandler.setHandler(new FooHandler());
         context.setHandler(constraintSecurityHandler);

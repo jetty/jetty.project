@@ -31,12 +31,17 @@ public class PreconfigureStandardTestWar
     private static final long __start = System.nanoTime();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
-    public static void main(String[] args) throws Exception
+    public static Path getTargetDir()
     {
         Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
         FS.ensureDirExists(workdir);
 
-        Path target = workdir.resolve("test-standard-preconfigured");
+        return workdir.resolve("test-standard-preconfigured");
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Path target = getTargetDir();
         FS.ensureEmpty(target);
 
         Path realmPropertiesDest = target.resolve("test-standard-realm.properties");

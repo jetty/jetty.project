@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -67,9 +68,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-@Disabled //TODO
 @Tag("large-disk-resource")
 public class HugeResourceTest
 {
@@ -179,6 +180,7 @@ public class HugeResourceTest
     @BeforeEach
     public void startServer() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
@@ -187,7 +189,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(staticBase);
+        context.setBaseResource(context.getResourceFactory().newResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");
@@ -201,7 +203,10 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
+        DefaultHandler defaultHandler = new DefaultHandler();
+        defaultHandler.setServer(server);
+
+        server.setHandler(new Handler.Collection(context, defaultHandler));
         server.start();
     }
 
@@ -209,6 +214,7 @@ public class HugeResourceTest
     public void stopServer() throws Exception
     {
         server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @BeforeEach
@@ -345,6 +351,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
+    @Disabled // TODO
     public void testUploadMultipart(String filename, long expectedSize) throws Exception
     {
         MultiPartRequestContent multipart = new MultiPartRequestContent();

@@ -16,10 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +38,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,35 +55,50 @@ public class DefaultHandler extends Handler.Processor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
-    final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
-    final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
-    final ByteBuffer _favicon;
-    boolean _serveIcon = true;
-    boolean _showContexts = true;
+    private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
+    private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
+    private ByteBuffer _favicon;
+    private boolean _serveIcon = true;
+    private boolean _showContexts = true;
 
     public DefaultHandler()
     {
-        String faviconRef = "/org/eclipse/jetty/favicon.ico";
+    }
+
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        initFavIcon();
+    }
+
+    private void initFavIcon()
+    {
+        if (_favicon != null)
+            return;
+
+        if (getServer() == null)
+        {
+            // TODO: investigate why DefaultHandler.setServer(server) is passing null?
+            LOG.warn("favicon.ico not supported with null Server");
+            return;
+        }
+
         byte[] favbytes = null;
         try
         {
-            URL fav = getClass().getResource(faviconRef);
-            if (fav != null)
+            Resource faviconRes = getServer().getDefaultFavicon();
+            if (faviconRes != null)
             {
-                URI uri = fav.toURI();
-                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+                try (InputStream is = faviconRes.newInputStream())
                 {
-                    Resource resource = resourceFactory.newResource(uri);
-                    try (InputStream is = Files.newInputStream(resource.getPath()))
-                    {
-                        favbytes = IO.readBytes(is);
-                    }
+                    favbytes = IO.readBytes(is);
                 }
             }
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to find default favicon: {}", faviconRef, e);
+            LOG.warn("Unable to find default favicon", e);
         }
         finally
         {

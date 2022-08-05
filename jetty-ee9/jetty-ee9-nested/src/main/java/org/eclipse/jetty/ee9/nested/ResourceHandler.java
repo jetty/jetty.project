@@ -133,6 +133,36 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
+    public Resource newResource(String path)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
+
+        Resource r = null;
+
+        if (_baseResource != null)
+        {
+            r = _baseResource.resolve(path);
+        }
+        else if (_context != null)
+        {
+            Resource contextBase = _context.getBaseResource();
+            if (contextBase != null)
+                r = contextBase.resolve(path);
+        }
+
+        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+            r = getStylesheet();
+
+        if (r == null)
+        {
+            throw new IllegalArgumentException("Resource: " + path);
+        }
+
+        return r;
+    }
+
+    @Override
     public Resource newResource(URI uri)
     {
         if (LOG.isDebugEnabled())
@@ -183,18 +213,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             if (_defaultStylesheet == null)
             {
-                _defaultStylesheet = getDefaultStylesheet();
+                _defaultStylesheet = getServer().getDefaultStyleSheet();
             }
             return _defaultStylesheet;
         }
-    }
-
-    public static Resource getDefaultStylesheet()
-    {
-        // TODO do this some other way.  It is expensive to mount a whole jar when we could
-        //      just read the resource from the URL. We also leak the Mount.
-        URI css = URIUtil.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        return ResourceFactory.root().newResource(css);
     }
 
     public String[] getWelcomeFiles()

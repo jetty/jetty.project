@@ -245,15 +245,15 @@ public class JettyEmbedder extends AbstractLifeCycle
      */
     private void configure() throws Exception
     {
-        /* Configure the server */
-        //apply any configs from jetty.xml files first 
+        // apply any configs from jetty.xml files first
         Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmlFiles, jettyProperties);
-        if (server == null)
+
+        if (tmp != null)
             server = tmp;
 
         if (server == null)
             server = new Server();
-        
+
         server.setStopAtShutdown(stopAtShutdown);
 
         //ensure there's a connector

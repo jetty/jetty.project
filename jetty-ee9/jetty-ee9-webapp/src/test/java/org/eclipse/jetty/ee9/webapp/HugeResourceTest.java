@@ -55,7 +55,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -88,7 +87,6 @@ public class HugeResourceTest
     @BeforeAll
     public static void prepareStaticFiles() throws IOException
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         staticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-static-base");
         FS.ensureDirExists(staticBase);
 
@@ -131,7 +129,6 @@ public class HugeResourceTest
         quietlyDelete(staticBase);
         quietlyDelete(outputDir);
         quietlyDelete(multipartTempDir);
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private static void quietlyDelete(Path path)
@@ -183,6 +180,7 @@ public class HugeResourceTest
     @BeforeEach
     public void startServer() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
@@ -191,7 +189,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(ResourceFactory.root().newResource(staticBase));
+        context.setBaseResource(context.getResourceFactory().newResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");
@@ -205,7 +203,10 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
+        DefaultHandler defaultHandler = new DefaultHandler();
+        defaultHandler.setServer(server);
+
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), defaultHandler));
         server.start();
     }
 
@@ -213,6 +214,7 @@ public class HugeResourceTest
     public void stopServer() throws Exception
     {
         server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @BeforeEach

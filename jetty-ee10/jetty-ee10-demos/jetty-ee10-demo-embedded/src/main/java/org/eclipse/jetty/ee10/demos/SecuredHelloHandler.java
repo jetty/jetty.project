@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.demos;
 
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.util.Collections;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -25,6 +24,8 @@ import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
@@ -46,13 +47,11 @@ public class SecuredHelloHandler
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
         String realmResourceName = "etc/realm.properties";
-        ClassLoader classLoader = SecuredHelloHandler.class.getClassLoader();
-        URL realmProps = classLoader.getResource(realmResourceName);
-        if (realmProps == null)
+        Resource realmResource = ResourceFactory.of(server).newClassPathResource("etc/realm.properties");
+        if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
-        LoginService loginService = new HashLoginService("MyRealm",
-            realmProps.toExternalForm());
+        LoginService loginService = new HashLoginService("MyRealm", realmResource);
         server.addBean(loginService);
         
         ServletContextHandler context = new ServletContextHandler();
