@@ -116,7 +116,7 @@ public class ClientCertAuthenticatorTest
         constraintSecurityHandler.setLoginService(loginService);
 
         ResourceFactory resourceFactory = ResourceFactory.of(constraintSecurityHandler);
-        loginService.setConfig(resourceFactory.newResource("src/test/resources/realm.properties"));
+        loginService.setConfig(resourceFactory.newResource("target/test-classes/realm.properties"));
 
         constraintSecurityHandler.setHandler(new FooHandler());
         context.setHandler(constraintSecurityHandler);
