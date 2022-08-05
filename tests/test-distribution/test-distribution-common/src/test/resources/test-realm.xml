@@ -9,13 +9,12 @@
   <!-- example).                                                   -->
   <!-- =========================================================== -->
 
-  <Call class="org.eclipse.jetty.util.resource.ResourceFactory" name="of" arg="Server">
-    <Call id="realmResource" class="org.eclipse.jetty.util.resource.Resource" name="newResource">
+  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call id="realmResource" name="newResource">
       <Arg><Property name="jetty.demo.realm" default="etc/realm.properties" /></Arg>
     </Call>
   </Call>
-
-
 
   <Call name="addBean">
     <Arg>
