@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet.security;
 import java.util.List;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
