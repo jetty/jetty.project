@@ -21,7 +21,6 @@ import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class OneWebAppWithJsp
 {
@@ -45,9 +44,8 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        ResourceFactory resourceFactory = webapp.getResourceFactory();
         Path warFile = JettyDemos.find("demo-jsp-webapp/target/demo-jsp-webapp-@VER@.war");
-        webapp.setWarResource(resourceFactory.newResource(warFile));
+        webapp.setWarResource(webapp.getResourceFactory().newResource(warFile));
         webapp.setExtractWAR(true);
 
         // This webapp will use jsps and jstl. We need to enable the
@@ -77,7 +75,7 @@ public class OneWebAppWithJsp
         // can be started and stopped according to the lifecycle of the server
         // itself.
         String realmResourceName = "etc/realm.properties";
-        Resource realmResource = resourceFactory.newClassPathResource(realmResourceName);
+        Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

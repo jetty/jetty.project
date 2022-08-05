@@ -45,9 +45,8 @@ public class SecuredHelloHandler
         // started and stopped according to the lifecycle of the server itself.
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
-        ResourceFactory resourceFactory = ResourceFactory.of(server);
         String realmResourceName = "etc/realm.properties";
-        Resource realmResource = resourceFactory.newClassPathResource("etc/realm.properties");
+        Resource realmResource = ResourceFactory.of(server).newClassPathResource("etc/realm.properties");
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

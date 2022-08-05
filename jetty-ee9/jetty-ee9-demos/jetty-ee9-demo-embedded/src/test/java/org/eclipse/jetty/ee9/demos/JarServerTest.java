@@ -42,13 +42,11 @@ public class JarServerTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        ResourceFactory.LifeCycle lifeCycle = ResourceFactory.lifecycle();
         Path jarFile = Paths.get("src/main/other/content.jar");
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
-        Resource jarResource = lifeCycle.newJarFileResource(jarFile.toUri());
 
-        server = JarServer.createServer(0, jarResource);
+        server = JarServer.createServer(0, jarFile.toUri());
         server.addBean(lifeCycle, true);
         server.start();
     }

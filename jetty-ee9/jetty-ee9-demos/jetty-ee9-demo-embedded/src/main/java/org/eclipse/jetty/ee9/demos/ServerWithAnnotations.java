@@ -42,7 +42,6 @@ public class ServerWithAnnotations
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
-        ResourceFactory resourceFactory = webapp.getResourceFactory();
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
@@ -72,7 +71,7 @@ public class ServerWithAnnotations
         // Configure a LoginService
         String realmResourceName = "etc/realm.properties";
 
-        org.eclipse.jetty.util.resource.Resource realmResource = resourceFactory.newClassPathResource(realmResourceName);
+        org.eclipse.jetty.util.resource.Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

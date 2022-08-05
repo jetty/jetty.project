@@ -14,9 +14,11 @@
 package org.eclipse.jetty.ee10.demos;
 
 import java.io.FileNotFoundException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -24,6 +26,8 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -33,12 +37,19 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class JarServer
 {
-    public static Server createServer(int port, Resource base) throws Exception
+    public static Server createServer(int port, URI jarBase) throws Exception
     {
+        Objects.requireNonNull(jarBase);
+
+        URI baseUri = jarBase;
+        if (FileID.isArchive(baseUri))
+            baseUri = URIUtil.toJarFileUri(baseUri);
+
         Server server = new Server(port);
+        Resource baseResource = ResourceFactory.of(server).newResource(baseUri);
 
         ServletContextHandler context = new ServletContextHandler();
-        context.setBaseResource(base);
+        context.setBaseResource(baseResource);
         ServletHolder defaultHolder = new ServletHolder("default", new DefaultServlet());
         context.addServlet(defaultHolder, "/");
 
@@ -54,11 +65,8 @@ public class JarServer
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
 
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Server server = createServer(port, resourceFactory.newResource(jarFile));
-            server.start();
-            server.join();
-        }
+        Server server = createServer(port, jarFile.toUri());
+        server.start();
+        server.join();
     }
 }

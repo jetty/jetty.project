@@ -24,8 +24,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,14 +40,11 @@ public class JarServerTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        ResourceFactory.LifeCycle lifeCycle = ResourceFactory.lifecycle();
         Path jarFile = Paths.get("src/main/other/content.jar");
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
-        Resource jarResource = lifeCycle.newJarFileResource(jarFile.toUri());
 
-        server = JarServer.createServer(0, jarResource);
-        server.addBean(lifeCycle, true);
+        server = JarServer.createServer(0, jarFile.toUri());
         server.start();
     }
 

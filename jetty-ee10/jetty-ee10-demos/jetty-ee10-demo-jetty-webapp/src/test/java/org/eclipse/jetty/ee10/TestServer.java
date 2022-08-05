@@ -63,8 +63,6 @@ public class TestServer
         Configurations.setServerDefault(server);
         server.manage(threadPool);
 
-        ResourceFactory resourceFactory = ResourceFactory.of(server);
-
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
@@ -101,7 +99,7 @@ public class TestServer
         Path realmPropPath = webappProjectRoot.resolve("src/test/resources/test-realm.properties");
         if (!Files.exists(realmPropPath))
             throw new FileNotFoundException(realmPropPath.toString());
-        Resource realmResource = resourceFactory.newResource(realmPropPath);
+        Resource realmResource = ResourceFactory.of(server).newResource(realmPropPath);
         login.setConfig(realmResource);
         server.addBean(login);
 
@@ -117,7 +115,7 @@ public class TestServer
         Path webappBase = webappProjectRoot.resolve("src/main/webapp");
         if (!Files.exists(webappBase))
             throw new FileNotFoundException(webappBase.toString());
-        webapp.setBaseResource(resourceFactory.newResource(webappBase));
+        webapp.setBaseResource(ResourceFactory.of(server).newResource(webappBase));
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
                 ".*/jakarta.servlet.api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
@@ -137,7 +135,7 @@ public class TestServer
         Path srcRootPath = webappProjectRoot.resolve("src");
         if (!Files.exists(srcRootPath))
             throw new FileNotFoundException(srcRootPath.toString());
-        srcroot.setBaseResource(resourceFactory.newResource(srcRootPath));
+        srcroot.setBaseResource(ResourceFactory.of(server).newResource(srcRootPath));
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);
