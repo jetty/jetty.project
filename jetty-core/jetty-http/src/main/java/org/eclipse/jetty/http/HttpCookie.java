@@ -228,7 +228,7 @@ public class HttpCookie
         String val = _attributes.get("SameSite");
         if (val == null)
             return null;
-        return SameSite.valueOf(val);
+        return SameSite.valueOf(val.toUpperCase(Locale.ENGLISH));
     }
 
     /**
@@ -447,8 +447,13 @@ public class HttpCookie
             buf.append("; SameSite=");
             buf.append(sameSite);
         }
-        
-        //TODO: should we be adding all the other generic attributes?
+
+        //Add all other attributes
+        _attributes.entrySet().stream().filter(e -> !"SameSite".equals(e.getKey())).forEach(e -> 
+        {
+            buf.append("; " + e.getKey() + "=");
+            buf.append(e.getValue());
+        });
 
         return buf.toString();
     }

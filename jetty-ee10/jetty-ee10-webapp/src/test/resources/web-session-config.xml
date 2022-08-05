@@ -22,6 +22,10 @@
 	            <attribute-name>width</attribute-name>
 	            <attribute-value>long</attribute-value>
 	        </attribute>
+	        <attribute>
+	            <attribute-name>SameSite</attribute-name>
+	            <attribute-value>Strict</attribute-value>
+	        </attribute>
 	    </cookie-config>
 		<session-timeout>54</session-timeout>
 	</session-config>

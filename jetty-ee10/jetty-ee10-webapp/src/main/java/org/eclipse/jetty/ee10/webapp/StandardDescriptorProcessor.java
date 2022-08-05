@@ -744,7 +744,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             tNode = cookieConfig.get("http-only");
             if (tNode != null)
             {
-                addSessionConfigAttribute(context, descriptor, "http-only", tNode.toString(false, true));
+                //TODO: note that this is not http-only
+                addSessionConfigAttribute(context, descriptor, "HttpOnly", tNode.toString(false, true));
             }
 
             //  <secure>true/false

@@ -498,6 +498,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         return _sessionAttributes.get(name);
     }
     
+    /**
+     * @return all of the cookie config attributes EXCEPT for
+     * those that have explicit setter/getters
+     */
     public Map<String, String> getSessionAttributes()
     {
         return Collections.unmodifiableMap(_sessionAttributes);

@@ -211,6 +211,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             }
         }
 
+        /**
+         * According to the SessionCookieConfig javadoc, the attributes must also include
+         * all values set by explicit setters.
+         * @see SessionCookieConfig
+         */
         @Override
         public Map<String, String> getAttributes()
         {
@@ -478,7 +483,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             String sessionPath = getSessionPath();
             sessionPath = (sessionPath == null) ? contextPath : sessionPath;
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            String id = session.getExtendedId();
             return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
                 getSessionDomain(),
                 sessionPath,
@@ -736,11 +740,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         String sameSite = getSessionAttribute("SameSite");
         if (sameSite == null)
             return null;
-        return SameSite.valueOf(sameSite);
+        return SameSite.valueOf(sameSite.toUpperCase(Locale.ENGLISH));
     }
     
     /**
      * Set Session cookie sameSite mode.
+     * In ee10 this is set as a generic session cookie attribute.
      *
      * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
      */

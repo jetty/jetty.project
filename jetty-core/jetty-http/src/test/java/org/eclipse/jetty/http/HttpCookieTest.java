@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie.SameSite;
@@ -131,6 +132,9 @@ public class HttpCookieTest
 
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
+        
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, Collections.singletonMap("SameSite", "None"));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
     }
 
     public static Stream<String> rfc6265BadNameSource()
