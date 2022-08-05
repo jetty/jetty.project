@@ -22,10 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,44 +47,29 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * <pre>{@code
  * // Some headers that include Content-Type.
  * HttpFields headers = ...;
- * String boundary = MultiParts.extractBoundary(headers.get(HttpHeader.CONTENT_TYPE));
+ * String boundary = MultiPart.extractBoundary(headers.get(HttpHeader.CONTENT_TYPE));
  *
  * // Some multipart/form-data content.
  * Content.Source content = ...;
  *
- * // Create and configure MultiParts.
- * MultiParts multiParts = new MultiParts(boundary);
+ * // Create and configure MultiPartFormData.
+ * MultiPartFormData formData = new MultiPartFormData(boundary);
  * // Where to store the files.
- * multiParts.setFilesDirectory(Path.of("/tmp"));
+ * formData.setFilesDirectory(Path.of("/tmp"));
  * // Max 1 MiB files.
- * multiParts.setMaxFileSize(1024 * 1024);
+ * formData.setMaxFileSize(1024 * 1024);
  *
  * // Parse the content.
- * multiParts.parse(content)
+ * formData.parse(content)
  *     // When complete, use the parts.
  *     .thenAccept(parts -> ...);
  * }</pre>
  *
  * @see Parts
  */
-public class MultiParts extends CompletableFuture<MultiParts.Parts>
+public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MultiParts.class);
-
-    /**
-     * <p>Extracts the value of the {@code boundary} parameter
-     * from the {@code Content-Type} header value.</p>
-     *
-     * @param contentType the {@code Content-Type} header value
-     * @return the value of the {@code boundary} parameter
-     */
-    public static String extractBoundary(String contentType)
-    {
-        Map<String, String> parameters = new HashMap<>();
-        HttpField.valueParameters(contentType, parameters);
-        String boundary = QuotedStringTokenizer.unquote(parameters.get("boundary"));
-        return boundary != null ? boundary : "";
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormData.class);
 
     private final PartsListener listener = new PartsListener();
     private final MultiPart.Parser parser;
@@ -97,7 +80,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
     private long maxLength = -1;
     private long length;
 
-    public MultiParts(String boundary)
+    public MultiPartFormData(String boundary)
     {
         parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
     }
@@ -112,13 +95,14 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
 
     /**
      * <p>Parses the given multipart/form-data content.</p>
-     * <p>Returns this {@code MultiParts} object, so that it can be used
-     * in the typical "fluent" style of {@link CompletableFuture}.</p>
+     * <p>Returns this {@code MultiPartFormData} object,
+     * so that it can be used in the typical "fluent"
+     * style of {@link CompletableFuture}.</p>
      *
      * @param content the multipart/form-data content to parse
-     * @return this {@code MultiParts} object
+     * @return this {@code MultiPartFormData} object
      */
-    public MultiParts parse(Content.Source content)
+    public MultiPartFormData parse(Content.Source content)
     {
         new Runnable()
         {
@@ -135,12 +119,12 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                     }
                     if (chunk instanceof Content.Chunk.Error error)
                     {
-                        completeExceptionally(error.getCause());
+                        listener.onFailure(error.getCause());
                         return;
                     }
                     parse(chunk);
                     chunk.release();
-                    if (chunk.isLast())
+                    if (chunk.isLast() || isDone())
                         return;
                 }
             }
@@ -380,31 +364,46 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         {
             return parts.iterator();
         }
+    }
 
-        /**
-         * <p>Returns a new {@link MultiPart.ContentSource} with the same boundary
-         * as this object, and containing all the parts contained in this object.</p>
-         *
-         * @return a new {@link MultiPart.ContentSource} with all the parts of this object
-         */
-        public MultiPart.ContentSource toContentSource()
+    /**
+     * <p>The multipart/form-data specific content source.</p>
+     *
+     * @see MultiPart.AbstractContentSource
+     */
+    public static class ContentSource extends MultiPart.AbstractContentSource
+    {
+        public ContentSource(String boundary)
         {
-            MultiPart.ContentSource result = new MultiPart.ContentSource(getBoundary());
-            parts.forEach(result::addPart);
-            result.close();
-            return result;
+            super(boundary);
+        }
+
+        protected HttpFields customizePartHeaders(MultiPart.Part part)
+        {
+            HttpFields headers = super.customizePartHeaders(part);
+            if (headers.contains(HttpHeader.CONTENT_DISPOSITION))
+                return headers;
+            String value = "form-data";
+            String name = part.getName();
+            if (name != null)
+                value += "; name=" + QuotedStringTokenizer.quote(name);
+            String fileName = part.getFileName();
+            if (fileName != null)
+                value += "; filename=" + QuotedStringTokenizer.quote(fileName);
+            return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
         }
     }
 
     private class PartsListener extends MultiPart.AbstractPartsListener
     {
         private final AutoLock lock = new AutoLock();
-        private Throwable failure;
         private final List<MultiPart.Part> parts = new ArrayList<>();
+        private final List<Content.Chunk> partChunks = new ArrayList<>();
         private long fileSize;
         private long memoryFileSize;
         private Path filePath;
-        private volatile SeekableByteChannel fileChannel;
+        private SeekableByteChannel fileChannel;
+        private Throwable failure;
 
         @Override
         public void onPartContent(Content.Chunk chunk)
@@ -432,7 +431,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                         if (ensureFileChannel())
                         {
                             // Write existing memory chunks.
-                            for (Content.Chunk c : getContent())
+                            for (Content.Chunk c : partChunks)
                             {
                                 if (!write(c.getByteBuffer()))
                                     return;
@@ -446,7 +445,7 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
                     }
                 }
             }
-            super.onPartContent(chunk);
+            partChunks.add(chunk);
         }
 
         private boolean write(ByteBuffer buffer)
@@ -485,22 +484,19 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
         }
 
         @Override
-        protected MultiPart.Part newPart(String name, String fileName, HttpFields headers, List<Content.Chunk> content)
+        public void onPart(String name, String fileName, HttpFields headers)
         {
+            MultiPart.Part part;
             if (fileChannel != null)
-                return new MultiPart.PathPart(name, fileName, headers, filePath);
+                part = new MultiPart.PathPart(name, fileName, headers, filePath);
             else
-                return super.newPart(name, fileName, headers, content);
-        }
-
-        @Override
-        public void onPart(MultiPart.Part part)
-        {
+                part = new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks));
             // Reset part-related state.
             fileSize = 0;
             memoryFileSize = 0;
             filePath = null;
             fileChannel = null;
+            partChunks.clear();
             // Store the new part.
             try (AutoLock ignored = lock.lock())
             {
@@ -532,17 +528,21 @@ public class MultiParts extends CompletableFuture<MultiParts.Parts>
 
         private void fail(Throwable cause)
         {
+            List<MultiPart.Part> toFail;
             try (AutoLock ignored = lock.lock())
             {
-                if (failure == null)
-                {
-                    failure = cause;
-                    parts.stream()
-                        .filter(part -> part instanceof MultiPart.PathPart)
-                        .map(MultiPart.PathPart.class::cast)
-                        .forEach(MultiPart.PathPart::delete);
-                    parts.clear();
-                }
+                if (failure != null)
+                    return;
+                failure = cause;
+                toFail = new ArrayList<>(parts);
+                parts.clear();
+            }
+            for (MultiPart.Part part : toFail)
+            {
+                if (part instanceof MultiPart.PathPart pathPart)
+                    pathPart.delete();
+                else
+                    part.getContent().fail(cause);
             }
             close();
             delete();
