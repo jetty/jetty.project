@@ -56,7 +56,7 @@ public class ServerWithAnnotations
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new Transaction(new org.example.MockUserTransaction());
+        new Transaction("ee9", new org.example.MockUserTransaction());
 
         // Define an env entry with webapp scope.
         // THIS ENTRY IS OVERRIDDEN BY THE ENTRY IN jetty-env.xml

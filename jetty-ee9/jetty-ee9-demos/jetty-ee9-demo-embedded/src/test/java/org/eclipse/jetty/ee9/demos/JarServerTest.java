@@ -24,8 +24,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,8 +61,8 @@ public class JarServerTest extends AbstractEmbeddedTest
     {
         URI uri = server.getURI().resolve("/dir0/test0.txt");
         ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+                .method(HttpMethod.GET)
+                .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -79,8 +77,8 @@ public class JarServerTest extends AbstractEmbeddedTest
     {
         URI uri = server.getURI().resolve("/dir1/test1.txt");
         ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+                .method(HttpMethod.GET)
+                .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);

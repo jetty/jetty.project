@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class FileServerTest extends AbstractEmbeddedTest
             writer.write(TEXT_CONTENT);
         }
 
-        server = FileServer.createServer(0, new PathResource(baseDir));
+        server = FileServer.createServer(0, Resource.newResource(baseDir));
         server.start();
     }
 
