@@ -45,14 +45,14 @@ import org.slf4j.LoggerFactory;
  *
  * @version $version$
  */
-public class InclusiveByteRange
+public class ByteRange
 {
-    private static final Logger LOG = LoggerFactory.getLogger(InclusiveByteRange.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ByteRange.class);
 
     private long first;
     private long last;
 
-    public InclusiveByteRange(long first, long last)
+    public ByteRange(long first, long last)
     {
         this.first = first;
         this.last = last;
@@ -68,13 +68,13 @@ public class InclusiveByteRange
         return last;
     }
 
-    private void coalesce(InclusiveByteRange r)
+    private void coalesce(ByteRange r)
     {
         first = Math.min(first, r.first);
         last = Math.max(last, r.last);
     }
 
-    private boolean overlaps(InclusiveByteRange range)
+    private boolean overlaps(ByteRange range)
     {
         return (range.first >= this.first && range.first <= this.last) ||
             (range.last >= this.first && range.last <= this.last) ||
@@ -110,11 +110,11 @@ public class InclusiveByteRange
         if (obj == null)
             return false;
 
-        if (!(obj instanceof InclusiveByteRange))
+        if (!(obj instanceof ByteRange))
             return false;
 
-        return ((InclusiveByteRange)obj).first == this.first &&
-            ((InclusiveByteRange)obj).last == this.last;
+        return ((ByteRange)obj).first == this.first &&
+               ((ByteRange)obj).last == this.last;
     }
 
     @Override
@@ -132,9 +132,9 @@ public class InclusiveByteRange
      * @param size Size of the resource.
      * @return List of satisfiable ranges
      */
-    public static List<InclusiveByteRange> satisfiableRanges(Enumeration<String> headers, long size)
+    public static List<ByteRange> satisfiableRanges(Enumeration<String> headers, long size)
     {
-        List<InclusiveByteRange> ranges = null;
+        List<ByteRange> ranges = null;
         final long end = size - 1;
 
         // walk through all Range headers
@@ -204,21 +204,21 @@ public class InclusiveByteRange
                             break;
                         }
 
-                        InclusiveByteRange range = new InclusiveByteRange(first, last);
+                        ByteRange range = new ByteRange(first, last);
                         if (ranges == null)
                             ranges = new ArrayList<>();
 
                         boolean coalesced = false;
-                        for (Iterator<InclusiveByteRange> i = ranges.listIterator(); i.hasNext(); )
+                        for (Iterator<ByteRange> i = ranges.listIterator(); i.hasNext(); )
                         {
-                            InclusiveByteRange r = i.next();
+                            ByteRange r = i.next();
                             if (range.overlaps(r))
                             {
                                 coalesced = true;
                                 r.coalesce(range);
                                 while (i.hasNext())
                                 {
-                                    InclusiveByteRange r2 = i.next();
+                                    ByteRange r2 = i.next();
 
                                     if (r2.overlaps(r))
                                     {
