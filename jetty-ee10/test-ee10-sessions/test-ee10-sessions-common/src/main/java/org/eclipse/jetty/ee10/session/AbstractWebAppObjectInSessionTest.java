@@ -30,6 +30,7 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,20 +78,23 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         File packageDirs = new File(classesDir, packageName.replace('.', File.separatorChar));
         packageDirs.mkdirs();
 
-        String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
-        Resource resource = Resource.newResource(getClass().getResource(resourceName));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
+            Resource resource = resourceFactory.newResource(getClass().getResource(resourceName));
 
-        //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
-        File targetFile = new File(packageDirs, resourceName);
-        //copy(sourceFile, targetFile);
-        IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
+            //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+            File targetFile = new File(packageDirs, resourceName);
+            //copy(sourceFile, targetFile);
+            IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
 
-        resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
-        resource = Resource.newResource(getClass().getResource(resourceName));
-        //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
-        targetFile = new File(packageDirs, resourceName);
-        //copy(sourceFile, targetFile);
-        IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
+            resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
+            resource = resourceFactory.newResource(getClass().getResource(resourceName));
+            //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+            targetFile = new File(packageDirs, resourceName);
+            //copy(sourceFile, targetFile);
+            IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
+        }
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);

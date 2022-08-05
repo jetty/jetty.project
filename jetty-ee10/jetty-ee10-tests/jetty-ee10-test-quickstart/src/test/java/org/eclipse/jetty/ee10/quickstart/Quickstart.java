@@ -19,6 +19,7 @@ import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class Quickstart
@@ -33,13 +34,13 @@ public class Quickstart
         String war = args[0];
 
         //optional jetty context xml file to configure the webapp
+        WebAppContext webapp = new WebAppContext();
         Resource contextXml = null;
         if (args.length > 1)
-            contextXml = Resource.newResource(args[1]);
+            contextXml = ResourceFactory.of(webapp).newResource(args[1]);
 
         Server server = new Server(8080);
 
-        WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
                                     new EnvConfiguration(),
                                     new PlusConfiguration(),

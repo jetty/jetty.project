@@ -23,35 +23,46 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TempDirTest
 {
+    public WorkDir workDir;
     private Server server;
     private WebAppContext webapp;
-    private File jettyBase;
+
+    private Path jettyBase;
 
     @BeforeEach
     public void before()
     {
-        jettyBase = MavenTestingUtils.getTargetTestingDir(TempDirTest.class.getSimpleName());
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        jettyBase = workDir.getEmptyPathDir().resolve("base");
         FS.ensureEmpty(jettyBase);
+        System.setProperty("jetty.base", jettyBase.toString());
     }
 
     public void setupServer()
@@ -72,6 +83,13 @@ public class TempDirTest
     {
         if (server != null)
             server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     /**
@@ -85,7 +103,9 @@ public class TempDirTest
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setAttribute(ServletContext.TEMPDIR, null);
         webInfConfiguration.resolveTempDirectory(webAppContext);
-        assertThat(webAppContext.getTempDirectory().getParent(), is(System.getProperty("java.io.tmpdir")));
+        Path webappTempDir = webAppContext.getTempDirectory().toPath();
+        Path javaIoTmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        assertEquals(javaIoTmpDir, webappTempDir.getParent());
     }
 
     /**
@@ -109,7 +129,8 @@ public class TempDirTest
     public void attributeWithValidDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test");
+        Path tmpDir = workDir.getPath().resolve("temp");
+        FS.ensureDirExists(tmpDir);
         switch (type)
         {
             case "File":
@@ -128,7 +149,8 @@ public class TempDirTest
         // Test we have correct value as the webapp temp directory.
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         webInfConfiguration.resolveTempDirectory(webAppContext);
-        assertThat(webAppContext.getTempDirectory().toPath(), is(tmpDir));
+        Path webappTempDir = webAppContext.getTempDirectory().toPath();
+        assertEquals(tmpDir, webappTempDir);
     }
 
     /**
@@ -139,10 +161,9 @@ public class TempDirTest
     public void attributeWithNonExistentDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test")
-                .resolve("foo_test_tmp");
-        Files.deleteIfExists(tmpDir);
+        Path tmpDir = workDir.getPath().resolve("foo_does_not_exist");
         assertFalse(Files.exists(tmpDir));
+
         switch (type)
         {
             case "File":
@@ -201,7 +222,8 @@ public class TempDirTest
     public void baseTempDirAttributeWithValidDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test");
+        Path tmpDir = workDir.getPath().resolve("temp_test");
+        FS.ensureDirExists(tmpDir);
         switch (type)
         {
             case "File":
@@ -233,8 +255,7 @@ public class TempDirTest
     public void baseTempDirAttributeWithNonExistentDirectory(String type) throws Exception
     {
         WebAppContext webAppContext = new WebAppContext();
-        Path tmpDir = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "jetty_test")
-                .resolve("foo_test_tmp");
+        Path tmpDir = workDir.getPath().resolve("does_not_exists");
         Files.deleteIfExists(tmpDir);
         assertFalse(Files.exists(tmpDir));
         switch (type)
@@ -265,12 +286,10 @@ public class TempDirTest
     @Test
     public void jettyBaseWorkDoesNotExist() throws Exception
     {
-        Path workDir = jettyBase.toPath().resolve("work");
-        FS.ensureDirExists(jettyBase);
+        Path workDir = jettyBase.resolve("work");
         FS.ensureDeleted(workDir);
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         WebAppContext webAppContext = new WebAppContext();
-        System.setProperty("jetty.base", jettyBase.getAbsolutePath());
         webInfConfiguration.resolveTempDirectory(webAppContext);
         assertThat(webAppContext.getTempDirectory().getParent(), is(System.getProperty("java.io.tmpdir")));
     }
@@ -282,12 +301,10 @@ public class TempDirTest
     @Test
     public void jettyBaseWorkExists() throws Exception
     {
-        Path workDir = jettyBase.toPath().resolve("work");
-        FS.ensureDirExists(jettyBase);
+        Path workDir = jettyBase.resolve("work");
         FS.ensureDirExists(workDir);
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         WebAppContext webAppContext = new WebAppContext();
-        System.setProperty("jetty.base", jettyBase.getAbsolutePath());
         webInfConfiguration.resolveTempDirectory(webAppContext);
         assertThat(webAppContext.getTempDirectory().getParent(), is(workDir.toString()));
     }
@@ -330,7 +347,11 @@ public class TempDirTest
         // Once server is stopped the WebApp temp should be deleted if persistTempDir is false.
         server.stop();
         tempDirectory = webapp.getTempDirectory();
-        assertThat(tempDirectory != null && tempDirectory.exists(), is(persistTempDir));
+        assertNotNull(tempDirectory, "Temp Directory");
+        if (persistTempDir)
+        {
+            assertTrue(tempDirectory.exists(), "Temp Directory should exist");
+        }
     }
 
     @ParameterizedTest

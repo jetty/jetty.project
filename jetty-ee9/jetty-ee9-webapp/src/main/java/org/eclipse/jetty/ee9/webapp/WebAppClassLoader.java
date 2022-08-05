@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private final Set<String> _extensions = new HashSet<String>();
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
-    private Resource.Mount _mountedExtraClassPath;
+    private final ResourceFactory.Closeable _resourceFactory = ResourceFactory.closeable();
 
     /**
      * The Context in which the classloader operates.
@@ -90,7 +91,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         /**
          * Convert a URL or path to a Resource.
          * The default implementation
-         * is a wrapper for {@link Resource#newResource(String)}.
+         * is a wrapper for {@link ResourceFactory#newResource(String)}.
          *
          * @param urlOrPath The URL or path to convert
          * @return The Resource for the URL/path
@@ -272,14 +273,11 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return;
 
         List<URI> uris = URIUtil.split(classPath);
-        _mountedExtraClassPath = Resource.mountCollection(uris);
-
-        ResourceCollection rc = (ResourceCollection)_mountedExtraClassPath.root();
+        ResourceCollection rc = _resourceFactory.newResource(uris);
         for (Resource resource : rc.getResources())
         {
             addClassPath(resource);
         }
-
     }
 
     /**
@@ -656,7 +654,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public void close() throws IOException
     {
         super.close();
-        IO.close(_mountedExtraClassPath);
+        IO.close(_resourceFactory);
     }
 
     @Override

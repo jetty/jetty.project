@@ -116,7 +116,8 @@ public class ListenerHolder extends BaseHolder<EventListener>
         {
             try
             {
-                ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+                ContextHandler.APIContext currentContext = ContextHandler.getCurrentContext();
+                ContextHandler contextHandler = currentContext == null ? null : currentContext.getContextHandler();
                 if (contextHandler != null)
                     contextHandler.removeEventListener(_listener);
                 getServletHandler().destroyListener(unwrap(_listener));

@@ -44,6 +44,7 @@ import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -181,7 +182,7 @@ public class XmlConfiguredJetty
 
     public void addConfiguration(File xmlConfigFile)
     {
-        addConfiguration(Resource.newResource(xmlConfigFile.toPath()));
+        addConfiguration(ResourceFactory.root().newResource(xmlConfigFile.toPath()));
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException

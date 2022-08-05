@@ -20,14 +20,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
  * Store of user authentication and authorization information.
  * 
  */
-public class UserStore extends AbstractLifeCycle
+public class UserStore extends ContainerLifeCycle
 {
     protected final Map<String, User> _users = new ConcurrentHashMap<>();
     

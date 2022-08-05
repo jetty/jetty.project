@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee10.servlet.security;
 
 import java.util.List;
 
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +36,7 @@ public class HashLoginService extends AbstractLoginService
 {
     private static final Logger LOG = LoggerFactory.getLogger(HashLoginService.class);
 
-    private String _config;
+    private Resource _config;
     private boolean hotReload = false; // default is not to reload
     private UserStore _userStore;
     private boolean _userStoreAutoCreate = false;
@@ -48,13 +50,13 @@ public class HashLoginService extends AbstractLoginService
         setName(name);
     }
 
-    public HashLoginService(String name, String config)
+    public HashLoginService(String name, Resource config)
     {
         setName(name);
         setConfig(config);
     }
 
-    public String getConfig()
+    public Resource getConfig()
     {
         return _config;
     }
@@ -67,7 +69,7 @@ public class HashLoginService extends AbstractLoginService
      *
      * @param config uri or url or path to realm properties file
      */
-    public void setConfig(String config)
+    public void setConfig(Resource config)
     {
         _config = config;
     }

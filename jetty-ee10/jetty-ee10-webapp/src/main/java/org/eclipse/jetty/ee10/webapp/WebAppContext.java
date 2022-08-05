@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -366,6 +367,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         if (classLoader instanceof WebAppClassLoader && getDisplayName() != null)
             ((WebAppClassLoader)classLoader).setName(name);
+    }
+
+    public ResourceFactory getResourceFactory()
+    {
+        return ResourceFactory.of(this);
     }
 
     @Override
@@ -1245,9 +1251,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setExtraClasspath(String extraClasspath)
     {
         List<URI> uris = URIUtil.split(extraClasspath);
-        Resource.Mount mount = Resource.mountCollection(uris);
-        addBean(mount); // let doStop() cleanup mount
-        setExtraClasspath((ResourceCollection)mount.root());
+        setExtraClasspath(ResourceFactory.of(this).newResource(uris));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)

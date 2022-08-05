@@ -38,7 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -298,7 +298,7 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toBuffer(Resource.newResource("/path/to/favicon.ico"), true);
+        ByteBuffer faviconBuffer = BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {

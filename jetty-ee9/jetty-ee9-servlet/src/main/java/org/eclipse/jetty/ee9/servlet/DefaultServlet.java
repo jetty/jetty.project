@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.CachedContentFactory;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceContentFactory;
-import org.eclipse.jetty.ee9.nested.ResourceHandler;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -142,7 +141,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
-    private Resource.Mount _stylesheetMount;
+    private ResourceFactory.Closeable _resourceFactory;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
     private String _relativeResourceBase;
@@ -164,6 +163,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     {
         _servletContext = getServletContext();
         _contextHandler = initContextHandler(_servletContext);
+        _resourceFactory = ResourceFactory.closeable();
 
         _mimeTypes = _contextHandler.getMimeTypes();
 
@@ -212,9 +212,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (stylesheet != null)
             {
-                URI uri = Resource.toURI(stylesheet);
-                _stylesheetMount = Resource.mountIfNeeded(uri);
-                _stylesheet = Resource.newResource(uri);
+                _stylesheet = _resourceFactory.newResource(stylesheet);
                 if (!_stylesheet.exists())
                 {
                     LOG.warn("Stylesheet {} does not exist", stylesheet);
@@ -223,7 +221,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             if (_stylesheet == null)
             {
-                _stylesheet = ResourceHandler.getDefaultStylesheet();
+                _stylesheet = _contextHandler.getServer().getDefaultStyleSheet();
             }
         }
         catch (Exception e)
@@ -405,6 +403,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return dft;
     }
 
+    @Override
+    public Resource newResource(String resource)
+    {
+        return resolve(resource);
+    }
+
+    @Override
+    public Resource newResource(URI uri)
+    {
+        // TODO optimised path for URI?
+        return resolve(uri.toString());
+    }
+
     /**
      * get Resource to serve.
      * Map a path to a resource. The default implementation calls
@@ -414,8 +425,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
      * @param subUriPath The path to find a resource for.
      * @return The resource to serve.
      */
-    @Override
-    public Resource resolve(String subUriPath)
+    protected Resource resolve(String subUriPath)
     {
         if (!_contextHandler.isCanonicalEncodingURIs())
             subUriPath = URIUtil.encodePath(subUriPath);
@@ -498,11 +508,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (_cache != null)
             _cache.flushCache();
         super.destroy();
-        if (_stylesheetMount != null)
-        {
-            IO.close(_stylesheetMount);
-            _stylesheetMount = null;
-        }
+        IO.close(_resourceFactory);
     }
 
     @Override

@@ -171,7 +171,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             return content;
 
         // try loading the content from our factory.
-        Resource resource = _factory.resolve(pathInContext);
+        Resource resource = _factory.newResource(pathInContext);
         HttpContent loaded = load(pathInContext, resource);
         if (loaded != null)
             return loaded;
@@ -226,7 +226,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     if (compressedContent == null || compressedContent.isValid())
                     {
                         compressedContent = null;
-                        Resource compressedResource = _factory.resolve(compressedPathInContext);
+                        Resource compressedResource = _factory.newResource(compressedPathInContext);
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                             compressedResource.length() < resource.length())
                         {
@@ -272,7 +272,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
-                Resource compressedResource = _factory.resolve(compressedPathInContext);
+                Resource compressedResource = _factory.newResource(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,

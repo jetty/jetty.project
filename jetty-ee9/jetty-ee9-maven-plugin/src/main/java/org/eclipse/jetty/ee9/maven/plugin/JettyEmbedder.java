@@ -28,15 +28,15 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * JettyEmbedded
  * 
  * Starts jetty within the current process. 
  */
-public class JettyEmbedder extends AbstractLifeCycle
+public class JettyEmbedder extends ContainerLifeCycle
 {
     protected List<ContextHandler> contextHandlers;
     protected List<LoginService> loginServices;
@@ -245,15 +245,12 @@ public class JettyEmbedder extends AbstractLifeCycle
      */
     private void configure() throws Exception
     {
-        /* Configure the server */
-        //apply any configs from jetty.xml files first 
-        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmlFiles, jettyProperties);
-        if (server == null)
+        //apply any configs from jetty.xml files first
+        Server tmp = ServerSupport.applyXmlConfigurations(new Server(), jettyXmlFiles, jettyProperties);
+
+        if (tmp != null)
             server = tmp;
 
-        if (server == null)
-            server = new Server();
-        
         server.setStopAtShutdown(stopAtShutdown);
 
         //ensure there's a connector
@@ -283,7 +280,7 @@ public class JettyEmbedder extends AbstractLifeCycle
             Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
             if (Files.exists(qs) && Files.isRegularFile(qs))
             {
-                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(qs));
+                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, ResourceFactory.of(this).newResource(qs));
                 webApp.addConfiguration(new MavenQuickStartConfiguration());
                 webApp.setAttribute(QuickStartConfiguration.MODE, Mode.QUICKSTART);
             }

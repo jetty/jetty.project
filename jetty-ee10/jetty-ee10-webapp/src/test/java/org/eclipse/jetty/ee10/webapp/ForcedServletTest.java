@@ -35,7 +35,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ public class ForcedServletTest
         copyClass(FakePrecompiledJSP.class, basePath.resolve("WEB-INF/classes"));
 
         // Use the new base
-        context.setWarResource(Resource.newResource(basePath));
+        context.setWarResource(ResourceFactory.of(server).newResource(basePath));
 
         server.setHandler(context);
         // server.setDumpAfterStart(true);

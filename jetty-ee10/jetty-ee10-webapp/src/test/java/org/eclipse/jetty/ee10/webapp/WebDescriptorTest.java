@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +48,7 @@ public class WebDescriptorTest
             </web-app>
             """, StandardCharsets.UTF_8);
 
-        Resource xmlRes = Resource.newResource(xml);
+        Resource xmlRes = ResourceFactory.root().newResource(xml);
         WebDescriptor webDescriptor = new WebDescriptor(xmlRes);
         XmlParser xmlParser = WebDescriptor.newParser(true);
         // This should not throw an exception, if it does then you have a bad state.

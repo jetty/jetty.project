@@ -22,7 +22,11 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -30,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -41,6 +46,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BufferUtilTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testToInt() throws Exception
     {
@@ -371,18 +388,18 @@ public class BufferUtilTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         Path testTxt = MavenTestingUtils.getTestResourcePathFile("TestData/alphabet.txt");
 
-        Resource fileResource = Resource.newResource("file:" + testTxt.toAbsolutePath());
+        Resource fileResource = ResourceFactory.root().newResource("file:" + testTxt.toAbsolutePath());
         ByteBuffer fileBuffer = BufferUtil.toMappedBuffer(fileResource);
         assertThat(fileBuffer, not(nullValue()));
         assertThat((long)fileBuffer.remaining(), is(fileResource.length()));
 
-        Resource jrtResource = Resource.newResource("jrt:/java.base/java/lang/Object.class");
+        Resource jrtResource = ResourceFactory.root().newResource("jrt:/java.base/java/lang/Object.class");
         assertThat(jrtResource.exists(), is(true));
         assertThat(BufferUtil.toMappedBuffer(jrtResource), nullValue());
 
-        try (Resource.Mount mount = Resource.mountJar(testZip))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource jarResource = mount.root();
+            Resource jarResource = resourceFactory.newJarFileResource(testZip.toUri());
             assertThat(BufferUtil.toMappedBuffer(jarResource), nullValue());
         }
     }

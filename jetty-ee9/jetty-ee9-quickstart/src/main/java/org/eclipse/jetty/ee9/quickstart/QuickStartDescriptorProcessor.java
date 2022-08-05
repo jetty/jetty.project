@@ -19,9 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
@@ -35,7 +32,9 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -47,7 +46,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
 {
     private String _originAttributeName = null;
     // possibly mounted resources that need to be cleaned up eventually
-    private Set<Resource.Mount> _mountedResources;
+    private ResourceFactory.Closeable _resourceFactory = ResourceFactory.closeable();
 
     /**
      *
@@ -80,11 +79,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
     @Override
     public void close()
     {
-        if (_mountedResources != null)
-        {
-            _mountedResources.forEach(IO::close);
-            _mountedResources.clear();
-        }
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
     }
 
     /**
@@ -190,7 +186,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (String i : values)
                 {
                     String entry = normalizer.expand(i);
-                    tlds.add(Resource.toURI(entry).toURL());
+                    tlds.add(URIUtil.toURI(entry).toURL());
                 }
 
                 //empty list signals that tlds were prescanned but none found.
@@ -201,17 +197,12 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             {
                 List<URI> uris = values.stream()
                     .map(normalizer::expand)
-                    .map(Resource::toURI)
+                    .map(URIUtil::toURI)
                     .toList();
-
-                _mountedResources = uris.stream()
-                    .map(Resource::mountIfNeeded)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
 
                 for (URI uri : uris)
                 {
-                    Resource r = Resource.newResource(uri);
+                    Resource r = _resourceFactory.newResource(uri);
                     if (r.exists())
                         visitMetaInfResource(context, r);
                     else
@@ -252,6 +243,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getBaseResource());
         collection.addAll(metaInfResources);
-        context.setBaseResource(Resource.of(collection));
+        context.setBaseResource(Resource.combine(collection));
     }
 }

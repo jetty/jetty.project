@@ -54,7 +54,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +81,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -662,6 +664,7 @@ public class ResourceHandlerTest
     @BeforeEach
     public void before() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         docRoot = workDir.getEmptyPathDir().resolve("docroot");
         FS.ensureEmpty(docRoot);
 
@@ -671,7 +674,7 @@ public class ResourceHandlerTest
         _server.addConnector(_local);
 
         _rootResourceHandler = new ResourceHandler();
-        _rootResourceHandler.setBaseResource(Resource.newResource(docRoot));
+        _rootResourceHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
         _rootResourceHandler.setRedirectWelcome(false);
 
@@ -690,6 +693,7 @@ public class ResourceHandlerTest
     {
         _server.stop();
         _server.setHandler((Handler)null);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -3254,7 +3258,7 @@ public class ResourceHandlerTest
         Path altIndex = altDir.resolve("index.html");
 
         ResourceHandler altResourceHandler = new ResourceHandler();
-        altResourceHandler.setBaseResource(Resource.newResource(altRoot));
+        altResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         altResourceHandler.setDirAllowed(false); // Cannot see listings
         altResourceHandler.setRedirectWelcome(false);
         altResourceHandler.setWelcomeFiles("index.html", "index.htm");
@@ -3264,7 +3268,7 @@ public class ResourceHandlerTest
         altContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         ResourceHandler otherResourceHandler = new ResourceHandler();
-        otherResourceHandler.setBaseResource(Resource.newResource(altRoot));
+        otherResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         otherResourceHandler.setDirAllowed(true); // Can see listings
         otherResourceHandler.setRedirectWelcome(false);
         otherResourceHandler.setWelcomeFiles("index.html", "index.htm");

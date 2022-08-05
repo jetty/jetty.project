@@ -16,8 +16,13 @@ package org.eclipse.jetty.util.resource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +30,22 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class ClassPathResourceTest
 {
+    private ResourceFactory.Closeable resourceFactory;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        resourceFactory = ResourceFactory.closeable();
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        IO.close(resourceFactory);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     /**
      * Test a class path resource for existence.
      */
@@ -33,7 +54,7 @@ public class ClassPathResourceTest
     {
         final String classPathName = "Resource.class";
 
-        Resource resource = Resource.newClassPathResource(classPathName);
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
         assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
@@ -50,7 +71,7 @@ public class ClassPathResourceTest
     {
         final String classPathName = "/org/eclipse/jetty/util/resource/Resource.class";
 
-        Resource resource = Resource.newClassPathResource(classPathName);
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
         assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
@@ -72,7 +93,7 @@ public class ClassPathResourceTest
 
         final String classPathName = "/";
 
-        Resource resource = Resource.newClassPathResource(classPathName);
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
 
         // A class path must be a directory
         assertTrue(resource.isDirectory(), "Class path must be a directory.");
@@ -95,7 +116,7 @@ public class ClassPathResourceTest
         final String classPathName = "/" + fileName;
 
         // Will locate a resource in the class path
-        Resource resource = Resource.newClassPathResource(classPathName);
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
         assertFalse(resource.isDirectory(), "Class path must be a directory.");

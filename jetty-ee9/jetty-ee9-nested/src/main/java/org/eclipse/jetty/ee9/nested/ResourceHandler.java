@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -73,7 +71,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public String getWelcomeFile(String pathInContext) throws IOException
+    public String getWelcomeFile(String pathInContext)
     {
         if (_welcomes == null)
             return null;
@@ -81,7 +79,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Resource welcome = resolve(welcomeInContext);
+            Resource welcome = newResource(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
         }
@@ -135,45 +133,58 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public Resource resolve(String subUriPath) throws IOException
+    public Resource newResource(String path)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, subUriPath);
-
-        if (StringUtil.isBlank(subUriPath))
-        {
-            throw new IllegalArgumentException("Path is blank");
-        }
-
-        if (!subUriPath.startsWith("/"))
-        {
-            throw new IllegalArgumentException("Path reference invalid: " + subUriPath);
-        }
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
 
         Resource r = null;
 
         if (_baseResource != null)
         {
-            r = _baseResource.resolve(subUriPath);
-
-            if (r.isAlias() && (_context == null || !_context.checkAlias(subUriPath, r)))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
-                throw new IllegalStateException("Rejected alias reference: " + subUriPath);
-            }
+            r = _baseResource.resolve(path);
         }
         else if (_context != null)
         {
-            r = _context.getResource(subUriPath);
+            Resource contextBase = _context.getBaseResource();
+            if (contextBase != null)
+                r = contextBase.resolve(path);
         }
 
-        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
+        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
             r = getStylesheet();
 
         if (r == null)
         {
-            throw new FileNotFoundException("Resource: " + subUriPath);
+            throw new IllegalArgumentException("Resource: " + path);
+        }
+
+        return r;
+    }
+
+    @Override
+    public Resource newResource(URI uri)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, uri);
+
+        Resource r = null;
+
+        if (_baseResource != null)
+        {
+            r = ResourceFactory.of(_baseResource).newResource(uri);
+        }
+        else if (_context != null)
+        {
+            r = ResourceFactory.of(_context).newResource(uri);
+        }
+
+        if ((r == null || !r.exists()) && uri.getPath().endsWith("/jetty-dir.css"))
+            r = getStylesheet();
+
+        if (r == null)
+        {
+            throw new IllegalArgumentException("Resource: " + uri);
         }
 
         return r;
@@ -202,19 +213,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             if (_defaultStylesheet == null)
             {
-                _defaultStylesheet = getDefaultStylesheet();
+                _defaultStylesheet = getServer().getDefaultStyleSheet();
             }
             return _defaultStylesheet;
         }
-    }
-
-    public static Resource getDefaultStylesheet()
-    {
-        // TODO do this some other way.  It is expensive to mount a whole jar when we could
-        //      just read the resource from the URL. We also leak the Mount.
-        URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        Resource.mountIfNeeded(css);
-        return Resource.newResource(css);
     }
 
     public String[] getWelcomeFiles()
@@ -398,7 +400,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            setBaseResource(Resource.newResource(resourceBase));
+            setBaseResource(ResourceFactory.of(this).newResource(resourceBase));
         }
         catch (Exception e)
         {
@@ -414,7 +416,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         try
         {
-            _stylesheet = Resource.newResource(stylesheet);
+            _stylesheet = ResourceFactory.of(this).newResource(stylesheet);
             if (!_stylesheet.exists())
             {
                 LOG.warn("unable to find custom stylesheet: {}", stylesheet);

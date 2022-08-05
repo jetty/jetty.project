@@ -46,6 +46,8 @@ public class QuickStartTest
     @Test
     public void testStandardTestWar() throws Exception
     {
+        WebAppContext webapp = new WebAppContext();
+
         //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
@@ -53,7 +55,7 @@ public class QuickStartTest
         Path targetDir = workDir.resolve("test-standard-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
@@ -65,11 +67,10 @@ public class QuickStartTest
 
         //optional jetty context xml file to configure the webapp
         Path testResourceXml = MavenTestingUtils.getTestResourcePathFile("test.xml");
-        Resource contextXml = Resource.newResource(testResourceXml);
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceXml);
 
         Server server = new Server(0);
 
-        WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
             new EnvConfiguration(),
             new PlusConfiguration(),
@@ -97,6 +98,8 @@ public class QuickStartTest
     @Test
     public void testSpecWar() throws Exception
     {
+        WebAppContext webapp = new WebAppContext();
+
         //Generate the quickstart xml
         PreconfigureSpecWar.main(new String[]{});
 
@@ -106,7 +109,7 @@ public class QuickStartTest
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
@@ -118,11 +121,10 @@ public class QuickStartTest
 
         //optional jetty context xml file to configure the webapp
         Path testResourceSpec = MavenTestingUtils.getTestResourcePathFile("test-spec.xml");
-        Resource contextXml = Resource.newResource(testResourceSpec);
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceSpec);
 
         Server server = new Server(0);
 
-        WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
             new EnvConfiguration(),
             new PlusConfiguration(),
@@ -154,6 +156,8 @@ public class QuickStartTest
     @Test
     public void testJNDIWar() throws Exception
     {
+        WebAppContext webapp = new WebAppContext();
+
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
@@ -161,7 +165,7 @@ public class QuickStartTest
         Path targetDir = workDir.resolve("test-jndi-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource(webXmlPath));
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
@@ -173,11 +177,10 @@ public class QuickStartTest
 
         //optional jetty context xml file to configure the webapp
         Path testResourceJndi = MavenTestingUtils.getTestResourcePathFile("test-jndi.xml");
-        Resource contextXml = Resource.newResource(testResourceJndi);
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceJndi);
 
         Server server = new Server(0);
 
-        WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
             new EnvConfiguration(),
             new PlusConfiguration(),

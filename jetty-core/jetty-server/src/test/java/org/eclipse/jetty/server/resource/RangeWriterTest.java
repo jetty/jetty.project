@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.resource;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,9 +26,11 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,18 +38,26 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 @Disabled // TODO should not be a writer
 public class RangeWriterTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
-    private static Resource.Mount zipfs;
+    private static ResourceFactory.Closeable zipfs;
 
-    @AfterAll
-    public static void closeZipFs()
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
     {
         IO.close(zipfs);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     public static Path initDataFile() throws IOException
@@ -69,20 +78,17 @@ public class RangeWriterTest
     private static Path initZipFsDataFile() throws IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-
-        URI jarFileUri = URIUtil.toJarFileUri(exampleJar.toUri());
-
         // close prior one (if it exists)
         IO.close(zipfs);
-        zipfs = Resource.mount(jarFileUri);
-        Path rootPath = zipfs.root().getPath();
+        zipfs = ResourceFactory.closeable();
+        Path rootPath = zipfs.newJarFileResource(exampleJar.toUri()).getPath();
         return rootPath.resolve("data.dat");
     }
 
     public static Stream<Arguments> impls() throws IOException
     {
-        Resource realFileSystemResource = Resource.newResource(initDataFile());
-        Resource nonDefaultFileSystemResource = Resource.newResource(initZipFsDataFile());
+        Resource realFileSystemResource = zipfs.newResource(initDataFile());
+        Resource nonDefaultFileSystemResource = zipfs.newResource(initZipFsDataFile());
 
         return Stream.of(
             Arguments.of("Traditional / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, true))),
