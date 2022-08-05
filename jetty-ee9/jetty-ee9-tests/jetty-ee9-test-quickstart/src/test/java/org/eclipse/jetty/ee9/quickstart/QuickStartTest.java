@@ -114,7 +114,7 @@ public class QuickStartTest
         Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
-        WebDescriptor descriptor = new WebDescriptor(ResourceFactory.of(webapp).newResource(webXmlPath));
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
@@ -125,7 +125,7 @@ public class QuickStartTest
         String war = "target/test-spec-preconfigured";
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = ResourceFactory.of(webapp).newResource("src/test/resources/test-spec.xml");
+        Resource contextXml = webapp.getResourceFactory().newResource("src/test/resources/test-spec.xml");
 
         Server server = new Server(0);
 
@@ -167,7 +167,7 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
-        WebDescriptor descriptor = new WebDescriptor(ResourceFactory.of(webapp).newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
@@ -178,7 +178,7 @@ public class QuickStartTest
         String war = "target/test-jndi-preconfigured";
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = ResourceFactory.of(webapp).newResource("src/test/resources/test-jndi.xml");
+        Resource contextXml = webapp.getResourceFactory().newResource("src/test/resources/test-jndi.xml");
 
         Server server = new Server(0);
 
