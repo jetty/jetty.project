@@ -74,6 +74,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      * Set the Config Path from a String reference to a file
      *
      * @param config the config file
+     * TODO: reintroduce setConfig(String) and internal ResourceFactory usage
      */
     public void setConfig(Resource config)
     {
