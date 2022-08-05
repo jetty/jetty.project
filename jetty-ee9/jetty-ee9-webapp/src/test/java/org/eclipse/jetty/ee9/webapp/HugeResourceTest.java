@@ -43,8 +43,10 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -357,7 +359,7 @@ public class HugeResourceTest
         MultiPartRequestContent multipart = new MultiPartRequestContent();
         Path inputFile = staticBase.resolve(filename);
         String name = String.format("file-%d", expectedSize);
-        multipart.addFilePart(name, filename, new PathRequestContent(inputFile), null);
+        multipart.addPart(new MultiPart.PathPart(name, filename, HttpFields.EMPTY, inputFile));
         multipart.close();
 
         URI destUri = server.getURI().resolve("/multipart");

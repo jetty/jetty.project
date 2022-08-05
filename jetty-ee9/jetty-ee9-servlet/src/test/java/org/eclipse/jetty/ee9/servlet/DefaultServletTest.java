@@ -1242,10 +1242,10 @@ public class DefaultServletTest
 
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
 
-        HttpContent content = factory.getContent("/index.html", 200);
+        HttpContent content = factory.getContent("/index.html");
         ByteBuffer buffer = content.getBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
+        content = factory.getContent("/index.html");
         buffer = content.getBuffer();
         assertThat("Direct buffer", buffer, is(nullValue()));
     }

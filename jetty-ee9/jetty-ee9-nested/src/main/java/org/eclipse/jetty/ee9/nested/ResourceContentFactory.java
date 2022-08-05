@@ -45,13 +45,13 @@ public class ResourceContentFactory implements ContentFactory
     }
 
     @Override
-    public HttpContent getContent(String pathInContext, int maxBufferSize) throws IOException
+    public HttpContent getContent(String pathInContext) throws IOException
     {
         try
         {
             // try loading the content from our factory.
             Resource resource = _factory.newResource(pathInContext);
-            return load(pathInContext, resource, maxBufferSize);
+            return load(pathInContext, resource);
         }
         catch (Throwable t)
         {
@@ -68,14 +68,14 @@ public class ResourceContentFactory implements ContentFactory
         }
     }
 
-    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
+    private HttpContent load(String pathInContext, Resource resource)
         throws IOException
     {
         if (resource == null || !resource.exists())
             return null;
 
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), maxBufferSize);
+            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()));
 
         // Look for a precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
@@ -90,12 +90,12 @@ public class ResourceContentFactory implements ContentFactory
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
+                return new ResourceHttpContent(resource, mt, compressedContents);
         }
-        return new ResourceHttpContent(resource, mt, maxBufferSize);
+        return new ResourceHttpContent(resource, mt);
     }
 
     @Override

@@ -50,10 +50,4 @@ public class ByteBufferRequestContent extends ByteBufferContentSource implements
     {
         return contentType;
     }
-
-    @Override
-    public boolean rewind()
-    {
-        return super.rewind();
-    }
 }

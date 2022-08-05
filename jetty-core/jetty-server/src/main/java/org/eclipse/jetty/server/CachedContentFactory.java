@@ -156,7 +156,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      * <p>Returns an entry from the cache, or creates a new one.</p>
      *
      * @param pathInContext The key into the cache
-     * @param maxBufferSize The maximum buffer size allocated for this request.
      * @return The entry matching {@code pathInContext}, or a new entry
      * if no matching entry was found. If the content exists but is not cacheable,
      * then a {@link ResourceHttpContent} instance is returned. If
@@ -164,7 +163,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      * @throws IOException if the resource cannot be retrieved
      */
     @Override
-    public HttpContent getContent(String pathInContext, int maxBufferSize) throws IOException
+    public HttpContent getContent(String pathInContext) throws IOException
     {
         // Is the content in this cache?
         CachedHttpContent content = _cache.get(pathInContext);
@@ -173,14 +172,14 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         // try loading the content from our factory.
         Resource resource = _factory.newResource(pathInContext);
-        HttpContent loaded = load(pathInContext, resource, maxBufferSize);
+        HttpContent loaded = load(pathInContext, resource);
         if (loaded != null)
             return loaded;
 
         // Is the content in the parent cache?
         if (_parent != null)
         {
-            HttpContent httpContent = _parent.getContent(pathInContext, maxBufferSize);
+            HttpContent httpContent = _parent.getContent(pathInContext);
             if (httpContent != null)
                 return httpContent;
         }
@@ -203,13 +202,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         return (len > 0 && (_useFileMappedBuffer || (len < _maxCachedFileSize && len < _maxCacheSize)));
     }
 
-    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize) throws IOException
+    private HttpContent load(String pathInContext, Resource resource) throws IOException
     {
         if (resource == null || !resource.exists())
             return null;
 
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), getMaxCachedFileSize());
+            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()));
 
         // Will it fit in the cache?
         if (isCacheable(resource))
@@ -277,13 +276,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
+                return new ResourceHttpContent(resource, mt, compressedContents);
         }
 
-        return new ResourceHttpContent(resource, mt, maxBufferSize);
+        return new ResourceHttpContent(resource, mt);
     }
 
     private void shrinkCache()

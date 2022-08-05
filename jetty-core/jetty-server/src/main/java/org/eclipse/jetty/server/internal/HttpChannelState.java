@@ -424,7 +424,7 @@ public class HttpChannelState implements HttpChannel, Components
     public Runnable onFailure(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onError {}", this, x);
+            LOG.debug("onFailure {}", this, x);
 
         HttpStream stream;
         Runnable task;
@@ -663,8 +663,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 failure = x;
             }
+
             if (failure != null)
-                request._callback.failed(failure);
+                _request._callback.failed(failure);
 
             HttpStream stream;
             boolean completeStream;
@@ -883,6 +884,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         private HttpChannelState lockedGetHttpChannel()
         {
+            assert _lock.isHeldByCurrentThread();
             if (_httpChannel == null)
                 throw new IllegalStateException("channel already completed");
             return _httpChannel;
@@ -1317,7 +1319,8 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
-                lockedOnComplete();
+                if (!lockedOnComplete())
+                    return;
                 httpChannelState = _request._httpChannel;
                 completeStream = httpChannelState._processState == ProcessState.PROCESSED && httpChannelState._writeState == WriteState.LAST_WRITE_COMPLETED;
 
@@ -1327,8 +1330,8 @@ public class HttpChannelState implements HttpChannel, Components
                     throw new IllegalStateException("demand pending");
                 if (httpChannelState._writeCallback != null)
                     throw new IllegalStateException("write pending");
-                if (httpChannelState._error != null)
-                    throw new IllegalStateException("error " + httpChannelState._error, httpChannelState._error.getCause());
+                // Here, httpChannelState._error might have been set by some
+                // asynchronous event such as an idle timeout, and that's ok.
 
                 needLastWrite = switch (httpChannelState._writeState)
                 {
@@ -1377,8 +1380,8 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _request._lock.lock())
             {
-                lockedOnComplete();
-
+                if (!lockedOnComplete())
+                    return;
                 httpChannelState = _request._httpChannel;
                 httpChannelState._failure = failure;
                 completeStream = httpChannelState._processState == ProcessState.PROCESSED;
@@ -1416,7 +1419,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
-        private void lockedOnComplete()
+        private boolean lockedOnComplete()
         {
             assert _request._lock.isHeldByCurrentThread();
 
@@ -1424,19 +1427,23 @@ public class HttpChannelState implements HttpChannel, Components
             if (httpChannelState == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.warn("already recycled after completion {} by", _request, _completedBy);
-                throw new IllegalStateException("channel already completed");
+                    LOG.debug("already recycled after completion {} by", _request, _completedBy);
+                return false;
             }
 
             if (httpChannelState._completed)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.warn("already completed {} by", _request, _completedBy);
-                throw new IllegalStateException("already completed");
+                    LOG.debug("already completed {} by", _request, _completedBy);
+                return false;
             }
+
             if (LOG.isDebugEnabled())
                 _completedBy = new Throwable(Thread.currentThread().getName());
+
             httpChannelState._completed = true;
+
+            return true;
         }
 
         @Override
