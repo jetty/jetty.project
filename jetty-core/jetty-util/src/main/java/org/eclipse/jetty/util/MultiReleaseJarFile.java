@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,15 +33,15 @@ public class MultiReleaseJarFile implements Closeable
     private static final Logger LOG = LoggerFactory.getLogger(MultiReleaseJarFile.class);
 
     private final Path jarFile;
-    private final Resource.Mount jarResource;
+    private final Resource jarResource;
+    private final ResourceFactory.Closeable resourceFactory;
 
     /**
      * Construct a multi release jar file for the current JVM version, ignoring directories.
      *
      * @param jarFile The file to open
-     * @throws IOException if the jar file cannot be read
      */
-    public MultiReleaseJarFile(Path jarFile) throws IOException
+    public MultiReleaseJarFile(Path jarFile)
     {
         Objects.requireNonNull(jarFile, "Jar File");
 
@@ -57,7 +58,9 @@ public class MultiReleaseJarFile implements Closeable
             throw new IllegalArgumentException("Unable to read Jar file: " + jarFile);
 
         this.jarFile = jarFile;
-        this.jarResource = Resource.mountJar(jarFile);
+
+        this.resourceFactory = ResourceFactory.closeable();
+        this.jarResource = resourceFactory.newJarFileResource(jarFile.toUri());
         if (LOG.isDebugEnabled())
             LOG.debug("mounting {}", jarResource);
     }
@@ -68,7 +71,7 @@ public class MultiReleaseJarFile implements Closeable
     @SuppressWarnings("resource")
     public Stream<Path> stream() throws IOException
     {
-        Path rootPath = this.jarResource.root().getPath();
+        Path rootPath = this.jarResource.getPath();
 
         return Files.walk(rootPath)
             // skip the entire META-INF/versions tree
@@ -80,7 +83,7 @@ public class MultiReleaseJarFile implements Closeable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Closing {}", jarResource);
-        this.jarResource.close();
+        this.resourceFactory.close();
     }
 
     @Override

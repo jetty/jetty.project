@@ -13,21 +13,19 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
- * SearchPattern
+ * <p>Fast search for patterns within strings, arrays of
+ * bytes and {@code ByteBuffer}s.</p>
+ * <p>Uses an implementation of the Boyer–Moore–Horspool
+ * algorithm with a 256 character alphabet.</p>
  *
- * Fast search for patterns within strings and arrays of bytes.
- * Uses an implementation of the Boyer–Moore–Horspool algorithm
- * with a 256 character alphabet.
- *
- * The algorithm has an average-case complexity of O(n)
- * on random text and O(nm) in the worst case.
- * where:
- * m = pattern length
- * n = length of data to search
+ * <p>The algorithm has an average-case complexity of O(n)
+ * on random text and O(nm) in the worst case, where
+ * {@code m = pattern length} and {@code n = length of data to search}.
  */
 public class SearchPattern
 {
@@ -36,10 +34,10 @@ public class SearchPattern
     private final byte[] pattern;
 
     /**
-     * Produces a SearchPattern instance which can be used
-     * to find matches of the pattern in data
+     * <p>Creates a {@code SearchPattern} instance which can be used
+     * to find matches of the pattern in data.</p>
      *
-     * @param pattern byte array containing the pattern
+     * @param pattern byte array containing the pattern to search
      * @return a new SearchPattern instance using the given pattern
      */
     public static SearchPattern compile(byte[] pattern)
@@ -48,15 +46,16 @@ public class SearchPattern
     }
 
     /**
-     * Produces a SearchPattern instance which can be used
-     * to find matches of the pattern in data
+     * <p>Creates a {@code SearchPattern} instance which can be used
+     * to find matches of the pattern in data.</p>
+     * <p>The pattern string must only contain ASCII characters.</p>
      *
-     * @param pattern string containing the pattern
+     * @param pattern string containing the pattern to search
      * @return a new SearchPattern instance using the given pattern
      */
     public static SearchPattern compile(String pattern)
     {
-        return new SearchPattern(pattern.getBytes(StandardCharsets.UTF_8));
+        return compile(pattern.getBytes(StandardCharsets.US_ASCII));
     }
 
     /**
@@ -74,6 +73,14 @@ public class SearchPattern
         {
             table[0xff & pattern[i]] = pattern.length - 1 - i;
         }
+    }
+
+    /**
+     * @return the pattern to search.
+     */
+    public byte[] getPattern()
+    {
+        return pattern;
     }
 
     /**
@@ -101,6 +108,34 @@ public class SearchPattern
             skip += table[0xff & data[skip + pattern.length - 1]];
         }
 
+        return -1;
+    }
+
+    /**
+     * <p>Searches for a full match of the pattern in the {@code ByteBuffer}.</p>
+     * <p>The {@code ByteBuffer} may contain arbitrary binary data, but the pattern will
+     * always be {@link StandardCharsets#US_ASCII} encoded.</p>
+     * <p>The position and limit of the {@code ByteBuffer} are not changed.</p>
+     *
+     * @param buffer the {@code ByteBuffer} to search into
+     * @return the number of bytes after the buffer's position at which the full pattern
+     * was found, or -1 if the full pattern was not found
+     */
+    public int match(ByteBuffer buffer)
+    {
+        int remaining = buffer.remaining();
+        int cursor = 0;
+        while (remaining - cursor >= getLength())
+        {
+            int i = getLength() - 1;
+            while (buffer.get(buffer.position() + cursor + i) == pattern[i])
+            {
+                if (i == 0)
+                    return cursor;
+                --i;
+            }
+            cursor += table[buffer.get(buffer.position() + cursor + getLength() - 1) & 0xFF];
+        }
         return -1;
     }
 
@@ -134,6 +169,35 @@ public class SearchPattern
     }
 
     /**
+     * <p>Searches for a partial match of the pattern at the end of the {@code ByteBuffer}.</p>
+     * <p>The {@code ByteBuffer} may contain arbitrary binary data, but the pattern will
+     * always be {@link StandardCharsets#US_ASCII} encoded.</p>
+     * <p>The position and limit of the {@code ByteBuffer} are not changed.</p>
+     *
+     * @param buffer the {@code ByteBuffer} to search into
+     * @return how many bytes of the pattern were matched at the end of the {@code ByteBuffer},
+     * or 0 for no match
+     */
+    public int endsWith(ByteBuffer buffer)
+    {
+        int limit = buffer.limit();
+        int cursor = getLength() <= buffer.remaining() ? limit - getLength() : buffer.position();
+        while (cursor < limit)
+        {
+            int i = limit - 1 - cursor;
+            while (buffer.get(cursor + i) == pattern[i])
+            {
+                if (i == 0)
+                    return limit - cursor;
+                --i;
+            }
+            // Cannot use the pre-processed table as we are not matching on the full pattern.
+            ++cursor;
+        }
+        return 0;
+    }
+
+    /**
      * Search for a possibly partial match of the pattern at the start of the data.
      *
      * @param data The data in which to search for. The data may be arbitrary binary data,
@@ -157,6 +221,32 @@ public class SearchPattern
         }
 
         return matched + matchedCount;
+    }
+
+    /**
+     * <p>Searches for a partial match of the pattern at the beginning of the {@code ByteBuffer}.</p>
+     * <p>The {@code ByteBuffer} may contain arbitrary binary data, but the pattern will
+     * always be {@link StandardCharsets#US_ASCII} encoded.</p>
+     * <p>The position and limit of the {@code ByteBuffer} are not changed.</p>
+     *
+     * @param buffer the {@code ByteBuffer} to search into
+     * @param matched how many bytes of the pattern were already matched
+     * @return how many bytes of the pattern were matched (including those already matched)
+     * at the beginning of the {@code ByteBuffer}, or 0 for no match
+     */
+    public int startsWith(ByteBuffer buffer, int matched)
+    {
+        int position = buffer.position();
+        for (int i = matched; i < getLength(); ++i)
+        {
+            if (buffer.get(position) != pattern[i])
+                return 0;
+            ++matched;
+            ++position;
+            if (position == buffer.limit())
+                break;
+        }
+        return matched;
     }
 
     /**

@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -134,7 +134,7 @@ public class ClassMatcher extends AbstractSet<String>
             if (!getName().startsWith("file:"))
                 throw new IllegalArgumentException(name);
 
-            _path = Resource.newResource(getName()).getPath();
+            _path = ResourceFactory.root().newResource(getName()).getPath();
         }
 
         public Path getPath()

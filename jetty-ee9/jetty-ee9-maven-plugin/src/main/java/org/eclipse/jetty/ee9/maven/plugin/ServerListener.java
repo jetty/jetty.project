@@ -17,6 +17,7 @@ import java.nio.file.Files;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * ServerListener
@@ -46,7 +47,7 @@ public class ServerListener implements LifeCycle.Listener
         {
             try
             {
-                Resource r = Resource.newResource(_tokenFile);
+                Resource r = ResourceFactory.root().newResource(_tokenFile); // TODO leak
                 Files.createFile(r.getPath());
             }
             catch (Exception e)

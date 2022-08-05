@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -627,10 +628,10 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning jar {}", jarResource);
 
-        Path jarPath = jarResource.getPath();
-        try (Resource.Mount jarMount = Resource.mountJar(jarPath))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            parseDir(handlers, jarMount.root());
+            Resource insideJarResource = resourceFactory.newJarFileResource(jarResource.getURI());
+            parseDir(handlers, insideJarResource);
         }
     }
 

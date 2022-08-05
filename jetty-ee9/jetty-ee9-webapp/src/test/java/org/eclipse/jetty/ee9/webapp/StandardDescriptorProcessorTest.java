@@ -18,10 +18,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StandardDescriptorProcessorTest
@@ -32,6 +35,7 @@ public class StandardDescriptorProcessorTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         _server = new Server();
         _server.start();
     }
@@ -40,7 +44,7 @@ public class StandardDescriptorProcessorTest
     public void afterEach() throws Exception
     {
         _server.stop();
-        Configurations.getKnown().forEach(System.err::println);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

@@ -35,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -45,6 +46,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -138,7 +140,10 @@ public class TestAnnotationParser
             }
         }
 
-        parser.parse(Collections.singleton(new SampleAnnotationHandler()), Resource.newResource(root));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(Collections.singleton(new SampleAnnotationHandler()), resourceFactory.newResource(root));
+        }
     }
 
     @Test
@@ -174,7 +179,10 @@ public class TestAnnotationParser
             }
         }
 
-        parser.parse(Collections.singleton(new MultiAnnotationHandler()), Resource.newResource(root));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(Collections.singleton(new MultiAnnotationHandler()), resourceFactory.newResource(root));
+        }
     }
 
     @Test
@@ -183,8 +191,12 @@ public class TestAnnotationParser
         Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, Resource.newResource(badClassesJar));
-        // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
+            // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
+        }
     }
 
     @Test
@@ -193,8 +205,12 @@ public class TestAnnotationParser
         Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/slf4j-api-1.8.0-alpha2.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, Resource.newResource(badClassesJar));
-        // Should throw no exceptions, and happily skip the module-info.class files
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
+            // Should throw no exceptions, and happily skip the module-info.class files
+        }
     }
 
     @Test
@@ -203,8 +219,12 @@ public class TestAnnotationParser
         Path badClassesJar = MavenTestingUtils.getTestResourcePathFile("jdk9/log4j-api-2.9.0.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, Resource.newResource(badClassesJar));
-        // Should throw no exceptions and work with the META-INF/versions without incident
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
+            // Should throw no exceptions and work with the META-INF/versions without incident
+        }
     }
 
     @Test
@@ -214,8 +234,12 @@ public class TestAnnotationParser
         AnnotationParser parser = new AnnotationParser();
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
-        parser.parse(handlers, Resource.newResource(jdk10Jar));
-        // Should throw no exceptions
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(handlers, resourceFactory.newResource(jdk10Jar));
+            // Should throw no exceptions
+        }
     }
 
     @Test
@@ -239,7 +263,10 @@ public class TestAnnotationParser
         AnnotationParser parser = new AnnotationParser();
 
         // Parse
-        parser.parse(Collections.singleton(tracker), Resource.newResource(basedir));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(Collections.singleton(tracker), resourceFactory.newResource(basedir));
+        }
 
         // Validate
         assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));
@@ -248,33 +275,39 @@ public class TestAnnotationParser
     @Test
     public void testScanDuplicateClassesInJars() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar").toPath());
-        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar").toPath());
-        AnnotationParser parser = new AnnotationParser();
-        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
-        parser.parse(handlers, testJar);
-        parser.parse(handlers, testJar2);
-        List<String> locations = handler.getParsedList("org.acme.ClassOne");
-        assertNotNull(locations);
-        assertEquals(2, locations.size());
-        assertFalse(locations.get(0).equals(locations.get(1)));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar").toPath());
+            Resource testJar2 = resourceFactory.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest_copy.jar").toPath());
+            AnnotationParser parser = new AnnotationParser();
+            DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
+            Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
+            parser.parse(handlers, testJar);
+            parser.parse(handlers, testJar2);
+            List<String> locations = handler.getParsedList("org.acme.ClassOne");
+            assertNotNull(locations);
+            assertEquals(2, locations.size());
+            assertNotEquals(locations.get(0), locations.get(1));
+        }
     }
 
     @Test
     public void testScanDuplicateClasses() throws Exception
     {
-        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar").toPath());
-        File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
-        AnnotationParser parser = new AnnotationParser();
-        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
-        Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
-        parser.parse(handlers, testJar);
-        parser.parse(handlers, Resource.newResource(testClasses.toPath()));
-        List<String> locations = handler.getParsedList("org.acme.ClassOne");
-        assertNotNull(locations);
-        assertEquals(2, locations.size());
-        assertNotEquals(locations.get(0), locations.get(1));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetFile("test-classes/tinytest.jar").toPath());
+            File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
+            AnnotationParser parser = new AnnotationParser();
+            DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
+            Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
+            parser.parse(handlers, testJar);
+            parser.parse(handlers, resourceFactory.newResource(testClasses.toPath()));
+            List<String> locations = handler.getParsedList("org.acme.ClassOne");
+            assertNotNull(locations);
+            assertEquals(2, locations.size());
+            assertNotEquals(locations.get(0), locations.get(1));
+        }
     }
 
     private void copyClass(Class<?> clazz, Path outputDir) throws IOException, URISyntaxException

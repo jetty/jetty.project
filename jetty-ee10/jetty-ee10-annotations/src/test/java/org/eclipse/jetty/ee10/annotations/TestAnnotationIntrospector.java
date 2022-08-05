@@ -23,6 +23,7 @@ import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,28 +64,28 @@ public class TestAnnotationIntrospector
 
             //a DESCRIPTOR sourced servlet can be introspected if web.xml metdata-complete==false
             File file = MavenTestingUtils.getTestResourceFile("web31false.xml");
-            Resource resource = Resource.newResource(file.toPath());
+            Resource resource = ResourceFactory.root().newResource(file.toPath());
             wac.getMetaData().setWebDescriptor(new WebDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml metadata-complete==false
             file = MavenTestingUtils.getTestResourceFile("web-fragment4false.xml");
-            resource = Resource.newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(Resource.newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
+            resource = ResourceFactory.root().newResource(file.toPath());
+            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml metadata-complete==false)
             file = MavenTestingUtils.getTestResourceFile("web-fragment4true.xml");
-            resource = Resource.newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(Resource.newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
+            resource = ResourceFactory.root().newResource(file.toPath());
+            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web.xml medata-complete==true
             file = MavenTestingUtils.getTestResourceFile("web31true.xml");
-            resource = Resource.newResource(file.toPath());
+            resource = ResourceFactory.root().newResource(file.toPath());
             wac.getMetaData().setWebDescriptor(new WebDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));

@@ -55,6 +55,7 @@ import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
@@ -200,38 +201,35 @@ public class Runner
      */
     public void configure(String[] args) throws Exception
     {
-        // handle classpath bits first so we can initialize the log mechanism.
-        for (int i = 0; i < args.length; i++)
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            if ("--lib".equals(args[i]))
+            // handle classpath bits first so we can initialize the log mechanism.
+            for (int i = 0; i < args.length; i++)
             {
-                try (Resource lib = Resource.newResource(args[++i]))
+                if ("--lib".equals(args[i]))
                 {
+                    Resource lib = resourceFactory.newResource(args[++i]);
                     if (!lib.exists() || !lib.isDirectory())
                         usage("No such lib directory " + lib);
                     _classpath.addJars(lib);
                 }
-            }
-            else if ("--jar".equals(args[i]))
-            {
-                try (Resource jar = Resource.newResource(args[++i]))
+                else if ("--jar".equals(args[i]))
                 {
+                    Resource jar = resourceFactory.newResource(args[++i]);
                     if (!jar.exists() || jar.isDirectory())
                         usage("No such jar " + jar);
                     _classpath.addPath(jar);
                 }
-            }
-            else if ("--classes".equals(args[i]))
-            {
-                try (Resource classes = Resource.newResource(args[++i]))
+                else if ("--classes".equals(args[i]))
                 {
+                    Resource classes = resourceFactory.newResource(args[++i]);
                     if (!classes.exists() || !classes.isDirectory())
                         usage("No such classes directory " + classes);
                     _classpath.addPath(classes);
                 }
+                else if (args[i].startsWith("--"))
+                    i++;
             }
-            else if (args[i].startsWith("--"))
-                i++;
         }
 
         initClassLoader();
@@ -335,11 +333,9 @@ public class Runner
                         {
                             for (String cfg : _configFiles)
                             {
-                                try (Resource resource = Resource.newResource(cfg))
-                                {
-                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
-                                    xmlConfiguration.configure(_server);
-                                }
+                                Resource resource = ResourceFactory.of(_server).newResource(cfg);
+                                XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
+                                xmlConfiguration.configure(_server);
                             }
                         }
 
@@ -375,7 +371,9 @@ public class Runner
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
-                                    final HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
+                                    ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
+                                    Resource statsResource = resourceFactory.newResource(_statsPropFile);
+                                    final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
                                     Constraint constraint = new Constraint();
                                     constraint.setName("Admin Only");
                                     constraint.setRoles(new String[]{"admin"});
@@ -427,54 +425,53 @@ public class Runner
                     }
 
                     // Create a context
-                    try (Resource ctx = Resource.newResource(args[i]))
+                    Resource ctx = ResourceFactory.of(_server).newResource(args[i]);
+                    if (!ctx.exists())
+                        usage("Context '" + ctx + "' does not exist");
+
+                    if (contextPathSet && !(contextPath.startsWith("/")))
+                        contextPath = "/" + contextPath;
+
+                    // Configure the context
+                    if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                     {
-                        if (!ctx.exists())
-                            usage("Context '" + ctx + "' does not exist");
-
-                        if (contextPathSet && !(contextPath.startsWith("/")))
-                            contextPath = "/" + contextPath;
-
-                        // Configure the context
-                        if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
-                        {
-                            // It is a context config file
-                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx);
-                            xmlConfiguration.getIdMap().put("Server", _server);
-                            ContextHandler handler = (ContextHandler)xmlConfiguration.configure();
-                            if (contextPathSet)
-                                handler.setContextPath(contextPath);
-                            _contexts.addHandler(handler);
-                            String containerIncludeJarPattern = (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
-                            if (containerIncludeJarPattern == null)
-                                containerIncludeJarPattern = CONTAINER_INCLUDE_JAR_PATTERN;
-                            else
-                            {
-                                if (!containerIncludeJarPattern.contains(CONTAINER_INCLUDE_JAR_PATTERN))
-                                {
-                                    containerIncludeJarPattern = containerIncludeJarPattern + (StringUtil.isBlank(containerIncludeJarPattern) ? "" : "|") + CONTAINER_INCLUDE_JAR_PATTERN;
-                                }
-                            }
-
-                            handler.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
-
-                            //check the configurations, if not explicitly set up, then configure all of them
-                            if (handler instanceof WebAppContext)
-                            {
-                                WebAppContext wac = (WebAppContext)handler;
-                                if (wac.getConfigurationClasses() == null || wac.getConfigurationClasses().length == 0)
-                                    wac.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
-                            }
-                        }
+                        // It is a context config file
+                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx);
+                        xmlConfiguration.getIdMap().put("Server", _server);
+                        ContextHandler handler = (ContextHandler)xmlConfiguration.configure();
+                        if (contextPathSet)
+                            handler.setContextPath(contextPath);
+                        _contexts.addHandler(handler);
+                        String containerIncludeJarPattern = (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
+                        if (containerIncludeJarPattern == null)
+                            containerIncludeJarPattern = CONTAINER_INCLUDE_JAR_PATTERN;
                         else
                         {
-                            // assume it is a WAR file
-                            WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
-                            webapp.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
-                            webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
-                                CONTAINER_INCLUDE_JAR_PATTERN);
+                            if (!containerIncludeJarPattern.contains(CONTAINER_INCLUDE_JAR_PATTERN))
+                            {
+                                containerIncludeJarPattern = containerIncludeJarPattern + (StringUtil.isBlank(containerIncludeJarPattern) ? "" : "|") + CONTAINER_INCLUDE_JAR_PATTERN;
+                            }
+                        }
+
+                        handler.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
+
+                        //check the configurations, if not explicitly set up, then configure all of them
+                        if (handler instanceof WebAppContext)
+                        {
+                            WebAppContext wac = (WebAppContext)handler;
+                            if (wac.getConfigurationClasses() == null || wac.getConfigurationClasses().length == 0)
+                                wac.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
                         }
                     }
+                    else
+                    {
+                        // assume it is a WAR file
+                        WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
+                        webapp.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
+                        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
+                            CONTAINER_INCLUDE_JAR_PATTERN);
+                    }
+
                     //reset
                     contextPathSet = false;
                     contextPath = DEFAULT_CONTEXT_PATH;

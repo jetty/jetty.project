@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +138,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      * object for specialized implementations of the AppProvider.
      *
      * @param path The file that is the context.xml. It is resolved by
-     * {@link Resource#newResource(String)}
+     * {@link org.eclipse.jetty.util.resource.ResourceFactory#newResource(String)}
      * @return The App object for this particular context definition file.
      */
     protected App createApp(Path path)
@@ -371,7 +372,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             List<Resource> resources = new ArrayList<>();
             for (String dir : directories)
             {
-                resources.add(Resource.newResource(dir));
+                resources.add(ResourceFactory.of(this).newResource(dir));
             }
             setMonitoredResources(resources);
         }

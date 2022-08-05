@@ -35,7 +35,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class ClientCertAuthenticatorTest
@@ -63,6 +65,7 @@ public class ClientCertAuthenticatorTest
     @BeforeEach
     public void setup() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         origSsf = HttpsURLConnection.getDefaultSSLSocketFactory();
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
@@ -108,9 +111,11 @@ public class ClientCertAuthenticatorTest
 
         HashLoginService loginService = new HashLoginService();
         constraintSecurityHandler.setLoginService(loginService);
-        loginService.setConfig("src/test/resources/realm.properties");
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
+        ResourceFactory resourceFactory = ResourceFactory.of(servletContextHandler);
+        loginService.setConfig(resourceFactory.newResource("src/test/resources/realm.properties"));
+
         servletContextHandler.setSecurityHandler(constraintSecurityHandler);
         servletContextHandler.addServlet(FooServlet.class, "/");
         server.setHandler(servletContextHandler);
@@ -139,6 +144,7 @@ public class ClientCertAuthenticatorTest
             HttpsURLConnection.setDefaultSSLSocketFactory(origSsf);
         }
         server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private SslContextFactory.Server createServerSslContextFactory(String trustStorePath, String trustStorePassword)
@@ -146,8 +152,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
-        cf.setKeyStoreResource(Resource.newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
+        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath(trustStorePath)));
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);

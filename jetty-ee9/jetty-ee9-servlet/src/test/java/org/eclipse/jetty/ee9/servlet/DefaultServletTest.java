@@ -59,8 +59,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -79,6 +79,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -105,6 +106,7 @@ public class DefaultServletTest
     @BeforeEach
     public void init() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         docRoot = workDir.getEmptyPathDir().resolve("docroot");
         FS.ensureDirExists(docRoot);
 
@@ -120,7 +122,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(Resource.newResource(docRoot));
+        context.setBaseResource(ResourceFactory.root().newResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);
@@ -136,6 +138,7 @@ public class DefaultServletTest
     {
         server.stop();
         server.join();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -1239,10 +1242,10 @@ public class DefaultServletTest
 
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
 
-        HttpContent content = factory.getContent("/index.html", 200);
+        HttpContent content = factory.getContent("/index.html");
         ByteBuffer buffer = content.getBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
+        content = factory.getContent("/index.html");
         buffer = content.getBuffer();
         assertThat("Direct buffer", buffer, is(nullValue()));
     }

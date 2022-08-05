@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.Principal;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +49,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectHandler;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -900,8 +899,7 @@ public class ForwardProxyTLSServerTest
                 }
                 else if (MimeTypes.Type.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)))
                 {
-                    CompletableFuture<Fields> completable = FutureFormFields.forRequest(request);
-                    completable.whenComplete((fields, failure) ->
+                    FormFields.from(request).whenComplete((fields, failure) ->
                     {
                         if (failure != null)
                         {

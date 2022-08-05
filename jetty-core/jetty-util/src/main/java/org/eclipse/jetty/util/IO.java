@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
@@ -281,6 +282,8 @@ public class IO
     public static IOException rethrow(Throwable cause)
     {
         if (cause instanceof ExecutionException xx)
+            cause = xx.getCause();
+        if (cause instanceof CompletionException xx)
             cause = xx.getCause();
         if (cause instanceof IOException)
             return (IOException)cause;

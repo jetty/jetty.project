@@ -405,7 +405,7 @@ public class MetaData
         {
             for (Resource r : resources)
             {
-                if (Resource.isContainedIn(resource, r))
+                if (resource.isContainedIn(r))
                 {
                     enclosingResource = r;
                     break;

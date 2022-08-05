@@ -28,7 +28,6 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
@@ -76,7 +75,7 @@ public class DeploymentTest
         app1.deploy();
         app1.getWebAppContext().setThrowUnavailableOnStartupException(false);
 
-        try (StacklessLogging ignore = new StacklessLogging(ServletContainerInitializersStarter.class, WebAppContext.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebAppContext.class))
         {
             server.start();
         }

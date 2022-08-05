@@ -70,7 +70,7 @@ public class PropertyUserStoreManager extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        _propertyUserStores = new HashMap<String, PropertyUserStore>();
+        _propertyUserStores = new HashMap<>();
         super.doStart();
     }
 

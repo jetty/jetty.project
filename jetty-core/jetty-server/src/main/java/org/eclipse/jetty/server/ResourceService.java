@@ -60,6 +60,7 @@ public class ResourceService
 
     private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
+
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
@@ -75,9 +76,9 @@ public class ResourceService
     {
     }
 
-    public HttpContent getContent(String path, int outputBufferSize) throws IOException
+    public HttpContent getContent(String path) throws IOException
     {
-        return _contentFactory.getContent(path == null ? "" : path, outputBufferSize);
+        return _contentFactory.getContent(path == null ? "" : path);
     }
 
     public HttpContent.ContentFactory getContentFactory()
@@ -445,11 +446,10 @@ public class ResourceService
             case SERVE ->
             {
                 // TODO : check conditional headers.
-                // TODO output buffer size????
-                HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
+                HttpContent c = _contentFactory.getContent(welcomeAction.target);
                 sendData(request, response, callback, c, null);
             }
-        };
+        }
     }
 
     private WelcomeAction processWelcome(Request request, Response response) throws IOException
@@ -488,14 +488,14 @@ public class ResourceService
         }
 
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), URIUtil.SLASH);
-        String dir = httpContent.getResource().getListHTML(base, pathInContext.length() > 1, request.getHttpURI().getQuery());
-        if (dir == null)
+        String listing = ResourceListing.getAsHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        if (listing == null)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
-        byte[] data = dir.getBytes(StandardCharsets.UTF_8);
+        byte[] data = listing.getBytes(StandardCharsets.UTF_8);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
         response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);

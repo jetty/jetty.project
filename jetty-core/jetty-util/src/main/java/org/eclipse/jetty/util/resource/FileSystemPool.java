@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -50,6 +51,36 @@ public class FileSystemPool implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);
     public static final FileSystemPool INSTANCE = new FileSystemPool();
 
+    /**
+     * Listener for pool events
+     */
+    public interface Listener
+    {
+        /**
+         * FileSystem URI is retained for the first time
+         * @param fsUri the filesystem URI
+         */
+        void onRetain(URI fsUri);
+
+        /**
+         * FileSystem URI exists in the pool and its reference count is incremented
+         * @param fsUri the filesystem URI
+         */
+        void onIncrement(URI fsUri);
+
+        /**
+         * FileSystem URI exists in the pool and its reference count is decremented
+         * @param fsUri the filesystem URI
+         */
+        void onDecrement(URI fsUri);
+
+        /**
+         * FileSystem URI exists in the pool and reached no references and has been closed
+         * @param fsUri the filesystem URI
+         */
+        void onClose(URI fsUri);
+    }
+
     private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
 
     static
@@ -63,11 +94,13 @@ public class FileSystemPool implements Dumpable
     private final Map<URI, Bucket> pool = new HashMap<>();
     private final AutoLock poolLock = new AutoLock();
 
+    private Listener listener;
+
     private FileSystemPool()
     {
     }
 
-    public Resource.Mount mount(URI uri) throws IOException
+    Mount mount(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
@@ -95,7 +128,7 @@ public class FileSystemPool implements Dumpable
             }
             // use root FS URI so that pool key/release/sweep is sane
             URI rootURI = fileSystem.getPath("/").toUri();
-            Mount mount = new Mount(rootURI, Resource.newResource(uri));
+            Mount mount = new Mount(rootURI, Resource.create(uri));
             retain(rootURI, fileSystem, mount);
             return mount;
         }
@@ -106,7 +139,7 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void release(URI fsUri)
+    private void unmount(URI fsUri)
     {
         try (AutoLock ignore = poolLock.lock())
         {
@@ -125,11 +158,15 @@ public class FileSystemPool implements Dumpable
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
                 IO.close(bucket.fileSystem);
                 pool.remove(fsUri);
+                if (listener != null)
+                    listener.onClose(fsUri);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decremented ref counter to {} for FS {}", count, bucket);
+                if (listener != null)
+                    listener.onDecrement(fsUri);
             }
         }
         catch (FileSystemNotFoundException fsnfe)
@@ -139,7 +176,7 @@ public class FileSystemPool implements Dumpable
     }
 
     @ManagedAttribute("The mounted FileSystems")
-    public Collection<Resource.Mount> mounts()
+    public Collection<Mount> mounts()
     {
         try (AutoLock ignore = poolLock.lock())
         {
@@ -150,8 +187,13 @@ public class FileSystemPool implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        Collection<Bucket> values;
+        try (AutoLock ignore = poolLock.lock())
+        {
+            values = pool.values();
+        }
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("mounts", mounts()));
+            new DumpableCollection("buckets", values));
     }
 
     @ManagedOperation(value = "Sweep the pool for deleted mount points", impact = "ACTION")
@@ -168,13 +210,6 @@ public class FileSystemPool implements Dumpable
             URI fsUri = entry.getKey();
             Bucket bucket = entry.getValue();
             FileSystem fileSystem = bucket.fileSystem;
-
-            if (bucket.path == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Filesystem {} not backed by a file", bucket);
-                return;
-            }
 
             try (AutoLock ignore = poolLock.lock())
             {
@@ -198,21 +233,76 @@ public class FileSystemPool implements Dumpable
         }
     }
 
-    private void retain(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
+    private void retain(URI fsUri, FileSystem fileSystem, Mount mount)
     {
         assert poolLock.isHeldByCurrentThread();
 
         Bucket bucket = pool.get(fsUri);
         if (bucket == null)
         {
-            LOG.debug("Pooling new FS {}", fileSystem);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pooling new FS {}", fileSystem);
             bucket = new Bucket(fsUri, fileSystem, mount);
             pool.put(fsUri, bucket);
+            if (listener != null)
+                listener.onRetain(fsUri);
         }
         else
         {
             int count = bucket.counter.incrementAndGet();
-            LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Incremented ref counter to {} for FS {}", count, fileSystem);
+            if (listener != null)
+                listener.onIncrement(fsUri);
+        }
+    }
+
+    /**
+     * Set a listener on the FileSystemPool to monitor for pool events.
+     *
+     * @param listener the listener for pool events
+     */
+    public void setListener(Listener listener)
+    {
+        try (AutoLock ignore = poolLock.lock())
+        {
+            this.listener = listener;
+        }
+    }
+
+    /**
+     * Show a StackTrace
+     */
+    public static class StackLoggingListener implements Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(StackLoggingListener.class);
+
+        @Override
+        public void onRetain(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Retain {}", uri, new Throwable("Retain"));
+        }
+
+        @Override
+        public void onIncrement(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Increment {}", uri, new Throwable("Increment"));
+        }
+
+        @Override
+        public void onDecrement(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decrement {}", uri, new Throwable("Decrement"));
+        }
+
+        @Override
+        public void onClose(URI uri)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Close {}", uri, new Throwable("Close"));
         }
     }
 
@@ -223,9 +313,9 @@ public class FileSystemPool implements Dumpable
         private final FileTime lastModifiedTime;
         private final long size;
         private final Path path;
-        private final Resource.Mount mount;
+        private final Mount mount;
 
-        private Bucket(URI fsUri, FileSystem fileSystem, Resource.Mount mount)
+        private Bucket(URI fsUri, FileSystem fileSystem, Mount mount)
         {
             URI containerUri = URIUtil.unwrapContainer(fsUri);
             Path path = Paths.get(containerUri);
@@ -254,11 +344,11 @@ public class FileSystemPool implements Dumpable
         @Override
         public String toString()
         {
-            return fileSystem.toString();
+            return fileSystem.toString() + "#" + counter;
         }
     }
 
-    private static class Mount implements Resource.Mount
+    public static class Mount implements Closeable
     {
         private final URI fsUri;
         private final Resource root;
@@ -275,9 +365,9 @@ public class FileSystemPool implements Dumpable
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
-            FileSystemPool.INSTANCE.release(fsUri);
+            FileSystemPool.INSTANCE.unmount(fsUri);
         }
 
         @Override

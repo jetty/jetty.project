@@ -44,6 +44,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -569,7 +570,7 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(realPath));
         assertTrue(Files.isSymbolicLink(linkPath));
 
-        Resource link = Resource.newResource(dir.toPath()).resolve("link");
+        Resource link = ResourceFactory.root().newResource(dir.toPath()).resolve("link");
         assertThat(link.isAlias(), is(true));
     }
 

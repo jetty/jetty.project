@@ -6,15 +6,21 @@
   <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
     <Arg>ee9</Arg>
     <Arg>
-      <New class="com.acme.MockUserTransaction"/>
+      <New class="org.example.MockUserTransaction"/>
     </Arg>
   </New>
+
+  <Call name="getResourceFactory">
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Arg>
+    </Call>
+  </Call>
 
   <Get name="securityHandler">
     <Set name="loginService">
       <New class="org.eclipse.jetty.ee9.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
       </New>
     </Set>
   </Get>
@@ -32,7 +38,7 @@
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
-     <New class="com.acme.MockDataSource">
+     <New class="org.example.MockDataSource">
      </New>
     </Arg>
    </New>

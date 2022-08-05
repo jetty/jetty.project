@@ -231,8 +231,13 @@ public class FileID
         {
             Path segment = relative.getName(i);
 
+            String segmentName = segment.toString();
+
+            if (segmentName.isBlank())
+                continue; // skip blank entries
+
             // default behavior that Jetty enforces
-            if (segment.toString().charAt(0) == '.')
+            if (segmentName.charAt(0) == '.')
                 return true;
 
             // FileSystem behavior, that the FileSystem enforces

@@ -21,6 +21,7 @@ import java.net.URL;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
 
-    private Resource.Mount _mount;
+    private ResourceFactory.Closeable _resourceFactory;
 
     public WebXmlConfiguration()
     {
@@ -48,7 +49,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = Resource.newSystemResource(defaultsDescriptor, mount -> _mount = mount);
+            Resource dftResource = ResourceFactory.of(context).newSystemResource(defaultsDescriptor);
             if (dftResource == null)
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
@@ -58,8 +59,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _mount = Resource.mountIfNeeded(uri);
-                        dftResource = _mount == null ? Resource.newResource(uri) : _mount.root();
+                        _resourceFactory = ResourceFactory.closeable();
+                        dftResource = _resourceFactory.newResource(uri);
                     }
                 }
                 if (dftResource == null)
@@ -82,7 +83,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             if (overrideDescriptor != null && overrideDescriptor.length() > 0)
             {
-                Resource orideResource = Resource.newSystemResource(overrideDescriptor);
+                Resource orideResource = ResourceFactory.of(context).newSystemResource(overrideDescriptor);
                 if (orideResource == null)
                     orideResource = context.newResource(overrideDescriptor);
                 context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));
@@ -131,8 +132,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (context.getErrorProcessor() instanceof ErrorPageErrorHandler errorPageErrorHandler) 
             errorPageErrorHandler.setErrorPages(null);
 
-        IO.close(_mount);
-        _mount = null;
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
 
         // TODO remove classpaths from classloader
     }

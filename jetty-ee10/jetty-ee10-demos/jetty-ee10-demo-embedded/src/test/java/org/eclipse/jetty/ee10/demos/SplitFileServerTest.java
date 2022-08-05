@@ -21,6 +21,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -40,8 +41,8 @@ public class SplitFileServerTest extends AbstractEmbeddedTest
     {
         Path path0 = Paths.get("src/test/resources/dir0");
         Path path1 = Paths.get("src/test/resources/dir1");
-        Resource resource0 = Resource.newResource(path0);
-        Resource resource1 = Resource.newResource(path1);
+        Resource resource0 = ResourceFactory.root().newResource(path0);
+        Resource resource1 = ResourceFactory.root().newResource(path1);
 
         server = SplitFileServer.createServer(0, resource0, resource1);
         server.start();

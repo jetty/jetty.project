@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -332,13 +333,34 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingStreamIdleTimeout() throws Exception
     {
         int idleTimeout = 1000;
+        AtomicReference<Throwable> thrownByCallback = new AtomicReference<>();
         start(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
             {
                 sleep(2 * idleTimeout);
-                callback.succeeded();
+
+                try
+                {
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    // Callback.succeeded() must not throw.
+                    thrownByCallback.set(x);
+                }
+
+                try
+                {
+                    // Wrongly calling callback.failed() after succeeded() must not throw.
+                    callback.failed(new Throwable("thrown by test"));
+                }
+                catch (Throwable x)
+                {
+                    // Callback.failed() must not throw.
+                    thrownByCallback.set(x);
+                }
             }
         });
 
@@ -376,7 +398,13 @@ public class IdleTimeoutTest extends AbstractTest
 
         assertTrue(timeoutLatch.await(5, TimeUnit.SECONDS));
         // We must not receive any DATA frame.
+        // This is because while the server receives a reset, there is a thread
+        // dispatched to the application, which could (but in this test does not)
+        // read from the request to notice the reset, so the server processing
+        // completes successfully with 200 and no DATA, rather than a 500 with DATA.
         assertFalse(dataLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        // No exceptions thrown by the callback on server.
+        assertNull(thrownByCallback.get());
         // Stream must be gone.
         assertTrue(session.getStreams().isEmpty());
         // Session must not be closed, nor disconnected.

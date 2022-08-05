@@ -20,10 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -87,7 +86,10 @@ public class TestServletAnnotations
 
         TestWebServletAnnotationHandler handler = new TestWebServletAnnotationHandler(wac, results);
 
-        parser.parse(Collections.singleton(handler), Resource.newResource(root));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            parser.parse(Collections.singleton(handler), resourceFactory.newResource(root));
+        }
 
         assertEquals(1, results.size());
         assertTrue(results.get(0) instanceof WebServletAnnotation);
@@ -115,7 +117,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testWebServletAnnotationOverrideDefault() throws Exception
+    public void testWebServletAnnotationOverrideDefault()
     {
         //if the existing servlet mapping TO A DIFFERENT SERVLET IS from a default descriptor we
         //DO allow the annotation to replace the mapping.
@@ -149,7 +151,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testWebServletAnnotationReplaceDefault() throws Exception
+    public void testWebServletAnnotationReplaceDefault()
     {
         //if the existing servlet mapping TO A DIFFERENT SERVLET IS from a default descriptor we
         //DO allow the annotation to replace the mapping.
@@ -200,7 +202,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testWebServletAnnotationNotOverride() throws Exception
+    public void testWebServletAnnotationNotOverride()
     {
         //if the existing servlet mapping TO A DIFFERENT SERVLET IS NOT from a default descriptor we
         //DO NOT allow the annotation to replace the mapping
@@ -235,7 +237,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testWebServletAnnotationIgnore() throws Exception
+    public void testWebServletAnnotationIgnore()
     {
         //an existing servlet OF THE SAME NAME has even 1 non-default mapping we can't use
         //any of the url mappings in the annotation
@@ -271,7 +273,7 @@ public class TestServletAnnotations
     }
 
     @Test
-    public void testWebServletAnnotationNoMappings() throws Exception
+    public void testWebServletAnnotationNoMappings()
     {
         //an existing servlet OF THE SAME NAME has no mappings, therefore all mappings in the annotation
         //should be accepted
@@ -294,12 +296,11 @@ public class TestServletAnnotations
 
     @Test
     public void testDeclareRoles()
-        throws Exception
     {
         WebAppContext wac = new WebAppContext();
         ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
         wac.setSecurityHandler(sh);
-        sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));
+        sh.setRoles(Set.of("humpty", "dumpty"));
         DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
         handler.doHandle(ServletC.class);
         assertThat(sh.getRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));

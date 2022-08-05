@@ -37,7 +37,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class ClientCertAuthenticatorTest
@@ -64,6 +66,7 @@ public class ClientCertAuthenticatorTest
     @BeforeEach
     public void setup() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         origSsf = HttpsURLConnection.getDefaultSSLSocketFactory();
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
@@ -111,7 +114,9 @@ public class ClientCertAuthenticatorTest
 
         HashLoginService loginService = new HashLoginService();
         constraintSecurityHandler.setLoginService(loginService);
-        loginService.setConfig("target/test-classes/realm.properties");
+
+        ResourceFactory resourceFactory = ResourceFactory.of(constraintSecurityHandler);
+        loginService.setConfig(resourceFactory.newResource("target/test-classes/realm.properties"));
 
         constraintSecurityHandler.setHandler(new FooHandler());
         context.setHandler(constraintSecurityHandler);
@@ -140,6 +145,7 @@ public class ClientCertAuthenticatorTest
             HttpsURLConnection.setDefaultSSLSocketFactory(origSsf);
         }
         server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private SslContextFactory.Server createServerSslContextFactory(String trustStorePath, String trustStorePassword)
@@ -147,8 +153,8 @@ public class ClientCertAuthenticatorTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
-        cf.setTrustStoreResource(Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/" + trustStorePath)));
-        cf.setKeyStoreResource(Resource.newResource(MavenTestingUtils.getTargetPath("test-classes/clientcert.jks")));
+        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTargetPath("test-classes/" + trustStorePath)));
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenTestingUtils.getTargetPath("test-classes/clientcert.jks")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);

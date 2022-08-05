@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -64,13 +63,13 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,9 +80,8 @@ public class DefaultServlet extends HttpServlet
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
 
-    private Resource.Mount _resourceBaseMount;
+    private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private Resource.Mount _stylesheetMount;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
 
@@ -102,9 +100,8 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                URI resourceUri = Resource.toURI(rb);
-                _resourceBaseMount = Resource.mountIfNeeded(resourceUri);
-                _baseResource = Resource.newResource(resourceUri);
+                _resourceFactory = ResourceFactory.closeable();
+                _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)
             {
@@ -119,7 +116,7 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -173,9 +170,7 @@ public class DefaultServlet extends HttpServlet
         {
             if (stylesheet != null)
             {
-                URI uri = Resource.toURI(stylesheet);
-                _stylesheetMount = Resource.mountIfNeeded(uri);
-                _stylesheet = Resource.newResource(uri);
+                _stylesheet = _resourceFactory.newResource(stylesheet);
                 if (!_stylesheet.exists())
                 {
                     LOG.warn("Stylesheet {} does not exist", stylesheet);
@@ -184,7 +179,7 @@ public class DefaultServlet extends HttpServlet
             }
             if (_stylesheet == null)
             {
-                _stylesheet = ResourceHandler.getDefaultStyleSheet();
+                _stylesheet = servletContextHandler.getServer().getDefaultStyleSheet();
             }
 
             // TODO the stylesheet is never actually used ?
@@ -234,8 +229,7 @@ public class DefaultServlet extends HttpServlet
     public void destroy()
     {
         super.destroy();
-        IO.close(_stylesheetMount);
-        IO.close(_resourceBaseMount);
+        IO.close(_resourceFactory);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
@@ -325,7 +319,7 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
+            HttpContent content = _resourceService.getContent(pathInContext);
             if (content == null || !content.getResource().exists())
             {
                 if (included)
@@ -906,9 +900,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public HttpContent getContent(String path, int outputBufferSize) throws IOException
+        public HttpContent getContent(String path) throws IOException
         {
-            HttpContent httpContent = super.getContent(path, outputBufferSize);
+            HttpContent httpContent = super.getContent(path);
 
             if (httpContent != null)
             {

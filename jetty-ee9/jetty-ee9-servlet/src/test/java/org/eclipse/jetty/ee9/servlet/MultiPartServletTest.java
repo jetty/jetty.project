@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,7 +60,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Disabled // TODO
 public class MultiPartServletTest
 {
     private Server server;
@@ -158,7 +157,7 @@ public class MultiPartServletTest
         BytesRequestContent content = new BytesRequestContent(byteArray);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        multiPart.addFieldPart("largePart", content, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart("largePart", null, HttpFields.EMPTY, content));
         multiPart.close();
 
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
@@ -187,7 +186,7 @@ public class MultiPartServletTest
         StringRequestContent content = new StringRequestContent(contentString);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        multiPart.addFieldPart("largePart", content, null);
+        multiPart.addPart(new MultiPart.ContentSourcePart("largePart", null, HttpFields.EMPTY, content));
         multiPart.close();
 
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
