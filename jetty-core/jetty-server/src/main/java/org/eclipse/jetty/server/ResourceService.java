@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.InclusiveByteRange;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -659,7 +659,7 @@ public class ResourceService
         return true;
     }
 
-    protected void writeHttpPartialContent(Request request, Response response, Callback callback, HttpContent content, InclusiveByteRange singleSatisfiableRange)
+    protected void writeHttpPartialContent(Request request, Response response, Callback callback, HttpContent content, ByteRange singleSatisfiableRange)
     {
         // TODO: implement this
     }
