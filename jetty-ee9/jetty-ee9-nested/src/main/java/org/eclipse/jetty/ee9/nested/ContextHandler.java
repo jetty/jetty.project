@@ -1168,12 +1168,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _coreContextHandler.setBaseResource(base);
     }
 
-    // TODO inline this ???
-    public void setBaseResource(Path path)
-    {
-        setBaseResource(path == null ? null : Resource.newResource(path));
-    }
-
     /**
      * Set the base resource for this context.
      *
