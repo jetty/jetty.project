@@ -73,11 +73,9 @@ public interface HttpContent
     {
         /**
          * @param path The path within the context to the resource
-         * @param maxBuffer The maximum buffer to allocated for this request.
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
-        // TODO maxBuffer is not needed anymore
-        HttpContent getContent(String path, int maxBuffer) throws IOException;
+        HttpContent getContent(String path) throws IOException;
     }
 }

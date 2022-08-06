@@ -28,8 +28,9 @@ import java.util.Properties;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * This is the class that is executed when the jetty maven plugin 
  * forks a process when DeploymentMode=FORKED.
  */
-public class JettyForkedChild extends AbstractLifeCycle
+public class JettyForkedChild extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyForkedChild.class);
     
@@ -194,7 +195,7 @@ public class JettyForkedChild extends AbstractLifeCycle
         jetty.start();
 
         //touch file to signify start of jetty
-        Resource r = Resource.newResource(tokenFile.toPath());
+        Resource r = ResourceFactory.of(this).newResource(tokenFile.toPath());
         Files.createFile(r.getPath());
 
         //Start a watcher on a file that will change if the

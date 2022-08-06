@@ -21,14 +21,12 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -40,30 +38,6 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
-    static class Mount implements Resource.Mount
-    {
-        private final List<Resource.Mount> _mounts;
-        private final ResourceCollection _root;
-
-        Mount(Collection<Resource> resources, List<Resource.Mount> mounts)
-        {
-            _root = new ResourceCollection(resources);
-            _mounts = mounts;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            _mounts.forEach(IO::close);
-        }
-
-        @Override
-        public Resource root()
-        {
-            return _root;
-        }
-    }
-
     private final List<Resource> _resources;
 
     /**
@@ -71,14 +45,14 @@ public class ResourceCollection extends Resource
      *
      * @param resources the resources to be added to collection
      */
-    ResourceCollection(Collection<Resource> resources)
+    ResourceCollection(List<Resource> resources)
     {
         List<Resource> res = new ArrayList<>();
         gatherUniqueFlatResourceList(res, resources);
         _resources = Collections.unmodifiableList(res);
     }
 
-    private static void gatherUniqueFlatResourceList(List<Resource> unique, Collection<Resource> resources)
+    private static void gatherUniqueFlatResourceList(List<Resource> unique, List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
             throw new IllegalArgumentException("Empty Resource collection");
@@ -173,12 +147,6 @@ public class ResourceCollection extends Resource
             return resources.get(0);
 
         return new ResourceCollection(resources);
-    }
-
-    @Override
-    public boolean delete() throws SecurityException
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -312,12 +280,6 @@ public class ResourceCollection extends Resource
         ArrayList<String> result = new ArrayList<>(set);
         result.sort(Comparator.naturalOrder());
         return result;
-    }
-
-    @Override
-    public boolean renameTo(Resource dest) throws SecurityException
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

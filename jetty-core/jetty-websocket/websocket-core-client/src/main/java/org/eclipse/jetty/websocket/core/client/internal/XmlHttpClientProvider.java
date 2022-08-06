@@ -17,6 +17,7 @@ import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +50,9 @@ public class XmlHttpClientProvider implements HttpClientProvider
 
     private static HttpClient newHttpClient(URL resource)
     {
-        try
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(resource));
+            XmlConfiguration configuration = new XmlConfiguration(resourceFactory.newResource(resource));
             return (HttpClient)configuration.configure();
         }
         catch (Throwable t)

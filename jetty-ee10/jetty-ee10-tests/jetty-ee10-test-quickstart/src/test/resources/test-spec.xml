@@ -10,15 +10,20 @@
     </Arg>
   </New>
 
+  <Call name="getResourceFactory">
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Arg>
+    </Call>
+  </Call>
+
   <Get name="securityHandler">
     <Set name="loginService">
       <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
       </New>
     </Set>
   </Get>
-
 
   <New id="maxAmount"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>

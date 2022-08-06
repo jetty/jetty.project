@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.security;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.security.KeyStore;
 import java.security.cert.CRL;
 import java.security.cert.CertificateFactory;
@@ -21,6 +22,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class CertificateUtils
 {
@@ -59,7 +61,8 @@ public class CertificateUtils
 
         if (crlPath != null)
         {
-            try (InputStream in = Resource.newResource(crlPath).newInputStream())
+            try (ResourceFactory.Closeable factory = ResourceFactory.closeable();
+                 InputStream in = factory.newResource(crlPath).newInputStream())
             {
                 crlList = CertificateFactory.getInstance("X.509").generateCRLs(in);
             }

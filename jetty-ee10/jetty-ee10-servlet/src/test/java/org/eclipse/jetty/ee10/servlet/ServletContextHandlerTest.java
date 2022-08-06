@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,6 +78,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1863,6 +1865,7 @@ public class ServletContextHandlerTest
         ServletHandler shandler = servletContextHandler.getServletHandler();
 
         ResourceHandler rh = new ResourceHandler();
+        rh.setBaseResource(ResourceFactory.of(rh).newResource(Paths.get(".")));
 
         servletContextHandler.insertHandler(rh);
         assertEquals(shandler, servletContextHandler.getServletHandler());

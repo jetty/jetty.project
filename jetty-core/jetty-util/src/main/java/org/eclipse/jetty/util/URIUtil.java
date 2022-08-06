@@ -31,7 +31,6 @@ import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +48,13 @@ import org.slf4j.LoggerFactory;
 public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
+    private static final Index<String> KNOWN_SCHEMES = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("file:")
+        .with("jrt:")
+        .with("jar:")
+        .build();
+
     public static final String SLASH = "/";
     public static final String HTTP = "http";
     public static final String HTTPS = "https";
@@ -1752,7 +1758,7 @@ public final class URIUtil
                 else
                 {
                     // Simple reference
-                    URI refUri = Resource.toURI(reference);
+                    URI refUri = toURI(reference);
                     // Is this a Java Archive that can be mounted?
                     URI jarFileUri = toJarFileUri(refUri);
                     if (jarFileUri != null)
@@ -1815,6 +1821,25 @@ public final class URIUtil
 
         // shouldn't be possible to reach this point
         throw new IllegalArgumentException("Cannot make %s into `jar:file:` URI".formatted(uri));
+    }
+
+    /**
+     * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     *
+     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
+     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * @return The {@link URI} form of the resource.
+     */
+    public static URI toURI(String resource)
+    {
+        Objects.requireNonNull(resource);
+
+        // Only try URI for string for known schemes, otherwise assume it is a Path
+        URI uri = (KNOWN_SCHEMES.getBest(resource) != null)
+            ? URI.create(resource)
+            : Paths.get(resource).toUri();
+
+        return uri;
     }
 
     /**

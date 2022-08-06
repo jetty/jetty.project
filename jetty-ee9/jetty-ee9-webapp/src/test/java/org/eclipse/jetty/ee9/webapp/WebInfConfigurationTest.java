@@ -21,6 +21,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,8 +50,11 @@ public class WebInfConfigurationTest
     @MethodSource("rawResourceNames")
     public void testTinyGetResourceBaseName(String rawPath, String expectedName) throws IOException
     {
-        Resource resource = Resource.newResource(rawPath);
-        assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(rawPath);
+            assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
+        }
     }
 
     public static Stream<Arguments> fileBaseResourceNames()
@@ -90,7 +94,10 @@ public class WebInfConfigurationTest
             FS.touch(base);
         }
 
-        Resource resource = Resource.newResource(base);
-        assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(base);
+            assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
+        }
     }
 }

@@ -13,15 +13,12 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -35,160 +32,26 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Index;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
- * Abstract resource class.
  * <p>
- * This class provides a resource abstraction, where a resource may be
- * a file, a URL or an entry in a jar file.
+ * A Resource is a wrapper over a {@link Path} object pointing to a file or directory that can be represented by a{@link java.nio.file.FileSystem}.
+ * </p>
+ * <p>
+ * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
-public abstract class Resource implements ResourceFactory
+public abstract class Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
-
-    private static final Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file:")
-        .with("jrt:")
-        .with("jar:")
-        .build();
-
-    /**
-     * <p>Create a ResourceCollection from an unknown set of URIs.</p>
-     *
-     * <p>
-     *     Use this if you are working with URIs from an unknown source,
-     *     such as a user configuration.  As some of the entries
-     *     might need mounting, but we cannot determine that yet.
-     * </p>
-     *
-     * @param uris collection of URIs to mount into a {@code ResourceCollection}
-     * @return the {@link Mount} with a root pointing to the {@link ResourceCollection}
-     */
-    public static Resource.Mount mountCollection(Collection<URI> uris)
-    {
-        List<Resource> resources = new ArrayList<>();
-        List<Resource.Mount> mounts = new ArrayList<>();
-
-        try
-        {
-            // track URIs that have been seen, to avoid adding duplicates.
-            Set<URI> seenUris = new HashSet<>();
-
-            for (URI uri : uris)
-            {
-                if (seenUris.contains(uri))
-                    continue; // skip this one
-                Resource.Mount mount = Resource.mountIfNeeded(uri);
-                if (mount != null)
-                {
-                    mounts.add(mount);
-                    resources.add(mount.root()); // use mounted resource that has Path with proper FileSystem reference in it.
-                }
-                else
-                {
-                    resources.add(Resource.newResource(uri));
-                }
-                seenUris.add(uri);
-            }
-
-            return new ResourceCollection.Mount(resources, mounts);
-        }
-        catch (Throwable t)
-        {
-            // can't create ResourceCollection.Mount, so let's unmount and rethrow.
-            mounts.forEach(IO::close);
-            throw t;
-        }
-    }
-
-    /**
-     * <p>Mount a URI if it is needed.</p>
-     *
-     * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link Mount} for that file system or null. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from a mounted resource.
-     * @throws IllegalArgumentException If the uri could not be mounted.
-     * @see #mount(URI)
-     */
-    public static Resource.Mount mountIfNeeded(URI uri)
-    {
-        if (uri == null)
-            return null;
-        String scheme = uri.getScheme();
-        if (scheme == null)
-            return null;
-        if (!FileID.isArchive(uri))
-            return null;
-        try
-        {
-            if (scheme.equalsIgnoreCase("jar"))
-            {
-                return FileSystemPool.INSTANCE.mount(uri);
-            }
-            // TODO: review contract, should this be null, or an empty mount?
-            return null;
-        }
-        catch (IOException ioe)
-        {
-            throw new IllegalArgumentException(ioe);
-        }
-    }
-
-    /**
-     * @param uri The URI to mount that requires a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the uri could not be mounted.
-     * @throws IllegalArgumentException If the URI does not require a mount.
-     * @see #mountIfNeeded(URI)
-     */
-    public static Resource.Mount mount(URI uri) throws IOException
-    {
-        if (!FileID.isArchive(uri))
-            throw new IllegalArgumentException("URI is not a Java Archive: " + uri);
-        if (!uri.getScheme().equalsIgnoreCase("jar"))
-            throw new IllegalArgumentException("not an allowed URI: " + uri);
-        return FileSystemPool.INSTANCE.mount(uri);
-    }
-
-    /**
-     * @param path The path to a jar file to be mounted (e.g. "file:/tmp/some.jar")
-     * @return A reference counted {@link Mount} for that file system. Callers should call {@link Mount#close()} once
-     * they no longer require any resources from the mounted resource.
-     * @throws IOException If the path could not be mounted
-     */
-    public static Resource.Mount mountJar(Path path) throws IOException
-    {
-        if (!FileID.isArchive(path))
-            throw new IllegalArgumentException("Path is not a Java Archive: " + path);
-        URI pathUri = path.toUri();
-        if (!pathUri.getScheme().equalsIgnoreCase("file"))
-            throw new IllegalArgumentException("Not an allowed path: " + path);
-        URI jarUri = URIUtil.toJarFileUri(pathUri);
-        if (jarUri == null)
-            throw new IllegalArgumentException("Not a mountable archive: " + path);
-        return FileSystemPool.INSTANCE.mount(jarUri);
-    }
 
     /**
      * <p>Make a Resource containing a collection of other resources</p>
@@ -196,11 +59,10 @@ public abstract class Resource implements ResourceFactory
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(List<Resource> resources)
+    public static ResourceCollection combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
             throw new IllegalArgumentException("No resources");
-
         return new ResourceCollection(resources);
     }
 
@@ -210,31 +72,11 @@ public abstract class Resource implements ResourceFactory
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    public static ResourceCollection of(Resource... resources)
+    public static ResourceCollection combine(Resource... resources)
     {
         if (resources == null || resources.length == 0)
             throw new IllegalArgumentException("No resources");
-
         return new ResourceCollection(List.of(resources));
-    }
-
-    /**
-     * <p>Convert a String into a URI suitable for use as a Resource.</p>
-     *
-     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
-     * @return The {@link URI} form of the resource.
-     */
-    public static URI toURI(String resource)
-    {
-        Objects.requireNonNull(resource);
-
-        // Only try URI for string for known schemes, otherwise assume it is a Path
-        URI uri = (ALLOWED_SCHEMES.getBest(resource) != null)
-            ? URI.create(resource)
-            : Paths.get(resource).toUri();
-
-        return uri;
     }
 
     public static String dump(Resource resource)
@@ -246,41 +88,12 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Construct a resource from a url.
-     *
-     * @param url A URL.
-     * @return A Resource object.
-     */
-    public static Resource newResource(URL url)
-    {
-        try
-        {
-            return newResource(url.toURI());
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
-    }
-
-    /**
-     * Construct a resource from a string.
-     *
-     * @param resource A URL or filename.
-     * @return A Resource object.
-     */
-    public static Resource newResource(String resource)
-    {
-        return newResource(toURI(resource));
-    }
-
-    /**
      * Construct a resource from a uri.
      *
      * @param uri A URI.
      * @return A Resource object.
      */
-    public static Resource newResource(URI uri)
+    static Resource create(URI uri)
     {
         try
         {
@@ -306,133 +119,6 @@ public abstract class Resource implements ResourceFactory
         {
             throw new IllegalArgumentException(ex);
         }
-    }
-
-    /**
-     * Construct a Resource from provided path
-     *
-     * @param path the path
-     * @return the Resource for the provided path
-     */
-    public static Resource newResource(Path path)
-    {
-        return newResource(path.toUri());
-    }
-
-    /**
-     * Construct a system resource from a string.
-     * The resource is tried as classloader resource before being
-     * treated as a normal resource.
-     *
-     * @param resource Resource as string representation
-     * @return The new Resource
-     */
-    public static Resource newSystemResource(String resource)
-    {
-        return newSystemResource(resource, null);
-    }
-
-    /**
-     * Construct a system resource from a string.
-     * The resource is tried as classloader resource before being
-     * treated as a normal resource.
-     *
-     * @param resource Resource as string representation
-     * @param mountConsumer a consumer that receives the mount in case the resource needs mounting
-     * @return The new Resource
-     */
-    public static Resource newSystemResource(String resource, Consumer<Mount> mountConsumer)
-    {
-        URL url = null;
-        // Try to format as a URL?
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader != null)
-        {
-            try
-            {
-                url = loader.getResource(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
-            }
-            catch (IllegalArgumentException e)
-            {
-                LOG.trace("IGNORED", e);
-                // Catches scenario where a bad Windows path like "C:\dev" is
-                // improperly escaped, which various downstream classloaders
-                // tend to have a problem with
-                url = null;
-            }
-        }
-        if (url == null)
-        {
-            loader = Resource.class.getClassLoader();
-            if (loader != null)
-            {
-                url = loader.getResource(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
-            }
-        }
-
-        if (url == null)
-        {
-            url = ClassLoader.getSystemResource(resource);
-            if (url == null && resource.startsWith("/"))
-                url = ClassLoader.getSystemResource(resource.substring(1));
-        }
-
-        if (url == null)
-            return null;
-
-        try
-        {
-            URI uri = url.toURI();
-            if (mountConsumer != null && uri.getScheme().equalsIgnoreCase("jar"))
-            {
-                Mount mount = mount(uri);
-                mountConsumer.accept(mount);
-                return mount.root();
-            }
-            return newResource(uri);
-        }
-        catch (IOException | URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
-    }
-
-    /**
-     * Find a classpath resource.
-     * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
-     * found, then the {@link Loader#getResource(String)} method is used.
-     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
-     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
-     *
-     * @param resource the relative name of the resource
-     * @return Resource or null
-     */
-    public static Resource newClassPathResource(String resource)
-    {
-        URL url = Resource.class.getResource(resource);
-
-        if (url == null)
-            url = Loader.getResource(resource);
-        if (url == null)
-            return null;
-        return newResource(url);
-    }
-
-    /**
-     * Return true if the Resource r is contained in the Resource containingResource, either because
-     * containingResource is a folder or a jar file or any form of resource capable of containing other resources.
-     *
-     * @param r the contained resource
-     * @param containingResource the containing resource
-     * @return true if the Resource is contained, false otherwise
-     */
-    public static boolean isContainedIn(Resource r, Resource containingResource)
-    {
-        return r.isContainedIn(containingResource);
     }
 
     /**
@@ -575,50 +261,6 @@ public abstract class Resource implements ResourceFactory
     }
 
     /**
-     * Deletes the given resource
-     * Equivalent to {@link Files#deleteIfExists(Path)} with the following parameter:
-     * {@link #getPath()}.
-     *
-     * @return true if the resource was deleted by this method; false if the file could not be deleted because it did not exist
-     * or if {@link Files#deleteIfExists(Path)} throws {@link IOException}.
-     */
-    public boolean delete()
-    {
-        try
-        {
-            return Files.deleteIfExists(getPath());
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return false;
-        }
-    }
-
-    /**
-     * Rename the given resource
-     * Equivalent to {@link Files#move(Path, Path, CopyOption...)} with the following parameter:
-     * {@link #getPath()}, {@code dest.getPath()} then returning the result of {@link Files#exists(Path, LinkOption...)}
-     * on the {@code Path} returned by {@code move()}.
-     *
-     * @param dest the destination name for the resource
-     * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
-     */
-    public boolean renameTo(Resource dest)
-    {
-        try
-        {
-            Path result = Files.move(getPath(), dest.getPath());
-            return Files.exists(result, NO_FOLLOW_LINKS);
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return false;
-        }
-    }
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
@@ -707,7 +349,7 @@ public abstract class Resource implements ResourceFactory
                 uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uri.resolve(subUriPath);
         }
-        return newResource(resolvedUri);
+        return create(resolvedUri);
     }
 
     /**
@@ -723,56 +365,6 @@ public abstract class Resource implements ResourceFactory
      */
     public URI getAlias()
     {
-        return null;
-    }
-
-    /**
-     * Get the raw (decoded if possible) Filename for this Resource.
-     * This is the last segment of the path.
-     *
-     * @return the raw / decoded filename for this resource
-     */
-    private String getFileName()
-    {
-        try
-        {
-            // if a Resource supports File
-            Path path = getPath();
-            if (path != null)
-            {
-                return path.getFileName().toString();
-            }
-        }
-        catch (Throwable ignored)
-        {
-        }
-
-        // All others use raw getName
-        try
-        {
-            String rawName = getName(); // gets long name "/foo/bar/xxx"
-            int idx = rawName.lastIndexOf('/');
-            if (idx == rawName.length() - 1)
-            {
-                // hit a tail slash, aka a name for a directory "/foo/bar/"
-                idx = rawName.lastIndexOf('/', idx - 1);
-            }
-
-            String encodedFileName;
-            if (idx >= 0)
-            {
-                encodedFileName = rawName.substring(idx + 1);
-            }
-            else
-            {
-                encodedFileName = rawName; // entire name
-            }
-            return UrlEncoded.decodeString(encodedFileName, 0, encodedFileName.length(), UTF_8);
-        }
-        catch (Throwable ignored)
-        {
-        }
-
         return null;
     }
 
@@ -876,24 +468,5 @@ public abstract class Resource implements ResourceFactory
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Certain {@link Resource}s (e.g.: JAR files) require mounting before they can be used. This class is the representation
-     * of such mount allowing the use of more {@link Resource}s.
-     * Mounts are {@link Closeable} because they always contain resources (like file descriptors) that must eventually
-     * be released.
-     *
-     * @see #mount(URI)
-     * @see #mountJar(Path)
-     */
-    public interface Mount extends Closeable
-    {
-        /**
-         * Return the root {@link Resource} made available by this mount.
-         *
-         * @return the resource.
-         */
-        Resource root();
     }
 }

@@ -21,12 +21,15 @@ import java.nio.file.Path;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,7 +41,22 @@ public class ResourceAliasTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceAliasTest.class);
 
+    private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
+
     public WorkDir workDir;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        resourceFactory.close();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
 
     @Test
     public void testPercentPaths() throws IOException
@@ -59,7 +77,7 @@ public class ResourceAliasTest
 
         assertTrue(Files.exists(text));
 
-        Resource baseResource = Resource.newResource(baseDir);
+        Resource baseResource = resourceFactory.newResource(baseDir);
         assertTrue(baseResource.exists(), "baseResource exists");
 
         Resource fooResource = baseResource.resolve("%25foo");
@@ -93,19 +111,19 @@ public class ResourceAliasTest
 
             assertThat(file0 + " exists", Files.exists(file0), is(true));  // This is an alias!
 
-            Resource dir = Resource.newResource(baseDir);
+            Resource dir = resourceFactory.newResource(baseDir);
 
             // Test not alias paths
-            Resource resource = Resource.newResource(file);
+            Resource resource = resourceFactory.newResource(file);
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
-            resource = Resource.newResource(file.toAbsolutePath());
+            resource = resourceFactory.newResource(file.toAbsolutePath());
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
-            resource = Resource.newResource(file.toUri());
+            resource = resourceFactory.newResource(file.toUri());
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
-            resource = Resource.newResource(file.toUri().toString());
+            resource = resourceFactory.newResource(file.toUri().toString());
             assertTrue(resource.exists());
             assertNull(resource.getAlias());
             resource = dir.resolve("test.txt");
@@ -113,16 +131,16 @@ public class ResourceAliasTest
             assertNull(resource.getAlias());
 
             // Test alias paths
-            resource = Resource.newResource(file0);
+            resource = resourceFactory.newResource(file0);
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
-            resource = Resource.newResource(file0.toAbsolutePath());
+            resource = resourceFactory.newResource(file0.toAbsolutePath());
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
-            resource = Resource.newResource(file0.toUri());
+            resource = resourceFactory.newResource(file0.toUri());
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
-            resource = Resource.newResource(file0.toUri().toString());
+            resource = resourceFactory.newResource(file0.toUri().toString());
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
 

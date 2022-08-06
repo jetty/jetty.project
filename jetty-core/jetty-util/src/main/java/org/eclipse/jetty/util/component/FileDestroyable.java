@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,22 +20,23 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FileDestroyable implements Destroyable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileDestroyable.class);
-    final List<Path> _paths = new ArrayList<Path>();
+    final List<Path> _paths = new ArrayList<>();
+    private final ContainerLifeCycle mountContainer = new ContainerLifeCycle();
 
     public FileDestroyable()
     {
     }
 
-    public FileDestroyable(String file) throws IOException
+    public FileDestroyable(String file)
     {
-        _paths.add(Resource.newResource(file).getPath());
+        _paths.add(ResourceFactory.of(mountContainer).newResource(file).getPath());
     }
 
     public FileDestroyable(Path path)
@@ -44,9 +44,9 @@ public class FileDestroyable implements Destroyable
         _paths.add(path);
     }
 
-    public void addFile(String file) throws IOException
+    public void addFile(String file)
     {
-        _paths.add(Resource.newResource(file).getPath());
+        _paths.add(ResourceFactory.of(mountContainer).newResource(file).getPath());
     }
 
     public void addPath(Path path)
@@ -59,9 +59,9 @@ public class FileDestroyable implements Destroyable
         _paths.addAll(paths);
     }
 
-    public void removeFile(String file) throws IOException
+    public void removeFile(String file)
     {
-        _paths.remove(Resource.newResource(file).getPath());
+        _paths.remove(ResourceFactory.of(mountContainer).newResource(file).getPath());
     }
 
     public void removeFile(Path path)
@@ -81,5 +81,6 @@ public class FileDestroyable implements Destroyable
                 IO.delete(path);
             }
         }
+        LifeCycle.stop(mountContainer);
     }
 }

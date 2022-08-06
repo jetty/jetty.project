@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
 
 /**
@@ -27,23 +26,13 @@ import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
  */
 public class ContainerInitializerAnnotationHandler extends AnnotationParser.AbstractHandler
 {
-    final ContainerInitializer _initializer;
     final ServletContainerInitializerHolder _holder;
     final Class<?> _annotation;
 
-    @Deprecated
-    public ContainerInitializerAnnotationHandler(ContainerInitializer initializer, Class<?> annotation)
-    {
-        _holder = null;
-        _annotation = Objects.requireNonNull(annotation);
-        _initializer = initializer;
-    }
-    
     public ContainerInitializerAnnotationHandler(ServletContainerInitializerHolder holder, Class<?> annotation)
     {
         _holder = Objects.requireNonNull(holder);
         _annotation = Objects.requireNonNull(annotation);
-        _initializer = null;
     }
 
     /**
@@ -57,10 +46,7 @@ public class ContainerInitializerAnnotationHandler extends AnnotationParser.Abst
         if (!_annotation.getName().equals(annotationName))
             return;
 
-        if (_initializer != null)
-            _initializer.addAnnotatedTypeName(info.getClassName());
-        else
-            _holder.addStartupClasses(info.getClassName());
+        _holder.addStartupClasses(info.getClassName());
     }
 
     /**
@@ -74,10 +60,7 @@ public class ContainerInitializerAnnotationHandler extends AnnotationParser.Abst
         if (!_annotation.getName().equals(annotationName))
             return;
 
-        if (_initializer != null)
-            _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
-        else
-            _holder.addStartupClasses(info.getClassInfo().getClassName());
+        _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 
     /**
@@ -90,15 +73,6 @@ public class ContainerInitializerAnnotationHandler extends AnnotationParser.Abst
     {
         if (!_annotation.getName().equals(annotationName))
             return;
-        if (_initializer != null)
-            _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
-        else
-            _holder.addStartupClasses(info.getClassInfo().getClassName());
-    }
-
-    @Deprecated
-    public ContainerInitializer getContainerInitializer()
-    {
-        return _initializer;
+        _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 }

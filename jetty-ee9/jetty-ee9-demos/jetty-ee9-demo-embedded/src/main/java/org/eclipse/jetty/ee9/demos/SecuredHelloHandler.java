@@ -23,6 +23,8 @@ import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
@@ -44,13 +46,11 @@ public class SecuredHelloHandler
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
         String realmResourceName = "etc/realm.properties";
-        ClassLoader classLoader = SecuredHelloHandler.class.getClassLoader();
-        URL realmProps = classLoader.getResource(realmResourceName);
-        if (realmProps == null)
+        Resource realmResource = ResourceFactory.of(server).newClassPathResource("etc/realm.properties");
+        if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
-        LoginService loginService = new HashLoginService("MyRealm",
-            realmProps.toExternalForm());
+        LoginService loginService = new HashLoginService("MyRealm", realmResource);
         server.addBean(loginService);
 
         // A security handler is a jetty handler that secures content behind a

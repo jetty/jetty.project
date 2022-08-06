@@ -57,6 +57,7 @@ import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -66,7 +67,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -332,7 +333,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private boolean _requestedSessionIdFromCookie;
         private Authentication _authentication;
         private String _method;
-        
+        private ServletMultiParts.Parts _multiParts;
+
         public static Session getSession(HttpSession httpSession)
         {
             if (httpSession instanceof Session.APISession apiSession)
@@ -351,7 +353,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             extractContentParameters();
             return _contentParameters;
         }
-        
+
         public void setAuthentication(Authentication authentication)
         {
             _authentication = authentication;
@@ -764,15 +766,19 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public Collection<Part> getParts() throws IOException, ServletException
         {
-            // TODO
-            return null;
+            String contentType = getContentType();
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+                throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
+            if (_multiParts == null)
+                _multiParts = ServletMultiParts.from(this);
+            return _multiParts.getParts();
         }
 
         @Override
         public Part getPart(String name) throws IOException, ServletException
         {
-            // TODO NYI
-            return null;
+            getParts();
+            return _multiParts.getPart(name);
         }
 
         @Override
@@ -1000,7 +1006,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 {
                     try
                     {
-                        _contentParameters =  FutureFormFields.forRequest(getRequest()).get();
+                        _contentParameters =  FormFields.from(getRequest()).get();
                         if (_contentParameters == null || _contentParameters.isEmpty())
                             _contentParameters = NO_PARAMS;
                     }

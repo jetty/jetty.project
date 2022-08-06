@@ -13,18 +13,33 @@
 
 package org.eclipse.jetty.util.resource;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class JrtResourceTest
 {
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testResourceModule()
         throws Exception
     {
-        Resource resource = Resource.newResource("jrt:/java.base");
+        Resource resource = ResourceFactory.root().newResource("jrt:/java.base");
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));
@@ -35,7 +50,7 @@ public class JrtResourceTest
     public void testResourceAllModules()
         throws Exception
     {
-        Resource resource = Resource.newResource("jrt:/");
+        Resource resource = ResourceFactory.root().newResource("jrt:/");
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));
