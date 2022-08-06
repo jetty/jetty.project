@@ -33,6 +33,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class BlockingArrayQueueTest
 {
     @Test
-    public void testWrap() throws Exception
+    public void testWrap()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3);
 
@@ -83,7 +84,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemove() throws Exception
+    public void testRemove()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 3);
 
@@ -105,7 +106,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testLimit() throws Exception
+    public void testLimit()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1, 0, 1);
 
@@ -118,7 +119,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testGrow() throws Exception
+    public void testGrow()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 2);
         assertEquals(3, queue.getCapacity());
@@ -344,7 +345,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveObjectWithWrappedTail() throws Exception
+    public void testRemoveObjectWithWrappedTail()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(6);
         // Wrap the tail
@@ -366,7 +367,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveObject() throws Exception
+    public void testRemoveObject()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
 
@@ -400,7 +401,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveWithMaxCapacityOne() throws Exception
+    public void testRemoveWithMaxCapacityOne()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
 
@@ -413,7 +414,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testIteratorWithModification() throws Exception
+    public void testIteratorWithModification()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         int count = queue.getMaxCapacity() - 1;
@@ -435,7 +436,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testListIterator() throws Exception
+    public void testListIterator()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         String element1 = "A";
@@ -469,7 +470,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testListIteratorWithWrappedHead() throws Exception
+    public void testListIteratorWithWrappedHead()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         // This sequence of offers and polls wraps the head around the array
@@ -509,7 +510,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testDrainTo() throws Exception
+    public void testDrainTo()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
         queue.add("one");
@@ -529,5 +530,31 @@ public class BlockingArrayQueueTest
         assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
         assertThat(queue.size(), Matchers.is(0));
         assertThat(queue, Matchers.empty());
+    }
+
+    @Test
+    public void testDrainToAtDefaultGrowthSize()
+    {
+        BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>();
+        for (int i = 0; i < BlockingArrayQueue.DEFAULT_GROWTH * 2; i++)
+        {
+            queue.add(i);
+        }
+
+        List<Integer> list = new ArrayList<>();
+        assertThat(queue.drainTo(list), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
+        assertThat(list.size(), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
+        assertThat(queue.size(), is(0));
+    }
+
+    @Test
+    public void testDrainToAtZeroSize()
+    {
+        BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>();
+
+        List<Integer> list = new ArrayList<>();
+        assertThat(queue.drainTo(list), is(0));
+        assertThat(list.size(), is(0));
+        assertThat(queue.size(), is(0));
     }
 }

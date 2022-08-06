@@ -487,13 +487,19 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             _headLock.lock();
             try
             {
+                if (_size.get() == 0)
+                    return 0;
+
                 final int head = _indexes[HEAD_OFFSET];
                 final int tail = _indexes[TAIL_OFFSET];
                 final int capacity = _elements.length;
 
                 int i = head;
-                while (i != tail && elements < maxElements)
+                while (elements < maxElements)
                 {
+                    if (i == tail && elements > 0)
+                        break;
+
                     elements++;
                     c.add((E)_elements[i]);
                     ++i;
