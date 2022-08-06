@@ -45,7 +45,7 @@ public class JarServerTest extends AbstractEmbeddedTest
             throw new FileNotFoundException(jarFile.toString());
 
         server = JarServer.createServer(0, jarFile.toUri());
-        server.addBean(lifeCycle, true);
+        server.addBean(server, true);
         server.start();
     }
 
