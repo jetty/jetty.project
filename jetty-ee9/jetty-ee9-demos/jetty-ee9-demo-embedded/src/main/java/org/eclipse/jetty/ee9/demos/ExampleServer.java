@@ -31,16 +31,12 @@ public class ExampleServer
         connector.setPort(port);
         server.setConnectors(new Connector[]{connector});
 
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
-
         ServletContextHandler context = new ServletContextHandler();
-        contexts.addHandler(contexts);
-
         context.setContextPath("/");
         context.addServlet(HelloServlet.class, "/hello");
         context.addServlet(AsyncEchoServlet.class, "/echo/*");
-        server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
+
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
 
         return server;
     }
