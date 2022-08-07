@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+  <!-- version-less systemId references -->
+  <system systemId="http://jetty.mortbay.org/configure.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="https://jetty.mortbay.org/configure.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="http://jetty.eclipse.org/configure.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="https://jetty.eclipse.org/configure.dtd" uri="configure_9_3.dtd"/>
+  <public publicId="configure.dtd" uri="configure_9_3.dtd"/>
+
+  <!-- old versions -->
+  <public publicId="configure_1_0.dtd" uri="configure_1_0.dtd"/>
+  <public publicId="configure_1_1.dtd" uri="configure_1_1.dtd"/>
+  <public publicId="configure_1_2.dtd" uri="configure_1_2.dtd"/>
+  <public publicId="configure_1_3.dtd" uri="configure_1_3.dtd"/>
+  <public publicId="configure_6_0.dtd" uri="configure_6_0.dtd"/>
+  <public publicId="configure_7_6.dtd" uri="configure_7_6.dtd"/>
+  <public publicId="configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <public publicId="configure_10_0.dtd" uri="configure_10_0.dtd"/>
+
+  <!-- 9.3 -->
+  <system systemId="http://jetty.mortbay.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="https://jetty.mortbay.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="http://jetty.eclipse.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="https://jetty.eclipse.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+
+  <!-- 10.0 -->
+  <system systemId="http://jetty.eclipse.org/configure_10_0.dtd" uri="configure_10_0.dtd"/>
+  <system systemId="https://jetty.eclipse.org/configure_10_0.dtd" uri="configure_10_0.dtd"/>
+</catalog>

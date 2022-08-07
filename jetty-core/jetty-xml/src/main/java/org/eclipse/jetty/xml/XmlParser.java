@@ -14,21 +14,33 @@
 package org.eclipse.jetty.xml;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import java.net.spi.URLStreamHandlerProvider;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 import java.util.StringTokenizer;
+import javax.xml.catalog.Catalog;
+import javax.xml.catalog.CatalogException;
+import javax.xml.catalog.CatalogFeatures;
+import javax.xml.catalog.CatalogManager;
+import javax.xml.catalog.CatalogResolver;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,31 +64,45 @@ public class XmlParser
     private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
     private final AutoLock _lock = new AutoLock();
-    private Map<String, URL> _redirectMap = new HashMap<String, URL>();
+    // private Map<String, URL> _redirectMap = new HashMap<String, URL>();
     private SAXParser _parser;
     private Map<String, ContentHandler> _observerMap;
     private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
+    private List<CatalogResolver> _catalogs = new ArrayList<>();
 
     /**
-     * Construct
+     * Construct XmlParser
      */
     public XmlParser()
+    {
+        this(getValidatingDefault());
+    }
+
+    /**
+     * Construct XmlParser
+     *
+     * @param validating true to enable validation, false to disable
+     * @see SAXParserFactory#setValidating(boolean)
+     */
+    public XmlParser(boolean validating)
+    {
+        setValidating(validating);
+
+        URL url = XmlParser.class.getResource("catalog-org.w3.xml");
+        if (url == null)
+            throw new IllegalStateException("Catalog not found: catalog-org.w3.xml");
+        addCatalog(url);
+    }
+
+    private static boolean getValidatingDefault()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
-        boolean validating = Boolean.valueOf(validatingProp).booleanValue();
-        setValidating(validating);
-        XmlEntities.registerXmlDefaults(this);
-    }
-
-    public XmlParser(boolean validating)
-    {
-        setValidating(validating);
-        XmlEntities.registerXmlDefaults(this);
+        return Boolean.parseBoolean(validatingProp);
     }
 
     AutoLock lock()
@@ -130,13 +156,37 @@ public class XmlParser
         return _parser.isValidating();
     }
 
+    /**
+     * Load the specified URI as a catalog for entity mapping purposes.
+     *
+     * @param url the url to the catalog
+     */
+    public void addCatalog(URL url)
+    {
+        addCatalog(URI.create(url.toExternalForm()));
+    }
+
+    /**
+     * Load the specified URI as a catalog for entity mapping purposes.
+     *
+     * @param uri the uri to the catalog
+     */
+    public void addCatalog(URI uri)
+    {
+        CatalogFeatures f = CatalogFeatures.builder().with(CatalogFeatures.Feature.RESOLVE, "strict").build();
+        Catalog catalog = CatalogManager.catalog(f, uri);
+        CatalogResolver catalogResolver = CatalogManager.catalogResolver(catalog);
+        _catalogs.add(catalogResolver);
+    }
+
     public void redirectEntity(String name, URL entity)
     {
         if (entity != null)
         {
             try (AutoLock l = _lock.lock())
             {
-                _redirectMap.put(name, entity);
+                throw new UnsupportedOperationException("Use Catalogs!");
+                // TODO: _redirectMap.put(name, entity);
             }
         }
     }
@@ -257,39 +307,17 @@ public class XmlParser
         if (LOG.isDebugEnabled())
             LOG.debug("resolveEntity({},{})", pid, sid);
 
-        if (sid != null && sid.endsWith(".dtd"))
-            _dtd = sid;
-
-        URL entity = null;
-        if (pid != null)
-            entity = (URL)_redirectMap.get(pid);
-        if (entity == null)
-            entity = (URL)_redirectMap.get(sid);
-        if (entity == null)
-        {
-            String dtd = sid;
-            if (dtd.lastIndexOf('/') >= 0)
-                dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
-            entity = (URL)_redirectMap.get(dtd);
-        }
-
-        if (entity != null)
+        for (CatalogResolver catalogResolver : _catalogs)
         {
             try
             {
-                InputStream in = entity.openStream();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
-                InputSource is = new InputSource(in);
-                is.setSystemId(sid);
-                return is;
+                InputSource src = catalogResolver.resolveEntity(pid, sid);
+                if (src != null)
+                    return src;
             }
-            catch (IOException e)
+            catch (CatalogException e)
             {
-                LOG.trace("IGNORED", e);
+                LOG.trace("IGNORE catalog exception for (pid=%s, sid=%s)".formatted(pid, sid), e);
             }
         }
         return null;
@@ -820,6 +848,37 @@ public class XmlParser
                     throw new UnsupportedOperationException("Not supported");
                 }
             };
+        }
+    }
+
+    /**
+     * Support for Jetty `jetty-loader:` protocol.
+     *
+     * <p>
+     * Internally uses {@link Loader#getResource(String)} to find URL
+     * </p>
+     */
+    public static class JettyLoaderURLStreamHandlerProvider extends URLStreamHandlerProvider
+    {
+        @Override
+        public URLStreamHandler createURLStreamHandler(String protocol)
+        {
+            if ("jetty-loader".equals(protocol))
+            {
+                return new URLStreamHandler()
+                {
+                    @Override
+                    protected URLConnection openConnection(URL u) throws IOException
+                    {
+                        String path = u.getPath();
+                        URL url = Loader.getResource(path);
+                        if (url == null)
+                            throw new FileNotFoundException("Unable to find Loader resource: " + path);
+                        return url.openConnection();
+                    }
+                };
+            }
+            return null;
         }
     }
 }

@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import jakarta.servlet.Servlet;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlEntities;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +86,10 @@ public class WebDescriptor extends Descriptor
             {
                 if (!mapped)
                 {
-                    XmlEntities.registerWebEntities(this, Servlet.class, ServletContextHandler.ServletContextApi.SERVLET_MAJOR_VERSION);
+                    URL url = WebDescriptor.class.getResource("catalog.xml");
+                    if (url == null)
+                        throw new IllegalStateException("Catalog not found: %s/catalog.xml".formatted(WebDescriptor.class.getPackageName()));
+                    addCatalog(url);
                     mapped = true;
                 }
                 return super.resolveEntity(pid, sid);

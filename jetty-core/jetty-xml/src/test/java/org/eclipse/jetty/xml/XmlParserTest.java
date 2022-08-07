@@ -13,10 +13,19 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlParserTest
@@ -26,16 +35,27 @@ public class XmlParserTest
     {
         XmlParser parser = new XmlParser();
 
-        URL configURL = XmlConfiguration.class.getResource("configure_10_0.dtd");
-        parser.redirectEntity("configure_10_0.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
-
         URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
+        assertNotNull(url);
         XmlParser.Node testDoc = parser.parse(url.toString());
         String testDocStr = testDoc.toString().trim();
 
         assertTrue(testDocStr.startsWith("<Configure"));
         assertTrue(testDocStr.endsWith("</Configure>"));
+    }
+
+    @Test
+    public void testJettyLoaderURL() throws IOException
+    {
+        URL url = new URL("jetty-loader:org/eclipse/jetty/xml/configureWithAttr.xml");
+        assertNotNull(url);
+        try (InputStream in = url.openStream();
+             InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+             StringWriter writer = new StringWriter())
+        {
+            IO.copy(reader, writer);
+            String contents = writer.toString();
+            assertThat(contents, containsString("-//Jetty//Configure//EN"));
+        }
     }
 }
