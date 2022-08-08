@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
@@ -210,17 +209,9 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
             if (byteBuffer == null)
             {
-                // TODO use pool & check length limit
+                // TODO check length limit
                 // load the content into memory
-                byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
-                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getResource().getPath()))
-                {
-                    // fill buffer
-                    int read = 0;
-                    while (read != _contentLengthValue)
-                        read += channel.read(byteBuffer);
-                }
-                byteBuffer.flip();
+                byteBuffer = BufferUtil.toBuffer(httpContent.getResource(), true, (int)_contentLengthValue);
             }
 
             // Load precompressed contents into memory.
@@ -252,7 +243,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             }
 
             _cacheKey = key;
-            _buffer = byteBuffer;
+            _buffer = byteBuffer.asReadOnlyBuffer();
             _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
             _lastAccessed = System.nanoTime();
         }

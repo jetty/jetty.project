@@ -1018,9 +1018,14 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
     {
+        int len = (int)resource.length();
+        return toBuffer(resource, direct, len);
+    }
+
+    public static ByteBuffer toBuffer(Resource resource, boolean direct, int len) throws IOException
+    {
         if (!resource.exists() || resource.isDirectory())
             throw new IllegalArgumentException("invalid resource: " + resource);
-        int len = (int)resource.length();
         if (len < 0)
             throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
