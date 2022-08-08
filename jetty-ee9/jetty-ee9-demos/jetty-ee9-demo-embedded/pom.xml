@@ -127,6 +127,12 @@
       <type>zip</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
