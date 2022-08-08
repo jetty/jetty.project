@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,11 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler)
     {
         super(contextHandler);
+    }
+
+    public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
+    {
+        super(contextHandler, baseResource);
     }
 
     @Override

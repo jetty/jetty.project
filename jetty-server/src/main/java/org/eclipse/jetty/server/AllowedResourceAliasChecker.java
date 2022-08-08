@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -43,8 +44,10 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     protected static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
     private final ContextHandler _contextHandler;
+    private final Supplier<Resource> _resourceBaseSupplier;
     private final List<Path> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
+    private boolean _initialized;
     protected Path _base;
 
     /**
@@ -52,7 +55,18 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
+        this(contextHandler, contextHandler::getBaseResource);
+    }
+
+    public AllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
+    {
+        this(contextHandler, () -> baseResource);
+    }
+
+    public AllowedResourceAliasChecker(ContextHandler contextHandler, Supplier<Resource> resourceBaseSupplier)
+    {
         _contextHandler = Objects.requireNonNull(contextHandler);
+        _resourceBaseSupplier = Objects.requireNonNull(resourceBaseSupplier);
     }
 
     protected ContextHandler getContextHandler()
@@ -60,9 +74,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    protected void initialize()
+    private void extractBaseResourceFromContext()
     {
-        _base = getPath(_contextHandler.getBaseResource());
+        _base = getPath(_resourceBaseSupplier.get());
         if (_base == null)
             return;
 
@@ -82,6 +96,12 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
             LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
             _base = null;
         }
+    }
+
+    protected void initialize()
+    {
+        extractBaseResourceFromContext();
+        _initialized = true;
     }
 
     @Override
@@ -106,6 +126,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        if (!_initialized)
+            extractBaseResourceFromContext();
         if (_base == null)
             return false;
 
