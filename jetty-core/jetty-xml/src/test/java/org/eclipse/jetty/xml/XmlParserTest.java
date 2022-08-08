@@ -13,18 +13,12 @@
 
 package org.eclipse.jetty.xml;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,9 +27,8 @@ public class XmlParserTest
     @Test
     public void testXmlParser() throws Exception
     {
-        XmlParser parser = new XmlParser();
-
-        URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
+        XmlParser parser = new XmlParser(true);
+        URL url = XmlParserTest.class.getResource("configureWithAttr.xml");
         assertNotNull(url);
         XmlParser.Node testDoc = parser.parse(url.toString());
         String testDocStr = testDoc.toString().trim();
@@ -45,17 +38,37 @@ public class XmlParserTest
     }
 
     @Test
-    public void testJettyLoaderURL() throws IOException
+    public void testAddCatalogSimple() throws Exception
     {
-        URL url = new URL("jetty-loader:org/eclipse/jetty/xml/configureWithAttr.xml");
-        assertNotNull(url);
-        try (InputStream in = url.openStream();
-             InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
-             StringWriter writer = new StringWriter())
-        {
-            IO.copy(reader, writer);
-            String contents = writer.toString();
-            assertThat(contents, containsString("-//Jetty//Configure//EN"));
-        }
+        XmlParser parser = new XmlParser(true);
+        URL catalogUrl = XmlParser.class.getResource("catalog-configure.xml");
+        assertNotNull(catalogUrl);
+        parser.addCatalog(catalogUrl.toURI());
+
+        URL xmlUrl = XmlParserTest.class.getResource("configureWithAttr.xml");
+        assertNotNull(xmlUrl);
+        XmlParser.Node testDoc = parser.parse(xmlUrl.toString());
+        String testDocStr = testDoc.toString().trim();
+
+        assertTrue(testDocStr.startsWith("<Configure"));
+        assertTrue(testDocStr.endsWith("</Configure>"));
+    }
+
+    @Test
+    public void testAddCatalogOverrideBaseUri() throws Exception
+    {
+        XmlParser parser = new XmlParser(true);
+        ClassLoader classLoader = XmlParser.class.getClassLoader();
+        URL catalogUrl = classLoader.getResource("org/eclipse/jetty/xml/deep/catalog-test.xml");
+        assertNotNull(catalogUrl);
+
+        parser.addCatalog(catalogUrl.toURI(), XmlParserTest.class);
+
+        Path testXml = MavenTestingUtils.getTestResourcePathFile("xmls/test.xml");
+        XmlParser.Node testDoc = parser.parse(testXml.toUri().toString());
+        String testDocStr = testDoc.toString().trim();
+
+        assertTrue(testDocStr.startsWith("<test"));
+        assertTrue(testDocStr.endsWith("</test>"));
     }
 }

@@ -22,7 +22,4 @@ module org.eclipse.jetty.xml
 
     uses org.eclipse.jetty.xml.ConfigurationProcessorFactory;
     uses java.net.spi.URLStreamHandlerProvider;
-
-    provides java.net.spi.URLStreamHandlerProvider with
-        org.eclipse.jetty.xml.XmlParser.JettyLoaderURLStreamHandlerProvider;
 }

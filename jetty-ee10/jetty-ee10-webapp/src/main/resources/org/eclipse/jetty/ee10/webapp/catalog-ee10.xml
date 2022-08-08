@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" xml:base="">
+  <!-- 2.2 -->
+  <public publicId="web-app_2_2.dtd" uri="resources/web-app_2_2.dtd" />
+  <public publicId="-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN" uri="resources/web-app_2_2.dtd" />
+
+  <!-- 2.3 -->
+  <public publicId="web-app_2_3.dtd" uri="resources/web-app_2_3.dtd" />
+  <public publicId="web.dtd" uri="resources/web-app_2_3.dtd" />
+  <public publicId="-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" uri="resources/web-app_2_3.dtd" />
+
+  <!-- 2.4 -->
+  <public publicId="j2ee_1_4.xsd" uri="resources/j2ee_1_4.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd" uri="resources/j2ee_1_4.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd" uri="resources/j2ee_1_4.xsd" />
+  <public publicId="web-app_2_4.xsd" uri="resources/web-app_2_4.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" uri="resources/web-app_2_4.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" uri="resources/web-app_2_4.xsd" />
+  <public publicId="j2ee_web_services_client_1_1.xsd" uri="resources/j2ee_web_services_client_1_1.xsd" />
+  <system systemId="http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd" uri="resources/j2ee_web_services_client_1_1.xsd" />
+  <system systemId="https://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd" uri="resources/j2ee_web_services_client_1_1.xsd" />
+
+  <!-- 2.5 -->
+  <public publicId="javaee_5.xsd" uri="resources/javaee_5.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/javaee_5.xsd" uri="resources/javaee_5.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/javaee_5.xsd" uri="resources/javaee_5.xsd" />
+  <public publicId="web-app_2_5.xsd" uri="resources/web-app_2_5.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" uri="resources/web-app_2_5.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" uri="resources/web-app_2_5.xsd" />
+  <public publicId="javaee_web_services_client_1_2.xsd" uri="resources/javaee_web_services_client_1_2.xsd" />
+  <system systemId="http://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd" uri="resources/javaee_web_services_client_1_2.xsd" />
+  <system systemId="https://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd" uri="resources/javaee_web_services_client_1_2.xsd" />
+
+  <!-- 3.0 -->
+  <public publicId="javaee_6.xsd" uri="resources/javaee_6.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/javaee_6.xsd" uri="resources/javaee_6.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/javaee_6.xsd" uri="resources/javaee_6.xsd" />
+  <public publicId="web-app_3_0.xsd" uri="resources/web-app_3_0.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" uri="resources/web-app_3_0.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" uri="resources/web-app_3_0.xsd" />
+  <public publicId="web-common_3_0.xsd" uri="resources/web-common_3_0.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd" uri="resources/web-common_3_0.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/web-common_3_0.xsd" uri="resources/web-common_3_0.xsd" />
+  <public publicId="web-fragment_3_0.xsd" uri="resources/web-fragment_3_0.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd" uri="resources/web-fragment_3_0.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd" uri="resources/web-fragment_3_0.xsd" />
+  <public publicId="javaee_web_services_client_1_3.xsd" uri="resources/javaee_web_services_client_1_3.xsd" />
+  <system systemId="http://java.sun.com/xml/ns/javaee/javaee_web_services_client_1_3.xsd" uri="resources/javaee_web_services_client_1_3.xsd" />
+  <system systemId="https://java.sun.com/xml/ns/javaee/javaee_web_services_client_1_3.xsd" uri="resources/javaee_web_services_client_1_3.xsd" />
+
+  <!-- 3.1 -->
+  <public publicId="javaee_7.xsd" uri="resources/javaee_7.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd" uri="resources/javaee_7.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd" uri="resources/javaee_7.xsd" />
+  <public publicId="web-app_3_1.xsd" uri="resources/web-app_3_1.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" uri="resources/web-app_3_1.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" uri="resources/web-app_3_1.xsd" />
+  <public publicId="web-common_3_1.xsd" uri="resources/web-common_3_1.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd" uri="resources/web-common_3_1.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd" uri="resources/web-common_3_1.xsd" />
+  <public publicId="web-fragment_3_1.xsd" uri="resources/web-fragment_3_1.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd" uri="resources/web-fragment_3_1.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd" uri="resources/web-fragment_3_1.xsd" />
+
+  <!-- Servlet 4 -->
+  <public publicId="javaee_8.xsd" uri="resources/javaee_8.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd" uri="resources/javaee_8.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd" uri="resources/javaee_8.xsd" />
+  <public publicId="web-app_4_0.xsd" uri="resources/web-app_4_0.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" uri="resources/web-app_4_0.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" uri="resources/web-app_4_0.xsd" />
+  <public publicId="web-common_4_0.xsd" uri="resources/web-common_4_0.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd" uri="resources/web-common_4_0.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd" uri="resources/web-common_4_0.xsd" />
+  <public publicId="web-fragment_4_0.xsd" uri="resources/web-fragment_4_0.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd" uri="resources/web-fragment_4_0.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd" uri="resources/web-fragment_4_0.xsd" />
+  <public publicId="javaee_web_services_client_1_4.xsd" uri="resources/javaee_web_services_client_1_4.xsd" />
+  <system systemId="http://xmlns.jcp.org/xml/ns/javaee/javaee_web_services_client_1_4.xsd" uri="resources/javaee_web_services_client_1_4.xsd" />
+  <system systemId="https://xmlns.jcp.org/xml/ns/javaee/javaee_web_services_client_1_4.xsd" uri="resources/javaee_web_services_client_1_4.xsd" />
+
+  <!-- Servlet 5 -->
+  <!-- These always exist at base jakarta/servlet/  -->
+  <public publicId="jakartaee_9.xsd" uri="resources/jakartaee_9.xsd" />
+  <system systemId="http://javax.ee/xml/ns/javaxee/javaee_9.xsd" uri="resources/jakartaee_9.xsd" />
+  <system systemId="https://javax.ee/xml/ns/javaxee/javaee_9.xsd" uri="resources/jakartaee_9.xsd" />
+  <public publicId="web-app_5_0.xsd" uri="resources/web-app_5_0.xsd" />
+  <public publicId="webapp_5_0.xsd" uri="resources/web-app_5_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd" uri="resources/web-app_5_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/webapp_5_0.xsd" uri="resources/web-app_5_0.xsd" />
+  <public publicId="web-common_5_0.xsd" uri="resources/web-common_5_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-common_5_0.xsd" uri="resources/web-common_5_0.xsd" />
+  <public publicId="web-fragment_5_0.xsd" uri="resources/web-fragment_5_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-fragment_5_0.xsd" uri="resources/web-fragment_5_0.xsd" />
+  <public publicId="jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
+
+  <!-- Servlet 6 -->
+  <!-- These always exist at base jakarta/servlet/  -->
+  <public publicId="web-app_6_0.xsd" uri="resources/web-app_6_0.xsd" />
+  <public publicId="webapp_6_0.xsd" uri="resources/web-app_6_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" uri="resources/web-app_6_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/webapp_6_0.xsd" uri="resources/web-app_6_0.xsd" />
+  <public publicId="web-common_6_0.xsd" uri="resources/web-common_6_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-common_6_0.xsd" uri="resources/web-common_6_0.xsd" />
+  <public publicId="web-fragment_6_0.xsd" uri="resources/web-fragment_6_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_0.xsd" uri="resources/web-fragment_6_0.xsd" />
+  <public publicId="jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
+</catalog>

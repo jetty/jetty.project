@@ -26,6 +26,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -1999,7 +2000,7 @@ public class XmlConfiguration
             URL catalogUrl = XmlConfiguration.class.getResource("catalog-configure.xml");
             if (catalogUrl == null)
                 throw new IllegalStateException("Catalog not found: catalog-configure.xml");
-            addCatalog(catalogUrl);
+            addCatalog(URI.create(catalogUrl.toExternalForm()));
         }
 
         @Override

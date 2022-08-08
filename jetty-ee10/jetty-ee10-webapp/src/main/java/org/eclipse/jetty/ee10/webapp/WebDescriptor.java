@@ -13,16 +13,19 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import jakarta.servlet.Servlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 /**
  * Descriptor
@@ -77,26 +80,27 @@ public class WebDescriptor extends Descriptor
      */
     public static XmlParser newParser(boolean validating)
     {
-        XmlParser xmlParser = new XmlParser(validating)
+        try
         {
-            boolean mapped = false;
+            return new WebDescriptorParser(validating);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException("Unable to instantiate WebDescriptorParser", e);
+        }
+    }
 
-            @Override
-            protected InputSource resolveEntity(String pid, String sid)
-            {
-                if (!mapped)
-                {
-                    URL url = WebDescriptor.class.getResource("catalog.xml");
-                    if (url == null)
-                        throw new IllegalStateException("Catalog not found: %s/catalog.xml".formatted(WebDescriptor.class.getPackageName()));
-                    addCatalog(url);
-                    mapped = true;
-                }
-                return super.resolveEntity(pid, sid);
-            }
-        };
-
-        return xmlParser;
+    private static class WebDescriptorParser extends XmlParser
+    {
+        public WebDescriptorParser(boolean validating) throws IOException
+        {
+            super(validating);
+            String catalogName = "catalog-%s.xml".formatted(ServletContextHandler.__environment.getName());
+            URL url = WebDescriptor.class.getResource(catalogName);
+            if (url == null)
+                throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
+            addCatalog(URI.create(url.toExternalForm()), Servlet.class);
+        }
     }
 
     public WebDescriptor(Resource xml)

@@ -1,0 +1,4 @@
+<!DOCTYPE test
+[
+    <!ELEMENT description (#PCDATA)>
+]>
