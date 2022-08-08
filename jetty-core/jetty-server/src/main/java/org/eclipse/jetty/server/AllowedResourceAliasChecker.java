@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
- * is not protected by a protected target as defined by TODO at start.</p>
+ * is not protected by a protected target as defined by {@link ContextHandler#getProtectedTargets()} at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
@@ -43,8 +44,10 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     protected static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
     private final ContextHandler _contextHandler;
+    private final Supplier<Resource> _resourceBaseSupplier;
     private final List<Path> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
+    private boolean _initialized;
     protected Path _base;
 
     /**
@@ -52,7 +55,18 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
+        this(contextHandler, contextHandler::getResourceBase);
+    }
+
+    public AllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
+    {
+        this(contextHandler, () -> baseResource);
+    }
+
+    public AllowedResourceAliasChecker(ContextHandler contextHandler, Supplier<Resource> resourceBaseSupplier)
+    {
         _contextHandler = Objects.requireNonNull(contextHandler);
+        _resourceBaseSupplier = Objects.requireNonNull(resourceBaseSupplier);
     }
 
     protected ContextHandler getContextHandler()
@@ -60,23 +74,16 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    protected String[] getProtectedTargets()
+    private String[] getProtectedTargets()
     {
-        // TODO return _contextHandler.getProtectedTargets();
-        return new String[0];
+        // TODO: Add protected targets to ContextHandler.
+        // return _contextHandler.getProtectedTargets();
+        return null;
     }
 
-    protected boolean isProtectedTarget(String target)
+    private void extractBaseResourceFromContext()
     {
-        // TODO
-        return false;
-    }
-
-    protected void initialize()
-    {
-        if (_contextHandler.getResourceBase() == null)
-            return;
-        _base = _contextHandler.getResourceBase().getPath();
+        _base = getPath(_resourceBaseSupplier.get());
         if (_base == null)
             return;
 
@@ -96,6 +103,12 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
             LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
             _base = null;
         }
+    }
+
+    protected void initialize()
+    {
+        extractBaseResourceFromContext();
+        _initialized = true;
     }
 
     @Override
@@ -120,6 +133,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        if (!_initialized)
+            extractBaseResourceFromContext();
         if (_base == null)
             return false;
 
@@ -219,8 +234,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     {
         try
         {
-            if (resource instanceof PathResource)
-                return ((PathResource)resource).getPath();
             return (resource == null) ? null : resource.getPath();
         }
         catch (Throwable t)
