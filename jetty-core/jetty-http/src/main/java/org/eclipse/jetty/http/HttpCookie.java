@@ -575,7 +575,7 @@ public class HttpCookie
         else if (!oldDomain.equalsIgnoreCase(newDomain))
             return false;
 
-        if (oldPath== null)
+        if (oldPath == null)
         {
             if (newPath != null)
                 return false;
