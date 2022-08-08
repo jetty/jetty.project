@@ -147,41 +147,6 @@ public class HttpCookie
     }
 
     /**
-     * Parse the bare minimum of an existing Set-Cookie header, using the java.net.HttpCookie
-     * parser, which does _not_ support RFC6265 attributes. We use this old parser because we are
-     * not interested in a full parse of the Set-Cookie header, we really just want to extract
-     * the Name, Domain and Path. 
-     * 
-     * This is because this constructor is used only by Response.replaceCookie, which iterates over 
-     * all existing Set-Cookie headers to find one with a matching Name, Domain and Path to replace 
-     * with an updated header.
-     * 
-     * @see Response#replaceCookie
-     * @param setCookie the Set-Cookie header
-     */
-    public HttpCookie(String setCookie)
-    {
-        //Parse the bare minimum 
-        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookie);
-        if (cookies.size() != 1)
-            throw new IllegalStateException();
-
-        java.net.HttpCookie cookie = cookies.get(0);
-
-        _name = cookie.getName();
-        _value = cookie.getValue();
-        _domain = cookie.getDomain();
-        _path = cookie.getPath();
-        _maxAge = cookie.getMaxAge();
-        _httpOnly = cookie.isHttpOnly();
-        _secure = cookie.getSecure();
-        _comment = cookie.getComment();
-        _version = cookie.getVersion();
-        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
-        _attributes = Collections.emptyMap();
-    }
-
-    /**
      * @return the cookie name
      */
     public String getName()
@@ -543,6 +508,82 @@ public class HttpCookie
             LOG.warn("Bad default value {} for SameSite", o);
             throw new IllegalStateException(e);
         }
+    }
+    
+    /**
+     * Check if the Set-Cookie header represented as a string is for the name, domain and path given.
+     * 
+     * @param setCookieHeader a Set-Cookie header
+     * @param name the cookie name to check
+     * @param domain the cookie domain to check
+     * @param path the cookie path to check
+     * @return true if all of the name, domain and path match the Set-Cookie header, false otherwise
+     */
+    public static boolean match(String setCookieHeader, String name, String domain, String path)
+    {
+        //Parse the bare minimum 
+        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
+        if (cookies.size() != 1)
+            return false;
+        
+        java.net.HttpCookie cookie = cookies.get(0);
+        return match(cookie.getName(), cookie.getDomain(), cookie.getPath(), name, domain, path);
+    }
+    
+    /**
+     * Check if the HttpCookie is for the given name, domain and path.
+     * 
+     * @param cookie the jetty HttpCookie to check
+     * @param name the cookie name to check
+     * @param domain the cookie domain to check
+     * @param path the cookie path to check
+     * @return true if all of the name, domain and path all match the HttpCookie, false otherwise
+     */
+    public static boolean match(HttpCookie cookie, String name, String domain, String path)
+    {
+        if (cookie == null)
+            return false;
+        return match(cookie.getName(), cookie.getDomain(), cookie.getPath(), name, domain, path);
+    }
+    
+    /**
+     * Check if all old parameters match the new parameters.
+     * 
+     * @param oldName
+     * @param oldDomain
+     * @param oldPath
+     * @param newName
+     * @param newDomain
+     * @param newPath
+     * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
+     */
+    private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
+    {
+        if (oldName == null)
+        {
+            if (newName != null)
+                return false;
+        }
+        else if (!oldName.equals(newName))
+            return false;
+        
+        if (oldDomain == null)
+        {
+            if (newDomain != null)
+                return false;
+        }
+        else if (!oldDomain.equalsIgnoreCase(newDomain))
+            return false;
+
+        if (oldPath== null)
+        {
+            if (newPath != null)
+                return false;
+        }
+        else if (!oldPath.equals(newPath))
+            return false;
+        
+        return true;
     }
 
     /**

@@ -147,40 +147,17 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         public String getAttribute(String name)
         {
             String lcase = name.toLowerCase(Locale.ENGLISH);
-            switch (lcase)
+            return switch (lcase)
             {
-                case "name":
-                {
-                    return getName();
-                }
-                case "max-age":
-                {
-                   return Integer.toString(getMaxAge());
-                }
-                case "comment":
-                {
-                    return getComment();
-                }
-                case "domain":
-                {
-                    return getDomain();
-                }
-                case "httponly":
-                {
-                    return String.valueOf(isHttpOnly());
-                }
-                case "secure":
-                {
-                    return String.valueOf(isSecure());
-                }
-                case "path":
-                {
-                    return getPath();
-                }
-                default:
-                    return getSessionAttribute(name);
-               
-            }
+                case "name" -> getName();
+                case "max-age" -> Integer.toString(getMaxAge());
+                case "comment" -> getComment();
+                case "domain" -> getDomain();
+                case "httponly" -> String.valueOf(isHttpOnly());
+                case "secure" -> String.valueOf(isSecure());
+                case "path" -> getPath();
+                default -> getSessionAttribute(name);
+            };
         }
 
         /**
