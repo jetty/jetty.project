@@ -120,23 +120,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(this, mimeTypes, precompressedFormats);
-        CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
-
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+        HttpContent.ContentFactory contentFactory = new ResourceContentFactory(this, mimeTypes, precompressedFormats);
+        CachingContentFactory cached = null;
 
         try
         {
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
             {
+                cached = new CachingContentFactory(contentFactory, _useFileMappedBuffer);
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
                 if (maxCachedFileSize >= -1)
                     cached.setMaxCachedFileSize(maxCachedFileSize);
                 if (maxCachedFiles >= -1)
                     cached.setMaxCachedFiles(maxCachedFiles);
+                contentFactory = cached;
             }
         }
         catch (Exception e)
@@ -147,7 +148,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         String resourceCache = getInitParameter("resourceCache");
         getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
-        _resourceService.setContentFactory(cached);
+        _resourceService.setContentFactory(contentFactory);
 
         if (servletContextHandler.getWelcomeFiles() == null)
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
