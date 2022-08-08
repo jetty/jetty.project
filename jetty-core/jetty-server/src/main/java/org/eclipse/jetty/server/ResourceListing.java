@@ -66,7 +66,6 @@ public class ResourceListing
         List<Path> listing = null;
         try (Stream<Path> listStream = Files.list(resource.getPath()))
         {
-
             listing = listStream.collect(Collectors.toCollection(ArrayList::new));
         }
         catch (IOException e)
