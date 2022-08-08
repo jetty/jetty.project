@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultServlet extends HttpServlet
+public class DefaultServlet extends HttpServlet implements ResourceFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
     private ServletResourceService _resourceService;
@@ -82,7 +83,9 @@ public class DefaultServlet extends HttpServlet
 
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
+    private ResourceFactory _baseResourceFactory;
     private Resource _stylesheet;
+    private Resource _favicon;
     private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
@@ -109,6 +112,7 @@ public class DefaultServlet extends HttpServlet
                 throw new UnavailableException(e.toString());
             }
         }
+        _baseResourceFactory = ResourceFactory.of(_baseResource);
 
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
@@ -116,7 +120,7 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(this, mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -181,8 +185,6 @@ public class DefaultServlet extends HttpServlet
             {
                 _stylesheet = servletContextHandler.getServer().getDefaultStyleSheet();
             }
-
-            // TODO the stylesheet is never actually used ?
         }
         catch (Exception e)
         {
@@ -190,6 +192,31 @@ public class DefaultServlet extends HttpServlet
                 LOG.warn("Unable to use stylesheet: {}", stylesheet, e);
             else
                 LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
+        }
+
+        String favicon = getInitParameter("favicon");
+        try
+        {
+            if (favicon != null)
+            {
+                _favicon = _resourceFactory.newResource(favicon);
+                if (!_favicon.exists())
+                {
+                    LOG.warn("Favicon {} does not exist", favicon);
+                    _favicon = null;
+                }
+            }
+            if (_favicon == null)
+            {
+                _favicon = servletContextHandler.getServer().getDefaultFavicon();
+            }
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to use favicon: {}", favicon, e);
+            else
+                LOG.warn("Unable to use favicon: {} - {}", favicon, e.toString());
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
@@ -230,6 +257,24 @@ public class DefaultServlet extends HttpServlet
     {
         super.destroy();
         IO.close(_resourceFactory);
+    }
+
+    @Override
+    public Resource newResource(URI uri)
+    {
+        // TODO optimised path for URI?
+        return newResource(uri.toString());
+    }
+
+    @Override
+    public Resource newResource(String resource)
+    {
+        if (_stylesheet != null && resource.endsWith("/jetty-dir.css"))
+            return _stylesheet;
+        if (_favicon != null && resource.endsWith("/favicon.ico"))
+            return _favicon;
+
+        return _baseResourceFactory.newResource(resource);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
