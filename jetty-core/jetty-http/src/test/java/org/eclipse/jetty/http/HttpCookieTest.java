@@ -66,8 +66,12 @@ public class HttpCookieTest
 
     @Test
     public void testConstructFromSetCookie()
-    {
-        HttpCookie cookie = new HttpCookie("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly");
+    {        
+        //test rfc6265 cookie
+        HttpCookie cookie = new HttpCookie("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar");
+        String result = cookie.getRFC6265SetCookie();
+        assertThat(result, containsString("SameSite=:Lax"));
+        assertThat(result, containsString("Foo=Bar"));
     }
 
     @Test

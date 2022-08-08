@@ -127,47 +127,19 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public void setAttribute(String name, String value)
         {
-            // TODO check that context is not available
+            checkState();
             String lcase = name.toLowerCase(Locale.ENGLISH);
+
             switch (lcase)
             {
-                case "name":
-                {
-                    setName(value);
-                    break;
-                }
-                case "max-age":
-                {
-                   setMaxAge(value == null ? -1 : Integer.parseInt(value));
-                   break;
-                }
-                case "comment":
-                {
-                   setComment(value);
-                   break;
-                }
-                case "domain":
-                {
-                    setDomain(value);
-                    break;
-                }
-                case "httponly":
-                {
-                    setHttpOnly(Boolean.valueOf(value));
-                    break;
-                }
-                case "secure":
-                {
-                    setSecure(Boolean.valueOf(value));
-                    break;
-                }
-                case "path":
-                {
-                    setPath(value);
-                    break;
-                }
-                default:
-                    setSessionAttribute(name, value);
+                case "name" -> setName(value);
+                case "max-age" -> setMaxAge(value == null ? -1 : Integer.parseInt(value));
+                case "comment" -> setComment(value);
+                case "domain" -> setDomain(value);
+                case "httponly" -> setHttpOnly(Boolean.valueOf(value));
+                case "secure" -> setSecure(Boolean.valueOf(value));
+                case "path" -> setPath(value);
+                default -> setSessionAttribute(name, value);
             }
         }
 
@@ -495,9 +467,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         }
         return null;
     }
-    
-    
-    
+
     /**
      * Adds an event listener for session-related events.
      *

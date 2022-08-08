@@ -126,9 +126,42 @@ public class HttpCookie
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
         _attributes = (attributes == null ? Collections.emptyMap() : attributes);
     }
+    
+    public HttpCookie(String name, String value, int version, Map<String, String> attributes)
+    {
+        _name = name;
+        _value = value; 
+        _version = version;
+        _attributes = (attributes == null ? Collections.emptyMap() : new TreeMap<>(attributes));
+        
+        //remove all of the well-known attributes, leaving only those pass-through ones
+        _domain = _attributes.remove("Domain");
+        _path = _attributes.remove("Path");
 
+        String tmp = _attributes.remove("Max-Age");
+        _maxAge = StringUtil.isBlank(tmp) ? -1L : Long.valueOf(tmp);
+        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        _httpOnly = Boolean.parseBoolean(_attributes.remove("HttpOnly"));
+        _secure = Boolean.parseBoolean(_attributes.remove("Secure"));
+        _comment = _attributes.remove("Comment");
+    }
+
+    /**
+     * Parse the bare minimum of an existing Set-Cookie header, using the java.net.HttpCookie
+     * parser, which does _not_ support RFC6265 attributes. We use this old parser because we are
+     * not interested in a full parse of the Set-Cookie header, we really just want to extract
+     * the Name, Domain and Path. 
+     * 
+     * This is because this constructor is used only by Response.replaceCookie, which iterates over 
+     * all existing Set-Cookie headers to find one with a matching Name, Domain and Path to replace 
+     * with an updated header.
+     * 
+     * @see Response#replaceCookie
+     * @param setCookie the Set-Cookie header
+     */
     public HttpCookie(String setCookie)
     {
+        //Parse the bare minimum 
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookie);
         if (cookies.size() != 1)
             throw new IllegalStateException();
@@ -145,15 +178,7 @@ public class HttpCookie
         _comment = cookie.getComment();
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
-        // support for SameSite values has not yet been added to java.net.HttpCookie
-        SameSite sameSite = getSameSiteFromComment(cookie.getComment());
-        if (sameSite != null)
-        {
-            _attributes = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-            _attributes.put("SameSite", sameSite.getAttributeValue());
-        }
-        else
-            _attributes = Collections.emptyMap();
+        _attributes = Collections.emptyMap();
     }
 
     /**
@@ -591,7 +616,7 @@ public class HttpCookie
             return _cookie;
         }
     }
-
+    
     /**
      * Check that samesite is set on the cookie. If not, use a
      * context default value, if one has been set.
