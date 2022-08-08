@@ -228,7 +228,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
-    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private final List<AliasCheck> _aliasChecks = new ArrayList<>();
 
     public enum Availability
     {
@@ -1967,7 +1967,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
 
             // alias checks
-            for (AliasCheck check : getAliasChecks())
+            for (AliasCheck check : _aliasChecks)
             {
                 if (check.check(path, resource))
                 {
