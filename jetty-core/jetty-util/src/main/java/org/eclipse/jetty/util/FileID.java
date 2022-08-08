@@ -88,6 +88,30 @@ public class FileID
     }
 
     /**
+     * Similar in scope to the unix {@code ls -F} command to add a classification
+     * character to the end of the Filename of the provided path.
+     *
+     * @param path the path to use
+     * @return the filename portion with classifier appended. (currently only supports directory with `/` classifier)
+     */
+    public static String getClassifiedFileName(Path path)
+    {
+        if (path == null)
+            return null;
+        StringBuilder buf = new StringBuilder();
+        Path filename = path.getFileName();
+        if (filename != null)
+        {
+            buf.append(filename);
+        }
+
+        if (Files.isDirectory(path))
+            buf.append('/');
+
+        return buf.toString();
+    }
+
+    /**
      * Does the provided path have a directory segment with the given name.
      *
      * @param path the path to search
