@@ -21,9 +21,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.VirtualThreads;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -58,8 +58,9 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
             }
         });
-        if (scenario.connector instanceof Connector.VirtualThreadsConfigurable)
-            ((Connector.VirtualThreadsConfigurable)scenario.connector).setInvokeApplicationWithVirtualThreads(true);
+        ThreadPool threadPool = scenario.server.getThreadPool();
+        if (threadPool instanceof VirtualThreads.Configurable)
+            ((VirtualThreads.Configurable)threadPool).setUseVirtualThreads(true);
         scenario.server.start();
         scenario.startClient();
 

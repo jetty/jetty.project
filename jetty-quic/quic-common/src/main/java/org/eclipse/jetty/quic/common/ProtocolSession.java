@@ -45,10 +45,10 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     private final AdaptiveExecutionStrategy strategy;
     private final QuicSession session;
 
-    public ProtocolSession(QuicSession session, boolean useVirtualThreads)
+    public ProtocolSession(QuicSession session)
     {
         this.session = session;
-        this.strategy = new AdaptiveExecutionStrategy(producer, session.getExecutor(), useVirtualThreads);
+        this.strategy = new AdaptiveExecutionStrategy(producer, session.getExecutor());
         addBean(strategy);
     }
 

@@ -43,9 +43,9 @@ public class ServerQuicConnection extends QuicConnection
     private final QuicServerConnector connector;
     private final SessionTimeouts sessionTimeouts;
 
-    protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint, boolean useVirtualThreads)
+    protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint, useVirtualThreads);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }

@@ -147,15 +147,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      */
     public AdaptiveExecutionStrategy(Producer producer, Executor executor)
     {
-        this(producer, executor, false);
-    }
-
-    public AdaptiveExecutionStrategy(Producer producer, Executor executor, boolean useVirtualThreads)
-    {
         _producer = producer;
         _executor = executor;
-        _useVirtualThreads = useVirtualThreads;
-        _tryExecutor = useVirtualThreads ? TryExecutor.NO_TRY : TryExecutor.asTryExecutor(executor);
+        _useVirtualThreads = VirtualThreads.isUseVirtualThreads(executor);
+        _tryExecutor = TryExecutor.asTryExecutor(executor);
         addBean(_producer);
         addBean(_tryExecutor);
         if (LOG.isDebugEnabled())
@@ -470,7 +465,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            if (_useVirtualThreads)
+            if (isUseVirtualThreads())
                 VirtualThreads.startVirtualThread(task);
             else
                 _executor.execute(task);
@@ -485,6 +480,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             if (task instanceof Closeable)
                 IO.close((Closeable)task);
         }
+    }
+
+    @ManagedAttribute(value = "whether this execution strategy uses virtual threads", readonly = true)
+    public boolean isUseVirtualThreads()
+    {
+        return _useVirtualThreads;
     }
 
     @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)

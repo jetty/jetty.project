@@ -55,7 +55,7 @@ public class ClientQuicConnection extends QuicConnection
 
     public ClientQuicConnection(ClientConnector connector, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint, false);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.context = context;
     }

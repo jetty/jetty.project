@@ -67,14 +67,14 @@ public abstract class QuicConnection extends AbstractConnection
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
 
-    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, boolean useVirtualThreads)
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         if (!(endPoint instanceof DatagramChannelEndPoint))
             throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
-        this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor(), useVirtualThreads);
+        this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
     }
 
     @Override

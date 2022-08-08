@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * This limit is set by the way Unix-Domain sockets work at the OS level.</p>
  */
 @ManagedObject
-public class UnixDomainServerConnector extends AbstractConnector implements Connector.VirtualThreadsConfigurable
+public class UnixDomainServerConnector extends AbstractConnector
 {
     public static final int MAX_UNIX_DOMAIN_PATH_LENGTH = 107;
 
@@ -68,7 +68,6 @@ public class UnixDomainServerConnector extends AbstractConnector implements Conn
     private int acceptQueueSize;
     private int acceptedReceiveBufferSize;
     private int acceptedSendBufferSize;
-    private boolean invokeApplicationWithVirtualThreads;
 
     public UnixDomainServerConnector(Server server, ConnectionFactory... factories)
     {
@@ -145,25 +144,6 @@ public class UnixDomainServerConnector extends AbstractConnector implements Conn
     public void setAcceptedSendBufferSize(int acceptedSendBufferSize)
     {
         this.acceptedSendBufferSize = acceptedSendBufferSize;
-    }
-
-    @Override
-    public boolean isInvokeApplicationWithVirtualThreads()
-    {
-        return invokeApplicationWithVirtualThreads;
-    }
-
-    @Override
-    public void setInvokeApplicationWithVirtualThreads(boolean invokeApplicationWithVirtualThreads)
-    {
-        try
-        {
-            VirtualThreadsConfigurable.super.setInvokeApplicationWithVirtualThreads(invokeApplicationWithVirtualThreads);
-            this.invokeApplicationWithVirtualThreads = invokeApplicationWithVirtualThreads;
-        }
-        catch (UnsupportedOperationException ignored)
-        {
-        }
     }
 
     @Override
@@ -322,12 +302,6 @@ public class UnixDomainServerConnector extends AbstractConnector implements Conn
         public UnixDomainSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
-        }
-
-        @Override
-        protected ManagedSelector newSelector(int id)
-        {
-            return new ManagedSelector(this, id, isInvokeApplicationWithVirtualThreads());
         }
 
         @Override

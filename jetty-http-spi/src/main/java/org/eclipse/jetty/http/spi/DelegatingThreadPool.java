@@ -18,12 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
-public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor
+public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private Executor _executor; // memory barrier provided by start/stop semantics
     private TryExecutor _tryExecutor;
@@ -59,6 +60,19 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     public boolean tryExecute(Runnable task)
     {
         return _tryExecutor.tryExecute(task);
+    }
+
+    @Override
+    public boolean isUseVirtualThreads()
+    {
+        return VirtualThreads.isUseVirtualThreads(_executor);
+    }
+
+    @Override
+    public void setUseVirtualThreads(boolean useVirtualThreads)
+    {
+        if (_executor instanceof VirtualThreads.Configurable)
+            ((VirtualThreads.Configurable)_executor).setUseVirtualThreads(useVirtualThreads);
     }
 
     @Override

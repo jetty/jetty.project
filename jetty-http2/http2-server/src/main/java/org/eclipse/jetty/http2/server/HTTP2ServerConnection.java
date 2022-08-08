@@ -86,9 +86,9 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private final HttpConfiguration httpConfig;
     private boolean recycleHttpChannels = true;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener, boolean useVirtualThreads)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize, useVirtualThreads);
+        super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }

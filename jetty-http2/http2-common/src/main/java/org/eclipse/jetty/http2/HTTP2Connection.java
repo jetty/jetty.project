@@ -55,17 +55,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        this(retainableByteBufferPool, executor, endPoint, parser, session, bufferSize, false);
-    }
-
-    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, boolean useVirtualThreads)
-    {
         super(endPoint, executor);
         this.retainableByteBufferPool = retainableByteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new AdaptiveExecutionStrategy(producer, executor, useVirtualThreads);
+        this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
         parser.init(ParserListener::new);
     }

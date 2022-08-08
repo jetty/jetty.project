@@ -40,7 +40,6 @@ import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -55,7 +54,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  *
  * @see QuicConfiguration
  */
-public class QuicServerConnector extends AbstractNetworkConnector implements Connector.VirtualThreadsConfigurable
+public class QuicServerConnector extends AbstractNetworkConnector
 {
     private final QuicConfiguration quicConfiguration = new QuicConfiguration();
     private final QuicSessionContainer container = new QuicSessionContainer();
@@ -69,7 +68,6 @@ public class QuicServerConnector extends AbstractNetworkConnector implements Con
     private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private boolean invokeApplicationWithVirtualThreads;
 
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
@@ -143,25 +141,6 @@ public class QuicServerConnector extends AbstractNetworkConnector implements Con
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
-    }
-
-    @Override
-    public boolean isInvokeApplicationWithVirtualThreads()
-    {
-        return invokeApplicationWithVirtualThreads;
-    }
-
-    @Override
-    public void setInvokeApplicationWithVirtualThreads(boolean invokeApplicationWithVirtualThreads)
-    {
-        try
-        {
-            VirtualThreadsConfigurable.super.setInvokeApplicationWithVirtualThreads(invokeApplicationWithVirtualThreads);
-            this.invokeApplicationWithVirtualThreads = invokeApplicationWithVirtualThreads;
-        }
-        catch (UnsupportedOperationException ignored)
-        {
-        }
     }
 
     @Override
@@ -325,7 +304,7 @@ public class QuicServerConnector extends AbstractNetworkConnector implements Con
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint, isInvokeApplicationWithVirtualThreads());
+            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint);
             connection.addEventListener(container);
             connection.setInputBufferSize(getInputBufferSize());
             connection.setOutputBufferSize(getOutputBufferSize());
