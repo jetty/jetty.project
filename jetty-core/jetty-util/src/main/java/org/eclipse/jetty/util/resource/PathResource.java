@@ -50,7 +50,8 @@ public class PathResource extends Resource
     {
         Path abs = path;
 
-        boolean isJarArchive = uri.toASCIIString().startsWith("jar:file:");
+        // Boolean to track if Path is a ZipFS based
+        boolean isZipFs = uri.toASCIIString().startsWith("jar:file:");
 
         /* Catch situation where the Path class has already normalized
          * the URI eg. input path "aa./foo.txt"
@@ -59,8 +60,15 @@ public class PathResource extends Resource
          * If the URI is different from the Path.toUri() then
          * we will just use the original URI to construct the
          * alias reference Path.
+         *
+         * ZipFS has lots of restrictions, you cannot trigger many of the alias behavior
+         * like we can in Windows or OSX.
+         *
+         * In this case, a Path.toUri() of a directory will not return a trailing slash on zipfs
+         * so skip the URI based evaluation, the other tests below (like isSameName) will still validate
+         * the remaining alias behaviors we have.
          */
-        if (!isJarArchive && !URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
+        if (!isZipFs && !URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
         {
             try
             {
@@ -87,8 +95,10 @@ public class PathResource extends Resource
 
         try
         {
-            if (!isJarArchive && Files.isSymbolicLink(path))
+            // Skip symlink tests on zipfs (not supported by zipfs)
+            if (!isZipFs && Files.isSymbolicLink(path))
                 return path.getParent().resolve(Files.readSymbolicLink(path));
+
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath();
