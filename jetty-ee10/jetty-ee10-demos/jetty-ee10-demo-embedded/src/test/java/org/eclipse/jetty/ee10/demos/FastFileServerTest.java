@@ -65,7 +65,7 @@ public class FastFileServerTest extends AbstractEmbeddedTest
         server.stop();
     }
 
-    // FXME
+    // FIXME
     @Disabled
     @Test
     public void testGetSimpleText() throws Exception
