@@ -22,7 +22,6 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Fields;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +42,11 @@ import org.slf4j.LoggerFactory;
 public class ResourceListing
 {
     public static final Logger LOG = LoggerFactory.getLogger(ResourceListing.class);
+    // Non-Breaking Space suitable for XHTML and XML
+    private static final String NBSP = "&#160;";
 
     /**
-     * Convert the Resource directory into an HTML directory listing.
+     * Convert the Resource directory into an XHTML directory listing.
      *
      * @param resource the resource to build the listing from
      * @param base The base URL
@@ -52,27 +54,16 @@ public class ResourceListing
      * @param query query params
      * @return the HTML as String
      */
-    public static String getAsHTML(Resource resource, String base, boolean parent, String query)
+    public static String getAsXHTML(Resource resource, String base, boolean parent, String query)
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
         if (base == null || !resource.isDirectory())
             return null;
 
-        Path path = resource.getPath();
-        if (path == null) // Should never happen, as new Resource contract is that all Resources are a Path.
-            return null;
+        List<Path> listing = new ArrayList<>();
+        collectListing(listing, resource);
 
-        List<Path> listing = null;
-        try (Stream<Path> listStream = Files.list(resource.getPath()))
-        {
-            listing = listStream.collect(Collectors.toCollection(ArrayList::new));
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to get Directory Listing for: {}", resource, e);
-        }
 
         if (listing == null)
         {
@@ -132,7 +123,7 @@ public class ResourceListing
 
         // HTML Header
         buf.append("<head>\n");
-        buf.append("<meta charset=\"utf-8\">\n");
+        buf.append("<meta charset=\"utf-8\"/>\n");
         buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
         buf.append("<title>");
         buf.append(title);
@@ -144,8 +135,8 @@ public class ResourceListing
         buf.append("<h1 class=\"title\">").append(title).append("</h1>\n");
 
         // HTML Table
-        final String ARROW_DOWN = "&nbsp; &#8681;";
-        final String ARROW_UP = "&nbsp; &#8679;";
+        final String ARROW_DOWN = NBSP + " &#8681;";
+        final String ARROW_UP = NBSP + " &#8679;";
 
         buf.append("<table class=\"listing\">\n");
         buf.append("<thead>\n");
@@ -166,7 +157,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<tr><th class=\"name\"><a href=\"?C=N&O=").append(order).append("\">");
+        buf.append("<tr><th class=\"name\"><a href=\"?C=N&amp;O=").append(order).append("\">");
         buf.append("Name").append(arrow);
         buf.append("</a></th>");
 
@@ -186,7 +177,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&O=").append(order).append("\">");
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&amp;O=").append(order).append("\">");
         buf.append("Last Modified").append(arrow);
         buf.append("</a></th>");
 
@@ -205,7 +196,7 @@ public class ResourceListing
                 arrow = ARROW_DOWN;
             }
         }
-        buf.append("<th class=\"size\"><a href=\"?C=S&O=").append(order).append("\">");
+        buf.append("<th class=\"size\"><a href=\"?C=S&amp;O=").append(order).append("\">");
         buf.append("Size").append(arrow);
         buf.append("</a></th></tr>\n");
         buf.append("</thead>\n");
@@ -255,7 +246,7 @@ public class ResourceListing
             buf.append(href);
             buf.append("\">");
             buf.append(deTag(name));
-            buf.append("&nbsp;");
+            buf.append(NBSP);
             buf.append("</a></td>");
 
             // Last Modified
@@ -270,7 +261,7 @@ public class ResourceListing
             {
                 // do nothing (lastModifiedTime not supported by this file system)
             }
-            buf.append("&nbsp;</td>");
+            buf.append(NBSP).append("</td>");
 
             // Size
             buf.append("<td class=\"size\">");
@@ -287,13 +278,46 @@ public class ResourceListing
             {
                 // do nothing (size not supported by this file system)
             }
-            buf.append("&nbsp;</td></tr>\n");
+            buf.append(NBSP).append("</td></tr>\n");
         }
         buf.append("</tbody>\n");
         buf.append("</table>\n");
         buf.append("</body></html>\n");
 
         return buf.toString();
+    }
+
+    private static void collectListing(List<Path> listing, Resource resource)
+    {
+        if (resource == null)
+            return;
+
+        if (resource instanceof ResourceCollection resourceCollection)
+        {
+            for (Resource child: resourceCollection.getResources())
+            {
+                collectListing(listing, child);
+            }
+            return;
+        }
+
+        Path path = resource.getPath();
+        if (path == null)
+            return;
+
+        try (Stream<Path> listStream = Files.list(resource.getPath()))
+        {
+            listStream.forEach((entry) ->
+            {
+                if (!listing.contains(entry))
+                    listing.add(entry);
+            });
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to get Directory Listing for: {}", resource, e);
+        }
     }
 
     /**

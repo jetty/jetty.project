@@ -488,7 +488,7 @@ public class ResourceService
         }
 
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), URIUtil.SLASH);
-        String listing = ResourceListing.getAsHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
