@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +31,11 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -40,10 +44,14 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathResourceTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(PathResourceTest.class);
+
     @BeforeEach
     public void beforeEach()
     {
@@ -193,6 +201,7 @@ public class PathResourceTest
     @Test
     public void testJarFileIsAliasDirectory(WorkDir workDir) throws IOException
     {
+        boolean supportsUtf8Dir = false;
         Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
 
         Map<String, String> env = new HashMap<>();
@@ -205,6 +214,19 @@ public class PathResourceTest
             Path dir = root.resolve("dir");
             Files.createDirectory(dir);
             Files.writeString(dir.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+
+            try
+            {
+                Path utf8Dir = root.resolve("bãm");
+                Files.createDirectories(utf8Dir);
+                System.out.println("bam = " + utf8Dir.toUri().toASCIIString());
+                supportsUtf8Dir = true;
+            }
+            catch (InvalidPathException e)
+            {
+                LOG.debug("IGNORE", e);
+                supportsUtf8Dir = false;
+            }
         }
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -222,13 +244,18 @@ public class PathResourceTest
             assertFalse(testText.exists());
 
             // Resolve file using path navigation
-            testText = archiveResource.resolve("foo/../dir/test.txt");
+            testText = archiveResource.resolve("/foo/../dir/test.txt");
             assertTrue(testText.exists());
             assertFalse(testText.isAlias());
 
             // Resolve file using encoded characters
-            testText = archiveResource.resolve("dir/test%2Etxt");
+            testText = archiveResource.resolve("/dir/test%2Etxt");
             assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve file using extension-less directory
+            testText = archiveResource.resolve("/dir./test.txt");
+            assertFalse(testText.exists());
             assertFalse(testText.isAlias());
 
             // Resolve directory to name, no slash
@@ -240,6 +267,95 @@ public class PathResourceTest
             dirResource = archiveResource.resolve("/dir/");
             assertTrue(dirResource.exists());
             assertFalse(dirResource.isAlias());
+
+            if (supportsUtf8Dir)
+            {
+                // Resolve utf8 directory in raw
+                dirResource = archiveResource.resolve("/bãm/");
+                assertTrue(dirResource.exists());
+                assertFalse(dirResource.isAlias());
+
+                // Resolve utf8 directory encoded
+                dirResource = archiveResource.resolve("/b%C3%A3m/");
+                assertTrue(dirResource.exists());
+                assertFalse(dirResource.isAlias());
+            }
+        }
+    }
+
+    @Test
+    public void testNullCharEndingFilename(WorkDir workDir) throws Exception
+    {
+        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+
+            Path file0 = root.resolve("test.txt\0");
+            if (!Files.exists(file0))
+                return;  // this file system does not get tricked by ending filenames with nul
+
+            Files.writeString(file0, "Contents of test.txt%00", StandardCharsets.UTF_8);
+            assertThat(file0 + " exists", Files.exists(file0), is(true));  // This could be an alias
+        }
+        catch (InvalidPathException e)
+        {
+            LOG.debug("IGNORE", e);
+            Assumptions.assumeTrue(false, "FileSystem does not support null character");
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+
+            Path root = archiveResource.getPath();
+            Path file = root.resolve("test.txt");
+            Path file0 = root.resolve("test.txt\0");
+
+            // Test not alias paths
+            Resource resource = resourceFactory.newResource(file);
+            assertTrue(resource.exists());
+            assertNull(resource.getAlias());
+            resource = resourceFactory.newResource(file.toAbsolutePath());
+            assertTrue(resource.exists());
+            assertNull(resource.getAlias());
+            resource = resourceFactory.newResource(file.toUri());
+            assertTrue(resource.exists());
+            assertNull(resource.getAlias());
+            resource = resourceFactory.newResource(file.toUri().toString());
+            assertTrue(resource.exists());
+            assertNull(resource.getAlias());
+            resource = archiveResource.resolve("test.txt");
+            assertTrue(resource.exists());
+            assertNull(resource.getAlias());
+
+            // Test alias paths
+            resource = resourceFactory.newResource(file0);
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
+            resource = resourceFactory.newResource(file0.toAbsolutePath());
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
+            resource = resourceFactory.newResource(file0.toUri());
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
+            resource = resourceFactory.newResource(file0.toUri().toString());
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
+
+            resource = archiveResource.resolve("test.txt\0");
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
+        }
+        catch (InvalidPathException e)
+        {
+            // this file system does allow null char ending filenames
+            LOG.trace("IGNORED", e);
         }
     }
 }
