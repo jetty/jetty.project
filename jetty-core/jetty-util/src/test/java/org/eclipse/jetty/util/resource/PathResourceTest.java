@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -29,9 +30,7 @@ import java.util.Map;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.URIUtil;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -47,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class PathResourceTest
 {
@@ -132,30 +132,36 @@ public class PathResourceTest
     }
 
     @Test
-    public void testSame()
+    public void testSameViaSymlink()
     {
-        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
-        PathResource rPathResource = (PathResource)ResourceFactory.root().newResource(rpath);
-        PathResource ePathResource = (PathResource)ResourceFactory.root().newResource(epath);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+            Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
-        assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
-        assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
+            PathResource rPathResource = (PathResource)resourceFactory.newResource(rpath);
+            PathResource ePathResource = (PathResource)resourceFactory.newResource(epath);
 
-        PathResource ePathResource2 = null;
-        try
-        {
-            Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
-            ePathResource2 = (PathResource)ResourceFactory.root().newResource(epath2);
-        }
-        catch (Throwable th)
-        {
-            // Assume symbolic links are not supported
-        }
-        if (ePathResource2 != null)
-        {
-            assertThat(ePathResource.isSame(ePathResource2), Matchers.is(true));
-            assertThat(ePathResource.equals(ePathResource2), Matchers.is(false));
+            assertThat(rPathResource.isSame(rPathResource), is(true));
+            assertThat(rPathResource.isSame(ePathResource), is(false));
+
+            PathResource ePathResource2 = null;
+            boolean symlinkSupported;
+            try
+            {
+                Path sameSymlink = MavenTestingUtils.getTargetPath().resolve("testSame-symlink");
+                Path epath2 = Files.createSymbolicLink(sameSymlink, epath.getParent()).resolve("example.jar");
+                ePathResource2 = (PathResource)resourceFactory.newResource(epath2);
+                symlinkSupported = true;
+            }
+            catch (Throwable th)
+            {
+                symlinkSupported = false;
+            }
+
+            assumeTrue(symlinkSupported, "Symlink not supported");
+            assertThat(ePathResource.isSame(ePathResource2), is(true));
+            assertThat(ePathResource.equals(ePathResource2), is(false));
         }
     }
 
@@ -225,7 +231,6 @@ public class PathResourceTest
             catch (InvalidPathException e)
             {
                 LOG.debug("IGNORE", e);
-                supportsUtf8Dir = false;
             }
         }
 
@@ -297,8 +302,8 @@ public class PathResourceTest
             Path root = zipfs.getPath("/");
 
             Path file0 = root.resolve("test.txt\0");
-            if (!Files.exists(file0))
-                return;  // this file system does not get tricked by ending filenames with nul
+            assumeTrue(Files.exists(file0));
+            // Skip if this file system does not get tricked by ending filenames with nul
 
             Files.writeString(file0, "Contents of test.txt%00", StandardCharsets.UTF_8);
             assertThat(file0 + " exists", Files.exists(file0), is(true));  // This could be an alias
@@ -306,7 +311,7 @@ public class PathResourceTest
         catch (InvalidPathException e)
         {
             LOG.debug("IGNORE", e);
-            Assumptions.assumeTrue(false, "FileSystem does not support null character");
+            assumeTrue(false, "FileSystem does not support null character");
         }
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -351,6 +356,77 @@ public class PathResourceTest
             resource = archiveResource.resolve("test.txt\0");
             assertTrue(resource.exists());
             assertNotNull(resource.getAlias());
+        }
+        catch (InvalidPathException e)
+        {
+            // this file system does allow null char ending filenames
+            LOG.trace("IGNORED", e);
+        }
+    }
+
+    @Test
+    public void testSymlink(WorkDir workDir) throws Exception
+    {
+        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+        Path foo = null;
+        Path bar = null;
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+
+            foo = root.resolve("foo");
+            bar = root.resolve("bar");
+
+            boolean symlinkSupported;
+            try
+            {
+                Files.createFile(foo);
+                Files.createSymbolicLink(bar, foo);
+                symlinkSupported = true;
+            }
+            catch (UnsupportedOperationException | FileSystemException e)
+            {
+                symlinkSupported = false;
+            }
+
+            assumeTrue(symlinkSupported, "Symlink not supported");
+        }
+        catch (InvalidPathException e)
+        {
+            LOG.debug("IGNORE", e);
+            assumeTrue(false, "FileSystem does not support null character");
+        }
+
+        assertNotNull(foo);
+        assertNotNull(bar);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+            Path dir = archiveResource.getPath();
+
+            Resource base = ResourceFactory.root().newResource(dir);
+            Resource resFoo = base.resolve("foo");
+            Resource resBar = base.resolve("bar");
+
+            assertThat("resFoo.uri", resFoo.getURI(), is(foo.toUri()));
+
+            // Access to the same resource, but via a symlink means that they are not equivalent
+            assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
+
+            assertThat("resource.alias", resFoo.isAlias(), is(false));
+
+            assertThat("resource.uri.alias", resourceFactory.newResource(resFoo.getURI()).isAlias(), is(false));
+            assertThat("resource.file.alias", resourceFactory.newResource(resFoo.getPath()).isAlias(), is(false));
+
+            assertThat("alias", resBar.getAlias(), is(resFoo.getURI()));
+            assertThat("uri.alias", resourceFactory.newResource(resBar.getURI()).getAlias(), is(resFoo.getURI()));
+            assertThat("file.alias", resourceFactory.newResource(resBar.getPath()).getAlias(), is(resFoo.getURI()));
         }
         catch (InvalidPathException e)
         {
