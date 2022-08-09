@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" xml:base="">
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
   <!-- 2.2 -->
   <public publicId="web-app_2_2.dtd" uri="resources/web-app_2_2.dtd" />
   <public publicId="-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN" uri="resources/web-app_2_2.dtd" />
