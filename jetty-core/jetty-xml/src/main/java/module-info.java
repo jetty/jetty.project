@@ -21,5 +21,4 @@ module org.eclipse.jetty.xml
     exports org.eclipse.jetty.xml;
 
     uses org.eclipse.jetty.xml.ConfigurationProcessorFactory;
-    uses java.net.spi.URLStreamHandlerProvider;
 }
