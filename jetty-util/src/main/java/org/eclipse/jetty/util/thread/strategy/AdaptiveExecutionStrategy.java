@@ -135,9 +135,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _epcMode = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
-    private final boolean _useVirtualThreads;
     private final TryExecutor _tryExecutor;
     private final Runnable _runPendingProducer = () -> tryProduce(true);
+    private boolean _useVirtualThreads;
     private State _state = State.IDLE;
     private boolean _pending;
 
@@ -149,12 +149,18 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         _producer = producer;
         _executor = executor;
-        _useVirtualThreads = VirtualThreads.isUseVirtualThreads(executor);
         _tryExecutor = TryExecutor.asTryExecutor(executor);
         addBean(_producer);
         addBean(_tryExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        _useVirtualThreads = VirtualThreads.isUseVirtualThreads(_executor);
     }
 
     @Override
