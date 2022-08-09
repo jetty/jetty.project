@@ -50,15 +50,17 @@ public class PathResource extends Resource
     {
         Path abs = path;
 
+        boolean isJarArchive = uri.toASCIIString().startsWith("jar:file:");
+
         /* Catch situation where the Path class has already normalized
          * the URI eg. input path "aa./foo.txt"
-         * from an #addPath(String) is normalized away during
+         * from an #resolve(String) is normalized away during
          * the creation of a Path object reference.
-         * If the URI is different then the Path.toUri() then
+         * If the URI is different from the Path.toUri() then
          * we will just use the original URI to construct the
          * alias reference Path.
          */
-        if (!URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
+        if (!isJarArchive && !URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
         {
             try
             {
@@ -85,7 +87,7 @@ public class PathResource extends Resource
 
         try
         {
-            if (Files.isSymbolicLink(path))
+            if (!isJarArchive && Files.isSymbolicLink(path))
                 return path.getParent().resolve(Files.readSymbolicLink(path));
             if (Files.exists(path))
             {

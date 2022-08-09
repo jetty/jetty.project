@@ -15,11 +15,19 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +39,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathResourceTest
 {
@@ -138,6 +148,98 @@ public class PathResourceTest
         {
             assertThat(ePathResource.isSame(ePathResource2), Matchers.is(true));
             assertThat(ePathResource.equals(ePathResource2), Matchers.is(false));
+        }
+    }
+
+    @Test
+    public void testJarFileIsAliasFile(WorkDir workDir) throws IOException
+    {
+        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+
+            Resource testText = archiveResource.resolve("test.txt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve to name, but different case
+            testText = archiveResource.resolve("/TEST.TXT");
+            assertFalse(testText.exists());
+
+            // Resolve using path navigation
+            testText = archiveResource.resolve("/foo/../test.txt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve using encoded characters
+            testText = archiveResource.resolve("/test%2Etxt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+        }
+    }
+
+    @Test
+    public void testJarFileIsAliasDirectory(WorkDir workDir) throws IOException
+    {
+        Path testJar = workDir.getEmptyPathDir().resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("dir");
+            Files.createDirectory(dir);
+            Files.writeString(dir.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+
+            Resource testText = archiveResource.resolve("/dir/test.txt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve file to name, but different case
+            testText = archiveResource.resolve("/dir/TEST.TXT");
+            assertFalse(testText.exists());
+            testText = archiveResource.resolve("/DIR/test.txt");
+            assertFalse(testText.exists());
+
+            // Resolve file using path navigation
+            testText = archiveResource.resolve("foo/../dir/test.txt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve file using encoded characters
+            testText = archiveResource.resolve("dir/test%2Etxt");
+            assertTrue(testText.exists());
+            assertFalse(testText.isAlias());
+
+            // Resolve directory to name, no slash
+            Resource dirResource = archiveResource.resolve("/dir");
+            assertTrue(dirResource.exists());
+            assertFalse(dirResource.isAlias());
+
+            // Resolve directory to name, with slash
+            dirResource = archiveResource.resolve("/dir/");
+            assertTrue(dirResource.exists());
+            assertFalse(dirResource.isAlias());
         }
     }
 }
