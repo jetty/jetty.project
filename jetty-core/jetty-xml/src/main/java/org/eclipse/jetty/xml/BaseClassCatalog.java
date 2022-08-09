@@ -49,9 +49,9 @@ import org.xml.sax.SAXException;
  * {@code catalog.xml} files.
  * </p>
  */
-public class RemoteBaseCatalog implements Catalog, EntityResolver
+public class BaseClassCatalog implements Catalog, EntityResolver
 {
-    public static RemoteBaseCatalog load(URI uriToCatalogXml, Class<?> baseClass) throws IOException
+    public static BaseClassCatalog load(URI uriToCatalogXml, Class<?> baseClass) throws IOException
     {
         return new CatalogReader(uriToCatalogXml, baseClass).parse();
     }
@@ -67,7 +67,7 @@ public class RemoteBaseCatalog implements Catalog, EntityResolver
             this.baseClass = Objects.requireNonNull(baseClass, "Base Class");
         }
 
-        public RemoteBaseCatalog parse() throws IOException
+        public BaseClassCatalog parse() throws IOException
         {
             try (InputStream in = catalogUri.toURL().openStream())
             {
@@ -83,7 +83,7 @@ public class RemoteBaseCatalog implements Catalog, EntityResolver
                 Element root = doc.getDocumentElement();
                 Map<String, String> publicIdMap = getMapping(root, "public", "publicId");
                 Map<String, String> systemIdMap = getMapping(root, "system", "systemId");
-                return new RemoteBaseCatalog(publicIdMap, systemIdMap);
+                return new BaseClassCatalog(publicIdMap, systemIdMap);
             }
             catch (ParserConfigurationException | SAXException e)
             {
@@ -127,7 +127,7 @@ public class RemoteBaseCatalog implements Catalog, EntityResolver
     private final Map<String, String> publicIdMap;
     private final Map<String, String> systemIdMap;
 
-    private RemoteBaseCatalog(Map<String, String> publicIdMap, Map<String, String> systemIdMap)
+    private BaseClassCatalog(Map<String, String> publicIdMap, Map<String, String> systemIdMap)
     {
         this.publicIdMap = Objects.requireNonNull(publicIdMap, "Public ID Map");
         this.systemIdMap = Objects.requireNonNull(systemIdMap, "System ID Map");

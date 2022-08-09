@@ -166,7 +166,7 @@ public class XmlParser
      */
     public void addCatalog(URI catalogXml, Class<?> baseClassLocation) throws IOException
     {
-        RemoteBaseCatalog catalog = RemoteBaseCatalog.load(catalogXml, baseClassLocation);
+        BaseClassCatalog catalog = BaseClassCatalog.load(catalogXml, baseClassLocation);
         _entityResolvers.add(catalog);
     }
 
@@ -177,7 +177,7 @@ public class XmlParser
      */
     public void addCatalog(URI catalogXml)
     {
-        CatalogFeatures f = CatalogFeatures.builder().with(CatalogFeatures.Feature.RESOLVE, "strict").build();
+        CatalogFeatures f = CatalogFeatures.builder().with(CatalogFeatures.Feature.RESOLVE, "continue").build();
         Catalog catalog = CatalogManager.catalog(f, catalogXml);
         CatalogResolver catalogResolver = CatalogManager.catalogResolver(catalog);
         _entityResolvers.add(catalogResolver);
