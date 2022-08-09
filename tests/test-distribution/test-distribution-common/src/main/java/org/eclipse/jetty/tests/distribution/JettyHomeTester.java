@@ -545,8 +545,9 @@ public class JettyHomeTester
         public void close()
         {
             stop();
-            IO.delete(this.config.getJettyBase());
-            IO.delete(this.config.getJettyHome().getParent());
+            // delete the content of temporary base and home?
+            //IO.delete(this.config.getJettyBase());
+            //IO.delete(this.config.getJettyHome().getParent());
         }
 
         /**
