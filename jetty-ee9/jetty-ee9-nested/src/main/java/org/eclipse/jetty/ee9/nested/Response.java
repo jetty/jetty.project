@@ -307,7 +307,7 @@ public class Response implements HttpServletResponse
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getValue()))
+                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 

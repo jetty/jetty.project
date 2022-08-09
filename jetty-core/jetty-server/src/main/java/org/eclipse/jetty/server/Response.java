@@ -153,7 +153,7 @@ public interface Response extends Content.Sink
                 }
                 else
                 {
-                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getValue()))
+                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
