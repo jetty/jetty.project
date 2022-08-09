@@ -7,7 +7,7 @@ Enables Annotation scanning for deployed web applications.
 ee8
 
 [depend]
-plus
+ee8-plus
 
 [lib]
 lib/jetty-ee8-annotations-${jetty.version}.jar

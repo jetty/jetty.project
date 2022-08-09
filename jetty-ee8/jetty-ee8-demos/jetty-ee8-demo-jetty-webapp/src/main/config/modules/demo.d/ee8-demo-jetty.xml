@@ -5,7 +5,7 @@
 Configure and deploy the test web application
 ===================================================================== -->
 
-<Configure id="testWebapp" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="testWebapp" class="org.eclipse.jetty.ee8.webapp.WebAppContext">
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
@@ -13,7 +13,7 @@ Configure and deploy the test web application
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/test</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/ee9-demo-jetty.war
+  <Set name="war"><Property name="jetty.webapps" default="." />/ee8-demo-jetty.war
   </Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -21,8 +21,8 @@ Configure and deploy the test web application
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
-  <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault-ee9.xml</Set>
-  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/ee9-demo-jetty.d/ee9-demo-jetty-override-web.xml
+  <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault-ee8.xml</Set>
+  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/ee8-demo-jetty.d/ee8-demo-jetty-override-web.xml
   </Set>
   
   <!-- Enable WebSocket container -->

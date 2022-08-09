@@ -6,9 +6,9 @@ ee8
 
 [depend]
 server
-security
 jndi
-webapp
+ee8-security
+ee8-webapp
 
 [lib]
 lib/jetty-ee8-plus-${jetty.version}.jar

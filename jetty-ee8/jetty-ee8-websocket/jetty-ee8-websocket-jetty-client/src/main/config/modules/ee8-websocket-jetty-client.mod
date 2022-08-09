@@ -8,14 +8,14 @@ websocket
 
 [depend]
 client
-annotations
+ee8-annotations
 
 [lib]
-lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-client-${jetty.version}.jar
-lib/websocket/websocket-jetty-api-${jetty.version}.jar
-lib/websocket/websocket-jetty-common-${jetty.version}.jar
-lib/websocket/websocket-jetty-client-${jetty.version}.jar
+lib/ee8-websocket/websocket-core-common-${jetty.version}.jar
+lib/ee8-websocket/websocket-core-client-${jetty.version}.jar
+lib/ee8-websocket/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
+lib/ee8-websocket/jetty-ee8-websocket-jetty-common-${jetty.version}.jar
+lib/ee8-websocket/jetty-ee8-websocket-jetty-client-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

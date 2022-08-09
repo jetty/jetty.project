@@ -18,7 +18,7 @@ ee8-jstl
 ee8-annotations
 ext
 ee8-servlets
-ee8-websocket-jakarta
+ee8-websocket-javax
 ee8-websocket-jetty
 ee8-demo-realm
 

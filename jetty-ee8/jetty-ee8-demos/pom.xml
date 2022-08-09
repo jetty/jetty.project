@@ -51,9 +51,9 @@
      <module>jetty-ee8-demo-proxy-webapp</module>
     <!-- module>jetty-ee9-demo-embedded</module     -->
 
-<!--    <module>jetty-ee9-demo-jsp-webapp</module>-->
+    <module>jetty-ee8-demo-jsp-webapp</module>
 
-<!--    <module>jetty-ee9-demo-spec</module>-->
+    <module>jetty-ee8-demo-spec</module>
 <!--    <module>jetty-ee9-demo-template</module>-->
   </modules>
 

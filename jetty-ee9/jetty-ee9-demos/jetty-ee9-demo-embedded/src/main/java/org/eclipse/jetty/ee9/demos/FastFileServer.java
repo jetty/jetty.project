@@ -15,7 +15,9 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.io.File;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -23,6 +25,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Fast FileServer.
@@ -86,7 +91,6 @@ public class FastFileServer
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            // FIXME
             return null;
 //            return (req, response, callback) ->
 //            {
@@ -99,7 +103,7 @@ public class FastFileServer
 //                // define small medium and large.
 //                // This should be turned for your content, JVM and OS, but we will
 //                // huge HTTP response buffer size as a measure
-//                final int SMALL = response.getBufferSize();
+//                final int SMALL = req.getBufferSize();
 //                final int MEDIUM = 8 * SMALL;
 //
 //                // What file to serve?
@@ -117,10 +121,10 @@ public class FastFileServer
 //                {
 //                    if (!request.getPathInfo().endsWith(URIUtil.SLASH))
 //                    {
-//                        response.sendRedirect(response.encodeRedirectURL(request.getRequestURI() + URIUtil.SLASH));
+//                        response.sendRedirect(req.encodeRedirectURL(request.getRequestURI() + URIUtil.SLASH));
 //                        return;
 //                    }
-//                    String listing = Resource.newResource(file).getListHTML(
+//                    String listing = ResourceFactory.of(this).newResource(file.toPath()).getListHTML(
 //                            request.getRequestURI(),
 //                            request.getPathInfo().lastIndexOf("/") > 0,
 //                            request.getQueryString());

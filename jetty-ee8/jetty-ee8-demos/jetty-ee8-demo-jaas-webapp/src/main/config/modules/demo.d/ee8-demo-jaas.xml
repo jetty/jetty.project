@@ -4,17 +4,17 @@
 <!-- =============================================================== -->
 <!-- Configure the demo-jaas webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee8.webapp.WebAppContext">
 
   <Set name="contextPath">/test-jaas</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/ee9-demo-jaas.war
+  <Set name="war"><Property name="jetty.webapps" default="." />/ee8-demo-jaas.war
   </Set>
   <Set name="extractWAR">true</Set>
 
   <Set name="securityHandler">
-    <New class="org.eclipse.jetty.ee9.security.ConstraintSecurityHandler">
+    <New class="org.eclipse.jetty.ee8.security.ConstraintSecurityHandler">
      <Set name="loginService">
-       <New class="org.eclipse.jetty.ee9.jaas.JAASLoginService">
+       <New class="org.eclipse.jetty.ee8.jaas.JAASLoginService">
          <Set name="name">Demo JAAS Realm</Set>
          <Set name="loginModuleName">xyz</Set>
        </New>

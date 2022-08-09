@@ -15,17 +15,19 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -37,8 +39,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
+
+    private static Stream<Arguments> provideEnvironmentsToTest()
+    {
+        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10");
+        return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testDemoAddServerClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -82,7 +91,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testJspDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -129,7 +138,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @Tag("external")
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -188,7 +197,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSpec(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -246,9 +255,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled //TODO needs DefaultServlet and ee9-demo
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -291,7 +299,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSessionDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

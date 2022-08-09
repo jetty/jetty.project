@@ -13,6 +13,7 @@
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
     <distribution.debug.port>-1</distribution.debug.port>
     <home.start.timeout>10</home.start.timeout>
+    <environmentsToTest>ee8,ee9,ee10</environmentsToTest>
   </properties>
 
   <dependencies>
@@ -152,6 +153,7 @@
             <home.start.timeout>${home.start.timeout}</home.start.timeout>
             <mariadb.version>${mariadb.version}</mariadb.version>
             <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
+            <environmentsToTest>${environmentsToTest}</environmentsToTest>
           </systemPropertyVariables>
         </configuration>
       </plugin>
