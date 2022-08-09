@@ -26,12 +26,15 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -59,11 +62,18 @@ public class GzipHandlerIsHandledTest
         client.start();
     }
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @AfterEach
     public void tearDown()
     {
         LifeCycle.stop(client);
         LifeCycle.stop(server);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -72,7 +82,7 @@ public class GzipHandlerIsHandledTest
         Handler.Collection handlers = new Handler.Collection();
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(Resource.newResource(workDir.getPath()));
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(workDir.getPath()));
         resourceHandler.setDirAllowed(true);
         resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));
 

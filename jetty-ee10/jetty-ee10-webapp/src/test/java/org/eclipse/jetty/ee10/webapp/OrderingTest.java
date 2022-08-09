@@ -21,7 +21,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -116,6 +119,18 @@ public class OrderingTest
         {
             return null;
         }
+    }
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -730,12 +745,12 @@ public class OrderingTest
     public void testRelativeOrderingWithPlainJars()
         throws Exception
     {
-        // B,A,C other jars with no fragments
+        //B,A,C other jars with no fragments
         List<Resource> resources = new ArrayList<Resource>();
         MetaData metaData = new MetaData();
         metaData._ordering = new RelativeOrdering(metaData);
 
-        // A: after others, before C
+        //A: after others, before C
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");

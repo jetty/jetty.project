@@ -39,7 +39,9 @@ import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private Resource jettyEnvXmlResource;
     private NamingDump _dumper;
+    private ResourceFactory.Closeable _resourceFactory;
 
     public EnvConfiguration()
     {
@@ -69,12 +72,13 @@ public class EnvConfiguration extends AbstractConfiguration
 
     public void setJettyEnvXml(URL url)
     {
-        this.jettyEnvXmlResource = Resource.newResource(url);
+        this.jettyEnvXmlResource = _resourceFactory.newResource(url);
     }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
+        _resourceFactory = ResourceFactory.closeable();
         //create a java:comp/env
         createEnvContext(context);
     }
@@ -191,6 +195,8 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
+            IO.close(_resourceFactory);
+            _resourceFactory = null;
         }
     }
 

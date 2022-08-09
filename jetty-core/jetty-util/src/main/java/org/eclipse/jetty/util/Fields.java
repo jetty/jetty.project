@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -278,15 +279,9 @@ public class Fields implements Iterable<Fields.Field>
     @Override
     public String toString()
     {
-        StringBuilder s = new StringBuilder();
-        char d = '[';
-        for (Field f : fields.values())
-        {
-            s.append(d).append(f.getName()).append('=').append(f.getValues());
-            d = ',';
-        }
-        s.append(']');
-        return s.toString();
+        return fields.values().stream()
+            .map(Field::toString)
+            .collect(Collectors.joining(",", "[", "]"));
     }
 
     /**

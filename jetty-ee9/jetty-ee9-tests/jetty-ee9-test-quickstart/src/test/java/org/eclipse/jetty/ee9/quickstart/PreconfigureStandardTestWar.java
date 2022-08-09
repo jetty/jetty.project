@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,25 +31,37 @@ public class PreconfigureStandardTestWar
     private static final long __start = System.nanoTime();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
+    public static Path getTargetDir()
+    {
+        Path workdir = MavenTestingUtils.getTargetTestingPath(PreconfigureStandardTestWar.class.getSimpleName());
+        FS.ensureDirExists(workdir);
+
+        return workdir.resolve("test-standard-preconfigured");
+    }
+
     public static void main(String[] args) throws Exception
     {
-        String target = "target/test-standard-preconfigured";
-        File file = new File(target);
-        if (file.exists())
-            IO.delete(file);
+        Path target = getTargetDir();
+        FS.ensureEmpty(target);
 
-        File realmPropertiesDest = new File("target/test-standard-realm.properties");
-        if (realmPropertiesDest.exists())
-            IO.delete(realmPropertiesDest);
+        Path realmPropertiesDest = target.resolve("test-standard-realm.properties");
+        Files.deleteIfExists(realmPropertiesDest);
 
-        Resource realmPropertiesSrc = Resource.newResource("src/test/resources/realm.properties");
-        realmPropertiesSrc.copyTo(realmPropertiesDest.toPath());
+        Path realmPropertiesSrc = MavenTestingUtils.getTestResourcePathFile("realm.properties");
+        Files.copy(realmPropertiesSrc, realmPropertiesDest);
         System.setProperty("jetty.home", "target");
 
-        PreconfigureQuickStartWar.main("target/test-standard.war", target, "src/test/resources/test.xml");
+        PreconfigureQuickStartWar.main(
+            MavenTestingUtils.getTargetFile("test-standard.war").toString(),
+            target.toString(),
+            MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
 
         LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
 
-        // IO.copy(new FileInputStream("target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
+        if (LOG.isDebugEnabled())
+        {
+            Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
+            System.out.println(Files.readString(quickStartXml));
+        }
     }
 }

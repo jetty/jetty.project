@@ -25,6 +25,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,43 +41,46 @@ public class PreconfigureQuickStartWar
         Resource dir = null;
         Resource xml = null;
 
-        switch (args.length)
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            case 0:
-                error("No WAR file or directory given");
-                break;
+            switch (args.length)
+            {
+                case 0:
+                    error("No WAR file or directory given");
+                    break;
 
-            case 1:
-                dir = Resource.newResource(args[0]);
-                break;
+                case 1:
+                    dir = resourceFactory.newResource(args[0]);
+                    break;
 
-            case 2:
-                war = Resource.newResource(args[0]);
-                if (war.isDirectory())
-                {
-                    dir = war;
-                    war = null;
-                    xml = Resource.newResource(args[1]);
-                }
-                else
-                {
-                    dir = Resource.newResource(args[1]);
-                }
+                case 2:
+                    war = resourceFactory.newResource(args[0]);
+                    if (war.isDirectory())
+                    {
+                        dir = war;
+                        war = null;
+                        xml = resourceFactory.newResource(args[1]);
+                    }
+                    else
+                    {
+                        dir = resourceFactory.newResource(args[1]);
+                    }
 
-                break;
+                    break;
 
-            case 3:
-                war = Resource.newResource(args[0]);
-                dir = Resource.newResource(args[1]);
-                xml = Resource.newResource(args[2]);
-                break;
+                case 3:
+                    war = resourceFactory.newResource(args[0]);
+                    dir = resourceFactory.newResource(args[1]);
+                    xml = resourceFactory.newResource(args[2]);
+                    break;
 
-            default:
-                error("Too many args");
-                break;
+                default:
+                    error("Too many args");
+                    break;
+            }
+
+            preconfigure(war, dir, xml);
         }
-
-        preconfigure(war, dir, xml);
     }
 
     /**
@@ -92,15 +96,14 @@ public class PreconfigureQuickStartWar
         {
             if (war.isDirectory())
                 error("war file is directory");
-            
+
             if (!dir.exists())
                 Files.createDirectories(dir.getPath());
-
-            URI jarUri = URIUtil.toJarFileUri(war.getURI());
-            try (Resource.Mount warMount = Resource.mount(jarUri))
+            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
             {
                 // unpack contents of war to directory
-                warMount.root().copyTo(dir.getPath());
+                Resource warResource = resourceFactory.newResource(URIUtil.toJarFileUri(war.getURI()));
+                warResource.copyTo(dir.getPath());
             }
         }
 

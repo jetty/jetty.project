@@ -20,6 +20,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,7 +45,7 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        Resource fakeXml = Resource.newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml").toPath());
+        Resource fakeXml = ResourceFactory.root().newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml").toPath());
         wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(fakeXml));
         
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);

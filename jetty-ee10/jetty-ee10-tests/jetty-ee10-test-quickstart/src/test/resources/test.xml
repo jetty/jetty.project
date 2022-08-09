@@ -11,15 +11,21 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+<Configure id="webapp" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <Set name="contextPath">/test</Set>
+
+  <Call name="getResourceFactory">
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.home" default="."/>/test-standard-realm.properties</Arg>
+    </Call>
+  </Call>
 
   <Get name="securityHandler">
     <Set name="loginService">
       <New class="org.eclipse.jetty.ee10.servlet.security.HashLoginService">
         <Set name="name">Test Realm</Set>        
-        <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-standard-realm.properties</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
       </New>
     </Set>
     <Set name="authenticator">

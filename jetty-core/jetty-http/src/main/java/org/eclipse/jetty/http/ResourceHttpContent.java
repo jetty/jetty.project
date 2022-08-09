@@ -32,26 +32,19 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final Path _path;
     final String _contentType;
-    final int _maxBuffer;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
     String _etag;
 
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
-        this(resource, contentType, -1, null);
+        this(resource, contentType, null);
     }
 
-    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer)
-    {
-        this(resource, contentType, maxBuffer, null);
-    }
-
-    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
+    public ResourceHttpContent(final Resource resource, final String contentType, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
-        _maxBuffer = maxBuffer;
         if (precompressedContents == null)
         {
             _precompressedContents = null;

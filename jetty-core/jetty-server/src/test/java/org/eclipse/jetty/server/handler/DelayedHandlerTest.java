@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -402,7 +402,7 @@ public class DelayedHandlerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                Fields fields = FutureFormFields.forRequest(request).get(1, TimeUnit.NANOSECONDS);
+                Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);
             }
         });
@@ -425,7 +425,7 @@ public class DelayedHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
-            assertThat(content, containsString("null"));
+            assertThat(content, containsString("[]"));
 
             output.write("""
                 POST / HTTP/1.1

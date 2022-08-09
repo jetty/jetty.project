@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -199,7 +199,7 @@ public class ServerSupport
             if (PluginLog.getLog() != null)
                 PluginLog.getLog().info("Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath());
 
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(xmlFile.toPath()));
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(server).newResource(xmlFile.toPath()));
 
             //add in any properties
             if (properties != null)

@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +38,18 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         super(contextHandler);
     }
 
+    public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
+    {
+        super(contextHandler, baseResource);
+    }
+
     @Override
     protected boolean check(String pathInContext, Path path)
     {
         if (_base == null)
             return false;
 
-        // do not allow any non-URI file separation characters in the URI (such as Windows), as we need to know exactly what are the segments
+        // do not allow any file separation characters in the URI, as we need to know exactly what are the segments
         if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
             return false;
 
@@ -66,7 +72,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                 // This does not allow symlinks like /WeB-InF->/var/lib/other
                 if (Files.isSymbolicLink(fromBase))
-                    return !isProtectedTarget(realURI.toString());
+                    return true;
+                    // TODO: return !getContextHandler().isProtectedTarget(realURI.toString());
 
                 // If the ancestor is not allowed then do not allow.
                 if (!isAllowed(fromBase))

@@ -41,7 +41,6 @@ import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
@@ -55,6 +54,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
@@ -198,32 +198,35 @@ public class Runner
      */
     public void configure(String[] args) throws Exception
     {
-        // handle classpath bits first so we can initialize the log mechanism.
-        for (int i = 0; i < args.length; i++)
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            if ("--lib".equals(args[i]))
+            // handle classpath bits first so we can initialize the log mechanism.
+            for (int i = 0; i < args.length; i++)
             {
-                Resource lib = Resource.newResource(args[++i]);
-                if (!lib.exists() || !lib.isDirectory())
-                    usage("No such lib directory " + lib);
-                _classpath.addJars(lib);
+                if ("--lib".equals(args[i]))
+                {
+                    Resource lib = resourceFactory.newResource(args[++i]);
+                    if (!lib.exists() || !lib.isDirectory())
+                        usage("No such lib directory " + lib);
+                    _classpath.addJars(lib);
+                }
+                else if ("--jar".equals(args[i]))
+                {
+                    Resource jar = resourceFactory.newResource(args[++i]);
+                    if (!jar.exists() || jar.isDirectory())
+                        usage("No such jar " + jar);
+                    _classpath.addPath(jar);
+                }
+                else if ("--classes".equals(args[i]))
+                {
+                    Resource classes = resourceFactory.newResource(args[++i]);
+                    if (!classes.exists() || !classes.isDirectory())
+                        usage("No such classes directory " + classes);
+                    _classpath.addPath(classes);
+                }
+                else if (args[i].startsWith("--"))
+                    i++;
             }
-            else if ("--jar".equals(args[i]))
-            {
-                Resource jar = Resource.newResource(args[++i]);
-                if (!jar.exists() || jar.isDirectory())
-                    usage("No such jar " + jar);
-                _classpath.addPath(jar);
-            }
-            else if ("--classes".equals(args[i]))
-            {
-                Resource classes = Resource.newResource(args[++i]);
-                if (!classes.exists() || !classes.isDirectory())
-                    usage("No such classes directory " + classes);
-                _classpath.addPath(classes);
-            }
-            else if (args[i].startsWith("--"))
-                i++;
         }
 
         initClassLoader();
@@ -327,7 +330,7 @@ public class Runner
                         {
                             for (String cfg : _configFiles)
                             {
-                                Resource resource = Resource.newResource(cfg);
+                                Resource resource = ResourceFactory.of(_server).newResource(cfg);
                                 XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
                                 xmlConfiguration.configure(_server);
                             }
@@ -365,7 +368,9 @@ public class Runner
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
-                                    final HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
+                                    ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
+                                    Resource statsResource = resourceFactory.newResource(_statsPropFile);
+                                    final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
                                     Constraint constraint = new Constraint();
                                     constraint.setName("Admin Only");
                                     constraint.setRoles(new String[]{"admin"});
@@ -408,7 +413,7 @@ public class Runner
                             {
                                 for (Connector connector : connectors)
                                 {
-                                    ((AbstractConnector)connector).addBean(new ConnectionStatistics());
+                                    connector.addBean(new ConnectionStatistics());
                                 }
                             }
                         }
@@ -417,7 +422,7 @@ public class Runner
                     }
 
                     // Create a context
-                    Resource ctx = Resource.newResource(args[i]);
+                    Resource ctx = ResourceFactory.of(_server).newResource(args[i]);
                     if (!ctx.exists())
                         usage("Context '" + ctx + "' does not exist");
 

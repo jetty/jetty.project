@@ -25,7 +25,11 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,6 +37,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class AttributeNormalizerTest
@@ -98,7 +103,7 @@ public class AttributeNormalizerTest
         return data.stream().map(Arguments::of);
     }
 
-    private static final String asTargetPath(String title, String subpath)
+    private static String asTargetPath(String title, String subpath)
     {
         Path rootPath = MavenTestingUtils.getTargetTestingPath(title);
         FS.ensureDirExists(rootPath);
@@ -108,16 +113,23 @@ public class AttributeNormalizerTest
         return path.toString();
     }
 
-    private static Map<String, String> originalEnv = new HashMap<>();
+    private static final Map<String, String> originalEnv = new HashMap<>();
+    private static ResourceFactory.Closeable resourceFactory;
 
     @BeforeAll
     public static void rememberOriginalEnv()
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        resourceFactory = ResourceFactory.closeable();
         System.getProperties().stringPropertyNames()
-            .forEach((name) ->
-            {
-                originalEnv.put(name, System.getProperty(name));
-            });
+            .forEach((name) -> originalEnv.put(name, System.getProperty(name)));
+    }
+
+    @AfterAll
+    public static void afterAll()
+    {
+        IO.close(resourceFactory);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
@@ -324,7 +336,7 @@ public class AttributeNormalizerTest
                 .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
-            Resource webresource = Resource.newResource(war);
+            Resource webresource = resourceFactory.newResource(war);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 

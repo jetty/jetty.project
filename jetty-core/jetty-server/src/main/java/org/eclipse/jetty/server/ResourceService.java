@@ -76,9 +76,9 @@ public class ResourceService
     {
     }
 
-    public HttpContent getContent(String path, int outputBufferSize) throws IOException
+    public HttpContent getContent(String path) throws IOException
     {
-        return _contentFactory.getContent(path == null ? "" : path, outputBufferSize);
+        return _contentFactory.getContent(path == null ? "" : path);
     }
 
     public HttpContent.ContentFactory getContentFactory()
@@ -446,11 +446,10 @@ public class ResourceService
             case SERVE ->
             {
                 // TODO : check conditional headers.
-                // TODO output buffer size????
-                HttpContent c = _contentFactory.getContent(welcomeAction.target, 16 * 1024);
+                HttpContent c = _contentFactory.getContent(welcomeAction.target);
                 sendData(request, response, callback, c, null);
             }
-        };
+        }
     }
 
     private WelcomeAction processWelcome(Request request, Response response) throws IOException

@@ -45,10 +45,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -86,13 +89,28 @@ public class XmlConfigurationTest
     private static final String STRING_ARRAY_XML = "<Array type=\"String\"><Item type=\"String\">String1</Item><Item type=\"String\">String2</Item></Array>";
     private static final String INT_ARRAY_XML = "<Array type=\"int\"><Item type=\"int\">1</Item><Item type=\"int\">2</Item></Array>";
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testMortBay() throws Exception
     {
         URL url = XmlConfigurationTest.class.getResource("mortbay.xml");
-        Resource resource = Resource.newResource(url);
-        XmlConfiguration configuration = new XmlConfiguration(resource);
-        configuration.configure();
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(url);
+            XmlConfiguration configuration = new XmlConfiguration(resource);
+            configuration.configure();
+        }
     }
 
     public static String[] xmlConfigs()
@@ -109,10 +127,15 @@ public class XmlConfigurationTest
         TestConfiguration.VALUE = 77;
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
         assertNotNull(url);
-        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
-        TestConfiguration tc = new TestConfiguration("tc");
-        configuration.getProperties().putAll(properties);
-        configuration.configure(tc);
+        XmlConfiguration configuration;
+        TestConfiguration tc;
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            configuration = new XmlConfiguration(resourceFactory.newResource(url));
+            tc = new TestConfiguration("tc");
+            configuration.getProperties().putAll(properties);
+            configuration.configure(tc);
+        }
 
         assertEquals("SetValue", tc.testObject, "Set String");
         assertEquals(2, tc.testInt, "Set Type");
@@ -193,21 +216,25 @@ public class XmlConfigurationTest
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
         assertNotNull(url);
         AtomicInteger count = new AtomicInteger(0);
-        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url))
+        TestConfiguration tc;
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            @Override
-            public void initializeDefaults(Object object)
+            XmlConfiguration configuration = new XmlConfiguration(resourceFactory.newResource(url))
             {
-                if (object instanceof TestConfiguration)
+                @Override
+                public void initializeDefaults(Object object)
                 {
-                    count.incrementAndGet();
-                    ((TestConfiguration)object).setNested(null);
-                    ((TestConfiguration)object).setTestString("NEW DEFAULT");
+                    if (object instanceof TestConfiguration)
+                    {
+                        count.incrementAndGet();
+                        ((TestConfiguration)object).setNested(null);
+                        ((TestConfiguration)object).setTestString("NEW DEFAULT");
+                    }
                 }
-            }
-        };
-        configuration.getProperties().putAll(properties);
-        TestConfiguration tc = (TestConfiguration)configuration.configure();
+            };
+            configuration.getProperties().putAll(properties);
+            tc = (TestConfiguration)configuration.configure();
+        }
 
         assertEquals(3, count.get());
 
@@ -291,7 +318,7 @@ public class XmlConfigurationTest
         {
             writer.write(rawXml);
         }
-        return new XmlConfiguration(Resource.newResource(testFile));
+        return new XmlConfiguration(ResourceFactory.root().newResource(testFile));
     }
 
     @Test

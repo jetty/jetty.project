@@ -25,18 +25,45 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 public class AttributeNormalizerTest
 {
+    private static ResourceFactory.Closeable resourceFactory;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        IO.close(resourceFactory);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    private static ResourceFactory getResourceFactory()
+    {
+        if (resourceFactory == null)
+            resourceFactory = ResourceFactory.closeable();
+        return resourceFactory;
+    }
+
     public static Stream<Arguments> scenarios() throws IOException
     {
         final List<Scenario> data = new ArrayList<>();
@@ -324,7 +351,7 @@ public class AttributeNormalizerTest
                 .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
-            Resource webresource = Resource.newResource(war);
+            Resource webresource = getResourceFactory().newResource(war);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 

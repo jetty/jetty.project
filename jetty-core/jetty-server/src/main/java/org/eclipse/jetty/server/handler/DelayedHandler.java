@@ -18,20 +18,20 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DelayedHandler.class);
-
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
@@ -103,11 +103,11 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
 
-            Charset charset = FutureFormFields.getFormEncodedCharset(request);
+            Charset charset = FormFields.getFormEncodedCharset(request);
             if (charset == null)
                 return processor;
 
-            return new UntilFormFieldsProcessor(request, processor, charset);
+            return new UntilFormFieldsProcessor(request, processor);
         }
     }
 
@@ -115,15 +115,13 @@ public abstract class DelayedHandler extends Handler.Wrapper
     {
         private final Request _request;
         private final Request.Processor _processor;
-        private final Charset _charset;
         private Response _response;
         private Callback _callback;
 
-        public UntilFormFieldsProcessor(Request request, Request.Processor processor, Charset charset)
+        public UntilFormFieldsProcessor(Request request, Request.Processor processor)
         {
             _processor = processor;
             _request = request;
-            _charset = charset;
         }
 
         @Override
@@ -131,16 +129,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
-
-            // TODO get the max sizes
-            FutureFormFields futureFormFields = new FutureFormFields(_request, _charset, -1, -1);
-            _request.setAttribute(FutureFormFields.class.getName(), futureFormFields);
-            futureFormFields.run();
-
-            if (futureFormFields.isDone())
-                _processor.process(_request, response, callback);
-            else
-                futureFormFields.whenComplete(this);
+            FormFields.from(_request).whenComplete(this);
         }
 
         @Override
@@ -153,6 +142,97 @@ public abstract class DelayedHandler extends Handler.Wrapper
             catch (Throwable t)
             {
                 Response.writeError(_request, _response, _callback, t);
+            }
+        }
+    }
+
+    public static class UntilMultiPart extends DelayedHandler
+    {
+        @Override
+        protected Request.Processor delayed(Request request, Request.Processor processor)
+        {
+            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+                return processor;
+
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            if (contentType == null)
+                return processor;
+
+            String contentTypeValue = HttpField.valueParameters(contentType, null);
+            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
+                return processor;
+
+            return new Processor(request, processor);
+        }
+
+        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiParts.Parts, Throwable>
+        {
+            private final Request _request;
+            private final Request.Processor _processor;
+            private Response _response;
+            private Callback _callback;
+            private MultiParts _multiParts;
+
+            private Processor(Request request, Request.Processor processor)
+            {
+                _request = request;
+                _processor = processor;
+            }
+
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                _response = response;
+                _callback = callback;
+
+                String contentType = _request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                String boundary = MultiParts.extractBoundary(contentType);
+                _multiParts = new MultiParts(boundary);
+                // TODO: configure _multiParts.
+                _request.setAttribute(MultiParts.class.getName(), _multiParts);
+
+                run();
+
+                if (_multiParts.isDone())
+                    _processor.process(_request, response, callback);
+                else
+                    _multiParts.whenComplete(this);
+            }
+
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = _request.read();
+                    if (chunk == null)
+                    {
+                        _request.demand(this);
+                        return;
+                    }
+                    if (chunk instanceof Content.Chunk.Error error)
+                    {
+                        _multiParts.completeExceptionally(error.getCause());
+                        return;
+                    }
+                    _multiParts.parse(chunk);
+                    chunk.release();
+                    if (chunk.isLast())
+                        return;
+                }
+            }
+
+            @Override
+            public void accept(MultiParts.Parts parts, Throwable throwable)
+            {
+                try
+                {
+                    _processor.process(_request, _response, _callback);
+                }
+                catch (Throwable x)
+                {
+                    Response.writeError(_request, _response, _callback, x);
+                }
             }
         }
     }

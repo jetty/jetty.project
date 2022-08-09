@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -65,6 +64,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,8 +145,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private MetaData _metadata = new MetaData();
     private boolean _defaultContextPath = true;
-
-    private Resource.Mount _mountedExtraClasspath;
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -380,6 +378,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             ((WebAppClassLoader)classLoader).setName(name);
     }
 
+    public ResourceFactory getResourceFactory()
+    {
+        return ResourceFactory.of(this);
+    }
+
     @Override
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
@@ -536,13 +539,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        IO.close(_mountedExtraClasspath);
     }
 
     private void wrapConfigurations()
@@ -1252,8 +1248,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
         List<URI> uris = URIUtil.split(extraClasspath);
-        _mountedExtraClasspath = Resource.mountCollection(uris);
-        setExtraClasspath((ResourceCollection)_mountedExtraClasspath.root());
+        setExtraClasspath(ResourceFactory.of(this).newResource(uris));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)

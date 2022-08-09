@@ -42,6 +42,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,7 +200,7 @@ public class SslContextFactoryTest
     public void testNoTsResourceKs() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.of(cf).newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
@@ -215,8 +216,8 @@ public class SslContextFactoryTest
     public void testResourceTsResourceKs() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.of(cf).newSystemResource("keystore.p12");
+        Resource truststoreResource = ResourceFactory.of(cf).newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
@@ -232,8 +233,8 @@ public class SslContextFactoryTest
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
-        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
+        Resource keystoreResource = ResourceFactory.of(cf).newSystemResource("keystore.p12");
+        Resource truststoreResource = ResourceFactory.of(cf).newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
@@ -307,7 +308,7 @@ public class SslContextFactoryTest
     public void testSNICertificates() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("snikeystore.p12");
+        Resource keystoreResource = ResourceFactory.of(cf).newSystemResource("snikeystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
@@ -348,14 +349,14 @@ public class SslContextFactoryTest
     public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
+        cf.setKeyStoreResource(ResourceFactory.of(cf).newSystemResource("keystore.p12"));
         cf.setKeyStoreType("pkcs12");
         cf.setKeyStorePassword("storepwd");
         cf.start();
         cf.stop();
 
         cf = new SslContextFactory.Server();
-        cf.setKeyStoreResource(Resource.newSystemResource("keystore.jce"));
+        cf.setKeyStoreResource(ResourceFactory.of(cf).newSystemResource("keystore.jce"));
         cf.setKeyStoreType("jceks");
         cf.setKeyStorePassword("storepwd");
         cf.start();
@@ -401,7 +402,7 @@ public class SslContextFactoryTest
             }
         };
         // This test requires a SNI keystore so that the X509ExtendedKeyManager is wrapped.
-        serverTLS.setKeyStoreResource(Resource.newSystemResource("keystore_sni.p12"));
+        serverTLS.setKeyStoreResource(ResourceFactory.of(serverTLS).newSystemResource("keystore_sni.p12"));
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setKeyManagerFactoryAlgorithm("PKIX");
         // Don't pick a default certificate if SNI does not match.

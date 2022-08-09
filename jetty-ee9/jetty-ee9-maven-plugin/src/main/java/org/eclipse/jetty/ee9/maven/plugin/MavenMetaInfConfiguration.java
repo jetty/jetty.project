@@ -22,6 +22,7 @@ import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                     try
                     {
                         LOG.debug(" add  resource to resources to examine {}", file);
-                        list.add(Resource.newResource(file.toURI()));
+                        list.add(ResourceFactory.of(context).newResource(file.toURI()));
                     }
                     catch (Exception e)
                     {
@@ -101,7 +102,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                 {
                     try
                     {
-                        list.add(Resource.newResource(file.toURI()));
+                        list.add(ResourceFactory.of(context).newResource(file.toURI()));
                     }
                     catch (Exception e)
                     {

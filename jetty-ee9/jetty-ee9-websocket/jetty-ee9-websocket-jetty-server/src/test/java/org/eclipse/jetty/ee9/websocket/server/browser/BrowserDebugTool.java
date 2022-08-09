@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +118,7 @@ public class BrowserDebugTool
     {
         Path path = MavenTestingUtils.getTestResourcePathDir("browser-debug-tool");
         LOG.info("Static Resources: {}", path);
-        return Resource.newResource(path);
+        return ResourceFactory.root().newResource(path);
     }
 
     public void start() throws Exception

@@ -20,10 +20,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,15 +35,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class StandardDescriptorProcessorTest
 {
     //TODO add tests for other methods
-    
+    Server _server;
+
+    @BeforeEach
+    public void beforeEach() throws Exception
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        _server = new Server();
+        _server.start();
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        _server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testVisitSessionConfig() throws Exception
     {
         File webXml = MavenTestingUtils.getTestResourceFile("web-session-config.xml");
-        Server server = new Server();
         WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
-        wac.setBaseResource(MavenTestingUtils.getTargetTestingDir("testSessionConfig").getAbsoluteFile().toPath());
+        wac.setServer(_server);
+        wac.setBaseResource(MavenTestingUtils.getTargetTestingPath("testSessionConfig"));
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));

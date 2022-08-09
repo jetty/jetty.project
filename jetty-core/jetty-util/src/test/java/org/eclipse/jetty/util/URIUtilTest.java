@@ -28,7 +28,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -732,11 +732,11 @@ public class URIUtilTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
         URI jarFileUri = URIUtil.toJarFileUri(testJar.toUri());
 
-        try (Resource.Mount jarMount = Resource.mount(jarFileUri))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             arguments.add(Arguments.of(jarFileUri, TEST_RESOURCE_JAR));
 
-            Path root = jarMount.root().getPath();
+            Path root = resourceFactory.newResource(jarFileUri).getPath();
 
             try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true))
             {
@@ -892,7 +892,7 @@ public class URIUtilTest
     @MethodSource("unwrapContainerCases")
     public void testUnwrapContainer(String inputRawUri, String expected)
     {
-        URI input = Resource.toURI(inputRawUri);
+        URI input = URIUtil.toURI(inputRawUri);
         URI actual = URIUtil.unwrapContainer(input);
         assertThat(actual.toASCIIString(), is(expected));
     }

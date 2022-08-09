@@ -2,7 +2,6 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="FileServer" class="org.eclipse.jetty.server.Server">
-
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">
@@ -25,7 +24,7 @@
                   <Array type="String"><Item>index.html</Item></Array>
                 </Set>
                 <Set name="resourceBase">
-                  <Property name="fileserver.baseresource" default="." />
+                  <Ref refid="fileserver.baseResource"/>
                 </Set>
               </New>
             </Item>
