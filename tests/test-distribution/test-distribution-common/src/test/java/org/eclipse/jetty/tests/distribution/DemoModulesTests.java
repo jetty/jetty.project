@@ -281,6 +281,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             int httpsPort = distribution.freePort();
             String[] argsStart = {
                 "--jpms",
+                "--debug",
                 "jetty.http.port=" + httpPort,
                 "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
