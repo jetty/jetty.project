@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -76,7 +76,8 @@ public class StaticFromJarServerTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        Path jarFile = Paths.get("src/test/jars/content.jar");
+        Path testResources = MavenTestingUtils.getTargetPath("test-classes");
+        Path jarFile = testResources.resolve("jars/content.jar");
         if (!Files.exists(jarFile))
             throw new FileNotFoundException(jarFile.toString());
 
