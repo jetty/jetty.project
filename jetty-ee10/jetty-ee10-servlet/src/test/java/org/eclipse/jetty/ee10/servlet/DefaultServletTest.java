@@ -1404,7 +1404,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled("SymlinkAllowedResourceAliasCheck is broken")
     public void testSymLinks() throws Exception
     {
         FS.ensureDirExists(docRoot);
