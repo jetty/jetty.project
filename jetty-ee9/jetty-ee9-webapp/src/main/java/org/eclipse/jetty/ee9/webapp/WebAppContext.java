@@ -811,14 +811,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (super.getBaseResource() == null)
             return null;
 
-        // Iw there a WEB-INF directory?
-        Resource webInf = super.getBaseResource().resolve("WEB-INF/");  // TODO: what does this do in a collection?
+        // Is there a WEB-INF directory anywhere in the Resource Base?
+        // ResourceBase could be a ResourceCollection
+        // The result could be a ResourceCollection with multiple WEB-INF directories
+        // Can return from WEB-INF/lib/foo.jar!/WEB-INF
+        // Can also never return from a META-INF/versions/#/WEB-INF location
+        Resource webInf = super.getBaseResource().resolve("WEB-INF/");
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
-        // TODO This should only ever return the entry for the main artifact
-        // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF
-        // TODO: should also never return from a META-INF/versions/#/WEB-INF location
         return webInf;
     }
 
