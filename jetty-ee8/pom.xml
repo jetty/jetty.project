@@ -110,8 +110,12 @@
             </goals>
             <configuration>
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+              <mavenFilteringHints>
+                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
+              </mavenFilteringHints>
               <resources>
                 <resource>
+                  <filtering>true</filtering>
                   <directory>${ee9.module.path}/src/main/resources</directory>
                 </resource>
               </resources>

@@ -148,7 +148,7 @@ public class JettyHomeTester
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
         commands.addAll(config.getJVMArgs());
-        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
+        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath());
         int debugPort = Integer.getInteger("distribution.debug.port", 0);
         if (debugPort > 0)
         {
@@ -545,6 +545,8 @@ public class JettyHomeTester
         public void close()
         {
             stop();
+            IO.delete(this.config.getJettyBase());
+            IO.delete(this.config.getJettyHome().getParent());
         }
 
         /**

@@ -22,7 +22,7 @@ ee8-demo-mock-resources
 basehome:modules/demo.d/ee8-demo-jndi.xml|webapps/ee8-demo-jndi.xml
 basehome:modules/demo.d/ee8-demo-jndi.properties|webapps/ee8-demo-jndi.properties
 maven://org.eclipse.jetty.ee8.demos/jetty-ee8-demo-jndi-webapp/${jetty.version}/war|webapps/ee8-demo-jndi.war
-maven://jakarta.mail/jakarta.mail-api/2.0.0/jar|lib/ee8/jakarta.mail-api-2.0.0.jar
+maven://org.eclipse.jetty.orbit/javax.mail.glassfish/@javax.mail.glassfish.version@/jar|lib/ee8/javax.mail.glassfish-@javax.mail.glassfish.version@.jar
 
 [lib]
-lib/ee8/jakarta.mail-api-2.0.0.jar
+lib/ee8/javax.mail.glassfish-@javax.mail.glassfish.version@.jar

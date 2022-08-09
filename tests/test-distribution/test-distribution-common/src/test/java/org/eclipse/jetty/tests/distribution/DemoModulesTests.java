@@ -129,6 +129,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump.jsp");
+
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));

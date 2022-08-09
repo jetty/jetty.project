@@ -4,7 +4,6 @@ Enable javax.websocket APIs for deployed web applications.
 [environment]
 ee8
 
-
 [tags]
 websocket
 

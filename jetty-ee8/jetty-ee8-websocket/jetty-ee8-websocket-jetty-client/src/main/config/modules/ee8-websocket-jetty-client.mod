@@ -3,6 +3,9 @@
 [description]
 Expose the Jetty WebSocket Client classes to deployed web applications.
 
+[environment]
+ee8
+
 [tags]
 websocket
 

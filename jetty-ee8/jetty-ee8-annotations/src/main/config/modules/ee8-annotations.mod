@@ -11,7 +11,7 @@ ee8-plus
 
 [lib]
 lib/jetty-ee8-annotations-${jetty.version}.jar
-lib/annotations/*.jar
+lib/ee8-annotations/*.jar
 
 [jpms]
 add-modules:org.objectweb.asm
