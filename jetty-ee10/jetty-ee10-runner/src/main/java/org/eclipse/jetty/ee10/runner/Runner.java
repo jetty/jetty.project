@@ -55,7 +55,9 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -108,20 +110,23 @@ public class Runner
     {
         private List<URI> _classpath = new ArrayList<>();
 
-        public void addJars(Resource lib) throws IOException
+        public void addJars(ResourceCollection libs) throws IOException
         {
-            if (lib == null || !lib.exists())
-                throw new IllegalStateException("No such lib: " + lib);
+            if (libs == null)
+                throw new IllegalStateException("No such lib: " + libs);
 
-            if (lib.isDirectory())
-                throw new IllegalArgumentException("Not a directory: " + lib);
-
-            Path libDir = lib.getPath();
-            try (Stream<Path> libStream = Files.list(libDir))
+            for (Resource lib: libs.getResources())
             {
-                libStream.filter(Files::isRegularFile)
-                    .filter(FileID::isArchive)
-                    .forEach((archive) -> _classpath.add(archive.toUri()));
+                if (!lib.exists() || !lib.isDirectory())
+                    continue; // skip
+
+                Path libDir = lib.getPath();
+                try (Stream<Path> libStream = Files.list(libDir))
+                {
+                    libStream.filter(Files::isRegularFile)
+                        .filter(FileID::isArchive)
+                        .forEach((archive) -> _classpath.add(archive.toUri()));
+                }
             }
         }
 
@@ -195,20 +200,26 @@ public class Runner
             {
                 if ("--lib".equals(args[i]))
                 {
-                    Resource lib = resourceFactory.newResource(args[++i]);
-                    if (!lib.exists() || !lib.isDirectory())
-                        usage("No such lib directory " + lib);
-                    _classpath.addJars(lib);
+                    // List of raw URIs, not the internal archives, supports glob references as well
+                    List<URI> uris = URIUtil.split(args[i++]).stream().map(URIUtil::unwrapContainer).toList();
+                    // Assume a ResourceCollection, as user can provide a list
+                    ResourceCollection libs = resourceFactory.newResource(uris);
+                    _classpath.addJars(libs);
                 }
                 else if ("--jar".equals(args[i]))
                 {
-                    Resource jar = resourceFactory.newResource(args[++i]);
-                    if (!jar.exists() || jar.isDirectory())
-                        usage("No such jar " + jar);
-                    _classpath.addPath(jar);
+                    // List of raw URIs, not the internal archives, supports glob references as well
+                    List<URI> uris = URIUtil.split(args[i++]).stream()
+                        .filter(FileID::isArchive)
+                        .map(URIUtil::unwrapContainer)
+                        .toList();
+
+                    ResourceCollection jars = resourceFactory.newResource(uris);
+                    _classpath.addPath(jars);
                 }
                 else if ("--classes".equals(args[i]))
                 {
+                    // only a single class
                     Resource classes = resourceFactory.newResource(args[++i]);
                     if (!classes.exists() || !classes.isDirectory())
                         usage("No such classes directory " + classes);
