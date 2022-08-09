@@ -228,7 +228,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
-    private final List<AliasCheck> _aliasChecks = new ArrayList<>();
+    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     public enum Availability
     {
