@@ -1,4 +1,2 @@
-<!DOCTYPE test
-[
-    <!ELEMENT description (#PCDATA)>
-]>
+<!ELEMENT test (description?) >
+<!ELEMENT description (#PCDATA) >
