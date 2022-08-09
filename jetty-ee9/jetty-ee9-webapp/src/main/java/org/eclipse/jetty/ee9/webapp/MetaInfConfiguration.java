@@ -766,7 +766,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return List.of();
         }
 
-        try (Stream<Path> entries = Files.list(webInf.getPath()))
+        try (Stream<Path> entries = Files.list(webInfLib.getPath()))
         {
             return entries
                 .filter(Files::isRegularFile)
