@@ -59,7 +59,6 @@ public class XmlParser
     private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
     private final AutoLock _lock = new AutoLock();
-    // private Map<String, URL> _redirectMap = new HashMap<String, URL>();
     private SAXParser _parser;
     private Map<String, ContentHandler> _observerMap;
     private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
@@ -181,18 +180,6 @@ public class XmlParser
         Catalog catalog = CatalogManager.catalog(f, catalogXml);
         CatalogResolver catalogResolver = CatalogManager.catalogResolver(catalog);
         _entityResolvers.add(catalogResolver);
-    }
-
-    public void redirectEntity(String name, URL entity)
-    {
-        if (entity != null)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                throw new UnsupportedOperationException("Use Catalogs!");
-                // TODO: _redirectMap.put(name, entity);
-            }
-        }
     }
 
     /**
