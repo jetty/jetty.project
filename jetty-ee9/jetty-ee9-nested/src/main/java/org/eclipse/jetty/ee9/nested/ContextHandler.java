@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
@@ -78,6 +77,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
@@ -91,6 +91,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1492,23 +1493,43 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         try
         {
+            // Note: Can be a ResourceCollection
             Resource resource = getResource(path);
-
-            if ((resource == null) || (!resource.exists()) || (!resource.isDirectory()))
-                return Set.of();
-
-            Path dir = resource.getPath();
-            try (Stream<Path> dirStream = Files.list(dir))
-            {
-                return dirStream.map((entry) -> String.format("%s/%s", path, entry.getFileName().toString()))
-                    .collect(Collectors.toSet());
-            }
+            Set<String> paths = new HashSet<>();
+            collectResourcePaths(paths, path, resource);
         }
         catch (Exception e)
         {
             LOG.trace("IGNORED", e);
         }
         return Collections.emptySet();
+    }
+
+    private void collectResourcePaths(Set<String> paths, String basePath, Resource resource) throws IOException
+    {
+        if (resource == null)
+            return;
+
+        if (resource instanceof ResourceCollection resourceCollection)
+        {
+            for (Resource child: resourceCollection.getResources())
+            {
+                collectResourcePaths(paths, basePath, child);
+            }
+        }
+        else
+        {
+            if (!resource.exists() || !resource.isDirectory())
+                return;
+            Path dir = resource.getPath();
+            try (Stream<Path> dirStream = Files.list(dir))
+            {
+                dirStream
+                    .map(FileID::getClassifiedFileName)
+                    .map((entry) -> String.format("%s/%s", basePath, entry))
+                    .forEach(paths::add);
+            }
+        }
     }
 
     private String normalizeHostname(String host)
