@@ -14,9 +14,12 @@
 package org.eclipse.jetty.xml;
 
 import java.net.URL;
+import java.nio.file.Path;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlParserTest
@@ -24,18 +27,48 @@ public class XmlParserTest
     @Test
     public void testXmlParser() throws Exception
     {
-        XmlParser parser = new XmlParser();
-
-        URL configURL = XmlConfiguration.class.getResource("configure_10_0.dtd");
-        parser.redirectEntity("configure_10_0.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
-
-        URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
+        XmlParser parser = new XmlParser(true);
+        URL url = XmlParserTest.class.getResource("configureWithAttr.xml");
+        assertNotNull(url);
         XmlParser.Node testDoc = parser.parse(url.toString());
         String testDocStr = testDoc.toString().trim();
 
         assertTrue(testDocStr.startsWith("<Configure"));
         assertTrue(testDocStr.endsWith("</Configure>"));
+    }
+
+    @Test
+    public void testAddCatalogSimple() throws Exception
+    {
+        XmlParser parser = new XmlParser(true);
+        URL catalogUrl = XmlParser.class.getResource("catalog-configure.xml");
+        assertNotNull(catalogUrl);
+        parser.addCatalog(catalogUrl.toURI());
+
+        URL xmlUrl = XmlParserTest.class.getResource("configureWithAttr.xml");
+        assertNotNull(xmlUrl);
+        XmlParser.Node testDoc = parser.parse(xmlUrl.toString());
+        String testDocStr = testDoc.toString().trim();
+
+        assertTrue(testDocStr.startsWith("<Configure"));
+        assertTrue(testDocStr.endsWith("</Configure>"));
+    }
+
+    @Test
+    public void testAddCatalogOverrideBaseUri() throws Exception
+    {
+        XmlParser parser = new XmlParser(true);
+        ClassLoader classLoader = XmlParser.class.getClassLoader();
+        URL catalogUrl = classLoader.getResource("org/eclipse/jetty/xml/deep/catalog-test.xml");
+        assertNotNull(catalogUrl);
+
+        parser.addCatalog(catalogUrl.toURI(), XmlParserTest.class);
+
+        Path testXml = MavenTestingUtils.getTestResourcePathFile("xmls/test.xml");
+        XmlParser.Node testDoc = parser.parse(testXml.toUri().toString());
+        String testDocStr = testDoc.toString().trim();
+
+        assertTrue(testDocStr.startsWith("<test"));
+        assertTrue(testDocStr.endsWith("</test>"));
     }
 }
