@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -508,6 +509,28 @@ public class HttpCookie
             LOG.warn("Bad default value {} for SameSite", o);
             throw new IllegalStateException(e);
         }
+    }
+    
+    /**
+     * Extract the bare minimum of info from a Set-Cookie header string.
+     * 
+     * @param setCookieHeader the header as a string
+     * @return a map containing the name, value, domain, path. max-age of the set cookie header
+     */
+    public static Map<String, String> extractBasics(String setCookieHeader)
+    {
+        //Parse the bare minimum 
+        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
+        if (cookies.size() != 1)
+            return Collections.emptyMap();
+        java.net.HttpCookie cookie = cookies.get(0);
+        Map<String, String> fields = new HashMap<>();
+        fields.put("name", cookie.getName());
+        fields.put("value", cookie.getValue());
+        fields.put("domain", cookie.getDomain());
+        fields.put("path",  cookie.getPath());
+        fields.put("max-age", Long.toString(cookie.getMaxAge()));
+        return fields;
     }
     
     /**
