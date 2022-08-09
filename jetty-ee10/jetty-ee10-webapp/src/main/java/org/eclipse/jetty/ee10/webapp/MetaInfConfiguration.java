@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -760,6 +761,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
             return null;
+
+        // TODO: this means WebAppContext.getWebInf() messed up
+        if (webInf instanceof ResourceCollection)
+            throw new IllegalArgumentException("WebInf cannot be a ResourceCollection");
 
         Resource webInfLib = webInf.resolve("/lib");
         if (!webInfLib.exists() || !webInfLib.isDirectory())
