@@ -225,10 +225,10 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+            // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttachment(request);
-            baseResponse.setAttachment(response);
+            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
             {
@@ -238,8 +238,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         }
         finally
         {
-            baseRequest.setAttachment(null);
-            baseResponse.setAttachment(null);
+            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
 
         return false;

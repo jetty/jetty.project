@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
@@ -39,10 +40,8 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     {
         upgradeResponse = response;
         ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
-        Object attachment = servletContextResponse.getAttachment();
-        if (!(attachment instanceof HttpServletResponse))
-            throw new IllegalArgumentException("correct attachment not set on ServletContextResponse");
-        this.httpServletResponse = (HttpServletResponse)attachment;
+        this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
+            .getAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
     }
 
     @Override

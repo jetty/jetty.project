@@ -191,10 +191,10 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             try (Blocker.Callback callback = Blocker.callback())
             {
-                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                request.setAttachment(req);
-                response.setAttachment(resp);
+                request.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
+                request.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
 
                 if (mapping.upgrade(request, response, callback, null))
                 {
@@ -204,8 +204,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             }
             finally
             {
-                request.setAttachment(null);
-                response.setAttachment(null);
+                request.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                request.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 

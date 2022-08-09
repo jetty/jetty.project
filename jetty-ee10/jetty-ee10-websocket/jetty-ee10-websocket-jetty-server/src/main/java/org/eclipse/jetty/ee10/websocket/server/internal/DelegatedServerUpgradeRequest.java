@@ -37,7 +37,6 @@ import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
@@ -52,13 +51,9 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        Object attachment = servletContextRequest.getAttachment();
-        if (!(attachment instanceof HttpServletRequest))
-            throw new IllegalArgumentException("correct attachment not set on ServletContextRequest");
-
+        this.httpServletRequest = (HttpServletRequest)request
+            .getAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
-        this.httpServletRequest = (HttpServletRequest)attachment;
         this.queryString = httpServletRequest.getQueryString();
 
         try

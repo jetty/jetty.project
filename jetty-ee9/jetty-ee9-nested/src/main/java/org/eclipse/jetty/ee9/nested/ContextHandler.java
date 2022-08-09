@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import jakarta.servlet.DispatcherType;
@@ -73,8 +72,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.ContextResponse;
-import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -2453,11 +2450,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    public static class CoreContextRequest extends ContextRequest implements Attachable
+    public static class CoreContextRequest extends ContextRequest
     {
+        public static final String WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedRequest";
+        public static final String WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedResponse";
+
         private final HttpChannel _httpChannel;
-        private final org.eclipse.jetty.server.handler.ContextHandler _contextHandler;
-        private final AtomicReference<Object> _attachment = new AtomicReference<>();
 
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
                                      org.eclipse.jetty.server.handler.ContextHandler.Context context,
@@ -2467,52 +2465,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             super(contextHandler, context, wrapped, pathInContext);
             _httpChannel = httpChannel;
-            _contextHandler = contextHandler;
         }
 
         public HttpChannel getHttpChannel()
         {
             return _httpChannel;
-        }
-
-        @Override
-        protected ContextResponse newContextResponse(org.eclipse.jetty.server.Request request, Response response)
-        {
-            return new CoreContextResponse(_contextHandler.getContext(), this, response);
-        }
-
-        @Override
-        public Object getAttachment()
-        {
-            return _attachment.get();
-        }
-
-        @Override
-        public void setAttachment(Object attachment)
-        {
-            _attachment.set(attachment);
-        }
-    }
-
-    public static class CoreContextResponse extends ContextResponse implements Attachable
-    {
-        private final AtomicReference<Object> _attachment = new AtomicReference<>();
-
-        public CoreContextResponse(org.eclipse.jetty.server.handler.ContextHandler.Context context, org.eclipse.jetty.server.Request request, Response response)
-        {
-            super(context, request, response);
-        }
-
-        @Override
-        public Object getAttachment()
-        {
-            return _attachment.get();
-        }
-
-        @Override
-        public void setAttachment(Object attachment)
-        {
-            _attachment.set(attachment);
         }
     }
 

@@ -157,8 +157,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        ContextHandler.CoreContextRequest baseRequest = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
-        ContextHandler.CoreContextResponse baseResponse = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
+        Request baseRequest = httpChannel.getCoreRequest();
+        Response baseResponse = httpChannel.getCoreResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
         if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
@@ -166,10 +166,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             try (Blocker.Callback callback = Blocker.callback())
             {
-                // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
+                // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                baseRequest.setAttachment(request);
-                baseResponse.setAttachment(response);
+                baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+                baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
                 if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
                 {
@@ -179,8 +179,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             }
             finally
             {
-                baseRequest.setAttachment(null);
-                baseResponse.setAttachment(null);
+                baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 

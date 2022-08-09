@@ -37,7 +37,6 @@ import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
@@ -52,13 +51,9 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        this(request, Request.as(request, ContextHandler.CoreContextRequest.class).getHttpChannel().getRequest());
-    }
-
-    public DelegatedServerUpgradeRequest(ServerUpgradeRequest request, HttpServletRequest servletRequest)
-    {
+        this.httpServletRequest = (HttpServletRequest)request
+            .getAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
-        this.httpServletRequest = servletRequest;
         this.queryString = httpServletRequest.getQueryString();
 
         try
@@ -145,13 +140,13 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getMethod()
     {
-        return upgradeRequest.getMethod();
+        return httpServletRequest.getMethod();
     }
 
     @Override
     public String getOrigin()
     {
-        return upgradeRequest.getHeaders().get(HttpHeader.ORIGIN);
+        return httpServletRequest.getHeader(HttpHeader.ORIGIN.asString());
     }
 
     @Override

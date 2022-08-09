@@ -21,26 +21,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
 {
     private final ServerUpgradeResponse upgradeResponse;
+    private final HttpServletResponse httpServletResponse;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
-        upgradeResponse = response;
+        this.upgradeResponse = response;
+        this.httpServletResponse = (HttpServletResponse)response.getRequest()
+            .getAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
     }
 
     @Override
     public void addHeader(String name, String value)
     {
+        // TODO: This should go to the httpServletResponse for headers but then it won't do interception of the websocket headers
+        //  which are done through the jetty-core Response wrapping ServerUpgradeResponse done by websocket-core.
         upgradeResponse.getHeaders().add(name, value);
     }
 
@@ -97,17 +102,13 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public int getStatusCode()
     {
-        return upgradeResponse.getStatus();
+        return httpServletResponse.getStatus();
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        try (Blocker.Callback callback = Blocker.callback())
-        {
-            Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, HttpStatus.FORBIDDEN_403, message);
-            callback.block();
-        }
+        httpServletResponse.sendError(HttpStatus.FORBIDDEN_403, message);
     }
 
     @Override
@@ -127,22 +128,18 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setStatusCode(int statusCode)
     {
-        upgradeResponse.setStatus(statusCode);
+        httpServletResponse.setStatus(statusCode);
     }
 
     @Override
     public boolean isCommitted()
     {
-        return upgradeResponse.isCommitted();
+        return httpServletResponse.isCommitted();
     }
 
     @Override
     public void sendError(int statusCode, String message) throws IOException
     {
-        try (Blocker.Callback callback = Blocker.callback())
-        {
-            Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, statusCode, message);
-            callback.block();
-        }
+        httpServletResponse.sendError(statusCode, message);
     }
 }

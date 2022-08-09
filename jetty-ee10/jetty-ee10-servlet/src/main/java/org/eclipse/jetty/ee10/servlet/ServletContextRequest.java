@@ -75,7 +75,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -84,10 +83,11 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletContextRequest extends ContextRequest implements Runnable, Attachable
+public class ServletContextRequest extends ContextRequest implements Runnable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-
+    public static final String WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedRequest";
+    public static final String WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedResponse";
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
@@ -141,18 +141,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable, A
         _mappedServlet = mappedServlet;
         _httpInput = new HttpInput(_servletChannel); // TODO recycle
         _pathInContext = pathInContext;
-    }
-
-    @Override
-    public Object getAttachment()
-    {
-        return _attachment.get();
-    }
-
-    @Override
-    public void setAttachment(Object attachment)
-    {
-        _attachment.set(attachment);
     }
 
     @Override

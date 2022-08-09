@@ -301,14 +301,15 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        ContextHandler.CoreContextRequest baseRequest = Request.as(httpChannel.getCoreRequest(), ContextHandler.CoreContextRequest.class);
-        ContextHandler.CoreContextResponse baseResponse = Response.as(httpChannel.getCoreResponse(), ContextHandler.CoreContextResponse.class);
+        Request baseRequest = httpChannel.getCoreRequest();
+        Response baseResponse = httpChannel.getCoreResponse();
+
         try (Blocker.Callback callback = Blocker.callback())
         {
             // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttachment(request);
-            baseResponse.setAttachment(response);
+            baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
             {
@@ -317,8 +318,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         }
         finally
         {
-            baseRequest.setAttachment(null);
-            baseResponse.setAttachment(null);
+            request.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            request.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 
