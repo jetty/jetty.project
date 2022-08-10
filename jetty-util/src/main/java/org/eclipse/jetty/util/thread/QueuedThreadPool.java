@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -74,7 +75,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static final Runnable NOOP = () ->
@@ -109,6 +110,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
+    private boolean _useVirtualThreads;
 
     public QueuedThreadPool()
     {
@@ -509,6 +511,25 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void setLowThreadsThreshold(int lowThreadsThreshold)
     {
         _lowThreadsThreshold = lowThreadsThreshold;
+    }
+
+    @Override
+    public boolean isUseVirtualThreads()
+    {
+        return _useVirtualThreads;
+    }
+
+    @Override
+    public void setUseVirtualThreads(boolean useVirtualThreads)
+    {
+        try
+        {
+            VirtualThreads.Configurable.super.setUseVirtualThreads(useVirtualThreads);
+            _useVirtualThreads = useVirtualThreads;
+        }
+        catch (UnsupportedOperationException ignored)
+        {
+        }
     }
 
     /**
