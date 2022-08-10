@@ -1780,31 +1780,12 @@ public final class URIUtil
     }
 
     /**
-     * Optionally wrap a URI with `jar:file:` (zipfs) syntax if the input URI
-     * is an archive and isn't wrapped.
-     *
-     * @param uri the input URI
-     * @return the input URI optionally wrapped with `jar:` if it's an archive.
-     * @see FileID#isJavaArchive(Path)
-     * @see URIUtil#toJarFileUri(URI)
-     */
-    public static URI wrapArchiveToJarFileUri(URI uri)
-    {
-        if (FileID.isJavaArchive(uri))
-        {
-            URI ret = toJarFileUri(uri);
-            return (ret == null) ? uri : ret;
-        }
-        return uri;
-    }
-
-    /**
      * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
      *
      * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
      *
      * @param uri the URI to mutate to a {@code jar:file:...} URI.
-     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
+     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or the unchanged URI if not a Java Archive.
      * @see FileID#isArchive(URI)
      */
     public static URI toJarFileUri(URI uri)
@@ -1813,7 +1794,7 @@ public final class URIUtil
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
 
         if (!FileID.isArchive(uri))
-            return null;
+            return uri;
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
 
