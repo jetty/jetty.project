@@ -191,7 +191,6 @@ public class PathResource extends Resource
      * Must be an absolute URI using the <code>file</code> scheme.
      *
      * @param uri the URI to build this PathResource from.
-     * @throws IOException if unable to construct the PathResource from the URI.
      */
     PathResource(URI uri)
     {
