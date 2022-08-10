@@ -694,9 +694,16 @@ public final class URIUtil
         }
     }
 
+    /**
+     * Test if character that is encoded with <code>%##</code> is safe to decode.
+     *
+     * @param code the character code to test
+     * @return true if safe to decode, otherwise false;
+     */
     private static boolean isSafe(int code)
     {
-        return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
+        // Reject 8-bit and any character labeled with false in __uriSupportedCharacters
+        return (code <= __uriSupportedCharacters.length && __uriSupportedCharacters[code]);
     }
 
     /**
@@ -711,7 +718,7 @@ public final class URIUtil
 
         builder.append('%');
         int d = (0xF0 & code) >> 4;
-        builder.append((char)('0' + d));
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
         d = 0xF & code;
         builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
         return false;
