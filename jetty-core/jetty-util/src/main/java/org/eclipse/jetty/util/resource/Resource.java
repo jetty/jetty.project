@@ -340,14 +340,14 @@ public abstract class Resource
             if (!subUri.getPath().endsWith(URIUtil.SLASH))
                 subUri = URI.create(subUri + URIUtil.SLASH);
 
-            URI subUriResolved = subUri.resolve(subUriPath);
-            resolvedUri = URI.create(scheme + ":" + subUriResolved);
+            resolvedUri = URI.create(scheme + ':' + URIUtil.addPaths(subUri.toASCIIString(), subUriPath));
         }
         else
         {
             if (!uri.getPath().endsWith(URIUtil.SLASH))
                 uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uri.resolve(subUriPath);
+
+            resolvedUri = URI.create(URIUtil.addPaths(uri.toASCIIString(), subUriPath));
         }
         return create(resolvedUri);
     }

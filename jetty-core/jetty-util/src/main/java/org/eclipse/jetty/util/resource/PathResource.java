@@ -57,11 +57,8 @@ public class PathResource extends Resource
          * If the URI is different from the Path.toUri() then
          * we will just use the original URI to construct the
          * alias reference Path.
-         *
-         * ZipFS has lots of restrictions, you cannot trigger many of the alias behavior
-         * like we can in Windows or OSX.
          */
-        if (!URIUtil.equalsIgnoreEncodings(uri, cleanUri(path)))
+        if (!URIUtil.equalsIgnoreEncodings(uri, normalize(path)))
         {
             try
             {
@@ -90,7 +87,6 @@ public class PathResource extends Resource
         {
             if (Files.isSymbolicLink(path))
                 return path.getParent().resolve(Files.readSymbolicLink(path));
-
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath();
@@ -207,13 +203,22 @@ public class PathResource extends Resource
         try
         {
             this.path = Paths.get(uri);
-            this.uri = cleanUri(this.path);
+            String uriString = uri.toString();
+            if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
+                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+            this.uri = uri;
             this.alias = checkAliasPath();
         }
         catch (FileSystemNotFoundException e)
         {
             throw new IllegalStateException("No FileSystem mounted for : " + uri, e);
         }
+    }
+
+    @Override
+    public boolean exists()
+    {
+        return Files.exists(alias != null ? alias : path);
     }
 
     @Override
@@ -342,7 +347,7 @@ public class PathResource extends Resource
             Files.copy(this.path, destination);
     }
 
-    private static URI cleanUri(Path path)
+    private static URI normalize(Path path)
     {
         String raw = URIUtil.correctFileURI(path.toUri()).toASCIIString();
 

@@ -195,7 +195,7 @@ public class PathResourceTest
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
             assertTrue(testText.exists());
-            assertFalse(testText.isAlias());
+            assertTrue(testText.isAlias());
 
             // Resolve using encoded characters
             testText = archiveResource.resolve("/test%2Etxt");
@@ -251,7 +251,7 @@ public class PathResourceTest
             // Resolve file using path navigation
             testText = archiveResource.resolve("/foo/../dir/test.txt");
             assertTrue(testText.exists());
-            assertFalse(testText.isAlias());
+            assertTrue(testText.isAlias(), "Should be an alias");
 
             // Resolve file using encoded characters
             testText = archiveResource.resolve("/dir/test%2Etxt");
