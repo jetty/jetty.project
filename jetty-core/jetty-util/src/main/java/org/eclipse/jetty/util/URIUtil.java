@@ -1628,20 +1628,45 @@ public final class URIUtil
     }
 
     /**
+     * Add a sub path to an existing URI.
+     *
      * @param uri A URI to add the path to
      * @param path A decoded path element
+     * @param encodePath true to encode provided path, false to leave it alone in resulting URI
      * @return URI with path added.
+     * @see #addPaths(String, String)
      */
-    public static URI addPath(URI uri, String path)
+    public static URI addPath(URI uri, String path, boolean encodePath)
     {
-        String base = uri.toASCIIString();
-        StringBuilder buf = new StringBuilder(base.length() + path.length() * 3);
+        Objects.requireNonNull(uri, "URI");
+
+        if (path == null)
+            return uri;
+
+        // collapse any "//" paths in the path portion
+        path = compactPath(path);
+
+        int pathLen = path.length();
+
+        if (pathLen <= 0)
+            return uri;
+
+        String base = correctFileURI(uri).toASCIIString();
+
+        if (base.length() == 0)
+            return URI.create(path);
+
+        StringBuilder buf = new StringBuilder(base.length() + pathLen * 3);
         buf.append(base);
         if (buf.charAt(base.length() - 1) != '/')
             buf.append('/');
 
+        // collapse any "//" paths in the path portion
         int offset = path.charAt(0) == '/' ? 1 : 0;
-        encodePath(buf, path, offset);
+        if (encodePath)
+            encodePath(buf, path, offset);
+        else
+            buf.append(path, offset, pathLen);
 
         return URI.create(buf.toString());
     }

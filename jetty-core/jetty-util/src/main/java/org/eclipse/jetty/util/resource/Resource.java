@@ -107,6 +107,9 @@ public abstract class Resource
                 else
                     // otherwise resolve against the current directory
                     uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
+
+                // Correct any `file:/path` to `file:///path` mistakes
+                uri = URIUtil.correctFileURI(uri);
             }
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
@@ -301,7 +304,11 @@ public abstract class Resource
     }
 
     /**
-     * {@inheritDoc}
+     * Resolve a new Resource from an encoded subUriPath.
+     *
+     * @param subUriPath the encoded subUriPath
+     * @return a Resource representing the subUriPath
+     * @throws IllegalArgumentException if subUriPath is invalid
      */
     public Resource resolve(String subUriPath)
     {
@@ -309,6 +316,7 @@ public abstract class Resource
         // but use the original path to create the
         // resource, to preserve aliasing.
         // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
+        // TODO: replace with https://github.com/eclipse/jetty.project/issues/8441 ?
         if (URIUtil.normalizePath(subUriPath) == null)
             throw new IllegalArgumentException(subUriPath);
 
@@ -325,30 +333,7 @@ public abstract class Resource
         }
 
         URI uri = getURI();
-        URI resolvedUri;
-        if (uri.isOpaque())
-        {
-            // TODO create a subclass with an optimized implementation of this.
-            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
-            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
-            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
-            String scheme = uri.getScheme();
-            URI subUri = URI.create(uri.getSchemeSpecificPart());
-            if (subUri.isOpaque())
-                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
-
-            if (!subUri.getPath().endsWith(URIUtil.SLASH))
-                subUri = URI.create(subUri + URIUtil.SLASH);
-
-            resolvedUri = URI.create(scheme + ':' + URIUtil.addPaths(subUri.toASCIIString(), subUriPath));
-        }
-        else
-        {
-            if (!uri.getPath().endsWith(URIUtil.SLASH))
-                uri = URI.create(uri + URIUtil.SLASH);
-
-            resolvedUri = URI.create(URIUtil.addPaths(uri.toASCIIString(), subUriPath));
-        }
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath, false);
         return create(resolvedUri);
     }
 

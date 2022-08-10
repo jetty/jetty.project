@@ -152,7 +152,7 @@ public class FileSystemResourceTest
 
         resource =  ResourceFactory.root().newResource(new URI("/path/to/resource"));
         assertThat(resource, notNullValue());
-        assertThat(resource.getURI().toString(), is("file:/path/to/resource"));
+        assertThat(resource.getURI().toString(), is("file:///path/to/resource"));
     }
 
     @Test
@@ -212,7 +212,7 @@ public class FileSystemResourceTest
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource sub = base.resolve("sub");
-        assertThat("sub/.isDirectory", sub.isDirectory(), is(true));
+        assertThat("sub.isDirectory", sub.isDirectory(), is(true));
 
         Resource tmp = sub.resolve("/tmp");
         assertThat("No root", tmp.exists(), is(false));
@@ -260,9 +260,16 @@ public class FileSystemResourceTest
         touchFile(subdir.resolve("swedish-ö.txt"), "hi o-with-two-dots");
 
         Resource base = ResourceFactory.root().newResource(subdir);
-        Resource refA1 = base.resolve("swedish-å.txt");
-        Resource refA2 = base.resolve("swedish-ä.txt");
-        Resource refO1 = base.resolve("swedish-ö.txt");
+
+        // Cannot use decoded Unicode
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-å.txt"));
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-ä.txt"));
+        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-ö.txt"));
+
+        // Use encoded Unicode
+        Resource refA1 = base.resolve("swedish-%C3%A5.txt"); // swedish-å.txt
+        Resource refA2 = base.resolve("swedish-%C3%A4.txt"); // swedish-ä.txt
+        Resource refO1 = base.resolve("swedish-%C3%B6.txt"); // swedish-ö.txt
 
         assertThat("Ref A1 exists", refA1.exists(), is(true));
         assertThat("Ref A2 exists", refA2.exists(), is(true));

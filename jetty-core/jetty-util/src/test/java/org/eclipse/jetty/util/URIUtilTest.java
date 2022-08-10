@@ -403,6 +403,244 @@ public class URIUtilTest
         assertEquals(expected, actual, String.format("%s+%s", path1, path2));
     }
 
+    public static Stream<Arguments> uriAddPathDecodedSource()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        URI baseUri;
+
+        baseUri = URI.create("file:///path/");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path/"));
+        cases.add(Arguments.of(baseUri, "", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "bbb", "file:///path/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "file:///path/bbb"));
+
+        baseUri = URI.create("file:///tmp/aaa");
+
+        cases.add(Arguments.of(baseUri, null, "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "", "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "bbb", "file:///tmp/aaa/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "file:///tmp/aaa/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "file:///tmp/aaa/bbb"));
+
+        baseUri = URI.create("/");
+
+        cases.add(Arguments.of(baseUri, null, "/"));
+        cases.add(Arguments.of(baseUri, "", "/"));
+        cases.add(Arguments.of(baseUri, "bbb", "/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "/bbb"));
+
+        baseUri = URI.create("");
+
+        cases.add(Arguments.of(baseUri, null, ""));
+        cases.add(Arguments.of(baseUri, "", ""));
+        cases.add(Arguments.of(baseUri, "bbb", "bbb"));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "/bbb"));
+
+        baseUri = URI.create("aaa/");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/"));
+        cases.add(Arguments.of(baseUri, "", "aaa/"));
+        cases.add(Arguments.of(baseUri, "bbb", "aaa/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "aaa/bbb"));
+
+        baseUri = URI.create(";JS");
+
+        cases.add(Arguments.of(baseUri, null, ";JS"));
+        cases.add(Arguments.of(baseUri, "", ";JS"));
+        cases.add(Arguments.of(baseUri, "bbb", ";JS/bbb"));
+        cases.add(Arguments.of(baseUri, "/", ";JS/"));
+        cases.add(Arguments.of(baseUri, "/bbb", ";JS/bbb"));
+
+        baseUri = URI.create("file:///path;JS");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "", "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "bbb", "file:///path;JS/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path;JS/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "file:///path;JS/bbb"));
+
+        baseUri = URI.create("?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "?A=1"));
+        cases.add(Arguments.of(baseUri, "", "?A=1"));
+        cases.add(Arguments.of(baseUri, "bbb", "?A=1/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "?A=1/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "?A=1/bbb"));
+
+        baseUri = URI.create("aaa?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "bbb", "aaa?A=1/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "aaa?A=1/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "aaa?A=1/bbb"));
+
+        baseUri = URI.create("aaa/?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "bbb", "aaa/?A=1/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/?A=1/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "aaa/?A=1/bbb"));
+
+        baseUri = URI.create("file:///path?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "", "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "bbb", "file:///path?A=1/bbb"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path?A=1/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "file:///path?A=1/bbb"));
+
+        // A ZipFS base URI
+        baseUri = URI.create("jar:file:///path/foo.jar!/");
+
+        cases.add(Arguments.of(baseUri, null, "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "bbb", "jar:file:///path/foo.jar!/bbb"));
+        cases.add(Arguments.of(baseUri, "bbb/", "jar:file:///path/foo.jar!/bbb/"));
+        cases.add(Arguments.of(baseUri, "bãm", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "bãm/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+        cases.add(Arguments.of(baseUri, "/", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "/bbb", "jar:file:///path/foo.jar!/bbb"));
+        cases.add(Arguments.of(baseUri, "/bbb/", "jar:file:///path/foo.jar!/bbb/"));
+        cases.add(Arguments.of(baseUri, "/bãm", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0} + {1}")
+    @MethodSource("uriAddPathDecodedSource")
+    public void testUriAddPathDecoded(URI baseUri, String path, String expectedUri)
+    {
+        URI actual = URIUtil.addPath(baseUri, path, true);
+        assertThat(actual.toASCIIString(), is(expectedUri));
+    }
+
+    public static Stream<Arguments> uriAddPathEncodedSource()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        URI baseUri;
+
+        baseUri = URI.create("file:///path/");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path/"));
+        cases.add(Arguments.of(baseUri, "", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path/b%C3%A3m"));
+
+        baseUri = URI.create("file:///tmp/aaa");
+
+        cases.add(Arguments.of(baseUri, null, "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "", "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "/", "file:///tmp/aaa/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///tmp/aaa/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///tmp/aaa/b%C3%A3m"));
+
+        baseUri = URI.create("/");
+
+        cases.add(Arguments.of(baseUri, null, "/"));
+        cases.add(Arguments.of(baseUri, "", "/"));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "bãm", "/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "/b%C3%A3m"));
+
+        baseUri = URI.create("");
+
+        cases.add(Arguments.of(baseUri, null, ""));
+        cases.add(Arguments.of(baseUri, "", ""));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "bãm", "b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "/b%C3%A3m"));
+
+        baseUri = URI.create("aaa/");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/"));
+        cases.add(Arguments.of(baseUri, "", "aaa/"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/"));
+        cases.add(Arguments.of(baseUri, "bãm/zzz", "aaa/b%C3%A3m/zzz"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa/b%C3%A3m"));
+
+        baseUri = URI.create(";JS");
+
+        cases.add(Arguments.of(baseUri, null, ";JS"));
+        cases.add(Arguments.of(baseUri, "", ";JS"));
+        cases.add(Arguments.of(baseUri, "/", ";JS/"));
+        cases.add(Arguments.of(baseUri, "bãm", ";JS/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", ";JS/b%C3%A3m"));
+
+        baseUri = URI.create("file:///path;JS");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "", "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path;JS/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path;JS/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path;JS/b%C3%A3m"));
+
+        baseUri = URI.create("?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "?A=1"));
+        cases.add(Arguments.of(baseUri, "", "?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("aaa?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "aaa?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("aaa/?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa/?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa/?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("file:///path?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "", "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "bãm/", "file:///path?A=1/b%C3%A3m/"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm/", "file:///path?A=1/b%C3%A3m/"));
+
+        baseUri = URI.create("jar:file:///path/foo.jar!/");
+
+        cases.add(Arguments.of(baseUri, null, "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "/", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "b%C3%A3m", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "b%C3%A3m/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+        cases.add(Arguments.of(baseUri, "/b%C3%A3m", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/b%C3%A3m/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0} + {1}")
+    @MethodSource("uriAddPathEncodedSource")
+    public void testUriAddPathEncoded(URI baseUri, String path, String expectedUri)
+    {
+        URI actual = URIUtil.addPath(baseUri, path, false);
+        assertThat(actual.toASCIIString(), is(expectedUri));
+    }
+
     public static Stream<Arguments> compactPathSource()
     {
         return Stream.of(
