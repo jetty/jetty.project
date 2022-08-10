@@ -10,6 +10,7 @@ ee9
 demo
 
 [depends]
+ee9-servlet
 ee9-security
 
 [xml]
@@ -21,4 +22,4 @@ basehome:modules/demo.d/jetty-ee9-demo-realm.properties|etc/jetty-ee9-demo-realm
 
 [ini-template]
 # Create and configure the test realm
-jetty.demo.realm=etc/jetty-ee9-realm.properties
+jetty.demo.realm=etc/jetty-ee9-demo-realm.properties

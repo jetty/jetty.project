@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="wac" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
-  <Set name="contextPath">/test-spec</Set>
+  <Set name="contextPath">/ee10-test-spec</Set>
   <Set name="war"><Property name="jetty.webapps" />/ee10-demo-spec.war
   </Set>
   <Set name="configurationDiscovered">true</Set>
