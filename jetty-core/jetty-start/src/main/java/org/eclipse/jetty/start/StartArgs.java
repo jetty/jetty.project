@@ -541,7 +541,16 @@ public class StartArgs
             {
                 Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
                     .collect(Collectors.groupingBy(Files::isDirectory));
-                List<Path> files = dirsAndFiles.get(false);
+                Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
+
+
+                getEnvironments().forEach(environment ->  {
+                    Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
+                            .collect(Collectors.groupingBy(Files::isDirectory));
+                    files.addAll(dirsAndFilesModules.get(false));
+                });
+
+
                 if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
