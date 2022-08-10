@@ -531,8 +531,6 @@ public class TypeUtil
         buf.append((char)((d > 9 ? ('A' - 10) : '0') + d));
         d = 0xf & value;
         buf.append((char)((d > 9 ? ('A' - 10) : '0') + d));
-
-        Integer.toString(0, 36);
     }
 
     public static void toHex(long value, Appendable buf) throws IOException
