@@ -544,10 +544,16 @@ public class StartArgs
                 Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
 
 
-                getEnvironments().forEach(environment ->  {
-                    Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
-                            .collect(Collectors.groupingBy(Files::isDirectory));
-                    files.addAll(dirsAndFilesModules.get(false));
+                getEnvironments().stream().filter(environment -> !environment.getName().equals(coreEnvironment.getName()))
+                        .forEach(environment ->  {
+                            Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
+                                    .collect(Collectors.groupingBy(Files::isDirectory));
+                            dirsAndFiles.putAll(dirsAndFilesModules);
+                            if (dirsAndFilesModules.containsKey(false)) {
+                                files.addAll(dirsAndFilesModules.get(false));
+                            } else {
+                                System.out.println("null dirsAndFilesModules");
+                            }
                 });
 
 
