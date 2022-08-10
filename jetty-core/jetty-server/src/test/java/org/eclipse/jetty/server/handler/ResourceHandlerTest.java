@@ -203,10 +203,6 @@ public class ResourceHandlerTest
         );
 
         List<String> notEncodedPrefixes = new ArrayList<>();
-        if (!OS.WINDOWS.isCurrentOs())
-        {
-            notEncodedPrefixes.add("/context/dir?");
-        }
         notEncodedPrefixes.add("/context/dir;");
 
         for (String prefix : notEncodedPrefixes)
@@ -245,7 +241,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
@@ -255,34 +251,19 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            // A Raw Question mark in the prefix can be interpreted as a query section
-            if (prefix.contains("?"))
-            {
-                scenarios.addScenario("""
-                        GET @PREFIX@/../index.html HTTP/1.1\r
-                        Host: local\r
-                        Connection: close\r
-                        \r
-                        """.replace("@PREFIX@", prefix),
-                    HttpStatus.NOT_FOUND_404
-                );
-            }
-            else
-            {
-                scenarios.addScenario("""
-                        GET @PREFIX@/../index.html HTTP/1.1\r
-                        Host: local\r
-                        Connection: close\r
-                        \r
-                        """.replace("@PREFIX@", prefix),
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
-                );
-            }
+            scenarios.addScenario("""
+                    GET @PREFIX@/../index.html HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
+                HttpStatus.NOT_FOUND_404,
+                (response) -> assertThat(response.getContent(), not(containsString("Hello Index")))
+            );
 
             scenarios.addScenario("""
                     GET @PREFIX@/%2E%2E/index.html HTTP/1.1\r
@@ -290,7 +271,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400
+                HttpStatus.BAD_REQUEST_400
             );
 
             scenarios.addScenario("""
@@ -1725,50 +1706,45 @@ public class ResourceHandlerTest
         assertThat(body, containsString("fake gzip"));
     }
 
-    @Test
-    public void testDirectoryRedirect() throws Exception
+    public static Stream<Arguments> directoryRedirectSource()
     {
-        copySimpleTestResource(docRoot);
-
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+        return Stream.of(
+            Arguments.of("""
                 GET /context/directory HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/"),
+            Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r              
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/;JSESSIONID=12345678"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/;JSESSIONID=12345678"),
+            Arguments.of("""
                 GET /context/directory?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/?name=value"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/?name=value"),
+            Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
+                """, "/context/directory/;JSESSIONID=12345678?name=value")
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] {1}")
+    @MethodSource("directoryRedirectSource")
+    public void testDirectoryRedirect(String rawRequest, String expectedLocationEndsWith) throws Exception
+    {
+        copySimpleTestResource(docRoot);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/;JSESSIONID=12345678?name=value"));
+        assertThat(response.get(LOCATION), endsWith(expectedLocationEndsWith));
     }
 
     @Test
@@ -2622,6 +2598,8 @@ public class ResourceHandlerTest
          */
 
         // First send request in improper, unencoded way.
+        // Since this is interpreted as a path parameter, this raw ';' should not
+        // make its way down to the ResourceService
         String rawResponse = _local.getResponse("""
             GET /context/dir;/ HTTP/1.1\r
             Host: local\r

@@ -717,11 +717,16 @@ public final class URIUtil
             return true;
 
         builder.append('%');
-        int d = (0xF0 & code) >> 4;
-        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
-        d = 0xF & code;
-        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+        appendHexValue(builder, (byte)code);
         return false;
+    }
+
+    private static void appendHexValue(Utf8StringBuilder builder, byte value)
+    {
+        byte d = (byte)((0xF0 & value) >> 4);
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+        d = (byte)(0xF & value);
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
     }
 
     /**
@@ -768,7 +773,7 @@ public final class URIUtil
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
                                 int code = TypeUtil.parseInt(path, i + 2, 4, 16);
-                                if (isSafeElseEncode(code, builder))
+                                if (isSafe(code))
                                 {
                                     char[] chars = Character.toChars(code);
                                     for (char ch : chars)
@@ -777,6 +782,18 @@ public final class URIUtil
                                         if (slash && ch == '.')
                                             normal = false;
                                         slash = false;
+                                    }
+                                }
+                                else
+                                {
+                                    // unsafe conversion, must take UTF-16 and convert to UTF-8
+                                    int[] codePoints = {code};
+                                    String string = new String(codePoints, 0, 1);
+                                    byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+                                    for (byte b: bytes)
+                                    {
+                                        builder.append('%');
+                                        appendHexValue(builder, b);
                                     }
                                 }
                                 i += 5;
