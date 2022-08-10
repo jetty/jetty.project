@@ -18,7 +18,6 @@ work
 ee8-demo-async-rest
 ee8-demo-jaas
 ee8-demo-jetty
-ee8-demo-moved-context
 ee8-demo-proxy
 ee8-demo-rewrite
 ee8-demo-jndi
