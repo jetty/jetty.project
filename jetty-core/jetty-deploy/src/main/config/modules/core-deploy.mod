@@ -15,6 +15,9 @@ webapps/
 [xml]
 etc/jetty-core-deploy.xml
 
+[ini]
+contextHandlerClass?=org.eclipse.jetty.server.handler.ResourceHandler$ResourceContext
+
 [ini-template]
 ## Monitored directory name (relative to $jetty.base)
 # jetty.deploy.monitoredDir=webapps
@@ -27,3 +30,6 @@ etc/jetty-core-deploy.xml
 
 ## Base temporary directory for deployed web applications.
 # jetty.deploy.tempDir=
+
+## Default ContextHandler class for core deployments
+# contextHandlerClass=org.eclipse.jetty.server.handler.ResourceHandler$ResourceContext

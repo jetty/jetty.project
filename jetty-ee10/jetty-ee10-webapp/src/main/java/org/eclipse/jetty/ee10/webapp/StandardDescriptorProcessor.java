@@ -45,6 +45,7 @@ import org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
@@ -715,274 +716,103 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String name = cookieConfig.getString("name", false, true);
             if (name != null)
             {
-                Origin origin = context.getMetaData().getOrigin("cookie-config.name");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><name> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setName(name);
-                        context.getMetaData().setOrigin("cookie-config.name", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><name> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setName(name);
-                            context.getMetaData().setOrigin("cookie-config.name", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        //TODO: evaluate that is can never be null?!
-                        if (!name.equals(context.getSessionHandler().getSessionCookieConfig().getName()))
-                            throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                addSessionConfigAttribute(context, descriptor, "name", name);
             }
 
             //  <domain>
             String domain = cookieConfig.getString("domain", false, true);
             if (domain != null)
             {
-                Origin origin = context.getMetaData().getOrigin("cookie-config.domain");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setDomain(domain);
-                        context.getMetaData().setOrigin("cookie-config.domain", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setDomain(domain);
-                            context.getMetaData().setOrigin("cookie-config.domain", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionCookieConfig().getDomain().equals(domain))
-                            throw new IllegalStateException("Conflicting cookie-config domain " + domain + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                addSessionConfigAttribute(context, descriptor, "domain", domain);
             }
 
             //  <path>
             String path = cookieConfig.getString("path", false, true);
             if (path != null)
             {
-                Origin origin = context.getMetaData().getOrigin("cookie-config.path");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setPath(path);
-                        context.getMetaData().setOrigin("cookie-config.path", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setPath(path);
-                            context.getMetaData().setOrigin("cookie-config.path", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!path.equals(context.getSessionHandler().getSessionCookieConfig().getPath()))
-                            throw new IllegalStateException("Conflicting cookie-config path " + path + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+               addSessionConfigAttribute(context, descriptor, "path", path);
             }
 
             //  <comment>
             String comment = cookieConfig.getString("comment", false, true);
             if (comment != null)
             {
-                Origin origin = context.getMetaData().getOrigin("cookie-config.comment");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><comment> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setComment(comment);
-                        context.getMetaData().setOrigin("cookie-config.comment", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><comment> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setComment(comment);
-                            context.getMetaData().setOrigin("cookie-config.comment", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionCookieConfig().getComment().equals(comment))
-                            throw new IllegalStateException("Conflicting cookie-config comment " + comment + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                addSessionConfigAttribute(context, descriptor, "comment", comment);
             }
 
             //  <http-only>true/false
             tNode = cookieConfig.get("http-only");
             if (tNode != null)
             {
-                boolean httpOnly = Boolean.parseBoolean(tNode.toString(false, true));
-                Origin origin = context.getMetaData().getOrigin("cookie-config.http-only");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><http-only> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setHttpOnly(httpOnly);
-                        context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><http-only> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setHttpOnly(httpOnly);
-                            context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionCookieConfig().isHttpOnly() != httpOnly)
-                            throw new IllegalStateException("Conflicting cookie-config http-only " + httpOnly + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                //TODO: note that this is not http-only
+                addSessionConfigAttribute(context, descriptor, "HttpOnly", tNode.toString(false, true));
             }
 
             //  <secure>true/false
             tNode = cookieConfig.get("secure");
             if (tNode != null)
             {
-                boolean secure = Boolean.parseBoolean(tNode.toString(false, true));
-                Origin origin = context.getMetaData().getOrigin("cookie-config.secure");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><secure> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setSecure(secure);
-                        context.getMetaData().setOrigin("cookie-config.secure", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><secure> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setSecure(secure);
-                            context.getMetaData().setOrigin("cookie-config.secure", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionCookieConfig().isSecure() != secure)
-                            throw new IllegalStateException("Conflicting cookie-config secure " + secure + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                addSessionConfigAttribute(context, descriptor, "secure", tNode.toString(false, true));
             }
 
             //  <max-age>
             tNode = cookieConfig.get("max-age");
             if (tNode != null)
             {
-                int maxAge = Integer.parseInt(tNode.toString(false, true));
-                Origin origin = context.getMetaData().getOrigin("cookie-config.max-age");
-                switch (origin)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><max-age> set yet, accept it
-                        context.getSessionHandler().getSessionCookieConfig().setMaxAge(maxAge);
-                        context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><max-age> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionCookieConfig().setMaxAge(maxAge);
-                            context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionCookieConfig().getMaxAge() != maxAge)
-                            throw new IllegalStateException("Conflicting cookie-config max-age " + maxAge + " in " + descriptor.getResource());
-                        break;
-                    }
-                    default:
-                        unknownOrigin(origin);
-                }
+                addSessionConfigAttribute(context, descriptor, "max-age", tNode.toString(false, true));
+            }
+            
+            Iterator<XmlParser.Node> attributes = cookieConfig.iterator("attribute");
+            while (attributes.hasNext())
+            {
+                XmlParser.Node attribute = attributes.next();
+                String aname = attribute.getString("attribute-name", false, true);
+                String avalue = attribute.getString("attribute-value", false, true);
+                addSessionConfigAttribute(context, descriptor, aname, avalue);
             }
         }
     }
 
+    public void addSessionConfigAttribute(WebAppContext context, Descriptor descriptor, String name, String value)
+    {
+        if (StringUtil.isBlank(name))
+            return;
+
+        Origin origin = context.getMetaData().getOrigin("cookie-config.attribute." + name);
+        switch (origin)
+        {
+            case NotSet:
+            {
+                //no <cookie-config> with attribute of that name set yet, accept it.
+                //if it is the max-age attribute, it must be set as an integer
+                context.getSessionHandler().getSessionCookieConfig().setAttribute(name, value);
+                context.getMetaData().setOrigin("cookie-config.attribute." + name, descriptor);
+                break;
+            }
+            case WebXml:
+            case WebDefaults:
+            case WebOverride:
+            {
+                //<cookie-config> with attribute of that name set in a web xml, only allow web-default/web-override to change
+                if (!(descriptor instanceof FragmentDescriptor))
+                {
+                    context.getSessionHandler().getSessionCookieConfig().setAttribute(name, value);
+                    context.getMetaData().setOrigin("cookie-config.attribute." + name, descriptor);
+                }
+                break;
+            }
+            case WebFragment:
+            {
+                //a web-fragment set an attribute of the same name, all web-fragments must have the same value
+                if (!StringUtil.nonNull(value).equals(StringUtil.nonNull(context.getSessionHandler().getSessionCookieConfig().getAttribute(name))))
+                    throw new IllegalStateException("Conflicting attribute " + name + "=" + value + " in " + descriptor.getResource());
+                break;
+            }
+            default:
+                unknownOrigin(origin);
+        }
+    }
+    
     public void visitMimeMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String extension = node.getString("extension", false, true);

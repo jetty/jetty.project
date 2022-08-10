@@ -306,14 +306,28 @@ public class Request implements HttpServletRequest
             HttpHeader header = field.getHeader();
             if (header == HttpHeader.SET_COOKIE)
             {
-                HttpCookie cookie = (field instanceof SetCookieHttpField)
-                    ? ((SetCookieHttpField)field).getHttpCookie()
-                    : new HttpCookie(field.getValue());
-
-                if (cookie.getMaxAge() > 0)
-                    cookies.put(cookie.getName(), cookie.getValue());
+                String cookieName;
+                String cookieValue;
+                long cookieMaxAge;
+                if (field instanceof SetCookieHttpField)
+                {
+                    HttpCookie cookie =  ((SetCookieHttpField)field).getHttpCookie();
+                    cookieName = cookie.getName();
+                    cookieValue = cookie.getValue();
+                    cookieMaxAge = cookie.getMaxAge();
+                }
                 else
-                    cookies.remove(cookie.getName());
+                {
+                    Map<String, String> cookieFields = HttpCookie.extractBasics(field.getValue());
+                    cookieName = cookieFields.get("name");
+                    cookieValue = cookieFields.get("value");
+                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.valueOf(cookieFields.get("max-age")) : -1;
+                }
+                
+                if (cookieMaxAge > 0)
+                    cookies.put(cookieName, cookieValue);
+                else
+                    cookies.remove(cookieName);
             }
         }
 

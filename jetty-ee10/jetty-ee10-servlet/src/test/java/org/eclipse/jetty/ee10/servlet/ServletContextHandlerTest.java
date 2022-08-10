@@ -297,24 +297,24 @@ public class ServletContextHandlerTest
             try
             {
                 sce.getServletContext().getDefaultSessionTrackingModes();
-                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE);
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
-                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE);
+                //Servlet 6, should be able to call getDefaultSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
             }
 
             assertNull(sce.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
             try
             {
                 sce.getServletContext().getEffectiveSessionTrackingModes();
-                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE);
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
-                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE);
+                //Servlet 6,, should be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
             }
 
             assertNull(sce.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
@@ -345,12 +345,12 @@ public class ServletContextHandlerTest
                 try
                 {
                     sce.getServletContext().getSessionTimeout();
-                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE);
                 }
                 catch (UnsupportedOperationException e)
                 {
-                    //Should NOT be able to call getSessionTimeout from this SCL
-                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE);
+                    //Servlet 6 should be able to call getSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
                 }
             }
         }
