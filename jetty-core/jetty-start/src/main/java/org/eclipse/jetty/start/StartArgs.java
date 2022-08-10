@@ -545,13 +545,17 @@ public class StartArgs
 
 
                 getEnvironments().stream().filter(environment -> !environment.getName().equals(coreEnvironment.getName()))
-                        .forEach(environment ->  {
+                        .forEach(environment ->
+                        {
                             Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
                                     .collect(Collectors.groupingBy(Files::isDirectory));
                             dirsAndFiles.putAll(dirsAndFilesModules);
-                            if (dirsAndFilesModules.containsKey(false)) {
+                            if (dirsAndFilesModules.containsKey(false))
+                            {
                                 files.addAll(dirsAndFilesModules.get(false));
-                            } else {
+                            }
+                            else
+                            {
                                 System.out.println("null dirsAndFilesModules");
                             }
                 });
