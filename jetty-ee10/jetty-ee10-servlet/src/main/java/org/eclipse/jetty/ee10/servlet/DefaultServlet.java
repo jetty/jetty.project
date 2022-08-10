@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -74,7 +73,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultServlet extends HttpServlet implements ResourceFactory
+public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
     private ServletResourceService _resourceService;
@@ -83,7 +82,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private ResourceFactory _baseResourceFactory;
     private Resource _stylesheet;
     private Resource _favicon;
     private boolean _useFileMappedBuffer = false;
@@ -97,79 +95,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        _baseResource = servletContextHandler.getResourceBase();
-        String rb = getInitParameter("resourceBase");
-        if (rb != null)
-        {
-            try
-            {
-                _resourceFactory = ResourceFactory.closeable();
-                _baseResource = _resourceFactory.newResource(rb);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to create resourceBase from {}", rb, e);
-                throw new UnavailableException(e.toString());
-            }
-        }
-        _baseResourceFactory = ResourceFactory.of(_baseResource);
-
-        // TODO: should this come from context?
-        MimeTypes mimeTypes = new MimeTypes();
-        // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
-        List<CompressedContentFormat> precompressedFormats = List.of();
-
-        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        HttpContent.ContentFactory contentFactory = new ResourceContentFactory(this, mimeTypes, precompressedFormats);
-        CachingContentFactory cached = null;
-
-        try
-        {
-            int maxCacheSize = getInitInt("maxCacheSize", -2);
-            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
-            {
-                cached = new CachingContentFactory(contentFactory, _useFileMappedBuffer);
-                if (maxCacheSize >= 0)
-                    cached.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    cached.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    cached.setMaxCachedFiles(maxCachedFiles);
-                contentFactory = cached;
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
-        }
-
-        String resourceCache = getInitParameter("resourceCache");
-        getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
-        _resourceService.setContentFactory(contentFactory);
-
-        if (servletContextHandler.getWelcomeFiles() == null)
-            servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
-
-        _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
-        _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
-        _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
-        _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
-
-        _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
-
-        if ("exact".equals(getInitParameter("welcomeServlets")))
-        {
-            _welcomeExactServlets = true;
-            _welcomeServlets = false;
-        }
-        else
-            _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
-
-        // TODO Move most of this to ResourceService
         String stylesheet = getInitParameter("stylesheet");
         try
         {
@@ -220,6 +145,79 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 LOG.warn("Unable to use favicon: {} - {}", favicon, e.toString());
         }
 
+
+        _baseResource = servletContextHandler.getResourceBase();
+        String rb = getInitParameter("resourceBase");
+        if (rb != null)
+        {
+            try
+            {
+                _resourceFactory = ResourceFactory.closeable();
+                _baseResource = _resourceFactory.newResource(rb);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                throw new UnavailableException(e.toString());
+            }
+        }
+        _baseResource = Resource.combine(List.of(_baseResource, _stylesheet, _favicon));
+
+        // TODO: should this come from context?
+        MimeTypes mimeTypes = new MimeTypes();
+        // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
+        List<CompressedContentFormat> precompressedFormats = List.of();
+
+        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
+        HttpContent.ContentFactory contentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
+        CachingContentFactory cached = null;
+
+        try
+        {
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            {
+                cached = new CachingContentFactory(contentFactory, _useFileMappedBuffer);
+                if (maxCacheSize >= 0)
+                    cached.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    cached.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    cached.setMaxCachedFiles(maxCachedFiles);
+                contentFactory = cached;
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to setup CachedContentFactory", e);
+            throw new UnavailableException(e.toString());
+        }
+
+        String resourceCache = getInitParameter("resourceCache");
+        getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
+        _resourceService.setContentFactory(contentFactory);
+
+        if (servletContextHandler.getWelcomeFiles() == null)
+            servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
+
+        _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
+        _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
+        _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
+        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
+        _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
+
+        _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
+
+        if ("exact".equals(getInitParameter("welcomeServlets")))
+        {
+            _welcomeExactServlets = true;
+            _welcomeServlets = false;
+        }
+        else
+            _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
+
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)
             _resourceService.setEncodingCacheSize(encodingHeaderCacheSize);
@@ -258,24 +256,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     {
         super.destroy();
         IO.close(_resourceFactory);
-    }
-
-    @Override
-    public Resource newResource(URI uri)
-    {
-        // TODO optimised path for URI?
-        return newResource(uri.toString());
-    }
-
-    @Override
-    public Resource newResource(String resource)
-    {
-        if (_stylesheet != null && resource.endsWith("/jetty-dir.css"))
-            return _stylesheet;
-        if (_favicon != null && resource.endsWith("/favicon.ico"))
-            return _favicon;
-
-        return _baseResourceFactory.newResource(resource);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)

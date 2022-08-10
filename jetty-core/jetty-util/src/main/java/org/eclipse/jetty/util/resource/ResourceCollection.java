@@ -80,11 +80,6 @@ public class ResourceCollection extends Resource
                 {
                     throw new IllegalArgumentException("Does not exist: " + r);
                 }
-
-                if (!r.isDirectory())
-                {
-                    throw new IllegalArgumentException("Not a directory: " + r);
-                }
                 unique.add(r);
             }
         }
@@ -130,6 +125,15 @@ public class ResourceCollection extends Resource
         Resource addedResource = null;
         for (Resource res : _resources)
         {
+            // since we allow non-directory resources, we need a way to resolve them
+            // -> match if the subUriPath contains no / and matches the resource's filename.
+            // TODO review this
+            String subUriStringNotPrependedBySlash = subUriPath;
+            if (subUriStringNotPrependedBySlash.startsWith("/"))
+                subUriStringNotPrependedBySlash = subUriStringNotPrependedBySlash.substring(1);
+            if (!res.isDirectory() && !subUriStringNotPrependedBySlash.contains("/") && res.getPath().getFileName().toString().equals(subUriStringNotPrependedBySlash))
+                return res;
+
             addedResource = res.resolve(subUriPath);
             if (!addedResource.exists())
                 continue;
