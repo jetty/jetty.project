@@ -2,13 +2,6 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
-    <Arg><Ref refid="Server" /></Arg>
-    <Call id="realmResource" name="newResource">
-      <Arg><Property name="jetty.demo.realm" default="etc/jetty-ee9-demo-realm.properties" /></Arg>
-    </Call>
-  </Call>
-
   <!-- =========================================================== -->
   <!-- Configure Authentication Login Service                      -->
   <!-- Realms may be configured for the entire server here, or     -->
