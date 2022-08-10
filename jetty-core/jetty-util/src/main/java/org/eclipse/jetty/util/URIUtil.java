@@ -1759,15 +1759,8 @@ public final class URIUtil
                 {
                     // Simple reference
                     URI refUri = toURI(reference);
-                    // Is this a Java Archive that can be mounted?
-                    URI jarFileUri = toJarFileUri(refUri);
-                    if (jarFileUri != null)
-                        // add as mountable URI
-                        uris.add(jarFileUri);
-                    else
-                        // add as normal URI
-                        uris.add(refUri);
-
+                    // Ensure that a Java Archive that can be mounted
+                    uris.add(toJarFileUri(refUri));
                 }
             }
             catch (Exception e)
@@ -1835,11 +1828,9 @@ public final class URIUtil
         Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
-        URI uri = (KNOWN_SCHEMES.getBest(resource) != null)
-            ? URI.create(resource)
+        return (KNOWN_SCHEMES.getBest(resource) != null)
+            ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
-
-        return uri;
     }
 
     /**

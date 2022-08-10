@@ -903,7 +903,8 @@ public class URIUtilTest
         // Bad java file.uri syntax
         String input = "file:/home/user/lib/acme.jar";
         List<URI> uris = URIUtil.split(input);
-        String expected = String.format("jar:%s!/", input);
+        // As zipfs with corrected file.uri syntax as well
+        String expected = "jar:file:///home/user/lib/acme.jar!/";
         assertThat(uris.get(0).toString(), is(expected));
     }
 
