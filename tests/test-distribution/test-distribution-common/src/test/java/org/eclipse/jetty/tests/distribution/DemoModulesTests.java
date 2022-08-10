@@ -81,10 +81,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO needs ee9-demo.mod
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testJspDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -103,6 +101,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             "--add-modules=http," + toEnvironment("demo", env)
         };
 
+        String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
+
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
@@ -119,7 +119,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/ee10-demo-jsp/dump.jsp");
+                ContentResponse response = client.GET(baseURI + "/dump.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
@@ -127,11 +127,9 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO needs ee9-demo.mod
     @Tag("external")
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -149,6 +147,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         String[] argsConfig = {
             "--add-modules=http," + toEnvironment("demo", env)
         };
+
+        String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
@@ -168,19 +168,19 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response;
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testSerial?items=kayak");
+                response = client.GET(baseURI + "/testSerial?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testSerial?items=mouse,beer,gnome");
+                response = client.GET(baseURI + "/testSerial?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: mouse,beer,gnome"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testAsync?items=kayak");
+                response = client.GET(baseURI + "/testAsync?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testAsync?items=mouse,beer,gnome");
+                response = client.GET(baseURI + "/testAsync?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: mouse,beer,gnome"));
             }
