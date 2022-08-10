@@ -37,10 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
-    //TODO needs ee9-demo.mod
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testDemoAddServerClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -189,10 +187,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO needs ee9-demo module
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testSpec(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -228,20 +224,22 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
 
+                String baseURI = "http://localhost:%d/%s-test-spec".formatted(httpPort, env);
+
                 //test the async listener
-                ContentResponse response = client.POST("http://localhost:" + httpPort + "/test-spec/asy/xx").send();
+                ContentResponse response = client.POST(baseURI + "/asy/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
                 //test the servlet 3.1/4 features
-                response = client.POST("http://localhost:" + httpPort + "/test-spec/test/xx").send();
+                response = client.POST(baseURI + "/test/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
                 //test dynamic jsp
-                response = client.POST("http://localhost:" + httpPort + "/test-spec/dynamicjsp/xx").send();
+                response = client.POST(baseURI + "/dynamicjsp/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
             }
@@ -250,8 +248,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @Disabled //TODO needs DefaultServlet and ee9-demo
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -293,10 +290,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO: no ee9-demo module
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testSessionDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -327,15 +322,17 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             {
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
 
+                String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
+
                 startHttpClient();
                 client.setFollowRedirects(true);
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/session/");
+                ContentResponse response = client.GET(baseURI + "/session/");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
 
                 // Submit "New Session"
                 Fields form = new Fields();
                 form.add("Action", "New Session");
-                response = client.POST("http://localhost:" + httpPort + "/test/session/")
+                response = client.POST(baseURI + "/session/")
                     .body(new FormRequestContent(form))
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
