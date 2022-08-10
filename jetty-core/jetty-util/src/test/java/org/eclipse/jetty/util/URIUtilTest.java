@@ -124,6 +124,7 @@ public class URIUtilTest
         arguments.add(Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"));
         arguments.add(Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"));
         arguments.add(Arguments.of("/foo/bär", "/foo/b%E4r", "/foo/bär"));
+        // arguments.add(Arguments.of("/foo/€/bar", "/foo/%E2%82%AC/bar", "/foo/€/bar")); // TODO: doesn't convert 3-byte unicode codepoint to UTF-8 percent-encoding properly
         arguments.add(Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"));
 
         // Test for null character (real world ugly test case)
