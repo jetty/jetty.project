@@ -43,11 +43,11 @@ public abstract class AbstractConnection implements Connection, Invocable
     private final Callback _readCallback;
     private int _inputBufferSize = 2048;
 
-    protected AbstractConnection(EndPoint endp, Executor executor)
+    protected AbstractConnection(EndPoint endPoint, Executor executor)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
-        _endPoint = endp;
+        _endPoint = endPoint;
         _executor = executor;
         _readCallback = new ReadCallback();
     }
@@ -143,11 +143,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         if (LOG.isDebugEnabled())
             LOG.debug("fillInterested {}", this);
         getEndPoint().fillInterested(_readCallback);
-    }
-
-    public void tryFillInterested()
-    {
-        tryFillInterested(_readCallback);
     }
 
     public void tryFillInterested(Callback callback)
@@ -328,7 +323,7 @@ public abstract class AbstractConnection implements Connection, Invocable
         }
 
         @Override
-        public void failed(final Throwable x)
+        public void failed(Throwable x)
         {
             onFillInterestedFailed(x);
         }
@@ -336,7 +331,7 @@ public abstract class AbstractConnection implements Connection, Invocable
         @Override
         public String toString()
         {
-            return String.format("AC.ReadCB@%h{%s}", AbstractConnection.this, AbstractConnection.this);
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
         }
 
         @Override

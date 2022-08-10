@@ -3,8 +3,11 @@
 [description]
 Adds OpenId Connect authentication to the server.
 
+[environment]
+ee9
+
 [depend]
-security
+ee9-security
 client
 
 [lib]
