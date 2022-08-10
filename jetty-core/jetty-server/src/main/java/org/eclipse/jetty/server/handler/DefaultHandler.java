@@ -80,6 +80,7 @@ public class DefaultHandler extends Handler.Processor
         if (getServer() == null)
         {
             // TODO: investigate why DefaultHandler.setServer(server) is passing null?
+            // See bug https://github.com/eclipse/jetty.project/issues/8442
             LOG.warn("favicon.ico not supported with null Server");
             return;
         }
