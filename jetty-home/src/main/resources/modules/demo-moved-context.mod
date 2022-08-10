@@ -1,17 +1,17 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Demonstrate a Moved Context Handler.
+Demonstrate a Moved Context Handler setup in XML
 
 [environment]
-ee9
+core
 
 [tags]
 demo
 
 [depends]
-ee9-deploy
+core-deploy
 
 [files]
-basehome:modules/demo.d/ee9-demo-moved-context.xml|webapps/ee9-demo-moved-context.xml
+basehome:modules/demo.d/demo-moved-context.xml|webapps/demo-moved-context.xml
 

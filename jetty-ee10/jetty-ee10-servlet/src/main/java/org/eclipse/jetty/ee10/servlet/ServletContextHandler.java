@@ -2612,9 +2612,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-            
             if (_sessionHandler != null)
                 return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
@@ -2623,9 +2620,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-            
             if (_sessionHandler != null)
                 return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
@@ -2717,9 +2711,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!isStarting())
                 throw new IllegalStateException();
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
+            
             int timeout = -1;
             if (_sessionHandler != null)
             {
@@ -3278,9 +3270,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public ClassLoader getClassLoader()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
             // no security manager just return the classloader
             ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
             if (!isUsingSecurityManager())

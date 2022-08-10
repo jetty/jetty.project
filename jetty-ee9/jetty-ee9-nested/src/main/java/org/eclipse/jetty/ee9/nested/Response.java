@@ -299,31 +299,17 @@ public class Response implements HttpServletResponse
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
                 CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
-
-                HttpCookie oldCookie;
-                if (field instanceof SetCookieHttpField)
-                    oldCookie = ((SetCookieHttpField)field).getHttpCookie();
+                
+                if (field instanceof HttpCookie.SetCookieHttpField)
+                {
+                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                        continue;
+                }
                 else
-                    oldCookie = new HttpCookie(field.getValue());
-
-                if (!cookie.getName().equals(oldCookie.getName()))
-                    continue;
-
-                if (cookie.getDomain() == null)
                 {
-                    if (oldCookie.getDomain() != null)
+                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
-                else if (!cookie.getDomain().equalsIgnoreCase(oldCookie.getDomain()))
-                    continue;
-
-                if (cookie.getPath() == null)
-                {
-                    if (oldCookie.getPath() != null)
-                        continue;
-                }
-                else if (!cookie.getPath().equals(oldCookie.getPath()))
-                    continue;
 
                 i.set(new SetCookieHttpField(checkSameSite(cookie), compliance));
                 return;

@@ -16,7 +16,7 @@
     <module>jetty-bom</module>
     <module>jetty-client</module>
     <module>jetty-deploy</module>
-    <module>jetty-demo</module>
+    <module>jetty-demos</module>
     <module>jetty-ee</module>
     <module>jetty-fcgi</module>
     <module>jetty-http</module>

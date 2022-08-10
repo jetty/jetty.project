@@ -19,19 +19,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
+import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.AbstractSessionCache;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +51,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SessionHandlerTest
@@ -146,6 +155,47 @@ public class SessionHandlerTest
     public void afterEach() throws Exception
     {
         _server.stop();
+    }
+    
+    @Test
+    public void testSessionCookie() throws Exception
+    {
+        Server server = new Server();
+        MockSessionIdManager idMgr = new MockSessionIdManager(server);
+        idMgr.setWorkerName("node1");
+        SessionHandler mgr = new SessionHandler();
+        MockSessionCache cache = new MockSessionCache(mgr.getSessionManager());
+        cache.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(cache);
+        mgr.setSessionIdManager(idMgr);
+
+        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+
+        Session session = new Session(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        session.setExtendedId("123.node1");
+        SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
+        sessionCookieConfig.setName("SPECIAL");
+        sessionCookieConfig.setDomain("universe");
+        sessionCookieConfig.setHttpOnly(false);
+        sessionCookieConfig.setSecure(false);
+        sessionCookieConfig.setPath("/foo");
+        sessionCookieConfig.setMaxAge(99);
+        
+        //for < ee10, SameSite cannot be set on the SessionCookieConfig, only on the SessionManager, or 
+        //a default value on the context attribute org.eclipse.jetty.cookie.sameSiteDefault
+        mgr.setSameSite(HttpCookie.SameSite.STRICT);
+        
+        HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, "/bar", false);
+        assertEquals("SPECIAL", cookie.getName());
+        assertEquals("universe", cookie.getDomain());
+        assertEquals("/foo", cookie.getPath());
+        assertFalse(cookie.isHttpOnly());
+        assertFalse(cookie.isSecure());
+        assertEquals(99, cookie.getMaxAge());
+        assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
+        
+        String cookieStr = cookie.getRFC6265SetCookie();
+        assertThat(cookieStr, containsString("; SameSite=Strict"));
     }
 
     @Test
@@ -370,4 +420,81 @@ public class SessionHandlerTest
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
     }
+
+    public class MockSessionCache extends AbstractSessionCache
+    {
+
+        public MockSessionCache(SessionManager manager)
+        {
+            super(manager);
+        }
+
+        @Override
+        public void shutdown()
+        {
+        }
+
+        @Override
+        public Session doGet(String key)
+        {
+            return null;
+        }
+
+        @Override
+        public Session doPutIfAbsent(String key, Session session)
+        {
+            return null;
+        }
+
+        @Override
+        public Session doDelete(String key)
+        {
+            return null;
+        }
+
+        @Override
+        public boolean doReplace(String id, Session oldValue, Session newValue)
+        {
+            return false;
+        }
+
+        @Override
+        public Session newSession(SessionData data)
+        {
+            return null;
+        }
+
+        @Override
+        protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+        {
+            return mappingFunction.apply(id);
+        }
+    }
+
+    public class MockSessionIdManager extends DefaultSessionIdManager
+    {
+        public MockSessionIdManager(Server server)
+        {
+            super(server);
+        }
+
+        @Override
+        public boolean isIdInUse(String id)
+        {
+            return false;
+        }
+
+        @Override
+        public void expireAll(String id)
+        {
+
+        }
+
+        @Override
+        public String renewSessionId(String oldClusterId, String oldNodeId, org.eclipse.jetty.server.Request request)
+        {
+            return "";
+        }
+    }
+    
 }

@@ -17,6 +17,9 @@ etc/jetty-threadpool.xml
 ## Number of reserved threads (-1 for heuristic).
 #jetty.threadPool.reservedThreads=-1
 
+## Whether to use virtual threads, if the runtime supports them.
+#jetty.threadPool.useVirtualThreads=false
+
 ## Thread idle timeout (in milliseconds).
 #jetty.threadPool.idleTimeout=60000
 

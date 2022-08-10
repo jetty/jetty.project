@@ -35,31 +35,6 @@ import java.util.ResourceBundle;
  */
 public class Loader
 {
-    /**
-     * Similar to {@link #getResource(String)}, but throws an {@link IllegalStateException} if the requested resource
-     * is not found in the classlaoders.
-     *
-     * @param name the resource to look up
-     * @return the URL to the resource
-     * @throws IllegalStateException if unable to find the resource
-     */
-    public static URL getRequiredResource(String name)
-    {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        URL url = null;
-
-        if (loader != null)
-            url = loader.getResource(name);
-
-        if (url == null)
-            url = ClassLoader.getSystemResource(name);
-
-        if (url == null)
-            throw new IllegalStateException("Missing required resource: " + name);
-
-        return url;
-    }
-
     public static URL getResource(String name)
     {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();

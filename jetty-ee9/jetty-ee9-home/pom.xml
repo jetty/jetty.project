@@ -450,11 +450,11 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-annotations</artifactId>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-openid</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-openid</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-jaspi</artifactId>

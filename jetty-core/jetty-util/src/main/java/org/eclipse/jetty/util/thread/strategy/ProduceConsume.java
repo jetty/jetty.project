@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ProduceConsume implements ExecutionStrategy, Runnable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ExecuteProduceConsume.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProduceConsume.class);
 
     private final AutoLock _lock = new AutoLock();
     private final Producer _producer;

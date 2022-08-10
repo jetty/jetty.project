@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee web-app_4_0.xsd"
-	version="4.0">
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+	version="6.0">
 
 	<display-name>Test 4 WebApp</display-name>
 	<session-config>
+	    <cookie-config>
+	        <domain>universe</domain>
+	        <name>SPECIALSESSIONID</name>
+	        <path>foo</path>
+	        <max-age>10</max-age>
+	        <comment>nocomment</comment>
+	        <http-only>false</http-only>
+	        <secure>false</secure>
+	        <attribute>
+	            <attribute-name>length</attribute-name>
+	            <attribute-value>short</attribute-value>
+	        </attribute>
+	        <attribute>
+	            <attribute-name>width</attribute-name>
+	            <attribute-value>long</attribute-value>
+	        </attribute>
+	        <attribute>
+	            <attribute-name>SameSite</attribute-name>
+	            <attribute-value>Strict</attribute-value>
+	        </attribute>
+	    </cookie-config>
 		<session-timeout>54</session-timeout>
 	</session-config>
 

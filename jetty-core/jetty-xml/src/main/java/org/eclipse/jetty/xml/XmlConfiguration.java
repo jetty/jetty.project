@@ -26,6 +26,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -1996,36 +1997,10 @@ public class XmlConfiguration
         {
             _entry = entry;
 
-            Class<?> klass = XmlConfiguration.class;
-            URL config60 = klass.getResource("configure_6_0.dtd");
-            URL config76 = klass.getResource("configure_7_6.dtd");
-            URL config90 = klass.getResource("configure_9_0.dtd");
-            URL config93 = klass.getResource("configure_9_3.dtd");
-            URL config100 = klass.getResource("configure_10_0.dtd");
-
-            redirectEntity("configure.dtd", config93);
-            redirectEntity("configure_1_0.dtd", config60);
-            redirectEntity("configure_1_1.dtd", config60);
-            redirectEntity("configure_1_2.dtd", config60);
-            redirectEntity("configure_1_3.dtd", config60);
-            redirectEntity("configure_6_0.dtd", config60);
-            redirectEntity("configure_7_6.dtd", config76);
-            redirectEntity("configure_9_0.dtd", config90);
-            redirectEntity("configure_9_3.dtd", config93);
-            redirectEntity("configure_10_0.dtd", config100);
-
-            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
-            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
-            redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
-
-            redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
-            redirectEntity("-//Jetty//Configure//EN", config100);
+            URL catalogUrl = XmlConfiguration.class.getResource("catalog-configure.xml");
+            if (catalogUrl == null)
+                throw new IllegalStateException("Catalog not found: catalog-configure.xml");
+            addCatalog(URI.create(catalogUrl.toExternalForm()));
         }
 
         @Override
