@@ -108,23 +108,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-transaction-api-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.transaction</groupId>
-                  <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction.api.version}</version>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-lib-servlet-api-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -143,6 +126,43 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-transaction-api-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.transaction</groupId>
+                  <artifactId>jakarta.transaction-api</artifactId>
+                  <version>${jakarta.transaction-api.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>jakarta.interceptor</groupId>
+                  <artifactId>jakarta.interceptor-api</artifactId>
+                  <version>${jakarta.interceptor.api.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>jakarta.enterprise</groupId>
+                  <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                  <version>${jakarta.enterprise.cdi.api.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>jakarta.inject</groupId>
+                  <artifactId>jakarta.inject-api</artifactId>
+                  <version>${jakarta.inject.api.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>jakarta.enterprise</groupId>
+                  <artifactId>jakarta.enterprise.lang-model</artifactId>
+                  <version>${jakarta.enterprise.lang.model.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-transaction-api-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -153,7 +173,7 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction.api.version}</version>
+                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -224,8 +244,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web,jakarta.el,jakarta.servlet.jsp,jakarta.el</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl,jakarta.el-api,jakarta.servlet.jsp-api,jakarta.el-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
@@ -239,8 +259,8 @@
             </goals>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web,jakarta.el,jakarta.servlet.jsp,jakarta.el</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl,jakarta.el-api,jakarta.servlet.jsp-api,jakarta.el-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
             </configuration>
