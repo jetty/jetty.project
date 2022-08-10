@@ -514,6 +514,11 @@ public class HttpCookie
     /**
      * Extract the bare minimum of info from a Set-Cookie header string.
      * 
+     * Ideally this method should not be necessary, however as java.net.HttpCookie
+     * does not yet support generic attributes, we have to use it in a minimal
+     * fashion. When it supports attributes, we could look at reverting to a
+     * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
+     * 
      * @param setCookieHeader the header as a string
      * @return a map containing the name, value, domain, path. max-age of the set cookie header
      */
