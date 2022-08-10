@@ -14,9 +14,11 @@
 package org.eclipse.jetty.session;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -148,6 +150,14 @@ public class Session
         _extendedId = extendedId;
     }
 
+    public HttpCookie generateSetCookie(String name, String domain, String path, int maxAge, 
+                                         boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
+    {
+        HttpCookie sessionCookie = new HttpCookie(name, getExtendedId(), domain, path, maxAge, httpOnly, secure, comment, version, attributes);
+        onSetCookieGenerated();
+        return sessionCookie;
+    }
+    
     /**
      * Set the time that the cookie was set and clear the idChanged flag.
      */

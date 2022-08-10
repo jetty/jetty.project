@@ -20,8 +20,10 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.servlet.ServletContext;
@@ -37,6 +39,7 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -45,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,8 +106,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
      */
     public final class CookieConfig implements SessionCookieConfig
     {
-        private final Map<String, String> _attributes = new HashMap<>();
-
         @Override
         public String getComment()
         {
@@ -125,21 +127,57 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public void setAttribute(String name, String value)
         {
-            // TODO check that context is not available
-            _attributes.put(name, value);
+            checkState();
+            String lcase = name.toLowerCase(Locale.ENGLISH);
+
+            switch (lcase)
+            {
+                case "name" -> setName(value);
+                case "max-age" -> setMaxAge(value == null ? -1 : Integer.parseInt(value));
+                case "comment" -> setComment(value);
+                case "domain" -> setDomain(value);
+                case "httponly" -> setHttpOnly(Boolean.valueOf(value));
+                case "secure" -> setSecure(Boolean.valueOf(value));
+                case "path" -> setPath(value);
+                default -> setSessionAttribute(name, value);
+            }
         }
 
         @Override
         public String getAttribute(String name)
         {
-            // TODO use these attributes
-            return _attributes.get(name);
+            String lcase = name.toLowerCase(Locale.ENGLISH);
+            return switch (lcase)
+            {
+                case "name" -> getName();
+                case "max-age" -> Integer.toString(getMaxAge());
+                case "comment" -> getComment();
+                case "domain" -> getDomain();
+                case "httponly" -> String.valueOf(isHttpOnly());
+                case "secure" -> String.valueOf(isSecure());
+                case "path" -> getPath();
+                default -> getSessionAttribute(name);
+            };
         }
 
+        /**
+         * According to the SessionCookieConfig javadoc, the attributes must also include
+         * all values set by explicit setters.
+         * @see SessionCookieConfig
+         */
         @Override
         public Map<String, String> getAttributes()
         {
-            return Collections.unmodifiableMap(_attributes);
+            Map<String, String> specials = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            specials.put("name", getAttribute("name"));
+            specials.put("max-age", getAttribute("max-age"));
+            specials.put("comment", getAttribute("comment"));
+            specials.put("domain", getAttribute("domain"));
+            specials.put("httponly", getAttribute("httponly"));
+            specials.put("secure", getAttribute("secure"));
+            specials.put("path", getAttribute("path"));
+            specials.putAll(getSessionAttributes());
+            return Collections.unmodifiableMap(specials);
         }
 
         @Override
@@ -351,6 +389,60 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
         return apiRequest == null ? null : apiRequest.getCoreSession();
+    }
+
+    /**
+     * A session cookie is marked as secure IFF any of the following conditions are true:
+     * <ol>
+     * <li>SessionCookieConfig.setSecure == true</li>
+     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
+     * </ol>
+     * According to SessionCookieConfig javadoc, case 1 can be used when:
+     * "... even though the request that initiated the session came over HTTP,
+     * is to support a topology where the web container is front-ended by an
+     * SSL offloading load balancer. In this case, the traffic between the client
+     * and the load balancer will be over HTTPS, whereas the traffic between the
+     * load balancer and the web container will be over HTTP."
+     * <p>
+     * For case 2, you can use _secureRequestOnly to determine if you want the
+     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
+     * which is:
+     * <cite>
+     * "they shall be marked as secure only if the request that initiated the
+     * corresponding session was also secure"
+     * </cite>
+     * <p>
+     * The default for _secureRequestOnly is true, which gives the above behavior. If
+     * you set it to false, then a session cookie is NEVER marked as secure, even if
+     * the initiating request was secure.
+     *
+     * @param session the session to which the cookie should refer.
+     * @param contextPath the context to which the cookie should be linked.
+     * The client will only send the cookie value when requesting resources under this path.
+     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
+     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
+     * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
+     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
+     */
+    @Override
+    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
+    {
+        if (isUsingCookies())
+        {
+            String sessionPath = getSessionPath();
+            sessionPath = (sessionPath == null) ? contextPath : sessionPath;
+            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
+            return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
+                getSessionDomain(),
+                sessionPath,
+                getMaxCookieAge(),
+                isHttpOnly(),
+                isSecureCookies() || (isSecureRequestOnly() && requestIsSecure),
+                null,
+                0,
+                getSessionAttributes());
+        }
+        return null;
     }
 
     /**
@@ -588,7 +680,28 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
         return Collections.emptySet();
     }
-
+    
+    @Override
+    public HttpCookie.SameSite getSameSite()
+    {
+        String sameSite = getSessionAttribute("SameSite");
+        if (sameSite == null)
+            return null;
+        return SameSite.valueOf(sameSite.toUpperCase(Locale.ENGLISH));
+    }
+    
+    /**
+     * Set Session cookie sameSite mode.
+     * In ee10 this is set as a generic session cookie attribute.
+     *
+     * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
+     */
+    @Override
+    public void setSameSite(HttpCookie.SameSite sameSite)
+    {
+        setSessionAttribute("SameSite", sameSite.getAttributeValue());
+    }
+    
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
         if (sessionTrackingModes != null &&
