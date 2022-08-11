@@ -535,8 +535,17 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             Handler next = getHandler();
             if (next == null)
-                return Collections.emptyList();
+                return List.of();
             return List.of(next);
+        }
+
+        @Override
+        public void setServer(Server server)
+        {
+            super.setServer(server);
+            Handler next = getHandler();
+            if (next != null)
+                next.setServer(getServer());
         }
 
         @Override
@@ -623,8 +632,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                     server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
                     throw new IllegalArgumentException("Cannot change invocation type of started server");
 
-                if (server != null)
-                    handler.setServer(server);
+                handler.setServer(getServer());
             }
 
             updateBeans(_handlers, handlers);

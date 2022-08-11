@@ -1204,20 +1204,6 @@ public final class URIUtil
     }
 
     /**
-     * <p>Check if a path would be normalized within itself. For example,
-     * <code>/foo/../../bar</code> is normalized above its root and would
-     * thus return false, whilst <code>/foo/./bar/..</code> is normal within itself
-     * and would return true.
-     * @param path The path to check
-     * @return True if the normal form of the path is within the root of the path.
-     */
-    public static boolean isNotNormalWithinSelf(String path)
-    {
-        // TODO this can be optimized to avoid allocation.
-        return normalizePath(path) == null;
-    }
-
-    /**
      * <p>Normalize a URI path by factoring out all segments of "." and "..".
      * Null is returned if the path is normalized above its root.
      * </p>

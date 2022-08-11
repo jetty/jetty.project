@@ -310,8 +310,8 @@ public abstract class Resource
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        // TODO do a URI safe encoding?
-        if (URIUtil.isNotNormalWithinSelf(subUriPath))
+        // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
+        if (URIUtil.normalizePath(subUriPath) == null)
             throw new IllegalArgumentException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))

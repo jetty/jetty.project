@@ -19,7 +19,6 @@ import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -70,8 +69,7 @@ public class DefaultHandler extends Handler.Processor
     public void setServer(Server server)
     {
         super.setServer(server);
-        if (server != null)
-            initFavIcon();
+        initFavIcon();
     }
 
     private void initFavIcon()
@@ -79,12 +77,18 @@ public class DefaultHandler extends Handler.Processor
         if (_favicon != null)
             return;
 
-        Server server = Objects.requireNonNull(getServer());
+        if (getServer() == null)
+        {
+            // TODO: investigate why DefaultHandler.setServer(server) is passing null?
+            // See bug https://github.com/eclipse/jetty.project/issues/8442
+            LOG.warn("favicon.ico not supported with null Server");
+            return;
+        }
 
         byte[] favbytes = null;
         try
         {
-            Resource faviconRes = server.getDefaultFavicon();
+            Resource faviconRes = getServer().getDefaultFavicon();
             if (faviconRes != null)
             {
                 try (InputStream is = faviconRes.newInputStream())

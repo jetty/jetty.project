@@ -112,7 +112,7 @@ public class ResourceCollection extends Resource
     @Override
     public Resource resolve(String subUriPath)
     {
-        if (URIUtil.isNotNormalWithinSelf(subUriPath))
+        if (URIUtil.normalizePath(subUriPath) == null)
             throw new IllegalArgumentException(subUriPath);
 
         if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))

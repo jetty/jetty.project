@@ -199,11 +199,9 @@ public interface Response extends Content.Sink
         Logger logger = LoggerFactory.getLogger(Response.class);
 
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
-        if (logger.isDebugEnabled())
-            logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
-        else if (cause instanceof BadMessageException || cause instanceof QuietException)
-            logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
-        else if (cause != null)
+        if (!logger.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
+            logger.warn("writeError: status={}, message={}, cause={}", status, message, cause.getMessage());
+        else
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);
 
         if (response.isCommitted())
