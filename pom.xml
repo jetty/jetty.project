@@ -1361,12 +1361,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-client</artifactId>
+        <artifactId>jetty-fcgi-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-server</artifactId>
+        <artifactId>jetty-fcgi-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

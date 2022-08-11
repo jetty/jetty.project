@@ -97,12 +97,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-client</artifactId>
+        <artifactId>jetty-fcgi-client</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-server</artifactId>
+        <artifactId>jetty-fcgi-server</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
