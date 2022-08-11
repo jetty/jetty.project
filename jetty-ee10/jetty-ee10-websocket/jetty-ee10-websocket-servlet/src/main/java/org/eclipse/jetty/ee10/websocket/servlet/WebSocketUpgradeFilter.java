@@ -32,7 +32,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -160,14 +160,11 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             throw new IllegalStateException("Base Request not available");
 
         // provide a null default customizer the customizer will be on the negotiator in the mapping
-        try (Blocker.Callback callback = Blocker.callback())
+        FutureCallback callback = new FutureCallback();
+        if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
         {
-            if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
-            {
-                callback.block();
-                return;
-            }
-            callback.succeeded(); // TODO this is wasteful making a blocker on every request, even if it is not used. At leasts should be shared... but better to detect if we might need to upgrade first?
+            callback.block();
+            return;
         }
 
         // If we reach this point, it means we had an incoming request to upgrade
