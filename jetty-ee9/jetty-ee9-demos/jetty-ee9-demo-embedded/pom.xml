@@ -121,12 +121,15 @@
       <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- sounds cyclic -->
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <type>zip</type>
       <scope>test</scope>
     </dependency>
+    -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
