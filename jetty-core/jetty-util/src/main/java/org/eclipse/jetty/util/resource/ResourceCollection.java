@@ -131,7 +131,7 @@ public class ResourceCollection extends Resource
             String subUriStringNotPrependedBySlash = subUriPath;
             if (subUriStringNotPrependedBySlash.startsWith("/"))
                 subUriStringNotPrependedBySlash = subUriStringNotPrependedBySlash.substring(1);
-            if (!res.isDirectory() && !subUriStringNotPrependedBySlash.contains("/") && res.getPath().getFileName().toString().equals(subUriStringNotPrependedBySlash))
+            if (!res.isDirectory() && res.exists() && !subUriStringNotPrependedBySlash.contains("/") && res.getPath().getFileName().toString().equals(subUriStringNotPrependedBySlash))
                 return res;
 
             addedResource = res.resolve(subUriPath);
