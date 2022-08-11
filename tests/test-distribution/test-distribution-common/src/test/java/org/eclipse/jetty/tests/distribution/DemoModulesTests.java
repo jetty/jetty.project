@@ -258,7 +258,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     //@MethodSource("provideEnvironmentsToTest")
-    //@Disabled("not yet ready for this")
+    @Disabled("not yet ready for this")
     @ValueSource(strings = "ee10")
     public void testJPMS(String env) throws Exception
     {
