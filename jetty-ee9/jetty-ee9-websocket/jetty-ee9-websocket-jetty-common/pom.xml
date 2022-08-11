@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-core-common</artifactId>
+      <artifactId>jetty-websocket-core-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

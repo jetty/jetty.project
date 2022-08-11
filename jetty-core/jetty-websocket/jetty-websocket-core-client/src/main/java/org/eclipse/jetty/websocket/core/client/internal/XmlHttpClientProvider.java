@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.client.internal;
 import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;

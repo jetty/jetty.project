@@ -1502,17 +1502,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-client</artifactId>
+        <artifactId>jetty-websocket-core-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-common</artifactId>
+        <artifactId>jetty-websocket-core-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-server</artifactId>
+        <artifactId>jetty-websocket-core-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

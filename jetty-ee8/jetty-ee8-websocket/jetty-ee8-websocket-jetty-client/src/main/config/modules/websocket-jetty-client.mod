@@ -11,8 +11,8 @@ client
 annotations
 
 [lib]
-lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-client-${jetty.version}.jar
+lib/websocket/jetty-websocket-core-common-${jetty.version}.jar
+lib/websocket/jetty-websocket-core-client-${jetty.version}.jar
 lib/websocket/websocket-jetty-api-${jetty.version}.jar
 lib/websocket/websocket-jetty-common-${jetty.version}.jar
 lib/websocket/websocket-jetty-client-${jetty.version}.jar

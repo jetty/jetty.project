@@ -8,8 +8,8 @@ websocket
 annotations
 
 [lib]
-lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-server-${jetty.version}.jar
+lib/websocket/jetty-websocket-core-common-${jetty.version}.jar
+lib/websocket/jetty-websocket-core-server-${jetty.version}.jar
 lib/websocket/websocket-servlet-${jetty.version}.jar
 lib/websocket/websocket-jetty-api-${jetty.version}.jar
 lib/websocket/websocket-jetty-common-${jetty.version}.jar
