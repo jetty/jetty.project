@@ -95,7 +95,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-http-client-transport</artifactId>
+      <artifactId>jetty-http3-client-transport</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

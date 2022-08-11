@@ -210,11 +210,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-server</artifactId>
+      <artifactId>jetty-http3-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-http-client-transport</artifactId>
+      <artifactId>jetty-http3-client-transport</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
