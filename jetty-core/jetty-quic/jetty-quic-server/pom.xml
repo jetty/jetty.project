@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
-    <artifactId>quic</artifactId>
+    <artifactId>jetty-quic</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>quic-server</artifactId>
+  <artifactId>jetty-quic-server</artifactId>
   <name>Jetty Core :: QUIC :: Server</name>
 
   <properties>
@@ -25,11 +25,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-common</artifactId>
+      <artifactId>jetty-quic-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-quiche-jna</artifactId>
+      <artifactId>jetty-quic-quiche-jna</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -47,7 +47,7 @@
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>quic-quiche-foreign-incubator</artifactId>
+          <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
         </dependency>
       </dependencies>
     </profile>

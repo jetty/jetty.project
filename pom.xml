@@ -1457,32 +1457,32 @@
 
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-client</artifactId>
+        <artifactId>jetty-quic-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-common</artifactId>
+        <artifactId>jetty-quic-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-common</artifactId>
+        <artifactId>jetty-quic-quiche-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-jna</artifactId>
+        <artifactId>jetty-quic-quiche-jna</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-foreign-incubator</artifactId>
+        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-server</artifactId>
+        <artifactId>jetty-quic-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

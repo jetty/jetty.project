@@ -2,18 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
-    <artifactId>quic</artifactId>
+    <artifactId>jetty-quic</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>quic-quiche</artifactId>
+  <artifactId>jetty-quic-quiche</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Core :: QUIC :: Quiche</name>
 
   <modules>
-    <module>quic-quiche-common</module>
-    <module>quic-quiche-jna</module>
+    <module>jetty-quic-quiche-common</module>
+    <module>jetty-quic-quiche-jna</module>
   </modules>
 
   <profiles>
@@ -23,7 +23,7 @@
         <jdk>[17,)</jdk>
       </activation>
       <modules>
-        <module>quic-quiche-foreign-incubator</module>
+        <module>jetty-quic-quiche-foreign-incubator</module>
       </modules>
     </profile>
   </profiles>

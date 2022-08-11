@@ -33,7 +33,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-server</artifactId>
+      <artifactId>jetty-quic-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

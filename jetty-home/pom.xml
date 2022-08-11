@@ -221,7 +221,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
-              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack,quic-server,quic-common,quic-quiche-common,quic-quiche-jna,quic-quiche-foreign-incubator,jetty-quiche-native</includeArtifactIds>
+              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack,jetty-quic-server,jetty-quic-common,jetty-quic-quiche-common,jetty-quic-quiche-jna,jetty-quic-quiche-foreign-incubator,jetty-quiche-native</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http3</outputDirectory>
             </configuration>

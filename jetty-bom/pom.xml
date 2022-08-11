@@ -294,27 +294,27 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-client</artifactId>
+        <artifactId>jetty-quic-client</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-common</artifactId>
+        <artifactId>jetty-quic-common</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-common</artifactId>
+        <artifactId>jetty-quic-quiche-common</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-jna</artifactId>
+        <artifactId>jetty-quic-quiche-jna</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-server</artifactId>
+        <artifactId>jetty-quic-server</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -480,7 +480,7 @@
         <dependencies>
           <dependency>
             <groupId>org.eclipse.jetty.quic</groupId>
-            <artifactId>quic-quiche-foreign-incubator</artifactId>
+            <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
             <version>12.0.0-SNAPSHOT</version>
           </dependency>
         </dependencies>

@@ -2,16 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
-    <artifactId>quic</artifactId>
+    <artifactId>jetty-quic-quiche</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>quic-common</artifactId>
-  <name>Jetty Core :: QUIC :: Common</name>
+  <artifactId>jetty-quic-quiche-common</artifactId>
+  <name>Jetty Core :: QUIC :: Quiche :: Common</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.quic-quiche-common</bundle-symbolic-name>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <dependencies>
@@ -20,19 +21,18 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-quiche-common</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
+      <artifactId>jetty-util</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.mortbay.jetty.quiche</groupId>
+      <artifactId>jetty-quiche-native</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>
