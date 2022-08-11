@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -47,6 +48,8 @@ public class JarServer
             baseUri = URIUtil.toJarFileUri(baseUri);
 
         Server server = new Server(port);
+//        server.setDumpAfterStart(true);
+//        server.setDumpBeforeStop(true);
         Resource baseResource = ResourceFactory.of(server).newResource(baseUri);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -54,7 +57,7 @@ public class JarServer
         ServletHolder defaultHolder = new ServletHolder("default", new DefaultServlet());
         context.addServlet(defaultHolder, "/");
 
-        server.setHandler(context);
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
         return server;
     }
 

@@ -17,13 +17,14 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-bom</artifactId>
-        <version>${project.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
+      <!-- doesn't work with partial build -->
+<!--      <dependency>-->
+<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
+<!--        <artifactId>jetty-ee9-bom</artifactId>-->
+<!--        <version>${project.version}</version>-->
+<!--        <scope>import</scope>-->
+<!--        <type>pom</type>-->
+<!--      </dependency>-->
     </dependencies>
   </dependencyManagement>
 
@@ -65,11 +66,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-openid</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
