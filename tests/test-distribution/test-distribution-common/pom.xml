@@ -11,12 +11,15 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
-    <distribution.debug.port>-1</distribution.debug.port>
-    <home.start.timeout>10</home.start.timeout>
-    <environmentsToTest>ee8,ee9,ee10</environmentsToTest>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-home</artifactId>
+      <type>zip</type>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
@@ -36,32 +39,30 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>${maven.resolver.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-impl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -141,23 +142,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
-            <jettyVersion>${project.version}</jettyVersion>
-            <hazelcast.version>${hazelcast.version}</hazelcast.version>
-            <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
-            <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
-            <home.start.timeout>${home.start.timeout}</home.start.timeout>
-            <mariadb.version>${mariadb.version}</mariadb.version>
-            <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
-            <environmentsToTest>${environmentsToTest}</environmentsToTest>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
        <groupId>org.apache.maven.plugins</groupId>
        <artifactId>maven-jar-plugin</artifactId>
        <version>${maven.jar.plugin.version}</version>
@@ -171,29 +155,5 @@
      </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>jdk16</id>
-      <activation>
-        <jdk>[16,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <systemPropertyVariables>
-                  <cdi.tests.jvmArgs>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</cdi.tests.jvmArgs>
-                </systemPropertyVariables>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-  </profiles>
 
 </project>
