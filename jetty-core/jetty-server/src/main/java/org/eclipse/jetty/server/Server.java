@@ -671,6 +671,8 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     private Resource newResource(String name)
     {
+        // TODO replace this.  It is needlessly complex and inefficient as it holds a mount of the server jar
+        //      just for things like favicon and default stylesheet
         URL url = getClass().getResource(name);
         if (url == null)
             throw new IllegalStateException("Missing server resource: " + name);
