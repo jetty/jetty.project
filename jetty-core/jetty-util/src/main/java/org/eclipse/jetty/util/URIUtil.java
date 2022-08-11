@@ -1214,7 +1214,7 @@ public final class URIUtil
     public static boolean isNotNormalWithinSelf(String path)
     {
         // TODO this can be optimized to avoid allocation.
-        return normalizePath(path) != null;
+        return normalizePath(path) == null;
     }
 
     /**
