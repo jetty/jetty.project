@@ -194,7 +194,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
-              <includeArtifactIds>http2-hpack,http2-common,http2-server</includeArtifactIds>
+              <includeArtifactIds>jetty-http2-hpack,jetty-http2-common,jetty-http2-server</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http2</outputDirectory>
             </configuration>
@@ -207,7 +207,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
-              <includeArtifactIds>http2-hpack,http2-common,http2-server</includeArtifactIds>
+              <includeArtifactIds>jetty-http2-hpack,jetty-http2-common,jetty-http2-server</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/http2</outputDirectory>
@@ -562,7 +562,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>

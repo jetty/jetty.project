@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client.transport;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,8 +33,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
-import org.eclipse.jetty.http2.client.http.internal.HTTPSessionListenerPromise;
-import org.eclipse.jetty.http2.client.http.internal.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerPromise;
+import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;

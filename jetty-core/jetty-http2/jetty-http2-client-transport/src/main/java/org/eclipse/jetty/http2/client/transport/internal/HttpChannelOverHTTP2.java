@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http.internal;
+package org.eclipse.jetty.http2.client.transport.internal;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;

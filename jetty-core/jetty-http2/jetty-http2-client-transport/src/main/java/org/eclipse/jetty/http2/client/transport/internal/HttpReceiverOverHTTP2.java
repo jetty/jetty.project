@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http.internal;
+package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

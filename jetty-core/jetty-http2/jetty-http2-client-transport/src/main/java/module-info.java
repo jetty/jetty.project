@@ -19,5 +19,5 @@ module org.eclipse.jetty.http2.http.client.transport
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.http2.client;
 
-    exports org.eclipse.jetty.http2.client.http;
+    exports org.eclipse.jetty.http2.client.transport;
 }
