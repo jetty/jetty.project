@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-A meta module to enable all demo modules.
+A meta module to enable all EE8 demo modules.
 
 [environment]
 ee8
@@ -15,6 +15,7 @@ https
 http2
 test-keystore
 work
+demo-root
 ee8-demo-async-rest
 ee8-demo-jaas
 ee8-demo-jetty
@@ -23,7 +24,6 @@ ee8-demo-rewrite
 ee8-demo-jndi
 ee8-demo-spec
 ee8-demo-jsp
-ee8-demo-root
 
 [ini-template]
 # Websocket chat examples needs websocket enabled
