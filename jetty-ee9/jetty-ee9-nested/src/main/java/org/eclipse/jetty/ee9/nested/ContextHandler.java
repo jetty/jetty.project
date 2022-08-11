@@ -1144,7 +1144,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public Resource getBaseResource()
     {
-        return _coreContextHandler.getResourceBase();
+        return _coreContextHandler.getBaseResource();
     }
 
     /**
@@ -1153,7 +1153,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("document root for context")
     public String getResourceBase()
     {
-        Resource resourceBase = _coreContextHandler.getResourceBase();
+        Resource resourceBase = _coreContextHandler.getBaseResource();
         return resourceBase == null ? null : resourceBase.toString();
     }
 
@@ -1171,9 +1171,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Set the base resource for this context.
      *
+     * @param base The resource used as the base for all static content of this context.
+     * @see #setResourceBase(String)
+     */
+    public void setBaseResource(Path base)
+    {
+        _coreContextHandler.setBaseResource(base);
+    }
+
+    /**
+     * Set the base resource for this context.
+     *
      * @param resourceBase A string representing the base resource for the context. Any string accepted by {@link ResourceFactory#newResource(String)} may be passed and the
      * call is equivalent to <code>setBaseResource(newResource(resourceBase));</code>
+     * @deprecated use #setBaseResource
      */
+    @Deprecated
     public void setResourceBase(String resourceBase)
     {
         try
@@ -1398,7 +1411,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        Resource baseResource = _coreContextHandler.getResourceBase();
+        Resource baseResource = _coreContextHandler.getBaseResource();
         if (baseResource == null)
             return null;
 

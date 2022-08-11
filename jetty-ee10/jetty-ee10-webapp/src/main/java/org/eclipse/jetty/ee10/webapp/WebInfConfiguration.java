@@ -281,9 +281,9 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     public void unpack(WebAppContext context) throws IOException
     {
-        Resource webApp = context.getResourceBase();
+        Resource webApp = context.getBaseResource();
         _resourceFactory = ResourceFactory.closeable();
-        _preUnpackBaseResource = context.getResourceBase();
+        _preUnpackBaseResource = context.getBaseResource();
 
         if (webApp == null)
         {
@@ -291,7 +291,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (war != null && war.length() > 0)
                 webApp = context.newResource(war);
             else
-                webApp = context.getResourceBase();
+                webApp = context.getBaseResource();
 
             if (webApp == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
@@ -516,7 +516,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Resource base
         try
         {
-            Resource resource = context.getResourceBase();
+            Resource resource = context.getBaseResource();
             if (resource == null)
             {
                 if (context.getWar() == null || context.getWar().length() == 0)

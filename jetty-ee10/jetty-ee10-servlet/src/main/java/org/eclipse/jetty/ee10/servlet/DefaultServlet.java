@@ -94,7 +94,7 @@ public class DefaultServlet extends HttpServlet
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        _baseResource = servletContextHandler.getResourceBase();
+        _baseResource = servletContextHandler.getBaseResource();
         String rb = getInitParameter("resourceBase");
         if (rb != null)
         {

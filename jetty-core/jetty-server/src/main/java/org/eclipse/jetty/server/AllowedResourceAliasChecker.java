@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        this(contextHandler, contextHandler::getResourceBase);
+        this(contextHandler, contextHandler::getBaseResource);
     }
 
     public AllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
