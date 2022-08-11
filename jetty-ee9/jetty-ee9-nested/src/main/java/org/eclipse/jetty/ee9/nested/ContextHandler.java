@@ -66,6 +66,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
@@ -75,7 +77,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -86,7 +87,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -186,16 +186,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         DESTROYED
     }
 
-    /**
-     * The type of protected target match
-     * @see #_protectedTargets
-     */
-    private enum ProtectedTargetType
-    {
-        EXACT,
-        PREFIX
-    }
-
     private final CoreContextHandler _coreContextHandler;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected APIContext _apiContext;
@@ -221,8 +211,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
-    private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
-    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     public ContextHandler()
     {
@@ -882,7 +870,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (new_context)
                 requestInitialized(baseRequest, request);
 
-            if (new_context && isProtectedTarget(target))
+            if (new_context && _coreContextHandler.isProtectedTarget(target))
             {
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -989,16 +977,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public boolean isProtectedTarget(String target)
     {
-        if (target == null || _protectedTargets.isEmpty())
-            return false;
-
-        if (target.startsWith("//"))
-            target = URIUtil.compactPath(target);
-
-        ProtectedTargetType type = _protectedTargets.getBest(target);
-
-        return type == ProtectedTargetType.PREFIX ||
-            type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
+        return _coreContextHandler.isProtectedTarget(target);
     }
 
     /**
@@ -1006,32 +985,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setProtectedTargets(String[] targets)
     {
-        Index.Builder<ProtectedTargetType> builder = new Index.Builder<>();
-        if (targets != null)
-        {
-            for (String t : targets)
-            {
-                if (!t.startsWith("/"))
-                    throw new IllegalArgumentException("Bad protected target: " + t);
-
-                builder.with(t, ProtectedTargetType.EXACT);
-                builder.with(t + "/", ProtectedTargetType.PREFIX);
-                builder.with(t + "?", ProtectedTargetType.PREFIX);
-                builder.with(t + "#", ProtectedTargetType.PREFIX);
-                builder.with(t + ";", ProtectedTargetType.PREFIX);
-            }
-        }
-        _protectedTargets = builder.caseSensitive(false).build();
+        _coreContextHandler.setProtectedTargets(targets);
     }
 
     public String[] getProtectedTargets()
     {
-        if (_protectedTargets == null)
-            return null;
-
-        return _protectedTargets.keySet().stream()
-            .filter(s -> _protectedTargets.get(s) == ProtectedTargetType.EXACT)
-            .toArray(String[]::new);
+        return _coreContextHandler.getProtectedTargets();
     }
 
     @Override
@@ -1437,7 +1396,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // alias checks
             for (AliasCheck check : getAliasChecks())
             {
-                if (check.check(path, resource))
+                if (check.checkAlias(path, resource))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Aliased resource: {} approved by {}", resource, check);
@@ -1542,11 +1501,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addAliasCheck(AliasCheck check)
     {
-        _aliasChecks.add(check);
-        if (check instanceof LifeCycle)
-            addManaged((LifeCycle)check);
-        else
-            addBean(check);
+        _coreContextHandler.addAliasCheck(check);
     }
 
     /**
@@ -1554,7 +1509,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public List<AliasCheck> getAliasChecks()
     {
-        return Collections.unmodifiableList(_aliasChecks);
+        return _coreContextHandler.getAliasChecks();
     }
 
     /**
@@ -1562,8 +1517,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAliasChecks(List<AliasCheck> checks)
     {
-        clearAliasChecks();
-        checks.forEach(this::addAliasCheck);
+        _coreContextHandler.setAliasChecks(checks);
     }
 
     /**
@@ -1571,8 +1525,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
-        _aliasChecks.forEach(this::removeBean);
-        _aliasChecks.clear();
+        _coreContextHandler.clearAliasChecks();
     }
 
     /* Handle a request from a connection.
@@ -2347,65 +2300,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (hosts != null && hosts.length > 0)
                 return hosts[0];
             return null;
-        }
-    }
-
-    /**
-     * Interface to check aliases
-     */
-    public interface AliasCheck
-    {
-
-        /**
-         * Check an alias
-         *
-         * @param pathInContext The path the aliased resource was created for
-         * @param resource The aliased resourced
-         * @return True if the resource is OK to be served.
-         */
-        boolean check(String pathInContext, Resource resource);
-    }
-
-    /**
-     * Approve all aliases.
-     * @deprecated use {@link org.eclipse.jetty.server.AllowedResourceAliasChecker} instead.
-     */
-    @Deprecated
-    public static class ApproveAliases implements AliasCheck
-    {
-        public ApproveAliases()
-        {
-            LOG.warn("ApproveAliases is deprecated");
-        }
-
-        @Override
-        public boolean check(String pathInContext, Resource resource)
-        {
-            return true;
-        }
-    }
-
-    /**
-     * Approve Aliases of a non existent directory. If a directory "/foobar/" does not exist, then the resource is aliased to "/foobar". Accept such aliases.
-     */
-    @Deprecated
-    public static class ApproveNonExistentDirectoryAliases implements AliasCheck
-    {
-        @Override
-        public boolean check(String pathInContext, Resource resource)
-        {
-            if (resource.exists())
-                return false;
-
-            String a = resource.getAlias().toString();
-            String r = resource.getURI().toString();
-
-            if (a.length() > r.length())
-                return a.startsWith(r) && a.length() == r.length() + 1 && a.endsWith("/");
-            if (a.length() < r.length())
-                return r.startsWith(a) && r.length() == a.length() + 1 && r.endsWith("/");
-
-            return a.equals(r);
         }
     }
 

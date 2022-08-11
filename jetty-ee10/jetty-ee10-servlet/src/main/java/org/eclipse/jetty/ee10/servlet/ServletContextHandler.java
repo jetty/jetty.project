@@ -149,16 +149,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         DESTROYED
     }
 
-    /**
-     * The type of protected target match
-     * @see #_protectedTargets
-     */
-    protected enum ProtectedTargetType
-    {
-        EXACT,
-        PREFIX
-    }
-
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
@@ -799,23 +789,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (baseResource == null)
             return null;
 
-        try
-        {
-            // addPath with accept non-canonical paths that don't go above the root,
-            // but will treat them as aliases. So unless allowed by an AliasChecker
-            // they will be rejected below.
-            Resource resource = baseResource.resolve(pathInContext);
-
-            if (checkAlias(pathInContext, resource))
-                return resource;
-            return null;
-        }
-        catch (Exception e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-
-        return null;
+        return baseResource.resolve(pathInContext);
     }
 
     /**
