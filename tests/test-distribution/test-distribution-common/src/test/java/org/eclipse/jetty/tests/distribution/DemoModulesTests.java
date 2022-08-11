@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -256,8 +257,9 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @MethodSource("provideEnvironmentsToTest")
-    @Disabled("not yet ready for this")
+    //@MethodSource("provideEnvironmentsToTest")
+    //@Disabled("not yet ready for this")
+    @ValueSource(strings = "ee10")
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
