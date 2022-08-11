@@ -543,7 +543,10 @@ public class StartArgs
                     .collect(Collectors.groupingBy(Files::isDirectory));
                 Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
 
-
+                // FIXMW I'm not sure it's a good idea especially with multiple environment..
+                // ee9 may use jakarta.annotation 2.0.0
+                // but ee10 use jakarta.annotation 2.1.0
+                // and both having different module-info.
                 getEnvironments().stream().filter(environment -> !environment.getName().equals(coreEnvironment.getName()))
                         .forEach(environment ->
                         {
