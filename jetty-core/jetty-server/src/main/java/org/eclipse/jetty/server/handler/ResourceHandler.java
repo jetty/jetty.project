@@ -107,7 +107,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext());
+        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 

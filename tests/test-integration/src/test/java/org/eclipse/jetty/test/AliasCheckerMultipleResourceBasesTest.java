@@ -22,16 +22,16 @@ import java.nio.file.Path;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ public class AliasCheckerMultipleResourceBasesTest
     private Server _server;
     private ServerConnector _connector;
     private HttpClient _client;
-    private ServletContextHandler _context;
+    private ContextHandler _context;
     private Path _webRootPath;
     private Path _altDir1Symlink;
     private Path _altDir2Symlink;
@@ -62,12 +62,12 @@ public class AliasCheckerMultipleResourceBasesTest
         IO.delete(path.toFile());
     }
 
-    private void setAliasCheckers(ContextHandler.AliasCheck... aliasChecks)
+    private void setAliasCheckers(AliasCheck... aliasChecks)
     {
         _context.clearAliasChecks();
         if (aliasChecks != null)
         {
-            for (ContextHandler.AliasCheck aliasCheck : aliasChecks)
+            for (AliasCheck aliasCheck : aliasChecks)
             {
                 _context.addAliasCheck(aliasCheck);
             }
@@ -93,12 +93,10 @@ public class AliasCheckerMultipleResourceBasesTest
         _server = new Server();
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
-        _context = new ServletContextHandler();
+        _context = new ContextHandler();
 
         _context.setContextPath("/");
-        _context.setBaseResource(new PathResource(_webRootPath));
-        _context.setWelcomeFiles(new String[]{"index.html"});
-        _context.getMimeTypes().addMimeMapping("txt", "text/plain;charset=utf-8");
+        _context.setBaseResource(_webRootPath);
         _server.setHandler(_context);
         _context.clearAliasChecks();
 
@@ -116,44 +114,54 @@ public class AliasCheckerMultipleResourceBasesTest
         _server.stop();
     }
 
+    private ResourceHandler newResourceHandler(Path resourceBase)
+    {
+        Resource resource = toResource(resourceBase);
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setBaseResource(resource);
+        return resourceHandler;
+    }
+
+    private Resource toResource(Path path)
+    {
+        return ResourceFactory.root().newResource(path);
+    }
+
     @Test
     public void test() throws Exception
     {
-        ServletHolder servletHolder;
-        servletHolder = _context.addServlet(DefaultServlet.class, "/defaultServlet1/*");
-        servletHolder.setInitParameter("resourceBase", _altDir1Symlink.toString());
-        servletHolder.setInitParameter("pathInfoOnly", "true");
-        servletHolder = _context.addServlet(DefaultServlet.class, "/defaultServlet2/*");
-        servletHolder.setInitParameter("resourceBase", _altDir2Symlink.toString());
-        servletHolder.setInitParameter("pathInfoOnly", "true");
-
-        setAliasCheckers(
-            new SymlinkAllowedResourceAliasChecker(_context, Resource.newResource(_altDir1Symlink)),
-            new SymlinkAllowedResourceAliasChecker(_context, Resource.newResource(_altDir2Symlink))
-        );
-
+        Handler.Collection collection = new Handler.Collection();
+        collection.addHandler(newResourceHandler(_altDir1Symlink));
+        collection.addHandler(newResourceHandler(_altDir2Symlink));
+        _context.setHandler(collection);
         _server.start();
 
-        // Can access file 1 only through default servlet 1.
-        URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/defaultServlet1/file1");
+        // With no alias checkers we cannot access file 1.
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/file1");
         ContentResponse response = _client.GET(uri);
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        // With no alias checkers we cannot access file 2.
+        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/file2");
+        response = _client.GET(uri);
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        // Set alias checkers to allow content under these alternative resource bases.
+        setAliasCheckers(
+            new SymlinkAllowedResourceAliasChecker(_context, toResource(_altDir1Symlink)),
+            new SymlinkAllowedResourceAliasChecker(_context, toResource(_altDir2Symlink))
+        );
+
+        // Now we have set alias checkers we can access file 1.
+        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/file1");
+        response = _client.GET(uri);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("file 1 contents"));
 
-        // File 2 cannot be found with default servlet 1.
-        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/defaultServlet1/file2");
-        response = _client.GET(uri);
-        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-
-        // Can access file 2 only through default servlet 2.
-        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/defaultServlet2/file2");
+        // Now we have set alias checkers we can access file 2.
+        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/file2");
         response = _client.GET(uri);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("file 2 contents"));
-
-        // File 1 cannot be found with default servlet 2.
-        uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/defaultServlet2/file1");
-        response = _client.GET(uri);
-        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 }

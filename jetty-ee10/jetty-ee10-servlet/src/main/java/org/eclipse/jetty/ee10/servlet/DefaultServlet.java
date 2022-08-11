@@ -319,7 +319,7 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext);
+            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getBaseRequest(req));
             if (content == null || !content.getResource().exists())
             {
                 if (included)
@@ -897,20 +897,6 @@ public class DefaultServlet extends HttpServlet
         ServletResourceService(ServletContextHandler servletContextHandler)
         {
             _servletContextHandler = servletContextHandler;
-        }
-
-        @Override
-        public HttpContent getContent(String path) throws IOException
-        {
-            HttpContent httpContent = super.getContent(path);
-
-            if (httpContent != null)
-            {
-                if (!_servletContextHandler.checkAlias(path, httpContent.getResource()))
-                    return null;
-            }
-
-            return httpContent;
         }
 
         @Override

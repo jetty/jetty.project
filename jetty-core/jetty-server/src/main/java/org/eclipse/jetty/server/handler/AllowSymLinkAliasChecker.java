@@ -16,7 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.server.handler.ContextHandler.AliasCheck;
+import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
     }
 
     @Override
-    public boolean check(String pathInContext, Resource resource)
+    public boolean checkAlias(String pathInContext, Resource resource)
     {
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource pathResource))
