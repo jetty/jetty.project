@@ -26,7 +26,7 @@ public class MemoryResourceTest
     @Test
     public void testJettyLogging() throws Exception
     {
-        Resource resource = new MemoryResource(Loader.getResource("jetty-logging.properties"));
+        Resource resource = ResourceFactory.root().newMemoryResource(Loader.getResource("jetty-logging.properties"));
         assertTrue(resource.exists());
         String contents = IO.toString(resource.newInputStream());
         assertThat(contents, startsWith("#org.eclipse.jetty.util.LEVEL=DEBUG"));

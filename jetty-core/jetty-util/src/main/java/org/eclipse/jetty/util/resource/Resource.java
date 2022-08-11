@@ -273,6 +273,8 @@ public abstract class Resource
      */
     public List<String> list() // TODO: should return Path's
     {
+        if (!isDirectory())
+            return null;
         try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
         {
             List<String> entries = new ArrayList<>();

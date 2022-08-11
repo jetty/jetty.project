@@ -48,8 +48,8 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -674,7 +674,7 @@ public class Server extends Handler.Wrapper implements Attributes
         URL url = getClass().getResource(name);
         if (url == null)
             throw new IllegalStateException("Missing server resource: " + name);
-        return new MemoryResource(url);
+        return ResourceFactory.root().newMemoryResource(url);
     }
 
     @Override

@@ -31,17 +31,19 @@ import org.eclipse.jetty.util.IO;
  */
 public class MemoryResource extends Resource
 {
-
     private final URI _uri;
     private final long _created = System.currentTimeMillis();
     private final byte[] _bytes;
 
-    public MemoryResource(URL url)
+    MemoryResource(URL url)
     {
         try
         {
             _uri = Objects.requireNonNull(url).toURI();
-            _bytes = IO.readBytes(url.openStream());
+            try (InputStream in = url.openStream())
+            {
+                _bytes = IO.readBytes(in);
+            }
         }
         catch (IOException | URISyntaxException e)
         {
@@ -52,13 +54,13 @@ public class MemoryResource extends Resource
     @Override
     public Path getPath()
     {
-        return null;
+        return Path.of(_uri);
     }
 
     @Override
     public boolean isContainedIn(Resource r)
     {
-        return false;
+        return getPath().startsWith(r.getPath());
     }
 
     @Override
@@ -70,7 +72,7 @@ public class MemoryResource extends Resource
     @Override
     public String getName()
     {
-        return _uri.getPath();
+        return getPath().toAbsolutePath().toString();
     }
 
     @Override
@@ -95,12 +97,6 @@ public class MemoryResource extends Resource
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         return Channels.newChannel(newInputStream());
-    }
-
-    @Override
-    public Resource resolve(String subUriPath)
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
