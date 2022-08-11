@@ -59,6 +59,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
@@ -72,6 +73,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(Resource... resources)
     {
         if (resources == null || resources.length == 0)
