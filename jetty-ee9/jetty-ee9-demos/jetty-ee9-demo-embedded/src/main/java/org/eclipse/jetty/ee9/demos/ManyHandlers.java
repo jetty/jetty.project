@@ -112,7 +112,7 @@ public class ManyHandlers
         server.setRequestLog(ncsaLog);
 
         // create the handlers list
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
 
         // wrap contexts around specific handlers
         wrapper.setHandler(hello);
@@ -131,6 +131,7 @@ public class ManyHandlers
         handlers.addHandler(gzipHandler);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
+        server.setDumpAfterStart(true);
 
         /* At this point you have the following handler hierarchy.
          *
