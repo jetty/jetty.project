@@ -49,8 +49,6 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
     protected JettyHomeTester jettyHomeTester;
 
-    private static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 20);
-
     @BeforeEach
     public void prepareJettyHomeTester() throws Exception
     {

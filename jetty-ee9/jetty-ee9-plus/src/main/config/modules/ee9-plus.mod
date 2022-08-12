@@ -4,9 +4,6 @@ Enables Servlet 3.1 resource injection.
 [environment]
 ee9
 
-[environment]
-ee9
-
 [depend]
 server
 jndi

@@ -13,35 +13,24 @@
 
 package org.eclipse.jetty.ee9.demos;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 
-public class HelloWorld extends AbstractHandler
+public class HelloWorld extends Handler.Abstract
 {
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException,
-        ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        // Declare response encoding and types
-        response.setContentType("text/html; charset=utf-8");
-
-        // Declare response status code
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        // Write back response
-        response.getWriter().println("<h1>Hello World</h1>");
-
-        // Inform jetty that this request has now been handled
-        baseRequest.setHandled(true);
+        return (req, response, callback) ->
+        {
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.write(true, BufferUtil.toBuffer("<h1>Hello World</h1>"), callback);
+        };
     }
 
     public static void main(String[] args) throws Exception

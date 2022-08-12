@@ -9,7 +9,7 @@ MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for use by all webapplication
 ee8
 
 [depend]
-servlet
+ee8-servlet
 
 [lib]
 lib/jetty-ee8-servlets-${jetty.version}.jar
