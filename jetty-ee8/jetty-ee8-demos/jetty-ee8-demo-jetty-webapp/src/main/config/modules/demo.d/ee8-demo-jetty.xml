@@ -10,7 +10,7 @@ Configure and deploy the test web application
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
   <!--  + contextPath                                                  -->
-  <!--  + war OR resourceBase                                          -->
+  <!--  + war OR baseResource                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/ee8-test</Set>
   <Set name="war"><Property name="jetty.webapps" default="." />/ee8-demo-jetty.war
