@@ -162,12 +162,12 @@ public class JettyClientClassLoaderTest
 
         // Copy over the individual jars required for Javax WebSocket.
         app.createWebInf();
-        app.copyLib(WebSocketPolicy.class, "websocket-jetty-api.jar");
-        app.copyLib(WebSocketClient.class, "websocket-jetty-client.jar");
-        app.copyLib(WebSocketSession.class, "websocket-jetty-common.jar");
+        app.copyLib(WebSocketPolicy.class, "jetty-ee10-websocket-jetty-api.jar");
+        app.copyLib(WebSocketClient.class, "jetty-ee10-websocket-jetty-client.jar");
+        app.copyLib(WebSocketSession.class, "jetty-ee10-websocket-jetty-common.jar");
         app.copyLib(ContainerLifeCycle.class, "jetty-util.jar");
-        app.copyLib(CoreClientUpgradeRequest.class, "websocket-core-client.jar");
-        app.copyLib(WebSocketComponents.class, "websocket-core-common.jar");
+        app.copyLib(CoreClientUpgradeRequest.class, "jetty-websocket-core-client.jar");
+        app.copyLib(WebSocketComponents.class, "jetty-websocket-core-common.jar");
         app.copyLib(Response.class, "jetty-client.jar");
         app.copyLib(ByteBufferPool.class, "jetty-io.jar");
         app.copyLib(BadMessageException.class, "jetty-http.jar");

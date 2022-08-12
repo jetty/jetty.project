@@ -114,22 +114,22 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-http-client-transport</artifactId>
+      <artifactId>jetty-http2-client-transport</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-server</artifactId>
+      <artifactId>jetty-http3-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-http-client-transport</artifactId>
+      <artifactId>jetty-http3-client-transport</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -139,7 +139,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>fcgi-server</artifactId>
+      <artifactId>jetty-fcgi-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

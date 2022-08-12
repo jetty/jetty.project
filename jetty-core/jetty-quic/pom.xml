@@ -8,15 +8,15 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.quic</groupId>
-  <artifactId>quic</artifactId>
+  <artifactId>jetty-quic</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Core :: QUIC</name>
 
   <modules>
-    <module>quic-quiche</module>
-    <module>quic-common</module>
-    <module>quic-server</module>
-    <module>quic-client</module>
+    <module>jetty-quic-quiche</module>
+    <module>jetty-quic-common</module>
+    <module>jetty-quic-server</module>
+    <module>jetty-quic-client</module>
   </modules>
 
 </project>

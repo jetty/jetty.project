@@ -8,16 +8,16 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>http2</artifactId>
+  <artifactId>jetty-http2</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Core :: HTTP2</name>
 
   <modules>
-    <module>http2-client</module>
-    <module>http2-common</module>
-    <module>http2-hpack</module>
-    <module>http2-http-client-transport</module>
-    <module>http2-server</module>
+    <module>jetty-http2-client</module>
+    <module>jetty-http2-common</module>
+    <module>jetty-http2-hpack</module>
+    <module>jetty-http2-client-transport</module>
+    <module>jetty-http2-server</module>
     <module>jetty-http2-tests</module>
   </modules>
 

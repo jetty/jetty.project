@@ -290,7 +290,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
-              <excludeArtifactIds>websocket-core-client,websocket-core-common,websocket-core-server</excludeArtifactIds>
+              <excludeArtifactIds>jetty-websocket-core-client,jetty-websocket-core-common,jetty-websocket-core-server</excludeArtifactIds>
               <excludeGroupIds>org.eclipse.jetty.ee9.demos,org.eclipse.jetty.ee9.websocket</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>

@@ -5,7 +5,7 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-demo-ee10-jetty-embedded</artifactId>
+  <artifactId>jetty-ee10-demo-embedded</artifactId>
   <name>EE10 :: Jetty Demo :: Embedded Jetty</name>
   <description>Embedded Jetty Demos</description>
   <properties>
@@ -59,7 +59,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

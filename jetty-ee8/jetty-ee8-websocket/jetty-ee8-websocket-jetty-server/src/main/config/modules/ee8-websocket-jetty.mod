@@ -13,8 +13,8 @@ websocket
 ee8-annotations
 
 [lib]
-lib/ee8-websocket/websocket-core-common-${jetty.version}.jar
-lib/ee8-websocket/websocket-core-server-${jetty.version}.jar
+lib/ee8-websocket/jetty-websocket-core-common-${jetty.version}.jar
+lib/ee8-websocket/jetty-websocket-core-server-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-servlet-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jetty-common-${jetty.version}.jar

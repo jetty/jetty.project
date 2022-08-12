@@ -12,9 +12,9 @@ client
 ee9-annotations
 
 [lib]
-lib/ee9-websocket/websocket-core-common-${jetty.version}.jar
-lib/ee9-websocket/websocket-core-client-${jetty.version}.jar
-lib/ee9-websocket/websocket-core-server-${jetty.version}.jar
+lib/ee9-websocket/jetty-websocket-core-common-${jetty.version}.jar
+lib/ee9-websocket/jetty-websocket-core-client-${jetty.version}.jar
+lib/ee9-websocket/jetty-websocket-core-server-${jetty.version}.jar
 lib/ee9-websocket/jetty-ee9-websocket-servlet-${jetty.version}.jar
 lib/ee9-websocket/jetty-jakarta-websocket-api-2.0.0.jar
 lib/ee9-websocket/jetty-ee9-websocket-jakarta-client-${jetty.version}.jar

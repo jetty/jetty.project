@@ -36,9 +36,6 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 @SuppressWarnings("unused")
 public class HandlerDocs
 {
-    // TODO this class has been temporarily moved to jetty-core/jetty-demo
-    //      move it back when documentation is re-enabled
-
     public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
