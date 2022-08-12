@@ -16,14 +16,15 @@ package org.eclipse.jetty.ee9.demos;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class OneServletContextWithSession
 {
@@ -48,7 +49,7 @@ public class OneServletContextWithSession
         // simpler to use SessionCacheFactory and/or
         // SessionDataStoreFactory instances set as beans on 
         // the server.
-        SessionCache cache = new DefaultSessionCache(sessions);
+        SessionCache cache = new DefaultSessionCache(sessions.getSessionManager());
         cache.setSessionDataStore(new NullSessionDataStore());
         sessions.setSessionCache(cache);
 
@@ -62,7 +63,7 @@ public class OneServletContextWithSession
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path dir = Paths.get(System.getProperty("user.dir"));
-        PathResource baseResource = new PathResource(dir);
+        Resource baseResource = ResourceFactory.root().newResource(dir);
         Server server = createServer(port, baseResource);
 
         server.start();

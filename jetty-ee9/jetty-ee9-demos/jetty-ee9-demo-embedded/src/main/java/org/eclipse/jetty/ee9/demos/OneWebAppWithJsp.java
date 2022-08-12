@@ -21,7 +21,6 @@ import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class OneWebAppWithJsp
 {
@@ -45,7 +44,7 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("demo-jsp-webapp/target/demo-jsp-webapp-@VER@.war");
+        Path warFile = JettyDemos.find("jetty-ee9-demo-jsp-webapp/target/jetty-ee9-demo-jsp-webapp-@VER@.war");
         webapp.setWarResource(webapp.getResourceFactory().newResource(warFile));
         webapp.setExtractWAR(true);
 
