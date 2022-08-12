@@ -36,7 +36,7 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemos.find("demo-jndi-webapp/target/demo-jndi-webapp-@VER@.war");
+        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war");
         webapp.setWarResource(ResourceFactory.of(webapp).newResource(testJndiWar));
         server.setHandler(webapp);
 
