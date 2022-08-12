@@ -20,8 +20,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * A {@link ContextHandlerCollection} handler may be used to direct a request to
@@ -49,7 +49,7 @@ public class SplitFileServer
         // directory, you needn't use these, you simply need to supply the paths
         // you are looking to serve content from.
         ResourceHandler rh0 = new ResourceHandler();
-        rh0.setDirectoriesListed(false);
+        rh0.setDirAllowed(false);
 
         ContextHandler context0 = new ContextHandler();
         context0.setContextPath("/");
@@ -59,7 +59,7 @@ public class SplitFileServer
         // Rinse and repeat the previous item, only specifying a different
         // resource base.
         ResourceHandler rh1 = new ResourceHandler();
-        rh1.setDirectoriesListed(false);
+        rh1.setDirAllowed(false);
 
         ContextHandler context1 = new ContextHandler();
         context1.setContextPath("/");
@@ -79,8 +79,8 @@ public class SplitFileServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Resource resource0 = new PathResource(Paths.get("src/test/resources/dir0"));
-        Resource resource1 = new PathResource(Paths.get("src/test/resources/dir1"));
+        Resource resource0 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir0"));
+        Resource resource1 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir1"));
 
         Server server = createServer(port, resource0, resource1);
 

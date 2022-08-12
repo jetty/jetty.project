@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- =========================================================== -->
+  <!-- Configure Authentication Login Service                      -->
+  <!-- Realms may be configured for the entire server here, or     -->
+  <!-- they can be configured for a specific web app in a context  -->
+  <!-- configuration (see $(jetty.home)/webapps/test.xml for an    -->
+  <!-- example).                                                   -->
+  <!-- =========================================================== -->
+
+  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call id="realmResource" name="newResource">
+      <Arg><Property name="jetty.demo.realm" default="etc/jetty-ee8-demo-realm.properties" /></Arg>
+    </Call>
+  </Call>
+
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.ee8.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
+        <Set name="hotReload">false</Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <Call class="org.slf4j.LoggerFactory" name="getLogger">
+    <Arg>org.eclipse.jetty</Arg>
+    <Call name="warn">
+      <Arg>demo-realm is deployed. DO NOT USE IN PRODUCTION!</Arg>
+    </Call>
+  </Call>
+</Configure>

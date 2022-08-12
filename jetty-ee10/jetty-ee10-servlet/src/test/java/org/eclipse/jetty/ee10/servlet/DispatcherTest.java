@@ -312,15 +312,19 @@ public class DispatcherTest
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
         _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
 
+        //test include, along with special extension to include that allows headers to
+        //be set during an include
         String responses = _connector.getResponse("""
-            GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.1\r
+            GET /context/IncludeServlet?do=assertinclude&do=more&test=1&headers=true HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
             """);
-
+        
         String expected = """
             HTTP/1.1 200 OK\r
+            specialSetHeader: specialSetHeader\r
+            specialAddHeader: specialAddHeader\r
             Content-Length: 7\r
             Connection: close\r
             \r
@@ -936,13 +940,14 @@ public class DispatcherTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
+            Boolean headers = Boolean.valueOf(request.getParameter("headers"));
 
             if (request.getParameter("do").equals("forward"))
                 dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet/forwardpath?do=assertincludeforward");
             else if (request.getParameter("do").equals("assertforwardinclude"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardIncludeServlet/assertpath?do=end");
             else if (request.getParameter("do").equals("assertinclude"))
-                dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the");
+                dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
             assert dispatcher != null;
             dispatcher.include(request, response);
         }
@@ -1209,7 +1214,7 @@ public class DispatcherTest
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
             assertEquals("/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
             assertNull(request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
-            assertEquals("do=end&do=the", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
+            assertThat((String)request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING), containsString("do=end&do=the"));
             HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
             assertNotNull(incMapping);
             assertEquals("AssertIncludeServlet", incMapping.getMatchValue());
@@ -1221,12 +1226,17 @@ public class DispatcherTest
 
             assertNull(request.getPathInfo());
             assertNull(request.getPathTranslated());
-            assertEquals("do=assertinclude&do=more&test=1", request.getQueryString());
+            assertThat(request.getQueryString(), containsString("do=assertinclude&do=more&test=1"));
             assertEquals("/context/IncludeServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/IncludeServlet", request.getServletPath());
 
             response.setContentType("text/html");
+            if (Boolean.valueOf(request.getParameter("headers")))
+            {
+                response.setHeader("org.eclipse.jetty.server.include.specialSetHeader", "specialSetHeader");
+                response.setHeader("org.eclipse.jetty.server.include.specialAddHeader", "specialAddHeader");
+            }
             response.setStatus(HttpServletResponse.SC_OK);
             response.getOutputStream().print(request.getDispatcherType().toString());
         }

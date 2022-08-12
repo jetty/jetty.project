@@ -314,4 +314,14 @@ public class ResourceHandler extends Handler.Wrapper
     {
         _welcomes = welcomeFiles;
     }
+
+    /**
+     * Utility class to create a ContextHandler containing a ResourceHandler.
+     */
+    public static class ResourceContext extends ContextHandler
+    {
+        {
+            setHandler(new ResourceHandler());
+        }
+    }
 }

@@ -58,7 +58,6 @@ public class ResourceListing
         base = URIUtil.normalizePath(base);
         if (base == null || !resource.isDirectory())
             return null;
-
         Path path = resource.getPath();
         if (path == null) // Should never happen, as new Resource contract is that all Resources are a Path.
             return null;

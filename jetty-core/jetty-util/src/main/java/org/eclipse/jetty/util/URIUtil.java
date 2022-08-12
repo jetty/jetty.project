@@ -1204,6 +1204,20 @@ public final class URIUtil
     }
 
     /**
+     * <p>Check if a path would be normalized within itself. For example,
+     * <code>/foo/../../bar</code> is normalized above its root and would
+     * thus return false, whilst <code>/foo/./bar/..</code> is normal within itself
+     * and would return true.
+     * @param path The path to check
+     * @return True if the normal form of the path is within the root of the path.
+     */
+    public static boolean isNotNormalWithinSelf(String path)
+    {
+        // TODO this can be optimized to avoid allocation.
+        return normalizePath(path) == null;
+    }
+
+    /**
      * <p>Normalize a URI path by factoring out all segments of "." and "..".
      * Null is returned if the path is normalized above its root.
      * </p>
@@ -1759,15 +1773,8 @@ public final class URIUtil
                 {
                     // Simple reference
                     URI refUri = toURI(reference);
-                    // Is this a Java Archive that can be mounted?
-                    URI jarFileUri = toJarFileUri(refUri);
-                    if (jarFileUri != null)
-                        // add as mountable URI
-                        uris.add(jarFileUri);
-                    else
-                        // add as normal URI
-                        uris.add(refUri);
-
+                    // Ensure that a Java Archive that can be mounted
+                    uris.add(toJarFileUri(refUri));
                 }
             }
             catch (Exception e)
@@ -1785,7 +1792,7 @@ public final class URIUtil
      * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
      *
      * @param uri the URI to mutate to a {@code jar:file:...} URI.
-     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or null if not a Java Archive.
+     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or the unchanged URI if not a Java Archive.
      * @see FileID#isArchive(URI)
      */
     public static URI toJarFileUri(URI uri)
@@ -1794,7 +1801,7 @@ public final class URIUtil
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
 
         if (!FileID.isArchive(uri))
-            return null;
+            return uri;
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
 
@@ -1835,11 +1842,9 @@ public final class URIUtil
         Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
-        URI uri = (KNOWN_SCHEMES.getBest(resource) != null)
-            ? URI.create(resource)
+        return (KNOWN_SCHEMES.getBest(resource) != null)
+            ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
-
-        return uri;
     }
 
     /**

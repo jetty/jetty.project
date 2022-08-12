@@ -20,6 +20,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,16 +34,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UriPatternPredicate;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.ResourceUriPatternPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,73 +81,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     public static final List<String> __allScanTypes = Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
-
-    /**
-     * ContainerPathNameMatcher
-     *
-     * Matches names of jars on the container classpath
-     * against a pattern. If no pattern is specified, no
-     * jars match.
-     */
-    public class ContainerPathNameMatcher extends PatternMatcher
-    {
-        protected final WebAppContext _context;
-        protected final String _pattern;
-
-        public ContainerPathNameMatcher(WebAppContext context, String pattern)
-        {
-            if (context == null)
-                throw new IllegalArgumentException("Context null");
-            _context = context;
-            _pattern = pattern;
-        }
-
-        public void match(List<URI> uris) throws Exception
-        {
-            if (uris == null)
-                return;
-            match(_pattern, uris.toArray(new URI[uris.size()]), false);
-        }
-
-        @Override
-        public void matched(URI uri)
-        {
-            _context.getMetaData().addContainerResource(_resourceFactory.newResource(uri));
-        }
-    }
-
-    /**
-     * WebAppPathNameMatcher
-     *
-     * Matches names of jars or dirs on the webapp classpath
-     * against a pattern. If there is no pattern, all jars or dirs
-     * will match.
-     */
-    public class WebAppPathNameMatcher extends PatternMatcher
-    {
-        protected final WebAppContext _context;
-        protected final String _pattern;
-
-        public WebAppPathNameMatcher(WebAppContext context, String pattern)
-        {
-            if (context == null)
-                throw new IllegalArgumentException("Context null");
-            _context = context;
-            _pattern = pattern;
-        }
-
-        public void match(List<URI> uris)
-            throws Exception
-        {
-            match(_pattern, uris.toArray(new URI[uris.size()]), true);
-        }
-
-        @Override
-        public void matched(URI uri)
-        {
-            _context.getMetaData().addWebInfResource(_resourceFactory.newResource(uri));
-        }
-    }
 
     /**
      * If set, to a list of URLs, these resources are added to the context
@@ -202,33 +138,36 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
     {
         String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}={}", CONTAINER_JAR_PATTERN, pattern);
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
-        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, pattern);
+        UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
+        Consumer<URI> addContainerResource = (uri) ->
+        {
+            Resource resource = _resourceFactory.newResource(uri);
+            context.getMetaData().addContainerResource(resource);
+        };
+
         List<URI> containerUris = getAllContainerJars(context);
-
         if (LOG.isDebugEnabled())
-            LOG.debug("Matching container urls {}", containerUris);
-        containerPathNameMatcher.match(containerUris);
+            LOG.debug("All container urls {}", containerUris);
+        containerUris.stream()
+            .filter(uriPatternPredicate)
+            .forEach(addContainerResource);
 
-        // When running on jvm 9 or above, we we won't be able to look at the application
+        // When running on jvm 9 or above, we won't be able to look at the application
         // classloader to extract urls, so we need to examine the classpath instead.
         String classPath = System.getProperty("java.class.path");
         if (classPath != null)
         {
-            List<URI> cpUris = new ArrayList<>();
-            String[] entries = classPath.split(File.pathSeparator);
-            for (String entry : entries)
-            {
-                File f = new File(entry);
-                cpUris.add(f.toURI());
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Matching java.class.path {}", cpUris);
-            containerPathNameMatcher.match(cpUris);
+            Stream.of(classPath.split(File.pathSeparator))
+                .map(URIUtil::toURI)
+                .filter(uriPatternPredicate)
+                .forEach(addContainerResource);
         }
 
         // We also need to examine the module path.
@@ -238,30 +177,31 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String modulePath = System.getProperty("jdk.module.path");
         if (modulePath != null)
         {
-            List<URI> moduleUris = new ArrayList<>();
-            String[] entries = modulePath.split(File.pathSeparator);
-            for (String entry : entries)
+            List<Path> matchingBasePaths =
+            Stream.of(modulePath.split(File.pathSeparator))
+                .map(URIUtil::toURI)
+                .filter(uriPatternPredicate)
+                .map(Paths::get)
+                .toList();
+            for (Path path: matchingBasePaths)
             {
-                File file = new File(entry);
-                if (file.isDirectory())
+                if (Files.isDirectory(path))
                 {
-                    File[] files = file.listFiles();
-                    if (files != null)
+                    try (Stream<Path> listing = Files.list(path))
                     {
-                        for (File f : files)
+                        for (Path listEntry: listing.toList())
                         {
-                            moduleUris.add(f.toURI());
+                            Resource resource = _resourceFactory.newResource(listEntry);
+                            context.getMetaData().addContainerResource(resource);
                         }
                     }
                 }
                 else
                 {
-                    moduleUris.add(file.toURI());
+                    Resource resource = _resourceFactory.newResource(path);
+                    context.getMetaData().addContainerResource(resource);
                 }
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Matching jdk.module.path {}", moduleUris);
-            containerPathNameMatcher.match(moduleUris);
         }
 
         if (LOG.isDebugEnabled())
@@ -283,19 +223,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         //Apply filter to WEB-INF/lib jars
-        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, (String)context.getAttribute(WEBINF_JAR_PATTERN));
+        String pattern = (String)context.getAttribute(WEBINF_JAR_PATTERN);
+        ResourceUriPatternPredicate webinfPredicate = new ResourceUriPatternPredicate(pattern, true);
 
         List<Resource> jars = findJars(context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("webapp {}={} jars {}", WEBINF_JAR_PATTERN, pattern, jars);
 
-        //Convert to uris for matching
+        // Only add matching Resources to metadata.webInfResources
         if (jars != null)
         {
-            List<URI> uris = new ArrayList<>();
-            for (Resource r : jars)
-            {
-                uris.add(r.getURI());
-            }
-            matcher.match(uris);
+            jars.stream()
+                .filter(webinfPredicate)
+                .forEach(resource -> context.getMetaData().addWebInfResource(resource));
         }
     }
 

@@ -147,28 +147,15 @@ public interface Response extends Content.Sink
                 CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
                 HttpCookie oldCookie;
                 if (field instanceof HttpCookie.SetCookieHttpField)
-                    oldCookie = ((HttpCookie.SetCookieHttpField)field).getHttpCookie();
+                {
+                    if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                        continue;
+                }
                 else
-                    oldCookie = new HttpCookie(field.getValue());
-
-                if (!cookie.getName().equals(oldCookie.getName()))
-                    continue;
-
-                if (cookie.getDomain() == null)
                 {
-                    if (oldCookie.getDomain() != null)
+                    if (!HttpCookie.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
-                else if (!cookie.getDomain().equalsIgnoreCase(oldCookie.getDomain()))
-                    continue;
-
-                if (cookie.getPath() == null)
-                {
-                    if (oldCookie.getPath() != null)
-                        continue;
-                }
-                else if (!cookie.getPath().equals(oldCookie.getPath()))
-                    continue;
 
                 i.set(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()), compliance));
                 return;
@@ -212,9 +199,11 @@ public interface Response extends Content.Sink
         Logger logger = LoggerFactory.getLogger(Response.class);
 
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
-        if (!logger.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
-            logger.warn("writeError: status={}, message={}, cause={}", status, message, cause.getMessage());
-        else
+        if (logger.isDebugEnabled())
+            logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
+        else if (cause instanceof BadMessageException || cause instanceof QuietException)
+            logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
+        else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);
 
         if (response.isCommitted())

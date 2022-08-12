@@ -16,15 +16,21 @@ package org.eclipse.jetty.xml;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 import java.util.StringTokenizer;
+import javax.xml.catalog.Catalog;
+import javax.xml.catalog.CatalogFeatures;
+import javax.xml.catalog.CatalogManager;
+import javax.xml.catalog.CatalogResolver;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -34,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -52,63 +59,44 @@ public class XmlParser
     private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
     private final AutoLock _lock = new AutoLock();
-    private Map<String, URL> _redirectMap = new HashMap<String, URL>();
     private SAXParser _parser;
     private Map<String, ContentHandler> _observerMap;
     private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
+    private List<EntityResolver> _entityResolvers = new ArrayList<>();
 
     /**
-     * Construct
+     * Construct XmlParser
      */
     public XmlParser()
+    {
+        this(getValidatingDefault());
+    }
+
+    /**
+     * Construct XmlParser
+     *
+     * @param validating true to enable validation, false to disable
+     * @see SAXParserFactory#setValidating(boolean)
+     */
+    public XmlParser(boolean validating)
+    {
+        setValidating(validating);
+
+        URL url = XmlParser.class.getResource("catalog-org.w3.xml");
+        if (url == null)
+            throw new IllegalStateException("Catalog not found: catalog-org.w3.xml");
+        addCatalog(URI.create(url.toExternalForm()));
+    }
+
+    private static boolean getValidatingDefault()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
-        boolean validating = Boolean.valueOf(validatingProp).booleanValue();
-        setValidating(validating);
-
-        initDefaultEntities();
-    }
-
-    public XmlParser(boolean validating)
-    {
-        setValidating(validating);
-        initDefaultEntities();
-    }
-
-    /**
-     * Initialize common XML Entities needed for generic XML parsing needs.
-     */
-    private void initDefaultEntities()
-    {
-        final URL schemadtd = getRequiredResource("XMLSchema.dtd");
-        redirectEntity("XMLSchema.dtd", schemadtd);
-        redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN", schemadtd);
-        redirectEntity("http://www.w3.org/2001/XMLSchema.dtd", schemadtd);
-        redirectEntity("https://www.w3.org/2001/XMLSchema.dtd", schemadtd);
-
-        final URL xmlxsd = getRequiredResource("xml.xsd");
-        redirectEntity("xml.xsd", xmlxsd);
-        redirectEntity("http://www.w3.org/2001/xml.xsd", xmlxsd);
-        redirectEntity("https://www.w3.org/2001/xml.xsd", xmlxsd);
-
-        final URL datatypesdtd = getRequiredResource("datatypes.dtd");
-        redirectEntity("datatypes.dtd", datatypesdtd);
-        redirectEntity("http://www.w3.org/2001/datatypes.dtd", datatypesdtd);
-        redirectEntity("https://www.w3.org/2001/datatypes.dtd", datatypesdtd);
-    }
-
-    private URL getRequiredResource(String name)
-    {
-        // using Class.getResource(String) here to satisfy JPMS rules
-        URL url = XmlParser.class.getResource(name);
-        if (url == null)
-            throw new IllegalStateException("Missing required resource: " + name);
-        return url;
+        return Boolean.parseBoolean(validatingProp);
     }
 
     AutoLock lock()
@@ -162,15 +150,36 @@ public class XmlParser
         return _parser.isValidating();
     }
 
-    public void redirectEntity(String name, URL entity)
+    /**
+     * Load the specified URI as a catalog for entity mapping purposes.
+     *
+     * <p>
+     *   This is a temporary Catalog implementation, and should be removed once
+     *   all of our usages of {@code servlet-api-<ver>.jar} have their own
+     *   {@code catalog.xml} files.
+     * </p>
+     *
+     * @param catalogXml the URI pointing to the XML catalog
+     * @param baseClassLocation the base class to use for finding relative resources defined in the Catalog XML.
+     * This is resolved to the Class location with package location and is used as the XML Catalog Base URI.
+     */
+    public void addCatalog(URI catalogXml, Class<?> baseClassLocation) throws IOException
     {
-        if (entity != null)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                _redirectMap.put(name, entity);
-            }
-        }
+        BaseClassCatalog catalog = BaseClassCatalog.load(catalogXml, baseClassLocation);
+        _entityResolvers.add(catalog);
+    }
+
+    /**
+     * Load the specified URI as a catalog for entity mapping purposes.
+     *
+     * @param catalogXml the uri to the catalog
+     */
+    public void addCatalog(URI catalogXml)
+    {
+        CatalogFeatures f = CatalogFeatures.builder().with(CatalogFeatures.Feature.RESOLVE, "continue").build();
+        Catalog catalog = CatalogManager.catalog(f, catalogXml);
+        CatalogResolver catalogResolver = CatalogManager.catalogResolver(catalog);
+        _entityResolvers.add(catalogResolver);
     }
 
     /**
@@ -284,44 +293,22 @@ public class XmlParser
         return parse(new InputSource(in));
     }
 
-    protected InputSource resolveEntity(String pid, String sid)
+    private InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resolveEntity({},{})", pid, sid);
 
-        if (sid != null && sid.endsWith(".dtd"))
-            _dtd = sid;
-
-        URL entity = null;
-        if (pid != null)
-            entity = (URL)_redirectMap.get(pid);
-        if (entity == null)
-            entity = (URL)_redirectMap.get(sid);
-        if (entity == null)
-        {
-            String dtd = sid;
-            if (dtd.lastIndexOf('/') >= 0)
-                dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
-            entity = (URL)_redirectMap.get(dtd);
-        }
-
-        if (entity != null)
+        for (EntityResolver entityResolver : _entityResolvers)
         {
             try
             {
-                InputStream in = entity.openStream();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
-                InputSource is = new InputSource(in);
-                is.setSystemId(sid);
-                return is;
+                InputSource src = entityResolver.resolveEntity(pid, sid);
+                if (src != null)
+                    return src;
             }
-            catch (IOException e)
+            catch (IOException | SAXException e)
             {
-                LOG.trace("IGNORED", e);
+                LOG.trace("IGNORE EntityResolver exception for (pid=%s, sid=%s)".formatted(pid, sid), e);
             }
         }
         return null;

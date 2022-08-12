@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app 
-   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
    metadata-complete="false"
-   version="3.1"> 
+   version="6.0">
 
   <!-- ===================================================================== -->
   <!-- This file contains the default descriptor for web applications.       -->
@@ -28,14 +28,6 @@
     Default web.xml file.  
     This file is applied to a Web application before its own WEB_INF/web.xml file
   </description>
-
-  <!-- ==================================================================== -->
-  <!-- Removes static references to beans from javax.el.BeanELResolver to   -->
-  <!-- ensure webapp classloader can be released on undeploy                -->
-  <!-- ==================================================================== -->
-  <listener>
-   <listener-class>org.eclipse.jetty.ee10.servlet.listener.ELContextCleaner</listener-class>
-  </listener>
   
   <!-- ==================================================================== -->
   <!-- Removes static cache of Methods from java.beans.Introspector to      -->

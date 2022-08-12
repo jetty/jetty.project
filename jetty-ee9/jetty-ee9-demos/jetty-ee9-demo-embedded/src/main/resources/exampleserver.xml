@@ -22,14 +22,15 @@
       <Arg>org.eclipse.jetty.ee9.demos.HelloServlet</Arg>
       <Arg>/</Arg>
     </Call>
+    <Get id="coreContextHandler" name="coreContextHandler"/>
   </New>
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.server.handler.HandlerList">
+    <New class="org.eclipse.jetty.server.Handler$Collection">
       <Set name="handlers">
         <Array type="org.eclipse.jetty.server.Handler">
           <Item>
-            <Ref refid="context" />
+            <Ref refid="coreContextHandler"/>
           </Item>
           <Item>
             <New class="org.eclipse.jetty.server.handler.DefaultHandler" />
@@ -38,4 +39,5 @@
       </Set>
     </New>
   </Set>
+
 </Configure>

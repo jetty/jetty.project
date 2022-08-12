@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -34,18 +32,18 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 {
     private final String _protocol;
     private final List<String> _protocols;
-    private int _inputbufferSize = 8192;
+    private int _inputBufferSize = 8192;
 
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol = protocol;
-        _protocols = Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+        _protocols = List.of(protocol);
     }
 
     protected AbstractConnectionFactory(String... protocols)
     {
         _protocol = protocols[0];
-        _protocols = Collections.unmodifiableList(Arrays.asList(protocols));
+        _protocols = List.of(protocols);
     }
 
     @Override
@@ -64,12 +62,12 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @ManagedAttribute("The buffer size used to read from the network")
     public int getInputBufferSize()
     {
-        return _inputbufferSize;
+        return _inputBufferSize;
     }
 
     public void setInputBufferSize(int size)
     {
-        _inputbufferSize = size;
+        _inputBufferSize = size;
     }
 
     protected String findNextProtocol(Connector connector)

@@ -15,16 +15,19 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,10 +40,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
-    //TODO needs ee9-demo.mod
+
+    private static Stream<Arguments> provideEnvironmentsToTest()
+    {
+        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10");
+        return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
+    }
+
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testDemoAddServerClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -83,10 +91,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO needs ee9-demo.mod
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testJspDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -105,6 +111,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             "--add-modules=http," + toEnvironment("demo", env)
         };
 
+        String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
+
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
@@ -121,7 +129,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/ee10-demo-jsp/dump.jsp");
+                ContentResponse response = client.GET(baseURI + "/dump.jsp");
+
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
@@ -129,11 +138,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO needs ee9-demo.mod
-    @Tag("external")
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -152,9 +158,11 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             "--add-modules=http," + toEnvironment("demo", env)
         };
 
+        String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);
+
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -165,34 +173,32 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response;
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testSerial?items=kayak");
+                response = client.GET(baseURI + "/testSerial?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testSerial?items=mouse,beer,gnome");
+                response = client.GET(baseURI + "/testSerial?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: mouse,beer,gnome"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testAsync?items=kayak");
+                response = client.GET(baseURI + "/testAsync?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/ee10-demo-async-rest/testAsync?items=mouse,beer,gnome");
+                response = client.GET(baseURI + "/testAsync?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: mouse,beer,gnome"));
             }
         }
     }
 
-    //TODO needs ee9-demo module
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSpec(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -228,30 +234,32 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
 
+                String baseURI = "http://localhost:%d/%s-test-spec".formatted(httpPort, env);
+
                 //test the async listener
-                ContentResponse response = client.POST("http://localhost:" + httpPort + "/test-spec/asy/xx").send();
+                ContentResponse response = client.POST(baseURI + "/asy/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
                 //test the servlet 3.1/4 features
-                response = client.POST("http://localhost:" + httpPort + "/test-spec/test/xx").send();
+                response = client.POST(baseURI + "/test/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
                 //test dynamic jsp
-                response = client.POST("http://localhost:" + httpPort + "/test-spec/dynamicjsp/xx").send();
+                response = client.POST(baseURI + "/dynamicjsp/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
             }
         }
     }
 
-    @Disabled //TODO needs DefaultServlet and ee9-demo
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    //@MethodSource("provideEnvironmentsToTest")
+    @Disabled("not yet ready for this")
+    @ValueSource(strings = "ee10")
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -268,20 +276,21 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
             int httpsPort = distribution.freePort();
             String[] argsStart = {
                 "--jpms",
+                "--debug",
                 "jetty.http.port=" + httpPort,
                 "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
@@ -293,10 +302,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    //TODO: no ee9-demo module
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSessionDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -313,7 +320,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
@@ -325,17 +332,19 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
                 startHttpClient();
                 client.setFollowRedirects(true);
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/session/");
+                ContentResponse response = client.GET(baseURI + "/session/");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
 
                 // Submit "New Session"
                 Fields form = new Fields();
                 form.add("Action", "New Session");
-                response = client.POST("http://localhost:" + httpPort + "/test/session/")
+                response = client.POST(baseURI + "/session/")
                     .body(new FormRequestContent(form))
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));

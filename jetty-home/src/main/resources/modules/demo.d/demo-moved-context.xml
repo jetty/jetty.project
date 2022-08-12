@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- Simple handler to redirect from old path to new -->
+<Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
+  <Set name="contextPath">/oldContextPath</Set>
+  <Set name="newContextURL">/ee10-test/dump/moved</Set>
+  <Set name="permanent">false</Set>
+  <Set name="discardPathInfo">false</Set>
+  <Set name="discardQuery">false</Set>
+  <Set name="expires">-1</Set>
+</Configure>

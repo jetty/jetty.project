@@ -19,10 +19,13 @@ import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 
-public class HelloHandler extends AbstractHandler
+public class HelloHandler extends Handler.Abstract
 {
     final String greeting;
     final String body;
@@ -44,23 +47,20 @@ public class HelloHandler extends AbstractHandler
     }
 
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException,
-        ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        response.setContentType("text/html; charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        PrintWriter out = response.getWriter();
-
-        out.println("<h1>" + greeting + "</h1>");
-        if (body != null)
+        return (req, response, callback) ->
         {
-            out.println(body);
-        }
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
 
-        baseRequest.setHandled(true);
+            response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"), callback);
+            if (body != null)
+            {
+                response.write(true, BufferUtil.toBuffer(body), callback);
+            }
+
+        };
+
     }
 }

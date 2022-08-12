@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -1733,8 +1734,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     protected void addRoles(String... roleNames)
     {
-        /*
-        TODO: implement security.
         //Get a reference to the SecurityHandler, which must be ConstraintAware
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
@@ -1745,7 +1744,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             union.addAll(Arrays.asList(roleNames));
             ((ConstraintSecurityHandler)_securityHandler).setRoles(union);
         }
-         */
     }
 
     /**
@@ -2593,9 +2591,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-            
             if (_sessionHandler != null)
                 return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
@@ -2604,9 +2599,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-            
             if (_sessionHandler != null)
                 return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
@@ -2698,9 +2690,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!isStarting())
                 throw new IllegalStateException();
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
+            
             int timeout = -1;
             if (_sessionHandler != null)
             {
@@ -3259,9 +3249,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public ClassLoader getClassLoader()
         {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
             // no security manager just return the classloader
             ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
             if (!isUsingSecurityManager())

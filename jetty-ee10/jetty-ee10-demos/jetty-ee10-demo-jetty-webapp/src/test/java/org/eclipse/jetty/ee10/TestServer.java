@@ -96,7 +96,7 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        Path realmPropPath = webappProjectRoot.resolve("src/test/resources/test-realm.properties");
+        Path realmPropPath = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/test/resources/test-realm.properties");
         if (!Files.exists(realmPropPath))
             throw new FileNotFoundException(realmPropPath.toString());
         Resource realmResource = ResourceFactory.of(server).newResource(realmPropPath);
@@ -112,7 +112,7 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        Path webappBase = webappProjectRoot.resolve("src/main/webapp");
+        Path webappBase = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/main/webapp");
         if (!Files.exists(webappBase))
             throw new FileNotFoundException(webappBase.toString());
         webapp.setBaseResource(ResourceFactory.of(server).newResource(webappBase));
@@ -132,7 +132,7 @@ public class TestServer
         contexts.addHandler(webapp);
 
         ContextHandler srcroot = new ContextHandler();
-        Path srcRootPath = webappProjectRoot.resolve("src");
+        Path srcRootPath = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src");
         if (!Files.exists(srcRootPath))
             throw new FileNotFoundException(srcRootPath.toString());
         srcroot.setBaseResource(ResourceFactory.of(server).newResource(srcRootPath));
