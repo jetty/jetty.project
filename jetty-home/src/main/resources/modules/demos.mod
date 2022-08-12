@@ -15,7 +15,7 @@ https
 http2
 test-keystore
 work
-core-demo
-#ee8-demo
-ee9-demo
-ee10-demo
+core-demos
+#ee8-demos
+ee9-demos
+ee10-demos
