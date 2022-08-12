@@ -229,8 +229,8 @@
         </dependency>
         <dependency>
           <groupId>org.glassfish.web</groupId>
-          <artifactId>jstl-impl</artifactId>
-          <version>1.2</version>
+          <artifactId>javax.servlet.jsp.jstl</artifactId>
+          <version>1.2.5</version>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.toolchain</groupId>
