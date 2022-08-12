@@ -83,7 +83,6 @@ public class DefaultServlet extends HttpServlet
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
     private Resource _stylesheet;
-    private Resource _favicon;
     private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
@@ -120,32 +119,6 @@ public class DefaultServlet extends HttpServlet
                 LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
         }
 
-        String favicon = getInitParameter("favicon");
-        try
-        {
-            if (favicon != null)
-            {
-                _favicon = _resourceFactory.newResource(favicon);
-                if (!_favicon.exists())
-                {
-                    LOG.warn("Favicon {} does not exist", favicon);
-                    _favicon = null;
-                }
-            }
-            if (_favicon == null)
-            {
-                _favicon = servletContextHandler.getServer().getDefaultFavicon();
-            }
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Unable to use favicon: {}", favicon, e);
-            else
-                LOG.warn("Unable to use favicon: {} - {}", favicon, e.toString());
-        }
-
-
         _baseResource = servletContextHandler.getResourceBase();
         String rb = getInitParameter("resourceBase");
         if (rb != null)
@@ -161,7 +134,7 @@ public class DefaultServlet extends HttpServlet
                 throw new UnavailableException(e.toString());
             }
         }
-        _baseResource = Resource.combine(List.of(_baseResource, _stylesheet, _favicon));
+        _baseResource = Resource.combine(List.of(_baseResource, _stylesheet));
 
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
