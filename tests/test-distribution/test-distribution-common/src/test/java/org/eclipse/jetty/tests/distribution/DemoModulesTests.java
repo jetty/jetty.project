@@ -40,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
-
     private static Stream<Arguments> provideEnvironmentsToTest()
     {
         String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10");
@@ -64,7 +63,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -108,7 +107,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
@@ -155,7 +154,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);
@@ -214,7 +213,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -315,7 +314,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
