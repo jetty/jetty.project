@@ -51,24 +51,16 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     private final Callback requester;
     private final Pool<Connection> pool;
     private boolean maximizeConnections;
-    private volatile long maxDurationNanos = 0L;
+    private volatile long maxDurationNanos;
+    private volatile int maxUsage;
+    private volatile int initialMaxMultiplex;
 
-    protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
-    {
-        this(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester);
-    }
-
-    protected AbstractConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester)
-    {
-        this(destination, new Pool<>(strategy, maxConnections, cache), requester);
-    }
-
-    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
+    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester, int initialMaxMultiplex)
     {
         this.destination = destination;
         this.requester = requester;
         this.pool = pool;
-        pool.setMaxMultiplex(1); // Force the use of multiplexing.
+        this.initialMaxMultiplex = initialMaxMultiplex;
         addBean(pool);
     }
 
@@ -121,24 +113,25 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         this.maxDurationNanos = TimeUnit.MILLISECONDS.toNanos(maxDurationInMs);
     }
 
-    protected int getMaxMultiplex()
+    protected int getInitialMaxMultiplex()
     {
-        return pool.getMaxMultiplex();
+        return initialMaxMultiplex;
     }
 
-    protected void setMaxMultiplex(int maxMultiplex)
+    protected void setInitialMaxMultiplex(int initialMaxMultiplex)
     {
-        pool.setMaxMultiplex(maxMultiplex);
+        this.initialMaxMultiplex = initialMaxMultiplex;
     }
 
-    protected int getMaxUsageCount()
+    @ManagedAttribute(value = "The maximum amount of times a connection is used before it gets closed")
+    public int getMaxUsage()
     {
-        return pool.getMaxUsageCount();
+        return maxUsage;
     }
 
-    protected void setMaxUsageCount(int maxUsageCount)
+    public void setMaxUsage(int maxUsage)
     {
-        pool.setMaxUsageCount(maxUsageCount);
+        this.maxUsage = maxUsage;
     }
 
     @ManagedAttribute(value = "The number of active connections", readonly = true)
@@ -235,7 +228,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * <p>Whether a new connection is created is determined by the {@code create} parameter
      * and a count of demand and supply, where the demand is derived from the number of
      * queued requests, and the supply is the number of pending connections time the
-     * {@link #getMaxMultiplex()} factor: if the demand is less than the supply, the
+     * {@link #getInitialMaxMultiplex()} factor: if the demand is less than the supply, the
      * connection will not be created.</p>
      * <p>Since the number of queued requests used to derive the demand may be a stale
      * value, it is possible that few more connections than strictly necessary may be
@@ -250,7 +243,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
 
         // If we have already pending sufficient multiplexed connections, then do not create another.
-        int multiplexed = getMaxMultiplex();
+        int multiplexed = getInitialMaxMultiplex();
         while (true)
         {
             int pending = this.pending.get();
@@ -288,14 +281,13 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean accept(Connection connection)
     {
-        if (!(connection instanceof Attachable))
+        if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Pool<Connection>.Entry entry = pool.reserve();
         if (entry == null)
             return false;
         if (LOG.isDebugEnabled())
             LOG.debug("onCreating {} {}", entry, connection);
-        Attachable attachable = (Attachable)connection;
         attachable.setAttachment(new EntryHolder(entry));
         onCreated(connection);
         entry.enable(connection, false);
@@ -327,9 +319,27 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                         if (canClose)
                             IO.close(connection);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection removed{} due to expiration {} {}", (canClose ? " and closed" : ""), entry, pool);
+                            LOG.debug("Connection removed{}: expired {} {}", (canClose ? " and closed" : ""), entry, pool);
                         continue;
                     }
+                }
+
+                int maxUsage = getMaxUsage();
+                if (connection instanceof MaxUsable maxUsable)
+                    maxUsage = maxUsable.getMaxUsage();
+                if (maxUsage > 0)
+                {
+                    EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
+                    if (!holder.use(maxUsage))
+                    {
+                        boolean canClose = remove(connection);
+                        if (canClose)
+                            IO.close(connection);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection removed{}: over used {} {}", (canClose ? " and closed" : ""), entry, pool);
+                        continue;
+                    }
+                    // Entry is now used, so it must be acquired.
                 }
 
                 if (LOG.isDebugEnabled())
@@ -344,9 +354,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean isActive(Connection connection)
     {
-        if (!(connection instanceof Attachable))
+        if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Attachable attachable = (Attachable)connection;
         EntryHolder holder = (EntryHolder)attachable.getAttachment();
         if (holder == null)
             return false;
@@ -364,9 +373,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected boolean deactivate(Connection connection)
     {
-        if (!(connection instanceof Attachable))
+        if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Attachable attachable = (Attachable)connection;
         EntryHolder holder = (EntryHolder)attachable.getAttachment();
         if (holder == null)
             return true;
@@ -377,28 +385,33 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             // Remove instead of release if the connection expired.
             return !remove(connection);
         }
-        else
+
+        int maxUsage = getMaxUsage();
+        if (connection instanceof MaxUsable maxUsable)
+            maxUsage = maxUsable.getMaxUsage();
+        if (maxUsage > 0 && holder.isOverUsed(maxUsage))
         {
-            // Release if the connection has not expired, then remove if not reusable.
-            boolean reusable = pool.release(holder.entry);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
-            if (reusable)
-                return true;
+            // Remove instead of release if the connection is overused.
             return !remove(connection);
         }
+
+        boolean reusable = holder.entry.release();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
+        if (reusable)
+            return true;
+        return !remove(connection);
     }
 
     @Override
     public boolean remove(Connection connection)
     {
-        if (!(connection instanceof Attachable))
+        if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Attachable attachable = (Attachable)connection;
         EntryHolder holder = (EntryHolder)attachable.getAttachment();
         if (holder == null)
             return false;
-        boolean removed = pool.remove(holder.entry);
+        boolean removed = holder.entry.remove();
         if (removed)
             attachable.setAttachment(null);
         if (LOG.isDebugEnabled())
@@ -409,12 +422,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             removed(connection);
         }
         return removed;
-    }
-
-    @Deprecated
-    protected boolean remove(Connection connection, boolean force)
-    {
-        return remove(connection);
     }
 
     protected void onCreated(Connection connection)
@@ -575,7 +582,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     private static class EntryHolder
     {
         private final Pool<Connection>.Entry entry;
-        private final long creationTimestamp = System.nanoTime();
+        private final long creationNanos = System.nanoTime();
+        private final AtomicInteger usage = new AtomicInteger();
 
         private EntryHolder(Pool<Connection>.Entry entry)
         {
@@ -584,7 +592,24 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
         private boolean isExpired(long timeoutNanos)
         {
-            return System.nanoTime() - creationTimestamp >= timeoutNanos;
+            return System.nanoTime() - creationNanos >= timeoutNanos;
+        }
+
+        private boolean use(int maxUsage)
+        {
+            while (true)
+            {
+                int current = usage.get();
+                if (current >= maxUsage)
+                    return false;
+                if (usage.compareAndSet(current, current + 1))
+                    return true;
+            }
+        }
+
+        public boolean isOverUsed(int maxUsage)
+        {
+            return usage.get() >= maxUsage;
         }
     }
 }

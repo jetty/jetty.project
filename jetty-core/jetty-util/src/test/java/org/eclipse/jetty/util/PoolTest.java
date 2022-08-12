@@ -14,13 +14,13 @@
 package org.eclipse.jetty.util;
 
 import java.io.Closeable;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import java.util.function.ToIntFunction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,50 +44,55 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PoolTest
 {
-    interface Factory
+    private static class Pooled implements Closeable
     {
-        Pool<CloseableHolder> getPool(int maxSize);
-    }
-
-    private static class CloseableHolder implements Closeable
-    {
-        private boolean closed;
         private final String value;
+        private boolean closed;
 
-        public CloseableHolder(String value)
+        private Pooled(String value)
         {
             this.value = value;
         }
 
         @Override
-        public void close()
+        public void close() throws IOException
         {
             closed = true;
         }
     }
 
-    public static Stream<Object[]> strategy()
+    interface Factory
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{(Factory)s -> new Pool<>(FIRST, s)});
-        data.add(new Object[]{(Factory)s -> new Pool<>(RANDOM, s)});
-        data.add(new Object[]{(Factory)s -> new Pool<>(FIRST, s, true)});
-        data.add(new Object[]{(Factory)s -> new Pool<>(ROUND_ROBIN, s)});
-        return data.stream();
+        default Pool<Pooled> newPool(int maxEntries)
+        {
+            return newPool(maxEntries, pooled -> 1);
+        }
+
+        Pool<Pooled> newPool(int maxEntries, ToIntFunction<Pooled> maxMultiplex);
+    }
+
+    public static List<Factory> factories()
+    {
+        return List.of(
+            (maxEntries, maxMultiplex) -> new Pool<>(FIRST, maxEntries, false, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new Pool<>(FIRST, maxEntries, true, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new Pool<>(RANDOM, maxEntries, false, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new Pool<>(ROUND_ROBIN, maxEntries, false, maxMultiplex)
+        );
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testAcquireRelease(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1);
+        pool.reserve().enable(new Pooled("aaa"), false);
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
+        Pool<Pooled>.Entry e1 = pool.acquire();
         assertThat(e1.getPooled().value, equalTo("aaa"));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
@@ -96,63 +101,63 @@ public class PoolTest
 
         assertNull(pool.acquire());
 
-        e1.release();
+        assertThat(e1.release(), is(true));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
-        assertThrows(IllegalStateException.class, e1::release);
+        assertThat(e1.release(), is(false));
 
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
+        Pool<Pooled>.Entry e2 = pool.acquire();
         assertThat(e2.getPooled().value, equalTo("aaa"));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
 
-        pool.release(e2);
+        assertThat(e2.release(), is(true));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
-        assertThrows(IllegalStateException.class, () -> pool.release(e2));
+        assertThat(e2.release(), is(false));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testRemoveBeforeRelease(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.remove(e1), is(true));
-        assertThat(pool.remove(e1), is(false));
-        assertThat(pool.release(e1), is(false));
+        Pool<Pooled>.Entry e1 = pool.acquire();
+        assertThat(e1.remove(), is(true));
+        assertThat(e1.remove(), is(false));
+        assertThat(e1.release(), is(false));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testCloseBeforeRelease(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
+        Pool<Pooled>.Entry e1 = pool.acquire();
         assertThat(pool.size(), is(1));
         pool.close();
         assertThat(pool.size(), is(0));
-        assertThat(pool.release(e1), is(false));
+        assertThat(e1.release(), is(false));
         assertThat(e1.getPooled().closed, is(true));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testMaxPoolSize(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
+        Pool<Pooled> pool = factory.newPool(1);
         assertThat(pool.size(), is(0));
         assertThat(pool.reserve(), notNullValue());
         assertThat(pool.size(), is(1));
@@ -161,28 +166,27 @@ public class PoolTest
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testReserve(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
-        pool.setMaxMultiplex(2);
+        Pool<Pooled> pool = factory.newPool(2, pooled -> 2);
 
         // Reserve an entry
-        Pool<CloseableHolder>.Entry e1 = pool.reserve();
+        Pool<Pooled>.Entry e1 = pool.reserve();
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
 
         // enable the entry
-        e1.enable(new CloseableHolder("aaa"), false);
+        e1.enable(new Pooled("aaa"), false);
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
-        Pool<CloseableHolder>.Entry e2 = pool.reserve();
+        Pool<Pooled>.Entry e2 = pool.reserve();
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(1));
@@ -196,43 +200,43 @@ public class PoolTest
         assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
-        Pool<CloseableHolder>.Entry e3 = pool.reserve();
+        Pool<Pooled>.Entry e3 = pool.reserve();
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
         // enable and acquire the entry
-        e3.enable(new CloseableHolder("bbb"), true);
+        e3.enable(new Pooled("bbb"), true);
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(1));
 
         // can't reenable
-        assertThrows(IllegalStateException.class, () -> e3.enable(new CloseableHolder("xxx"), false));
+        assertThrows(IllegalStateException.class, () -> e3.enable(new Pooled("xxx"), false));
 
         // Can't enable acquired entry
-        Pool<CloseableHolder>.Entry e = pool.acquire();
-        assertThrows(IllegalStateException.class, () -> e.enable(new CloseableHolder("xxx"), false));
+        Pool<Pooled>.Entry e = pool.acquire();
+        assertThrows(IllegalStateException.class, () -> e.enable(new Pooled("xxx"), false));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testReserveNegativeMaxPending(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
+        Pool<Pooled> pool = factory.newPool(2);
         assertThat(pool.reserve(), notNullValue());
         assertThat(pool.reserve(), notNullValue());
         assertThat(pool.reserve(), nullValue());
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testClose(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        CloseableHolder holder = new CloseableHolder("aaa");
+        Pool<Pooled> pool = factory.newPool(1);
+        Pooled holder = new Pooled("aaa");
         pool.reserve().enable(holder, false);
         assertThat(pool.isClosed(), is(false));
         pool.close();
@@ -246,42 +250,41 @@ public class PoolTest
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testRemove(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.remove(e1), is(true));
-        assertThat(pool.remove(e1), is(false));
-        assertThat(pool.release(e1), is(false));
+        Pool<Pooled>.Entry e1 = pool.acquire();
+        assertThat(e1.remove(), is(true));
+        assertThat(e1.remove(), is(false));
+        assertThat(e1.release(), is(false));
         assertThat(pool.acquire(), nullValue());
-        assertThrows(NullPointerException.class, () -> pool.remove(null));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testValuesSize(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
+        Pool<Pooled> pool = factory.newPool(2);
 
         assertThat(pool.size(), is(0));
         assertThat(pool.values().isEmpty(), is(true));
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-        pool.reserve().enable(new CloseableHolder("bbb"), false);
+        pool.reserve().enable(new Pooled("aaa"), false);
+        pool.reserve().enable(new Pooled("bbb"), false);
         assertThat(pool.values().stream().map(Pool.Entry::getPooled).map(closeableHolder -> closeableHolder.value).collect(toList()), equalTo(Arrays.asList("aaa", "bbb")));
         assertThat(pool.size(), is(2));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testValuesContainsAcquiredEntries(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
+        Pool<Pooled> pool = factory.newPool(2);
 
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-        pool.reserve().enable(new CloseableHolder("bbb"), false);
+        pool.reserve().enable(new Pooled("aaa"), false);
+        pool.reserve().enable(new Pooled("bbb"), false);
         assertThat(pool.acquire(), notNullValue());
         assertThat(pool.acquire(), notNullValue());
         assertThat(pool.acquire(), nullValue());
@@ -289,42 +292,18 @@ public class PoolTest
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testMaxUsageCount(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxUsageCount(3);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.release(e1), is(true));
-        e1 = pool.acquire();
-        assertThat(pool.release(e1), is(true));
-        e1 = pool.acquire();
-        assertThat(pool.release(e1), is(false));
-        assertThat(pool.acquire(), nullValue());
-        assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e1), is(true));
-        assertThat(pool.remove(e1), is(false));
-        assertThat(pool.size(), is(0));
-        Pool<CloseableHolder>.Entry e1Copy = e1;
-        assertThat(pool.release(e1Copy), is(false));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testMaxMultiplex(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
-        pool.setMaxMultiplex(3);
+        Pool<Pooled> pool = factory.newPool(2, pooled -> 3);
 
         Map<String, AtomicInteger> counts = new HashMap<>();
         AtomicInteger a = new AtomicInteger();
         AtomicInteger b = new AtomicInteger();
         counts.put("a", a);
         counts.put("b", b);
-        pool.reserve().enable(new CloseableHolder("a"), false);
-        pool.reserve().enable(new CloseableHolder("b"), false);
+        pool.reserve().enable(new Pooled("a"), false);
+        pool.reserve().enable(new Pooled("b"), false);
 
         counts.get(pool.acquire().getPooled().value).incrementAndGet();
         counts.get(pool.acquire().getPooled().value).incrementAndGet();
@@ -346,239 +325,119 @@ public class PoolTest
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testRemoveMultiplexed(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1, pooled -> 2);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
+        Pool<Pooled>.Entry e1 = pool.acquire();
         assertThat(e1, notNullValue());
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
+        Pool<Pooled>.Entry e2 = pool.acquire();
         assertThat(e2, notNullValue());
         assertThat(e2, sameInstance(e1));
-        assertThat(e2.getUsageCount(), is(2));
 
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(false));
+        assertThat(pool.values().stream().findFirst().orElseThrow().isIdle(), is(false));
 
-        assertThat(pool.remove(e1), is(false));
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(false));
-        assertThat(pool.values().stream().findFirst().get().isClosed(), is(true));
-        assertThat(pool.remove(e1), is(true));
+        assertThat(e1.remove(), is(false));
+        assertThat(pool.values().stream().findFirst().orElseThrow().isIdle(), is(false));
+        assertThat(pool.values().stream().findFirst().orElseThrow().isClosed(), is(true));
+        assertThat(e1.remove(), is(true));
         assertThat(pool.size(), is(0));
 
-        assertThat(pool.remove(e1), is(false));
-
-        assertThat(pool.release(e1), is(false));
-
-        assertThat(pool.remove(e1), is(false));
+        assertThat(e1.remove(), is(false));
+        assertThat(e1.release(), is(false));
+        assertThat(e1.remove(), is(false));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testMultiplexRemoveThenAcquireThenReleaseRemove(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1, pooled -> 2);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
+        Pool<Pooled>.Entry e1 = pool.acquire();
+        Pool<Pooled>.Entry e2 = pool.acquire();
 
-        assertThat(pool.remove(e1), is(false));
+        assertThat(e1.remove(), is(false));
         assertThat(e1.isClosed(), is(true));
         assertThat(pool.acquire(), nullValue());
-        assertThat(pool.release(e2), is(false));
-        assertThat(pool.remove(e2), is(true));
+        assertThat(e2.release(), is(false));
+        assertThat(e2.remove(), is(true));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testNonMultiplexRemoveAfterAcquire(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1, pooled -> 2);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.remove(e1), is(true));
+        Pool<Pooled>.Entry e1 = pool.acquire();
+        assertThat(e1.remove(), is(true));
         assertThat(pool.size(), is(0));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testMultiplexRemoveAfterAcquire(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
+        Pool<Pooled> pool = factory.newPool(1, pooled -> 2);
+        pool.reserve().enable(new Pooled("aaa"), false);
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
+        Pool<Pooled>.Entry e1 = pool.acquire();
+        Pool<Pooled>.Entry e2 = pool.acquire();
 
-        assertThat(pool.remove(e1), is(false));
-        assertThat(pool.remove(e2), is(true));
+        assertThat(e1.remove(), is(false));
+        assertThat(e2.remove(), is(true));
         assertThat(pool.size(), is(0));
 
-        assertThat(pool.release(e1), is(false));
+        assertThat(e1.release(), is(false));
         assertThat(pool.size(), is(0));
 
-        Pool<CloseableHolder>.Entry e3 = pool.acquire();
+        Pool<Pooled>.Entry e3 = pool.acquire();
         assertThat(e3, nullValue());
 
-        assertThat(pool.release(e2), is(false));
+        assertThat(e2.release(), is(false));
         assertThat(pool.size(), is(0));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testReleaseThenRemoveNonEnabledEntry(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        Pool<CloseableHolder>.Entry e = pool.reserve();
+        Pool<Pooled> pool = factory.newPool(1);
+        Pool<Pooled>.Entry e = pool.reserve();
         assertThat(pool.size(), is(1));
-        assertThat(pool.release(e), is(false));
+        assertThat(e.release(), is(false));
         assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e), is(true));
+        assertThat(e.remove(), is(true));
         assertThat(pool.size(), is(0));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testRemoveNonEnabledEntry(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        Pool<CloseableHolder>.Entry e = pool.reserve();
+        Pool<Pooled> pool = factory.newPool(1);
+        Pool<Pooled>.Entry e = pool.reserve();
         assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e), is(true));
+        assertThat(e.remove(), is(true));
         assertThat(pool.size(), is(0));
     }
 
     @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testMultiplexMaxUsageReachedAcquireThenRemove(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.setMaxUsageCount(3);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-
-        Pool<CloseableHolder>.Entry e0 = pool.acquire();
-
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.release(e1), is(true));
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
-        assertThat(pool.release(e2), is(true));
-        assertThat(pool.acquire(), nullValue());
-
-        assertThat(pool.remove(e0), is(true));
-        assertThat(pool.size(), is(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testMultiplexMaxUsageReachedAcquireThenReleaseThenRemove(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.setMaxUsageCount(3);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-
-        Pool<CloseableHolder>.Entry e0 = pool.acquire();
-
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(pool.release(e1), is(true));
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
-        assertThat(pool.release(e2), is(true));
-        assertThat(pool.acquire(), nullValue());
-
-        assertThat(pool.release(e0), is(false));
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(true));
-        assertThat(pool.values().stream().findFirst().get().isClosed(), is(false));
-        assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e0), is(true));
-        assertThat(pool.size(), is(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testUsageCountAfterReachingMaxMultiplexLimit(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(2);
-        pool.setMaxUsageCount(10);
-        pool.reserve().enable(new CloseableHolder("aaa"), false);
-
-        Pool<CloseableHolder>.Entry e1 = pool.acquire();
-        assertThat(e1.getUsageCount(), is(1));
-        Pool<CloseableHolder>.Entry e2 = pool.acquire();
-        assertThat(e2, sameInstance(e1));
-        assertThat(e1.getUsageCount(), is(2));
-        assertThat(pool.acquire(), nullValue());
-        assertThat(e1.getUsageCount(), is(2));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testDynamicMaxUsageCountChangeOverflowMaxInt(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxMultiplex(1);
-        Pool<CloseableHolder>.Entry entry = pool.reserve();
-        entry.enable(new CloseableHolder("aaa"), false);
-        entry.setUsageCount(Integer.MAX_VALUE);
-
-        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
-        assertThat(acquired1, notNullValue());
-        assertThat(pool.release(acquired1), is(true));
-
-        pool.setMaxUsageCount(1);
-        Pool<CloseableHolder>.Entry acquired2 = pool.acquire();
-        assertThat(acquired2, nullValue());
-        assertThat(entry.getPooled().closed, is(true));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
-    public void testDynamicMaxUsageCountChangeSweep(Factory factory)
-    {
-        Pool<CloseableHolder> pool = factory.getPool(2);
-        pool.setMaxUsageCount(100);
-        Pool<CloseableHolder>.Entry entry1 = pool.reserve();
-        entry1.enable(new CloseableHolder("aaa"), false);
-        Pool<CloseableHolder>.Entry entry2 = pool.reserve();
-        entry2.enable(new CloseableHolder("bbb"), false);
-
-        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
-        assertThat(acquired1, notNullValue());
-        assertThat(pool.release(acquired1), is(true));
-
-        assertThat(pool.size(), is(2));
-        pool.setMaxUsageCount(1);
-        assertThat(pool.size(), is(1));
-        assertThat(entry1.getPooled().closed ^ entry2.getPooled().closed, is(true));
-    }
-
-    @Test
-    public void testConfigLimits()
-    {
-        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxMultiplex(0));
-        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxMultiplex(-1));
-        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxUsageCount(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
+    @MethodSource(value = "factories")
     public void testAcquireWithCreator(Factory factory)
     {
-        Pool<CloseableHolder> pool = factory.getPool(2);
+        Pool<Pooled> pool = factory.newPool(2);
 
         assertThat(pool.size(), is(0));
         assertThat(pool.acquire(e -> null), nullValue());
         assertThat(pool.size(), is(0));
 
-        Pool<CloseableHolder>.Entry e1 = pool.acquire(e -> new CloseableHolder("e1"));
+        Pool<Pooled>.Entry e1 = pool.acquire(e -> new Pooled("e1"));
         assertThat(e1.getPooled().value, is("e1"));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
@@ -587,13 +446,13 @@ public class PoolTest
         assertThat(pool.acquire(e -> null), nullValue());
         assertThat(pool.size(), is(1));
 
-        Pool<CloseableHolder>.Entry e2 = pool.acquire(e -> new CloseableHolder("e2"));
+        Pool<Pooled>.Entry e2 = pool.acquire(e -> new Pooled("e2"));
         assertThat(e2.getPooled().value, is("e2"));
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(2));
 
-        Pool<CloseableHolder>.Entry e3 = pool.acquire(e -> new CloseableHolder("e3"));
+        Pool<Pooled>.Entry e3 = pool.acquire(e -> new Pooled("e3"));
         assertThat(e3, nullValue());
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
@@ -609,13 +468,13 @@ public class PoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
 
-        Pool<CloseableHolder>.Entry e4 = pool.acquire(e -> new CloseableHolder("e4"));
+        Pool<Pooled>.Entry e4 = pool.acquire(e -> new Pooled("e4"));
         assertThat(e4.getPooled().value, is("e2"));
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(2));
 
-        pool.remove(e1);
+        e1.remove();
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
@@ -640,10 +499,10 @@ public class PoolTest
         Pool<AtomicInteger>.Entry e4 = pool.acquire(e -> new AtomicInteger());
         assertNull(pool.acquire(e -> new AtomicInteger()));
 
-        pool.release(e1);
-        pool.release(e2);
-        pool.release(e3);
-        pool.release(e4);
+        e1.release();
+        e2.release();
+        e3.release();
+        e4.release();
 
         Pool<AtomicInteger>.Entry last = null;
         for (int i = 0; i < 8; i++)
@@ -652,7 +511,7 @@ public class PoolTest
             if (last != null)
                 assertThat(e, not(sameInstance(last)));
             e.getPooled().incrementAndGet();
-            pool.release(e);
+            e.release();
             last = e;
         }
 
@@ -673,16 +532,16 @@ public class PoolTest
         Pool<AtomicInteger>.Entry e4 = pool.acquire(e -> new AtomicInteger());
         assertNull(pool.acquire(e -> new AtomicInteger()));
 
-        pool.release(e1);
-        pool.release(e2);
-        pool.release(e3);
-        pool.release(e4);
+        e1.release();
+        e2.release();
+        e3.release();
+        e4.release();
 
         for (int i = 0; i < 400; i++)
         {
             Pool<AtomicInteger>.Entry e = pool.acquire();
             e.getPooled().incrementAndGet();
-            pool.release(e);
+            e.release();
         }
 
         assertThat(e1.getPooled().get(), greaterThan(10));

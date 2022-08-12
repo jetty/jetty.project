@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
@@ -93,7 +92,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     public HttpDestination newHttpDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
-        return new MultiplexHttpDestination(getHttpClient(), origin, getHTTP3Client().getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin, getHTTP3Client().getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override

@@ -140,9 +140,9 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
             if (_entry != null)
             {
                 // If release return false, the entry should be removed and the object should be disposed.
-                if (!_pool.release(_entry))
+                if (!_entry.release())
                 {
-                    if (_pool.remove(_entry))
+                    if (_entry.remove())
                         close();
                 }
             }

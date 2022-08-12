@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.http.HttpScheme;
@@ -56,7 +55,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, httpClient.getMaxRequestsQueuedPerDestination());
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
         });
     }
 
@@ -121,7 +120,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     public HttpDestination newHttpDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
-        return new MultiplexHttpDestination(getHttpClient(), origin, getHTTP2Client().getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin, getHTTP2Client().getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override
