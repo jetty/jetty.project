@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
-import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
@@ -81,7 +81,8 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), origin);
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new HttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override

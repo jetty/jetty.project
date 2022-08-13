@@ -2007,7 +2007,7 @@ public class XmlConfiguration
         public void close()
         {
             if (_entry != null)
-                __parsers.release(_entry);
+                _entry.release();
         }
     }
 }

@@ -61,7 +61,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
 
     public ValidatingConnectionPool(HttpDestination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
     {
-        super((HttpDestination)destination, maxConnections, requester);
+        super(destination, maxConnections, requester);
         this.scheduler = scheduler;
         this.timeout = timeout;
         this.quarantine = new ConcurrentHashMap<>(maxConnections);
@@ -90,17 +90,12 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     public boolean remove(Connection connection)
     {
         Holder holder = quarantine.remove(connection);
-
-        if (holder == null)
-            return super.remove(connection);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Removed while validating {}", connection);
-
-        boolean cancelled = holder.cancel();
-        if (cancelled)
-            return remove(connection, true);
-
+        if (holder != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Removed while validating {}", connection);
+            holder.cancel();
+        }
         return super.remove(connection);
     }
 
