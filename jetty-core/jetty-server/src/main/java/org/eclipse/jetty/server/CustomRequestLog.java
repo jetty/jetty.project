@@ -215,7 +215,7 @@ import static java.lang.invoke.MethodType.methodType;
  * </td>
  * </tr>
  *
- * // TODO ATTRIBUTE LOGGING
+ * <!-- TODO ATTRIBUTE LOGGING -->
  * <tr>
  * <td>%r</td>
  * <td>

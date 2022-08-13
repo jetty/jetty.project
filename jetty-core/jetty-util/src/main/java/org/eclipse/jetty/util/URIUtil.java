@@ -1686,7 +1686,7 @@ public final class URIUtil
      * <p>
      *     This correction is limited to only the {@code file:/} substring in the URI.
      *     If there is a {@code file:/<not-a-slash>} detected, that substring is corrected to
-     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@core file:}
+     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@code file:}
      *     substring are left alone.
      * </p>
      *

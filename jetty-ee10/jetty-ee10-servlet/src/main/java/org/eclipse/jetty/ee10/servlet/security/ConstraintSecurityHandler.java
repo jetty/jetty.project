@@ -568,7 +568,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * <li>Mappings with keys of the form "&lt;method&gt;.&lt;method&gt;.&lt;method&gt;.omission" that indicates it will match every method name EXCEPT those given</li>
      * </ol>
      *
-     * @see SecurityHandler#prepareConstraintInfo(java.lang.String, Request)
+     * @see SecurityHandler#prepareConstraintInfo(String, HttpServletRequest)
      */
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request)

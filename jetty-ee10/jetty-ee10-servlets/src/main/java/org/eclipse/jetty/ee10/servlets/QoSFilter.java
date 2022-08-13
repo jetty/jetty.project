@@ -66,9 +66,9 @@ import org.slf4j.LoggerFactory;
  * avoided if the semaphore is shortly available.  If the semaphore cannot be obtained, the request will be suspended
  * for the default suspend period of the container or the valued set as the "suspendMs" init parameter.
  * <p>
- * If the "managedAttr" init parameter is set to true, then this servlet is set as a {@link ServletContext} attribute with the
- * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
- * manage the configuration of the filter.
+ * If the "managedAttr" init parameter is set to true, then this servlet is set as a {@link ServletContext} attribute
+ * with the filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler}
+ * managed attribute) to manage the configuration of the filter.
  */
 @ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
