@@ -10,8 +10,7 @@ ee8
 server
 sessions
 
-# FIXME should servlet api version be interpolated
 [lib]
-lib/jetty-servlet-api-4.0.6.jar
+lib/jetty-servlet-api-@jetty.servlet.api.version@.jar
 lib/jetty-ee8-nested-${jetty.version}.jar
 lib/jetty-ee8-servlet-${jetty.version}.jar

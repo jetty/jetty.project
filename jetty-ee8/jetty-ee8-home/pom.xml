@@ -46,7 +46,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket</includeGroupIds>
+              <excludeArtifactIds>jetty-schemas,jetty-servlet-api,jetty-test-helper,jetty-websocket-core*</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8-websocket</outputDirectory>
             </configuration>
@@ -59,31 +60,6 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-lib-jakarta-websocket-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-lib-jakarta-websocket-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee8-websocket</outputDirectory>
