@@ -155,6 +155,7 @@ pipeline {
             }
           }
         }
+/*
         stage("Javadocs") {
           steps {
             container('jetty-build') {
@@ -166,6 +167,7 @@ pipeline {
             }
           }
         }
+*/
       }
     }
   }
