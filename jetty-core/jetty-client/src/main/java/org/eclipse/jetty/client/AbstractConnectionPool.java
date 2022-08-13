@@ -93,14 +93,17 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     }
 
     /**
-     * <p>Get the max usage duration in milliseconds of the pool's connections.
-     * Values {@code 0} and negative mean that there is no limit.</p>
-     * <p>This only guarantees that a connection cannot be acquired after the configured
-     * duration elapses, so that is only enforced when {@link #acquire(boolean)} is called.
-     * If a pool stays completely idle for a duration longer than the value
+     * <p>Returns the max usage duration in milliseconds of a pooled connection.</p>
+     * <p>Values {@code 0} and negative mean that there is no limit.</p>
+     * <p>This property only guarantees that a connection cannot be acquired
+     * after the configured duration elapses, so that is only enforced when
+     * {@link #acquire(boolean)} is called.</p>
+     * <p>If a pool stays completely idle for a duration longer than the value
      * returned by this method, the max duration will not be enforced.
      * It's up to the idle timeout mechanism (see {@link HttpClient#getIdleTimeout()})
      * to handle closing idle connections.</p>
+     *
+     * @return the max usage duration, in milliseconds, of a pooled connection
      */
     @ManagedAttribute(value = "The maximum duration in milliseconds a connection can be used for before it gets closed")
     public long getMaxDuration()
@@ -123,6 +126,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         this.initialMaxMultiplex = initialMaxMultiplex;
     }
 
+    /**
+     * <p>Returns the max number of times a pooled connection can be used.</p>
+     * <p>Values {@code 0} and negative mean that there is no limit.</p>
+     *
+     * @return the max number of times a pooled connection can be used
+     */
     @ManagedAttribute(value = "The maximum amount of times a connection is used before it gets closed")
     public int getMaxUsage()
     {

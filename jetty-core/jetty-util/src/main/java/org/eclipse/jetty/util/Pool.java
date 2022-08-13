@@ -186,7 +186,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @param pooled the pooled object
      * @return the max multiplex count for the given pooled object
      */
-    protected int getMaxMultiplex(T pooled)
+    private int getMaxMultiplex(T pooled)
     {
         return maxMultiplex.applyAsInt(pooled);
     }
