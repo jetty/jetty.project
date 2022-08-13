@@ -155,19 +155,17 @@ pipeline {
             }
           }
         }
-/*
         stage("Javadocs") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "javadoc:javadoc", "maven3")
+                  mavenBuild("jdk17", "clean compile javadoc:javadoc", "maven3")
                 }
               }
             }
           }
         }
-*/
       }
     }
   }
