@@ -123,7 +123,7 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the resourceBase.
      */
-    public Resource getResourceBase()
+    public Resource getBaseResource()
     {
         return _resourceBase;
     }

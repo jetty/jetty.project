@@ -1810,7 +1810,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.stop();
         _rootResourceHandler.setBaseResource(Resource.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
-            _rootResourceHandler.getResourceBase()));
+            _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 
         HttpTester.Response response = HttpTester.parseResponse(
@@ -1872,7 +1872,7 @@ public class ResourceHandlerTest
         _rootResourceHandler.setBaseResource(Resource.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer1/")),
-            _rootResourceHandler.getResourceBase()));
+            _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 
         HttpTester.Response response = HttpTester.parseResponse(
