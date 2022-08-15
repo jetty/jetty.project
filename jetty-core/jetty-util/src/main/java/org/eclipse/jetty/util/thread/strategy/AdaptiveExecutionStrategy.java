@@ -21,6 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -136,11 +137,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Runnable _runPendingProducer = () -> tryProduce(true);
+    private boolean _useVirtualThreads;
     private State _state = State.IDLE;
     private boolean _pending;
 
     /**
-     * @param producer The produce of tasks to be consumed.
+     * @param producer The producer of tasks to be consumed.
      * @param executor The executor to be used for executing producers or consumers, depending on the sub-strategy.
      */
     public AdaptiveExecutionStrategy(Producer producer, Executor executor)
@@ -152,6 +154,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         addBean(_tryExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        _useVirtualThreads = VirtualThreads.isUseVirtualThreads(_executor);
     }
 
     @Override
@@ -462,7 +471,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            _executor.execute(task);
+            if (isUseVirtualThreads())
+                VirtualThreads.startVirtualThread(task);
+            else
+                _executor.execute(task);
         }
         catch (RejectedExecutionException e)
         {
@@ -474,6 +486,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             if (task instanceof Closeable)
                 IO.close((Closeable)task);
         }
+    }
+
+    @ManagedAttribute(value = "whether this execution strategy uses virtual threads", readonly = true)
+    public boolean isUseVirtualThreads()
+    {
+        return _useVirtualThreads;
     }
 
     @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)

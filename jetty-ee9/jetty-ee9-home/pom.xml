@@ -4,7 +4,6 @@
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
     <version>12.0.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-home</artifactId>
@@ -291,7 +290,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee9</includeGroupIds>
-              <excludeArtifactIds>websocket-core-client,websocket-core-common,websocket-core-server</excludeArtifactIds>
+              <excludeArtifactIds>jetty-websocket-core-client,jetty-websocket-core-common,jetty-websocket-core-server</excludeArtifactIds>
               <excludeGroupIds>org.eclipse.jetty.ee9.demos,org.eclipse.jetty.ee9.websocket</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -432,10 +431,10 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--      <artifactId>jetty-ee9-proxy</artifactId>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-proxy</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-cdi</artifactId>
@@ -520,14 +519,14 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.ee9.demos</groupId>-->
-<!--      <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>-->
-<!--      <version>${project.version}</version>-->
-<!--      <classifier>config</classifier>-->
-<!--      <type>jar</type>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-simple-webapp</artifactId>

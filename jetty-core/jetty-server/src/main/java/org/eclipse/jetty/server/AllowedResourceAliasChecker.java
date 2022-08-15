@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
- * is not protected by a protected target as defined by {@link ContextHandler#getProtectedTargets()} at start.</p>
+ * is not protected by a protected target as defined by the {@link ContextHandler} protected targets at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */

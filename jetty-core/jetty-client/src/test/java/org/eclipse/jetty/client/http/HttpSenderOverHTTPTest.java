@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
@@ -61,7 +60,7 @@ public class HttpSenderOverHTTPTest
     public void testSendNoRequestContent() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -94,7 +93,7 @@ public class HttpSenderOverHTTPTest
     public void testSendNoRequestContentIncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -124,7 +123,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         // Shutdown output to trigger the exception on write
         endPoint.shutdownOutput();
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -154,7 +153,7 @@ public class HttpSenderOverHTTPTest
     public void testSendNoRequestContentIncompleteFlushException() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -190,7 +189,7 @@ public class HttpSenderOverHTTPTest
     public void testSendSmallRequestContentInOneBuffer() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -225,7 +224,7 @@ public class HttpSenderOverHTTPTest
     public void testSendSmallRequestContentInTwoBuffers() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
@@ -261,7 +260,7 @@ public class HttpSenderOverHTTPTest
     public void testSendSmallRequestContentChunkedInTwoChunks() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));

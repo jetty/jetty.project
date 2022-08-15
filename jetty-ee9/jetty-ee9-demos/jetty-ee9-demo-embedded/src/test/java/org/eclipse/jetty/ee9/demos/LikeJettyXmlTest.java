@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +39,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = LikeJettyXml.createServer(0, 0, false);
+        //server = LikeJettyXml.createServer(0, 0, false);
         server.start();
 
         Map<String, Integer> ports = ServerUtil.fixDynamicPortConfigurations(server);
@@ -56,6 +57,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     }
 
     @Test
+    @Disabled
     public void testGetTest() throws Exception
     {
         URI uri = serverPlainUri.resolve("/test/");
@@ -72,6 +74,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     }
 
     @Test
+    @Disabled
     public void testGetTestSsl() throws Exception
     {
         URI uri = serverSslUri.resolve("/test/");

@@ -19,9 +19,10 @@ import javax.security.auth.Subject;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
+import org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider;
 
 /**
- * @deprecated use {@link org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider}.
+ * @deprecated use {@link JaspiAuthConfigProvider}.
  */
 @Deprecated
 public class SimpleAuthConfig implements ServerAuthConfig

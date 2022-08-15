@@ -19,7 +19,7 @@ basehome:modules/openid/jetty-ee9-openid-baseloginservice.xml|etc/openid-baselog
 
 [xml]
 etc/openid-baseloginservice.xml
-etc/jetty-openid.xml
+etc/jetty-ee9-openid.xml
 
 [ini-template]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")

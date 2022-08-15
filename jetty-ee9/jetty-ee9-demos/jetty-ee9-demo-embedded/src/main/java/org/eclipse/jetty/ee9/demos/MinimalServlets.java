@@ -18,7 +18,7 @@ import java.io.IOException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 
 public class MinimalServlets
@@ -34,7 +34,7 @@ public class MinimalServlets
         // The ServletHandler is a dead simple way to create a context handler
         // that is backed by an instance of a Servlet.
         // This handler then needs to be registered with the Server object.
-        ServletHandler handler = new ServletHandler();
+        ServletContextHandler handler = new ServletContextHandler();
         server.setHandler(handler);
 
         // Passing in the class for the Servlet allows jetty to instantiate an
@@ -43,7 +43,7 @@ public class MinimalServlets
         // IMPORTANT:
         // This is a raw Servlet, not a Servlet that has been configured
         // through a web.xml @WebServlet annotation, or anything similar.
-        handler.addServletWithMapping(HelloServlet.class, "/*");
+        handler.getServletHandler().addServletWithMapping(HelloServlet.class, "/*");
 
         return server;
     }
@@ -62,7 +62,6 @@ public class MinimalServlets
         server.join();
     }
 
-    @SuppressWarnings("serial")
     public static class HelloServlet extends HttpServlet
     {
         @Override

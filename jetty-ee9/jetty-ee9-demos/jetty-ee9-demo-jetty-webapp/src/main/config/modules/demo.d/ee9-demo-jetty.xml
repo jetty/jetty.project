@@ -12,7 +12,7 @@ Configure and deploy the test web application
   <!--  + contextPath                                                  -->
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <Set name="contextPath">/test</Set>
+  <Set name="contextPath">/ee9-test</Set>
   <Set name="war"><Property name="jetty.webapps" default="." />/ee9-demo-jetty.war
   </Set>
 

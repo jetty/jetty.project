@@ -224,7 +224,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         // pick a new unique ID!
         String id = null;
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             while (id == null || id.length() == 0)
             {
@@ -239,15 +239,10 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Reseeding {}", this);
-                    if (_random instanceof SecureRandom)
-                    {
-                        SecureRandom secure = (SecureRandom)_random;
+                    if (_random instanceof SecureRandom secure)
                         secure.setSeed(secure.generateSeed(8));
-                    }
                     else
-                    {
                         _random.setSeed(_random.nextLong() ^ System.currentTimeMillis() ^ seedTerm ^ Runtime.getRuntime().freeMemory());
-                    }
                 }
 
                 long r1 = _weakRandom
@@ -263,7 +258,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                 if (!StringUtil.isBlank(_workerName))
                     id = _workerName + id;
 
-                id = id + Long.toString(COUNTER.getAndIncrement());
+                id = id + COUNTER.getAndIncrement();
             }
         }
         return id;
@@ -317,7 +312,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             _workerName = "node" + (inst == null ? "0" : inst);
         }
 
-        _workerAttr = (_workerName != null && _workerName.startsWith("$")) ? _workerName.substring(1) : null;
+        _workerAttr = _workerName.startsWith("$") ? _workerName.substring(1) : null;
 
         if (_houseKeeper == null)
         {
@@ -405,8 +400,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     /**
      * Remove an id from use by telling all contexts to remove a session with this id.
-     *
-     * @see org.eclipse.jetty.sessionIdManager#expireAll(java.lang.String)
      */
     @Override
     public void expireAll(String id)
@@ -503,7 +496,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             //This method can be called on shutdown when the handlers are STOPPING, so only
             //check that they are not already stopped
             if (!sm.isStopped() && !sm.isFailed())
-                managers.add((SessionManager)sm);
+                managers.add(sm);
         }
 
         return managers;

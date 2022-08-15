@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.servlet.ServletException;
@@ -31,11 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.security.openid.OpenIdConfiguration;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.StringUtil;
@@ -243,7 +239,8 @@ public class OpenIdProvider extends ContainerLifeCycle
                 
                 int redirectCode = (HttpVersion.fromString(request.getProtocol()).getVersion() < HttpVersion.HTTP_1_1.getVersion()
                     ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-                ServletContextResponse.getBaseResponse(response).getServletApiResponse().sendRedirect(redirectCode, response.encodeRedirectURL(redirectUri));
+                response.setStatus(redirectCode);
+                response.sendRedirect(response.encodeRedirectURL(redirectUri));
             }
             catch (Throwable t)
             {

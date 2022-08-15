@@ -24,6 +24,7 @@
     <jakarta.authentication.api.version>3.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>5.0.0</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>4.0.1</jakarta.enterprise.cdi.api.version>
+    <jakarta.enterprise.lang.model.version>4.0.1</jakarta.enterprise.lang.model.version>
     <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.1.0</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.1.0</jakarta.mail.api.version>
@@ -293,6 +294,11 @@
         <groupId>jakarta.enterprise</groupId>
         <artifactId>jakarta.enterprise.cdi-api</artifactId>
         <version>${jakarta.enterprise.cdi.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.lang-model</artifactId>
+        <version>${jakarta.enterprise.lang.model.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.activation</groupId>

@@ -59,6 +59,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
@@ -72,6 +73,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(Resource... resources)
     {
         if (resources == null || resources.length == 0)
@@ -273,6 +275,8 @@ public abstract class Resource
      */
     public List<String> list() // TODO: should return Path's
     {
+        if (!isDirectory())
+            return null;
         try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
         {
             List<String> entries = new ArrayList<>();
@@ -308,8 +312,8 @@ public abstract class Resource
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
-        if (URIUtil.normalizePath(subUriPath) == null)
+        // TODO do a URI safe encoding?
+        if (URIUtil.isNotNormalWithinSelf(subUriPath))
             throw new IllegalArgumentException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))

@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
 import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener;
@@ -67,13 +68,13 @@ import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
  * Will create a {@link org.eclipse.jetty.websocket.core.FrameHandler} suitable for use with classes/objects that:
  * </p>
  * <ul>
- * <li>Is &#64;{@link org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket} annotated</li>
- * <li>Extends {@link org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter}</li>
- * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketListener}</li>
- * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener}</li>
- * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener}</li>
- * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener}</li>
- * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener}</li>
+ * <li>Is &#64;{@link WebSocket} annotated</li>
+ * <li>Extends {@link WebSocketAdapter}</li>
+ * <li>Implements {@link WebSocketListener}</li>
+ * <li>Implements {@link WebSocketConnectionListener}</li>
+ * <li>Implements {@link WebSocketPartialListener}</li>
+ * <li>Implements {@link WebSocketPingPongListener}</li>
+ * <li>Implements {@link WebSocketFrameListener}</li>
  * </ul>
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle

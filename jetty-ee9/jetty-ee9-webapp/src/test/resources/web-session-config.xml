@@ -6,7 +6,15 @@
 
 	<display-name>Test 4 WebApp</display-name>
 	<session-config>
+	    <cookie-config>
+	        <domain>universe</domain>
+	        <name>SPECIALSESSIONID</name>
+	        <path>foo</path>
+	        <max-age>10</max-age>
+	        <comment>nocomment</comment>
+	        <http-only>false</http-only>
+	        <secure>false</secure>
+	    </cookie-config>
 		<session-timeout>54</session-timeout>
 	</session-config>
-
 </web-app>

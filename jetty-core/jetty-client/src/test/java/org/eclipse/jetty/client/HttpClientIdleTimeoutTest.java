@@ -95,7 +95,7 @@ public class HttpClientIdleTimeoutTest
             @Override
             public HttpDestination newHttpDestination(Origin origin)
             {
-                return new DuplexHttpDestination(getHttpClient(), origin)
+                return new HttpDestination(getHttpClient(), origin, false)
                 {
                     @Override
                     protected SendFailure send(IConnection connection, HttpExchange exchange)
