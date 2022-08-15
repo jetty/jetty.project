@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -64,9 +65,11 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -484,6 +487,10 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
 
+        // TODO this is not testing what it looks like.  The war should be set with
+        //      setWar (or converted to a jar:file before calling setBaseResource)
+        //      However the war is currently a javax war, so it needs to be converted.
+        new Throwable("fixme").printStackTrace();
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
         warPath = warPath.toAbsolutePath();
         assertTrue(warPath.isAbsolute(), "Path should be absolute: " + warPath);
@@ -497,6 +504,41 @@ public class WebAppContextTest
         server.start();
 
         assertTrue(context.isAvailable(), "WebAppContext should be available");
+    }
+
+    @Test
+    public void testGetResourceFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(Resource.combine(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        assertThat(servletContext.getResource("/WEB-INF/zero.xml"), notNullValue());
+        assertThat(servletContext.getResource("/WEB-INF/one.xml"), notNullValue());
+    }
+
+    @Test
+    public void testGetResourcePathsFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(Resource.combine(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        assertThat(servletContext.getResourcePaths("/WEB-INF"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
     }
 
     public static Stream<Arguments> extraClasspathGlob()
