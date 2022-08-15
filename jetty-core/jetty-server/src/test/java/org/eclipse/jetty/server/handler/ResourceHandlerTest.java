@@ -1799,8 +1799,8 @@ public class ResourceHandlerTest
                 Connection: close\r
                 \r
                 """));
-        // TODO fix this!
-        // assertThat(response.getStatus(), is(HttpStatus.OK_200));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test
@@ -1835,8 +1835,7 @@ public class ResourceHandlerTest
                 \r
                 """));
 
-        // TODO fix this!
-        // assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         response = HttpTester.parseResponse(
             _local.getResponse("""
@@ -1860,8 +1859,7 @@ public class ResourceHandlerTest
                 \r
                 """));
 
-        // TODO fix this!
-        // assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test
@@ -1915,8 +1913,7 @@ public class ResourceHandlerTest
                 \r
                 """));
 
-        // TODO fix this!
-        // assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test

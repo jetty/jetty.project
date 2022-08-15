@@ -74,6 +74,9 @@ public class ResourceHandler extends Handler.Wrapper
 
         setupContentFactory();
 
+        if (_resourceService.getStylesheet() == null)
+            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+
         super.doStart();
     }
 
@@ -154,7 +157,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        return getServer().getDefaultStyleSheet();
+        return _resourceService.getStylesheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -301,10 +304,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    // TODO accept a Resource instead of a String?
-    public void setStylesheet(String stylesheet)
+    public void setStylesheet(Resource stylesheet)
     {
-        // TODO
+        _resourceService.setStylesheet(stylesheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)
