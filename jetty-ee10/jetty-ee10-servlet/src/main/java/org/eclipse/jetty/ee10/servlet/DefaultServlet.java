@@ -85,7 +85,6 @@ public class DefaultServlet extends HttpServlet
 
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
@@ -167,32 +166,30 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
-        // TODO Move most of this to ResourceService
-        String stylesheet = getInitParameter("stylesheet");
-        try
+        // Use the servers default stylesheet unless there is one explicitly set by an init param.
+        _resourceService.setStylesheet(servletContextHandler.getServer().getDefaultStyleSheet());
+        String stylesheetParam = getInitParameter("stylesheet");
+        if (stylesheetParam != null)
         {
-            if (stylesheet != null)
+            try
             {
-                _stylesheet = _resourceFactory.newResource(stylesheet);
-                if (!_stylesheet.exists())
+                Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
+                if (stylesheet.exists())
                 {
-                    LOG.warn("Stylesheet {} does not exist", stylesheet);
-                    _stylesheet = null;
+                    _resourceService.setStylesheet(stylesheet);
+                }
+                else
+                {
+                    LOG.warn("Stylesheet {} does not exist", stylesheetParam);
                 }
             }
-            if (_stylesheet == null)
+            catch (Exception e)
             {
-                _stylesheet = servletContextHandler.getServer().getDefaultStyleSheet();
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
+                else
+                    LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
             }
-
-            // TODO the stylesheet is never actually used ?
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Unable to use stylesheet: {}", stylesheet, e);
-            else
-                LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
