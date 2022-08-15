@@ -29,7 +29,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DefaultHandlerTest
@@ -134,6 +136,9 @@ public class DefaultHandlerTest
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("image/x-icon", response.get(HttpHeader.CONTENT_TYPE));
+            byte[] bytes = response.getContentBytes();
+            assertThat(bytes, notNullValue());
+            assertThat(bytes.length, greaterThan(0));
         }
     }
 }

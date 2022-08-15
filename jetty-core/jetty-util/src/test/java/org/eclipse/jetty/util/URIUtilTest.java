@@ -742,6 +742,10 @@ public class URIUtilTest
     {
         return Stream.of(
             Arguments.of(
+                URI.create("HTTP:/foo/b%61r"),
+                URI.create("http:/f%6Fo/bar")
+            ),
+            Arguments.of(
                 URI.create("jar:file:/path/to/main.jar!/META-INF/versions/"),
                 URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/")
             ),
@@ -752,11 +756,21 @@ public class URIUtilTest
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURITrueSource")
-    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
+    public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
     {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+        return Stream.of(
+            Arguments.of(
+                URI.create("/foo%2Fbar"),
+                URI.create("/foo/bar")
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingURIFalseSource")
+    public void testEqualsIgnoreEncodingURIFalse(URI uriA, URI uriB)
+    {
+        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
     public static Stream<Arguments> correctBadFileURICases()
@@ -1142,7 +1156,8 @@ public class URIUtilTest
         // Bad java file.uri syntax
         String input = "file:/home/user/lib/acme.jar";
         List<URI> uris = URIUtil.split(input);
-        String expected = String.format("jar:%s!/", input);
+        // As zipfs with corrected file.uri syntax as well
+        String expected = "jar:file:///home/user/lib/acme.jar!/";
         assertThat(uris.get(0).toString(), is(expected));
     }
 

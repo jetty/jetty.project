@@ -113,8 +113,8 @@ import org.slf4j.LoggerFactory;
  * <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
  * <dt>managedAttr</dt>
  * <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the
- * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
- * manage the configuration of the filter.</dd>
+ * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler} managed attribute)
+ * to manage the configuration of the filter.</dd>
  * <dt>tooManyCode</dt>
  * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is
  * another option</dd>

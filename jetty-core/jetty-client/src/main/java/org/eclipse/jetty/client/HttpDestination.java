@@ -47,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject
-public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
+public class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpDestination.class);
 
@@ -517,12 +517,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             proxy == null ? "" : "(via " + proxy + ")",
             getQueuedRequestCount(),
             getConnectionPool());
-    }
-
-    @FunctionalInterface
-    public interface Multiplexed
-    {
-        void setMaxRequestsPerConnection(int maxRequestsPerConnection);
     }
 
     /**

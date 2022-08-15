@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the demo-jaas webapp                                  -->
+<!-- =============================================================== -->
+<Configure id='wac' class="org.eclipse.jetty.ee8.webapp.WebAppContext">
+
+  <Set name="contextPath">/test-jaas</Set>
+  <Set name="war"><Property name="jetty.webapps" default="." />/ee8-demo-jaas.war
+  </Set>
+  <Set name="extractWAR">true</Set>
+
+  <Set name="securityHandler">
+    <New class="org.eclipse.jetty.ee8.security.ConstraintSecurityHandler">
+     <Set name="loginService">
+       <New class="org.eclipse.jetty.ee8.jaas.JAASLoginService">
+         <Set name="name">Demo JAAS Realm</Set>
+         <Set name="loginModuleName">xyz</Set>
+       </New>
+     </Set>
+    </New>
+  </Set>
+
+</Configure>
+

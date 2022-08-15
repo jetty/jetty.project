@@ -102,21 +102,21 @@
         <artifactId>jetty-ee9-maven-plugin</artifactId>
         <version>${project.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-openid</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-openid</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-plus</artifactId>
         <version>${project.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-<!--        <artifactId>jetty-ee9-proxy</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-quickstart</artifactId>
@@ -148,46 +148,46 @@
         <version>${project.version}</version>
       </dependency>
 
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jetty-api</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jetty-client</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jetty-common</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-jetty-server</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee9.websocket</groupId>-->
-<!--        <artifactId>jetty-ee9-websocket-servlet</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-servlet</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <!-- Jakarta EE 9 Dependencies -->
       <!-- FIXME to review it is not sure to be a good idea to have this in the bom -->
       <dependency>

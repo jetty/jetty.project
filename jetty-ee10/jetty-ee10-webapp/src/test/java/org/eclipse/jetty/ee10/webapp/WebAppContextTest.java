@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,6 +67,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -304,9 +305,15 @@ public class WebAppContextTest
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
 
-    @Disabled //TODO
-    @Test
-    public void testProtectedTarget() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/test.xml",
+        "/%2e/%2e/test.xml",
+        "/%u002e/%u002e/test.xml",
+        "/foo/%2e%2e/test.xml",
+        "/foo/%u002e%u002e/test.xml"
+    })
+    public void testUnProtectedTarget(String target) throws Exception
     {
         Server server = newServer();
 
@@ -326,46 +333,58 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/ HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /web-inf/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
     }
-        
+
     @ParameterizedTest
     @ValueSource(strings = {
         "/WEB-INF",
         "/WEB-INF/",
+        "/WEB-INF%2F",
         "/WEB-INF/test.xml",
         "/web-inf/test.xml",
         "/%2e/WEB-INF/test.xml",
+        "/%u002e/WEB-INF/test.xml",
         "/%2e/%2e/WEB-INF/test.xml",
+        "/%u002e/%u002e/WEB-INF/test.xml",
         "/foo/%2e%2e/WEB-INF/test.xml",
+        "/foo/%u002e%u002e/WEB-INF/test.xml",
         "/%2E/WEB-INF/test.xml",
+        "/%u002E/WEB-INF/test.xml",
         "//WEB-INF/test.xml",
-        "/WEB-INF%2ftest.xml",
-        "/.%00/WEB-INF/test.xml",
-        "/WEB-INF%00/test.xml"
+        "/WEB-INF%2Ftest.xml",
+        "/WEB-INF%u002Ftest.xml",
+        "/WEB-INF%2ftest.xml"
     })
-    
-    @Disabled //TODO
-    @Test
+    public void testProtectedTarget(String target) throws Exception
+    {
+        Server server = newServer();
+
+        Handler.Collection handlers = new Handler.Collection();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        WebAppContext context = new WebAppContext();
+        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        context.setBaseResource(testWebapp);
+        context.setContextPath("/");
+        server.setHandler(handlers);
+        handlers.addHandler(contexts);
+        contexts.addHandler(context);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+
+        server.start();
+
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+    }
+        
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/.%00/WEB-INF/test.xml",
+        "/WEB-INF%00/test.xml",
+        "/WEB-INF%u0000/test.xml"
+    })
     public void testProtectedTargetFailure(String path) throws Exception
     {
         Server server = newServer();
@@ -387,10 +406,9 @@ public class WebAppContextTest
         server.start();
 
         assertThat(HttpTester.parseResponse(connector.getResponse("GET " + path + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
-            Matchers.anyOf(is(HttpStatus.NOT_FOUND_404), is(HttpStatus.BAD_REQUEST_400)));
+            Matchers.anyOf(is(HttpStatus.BAD_REQUEST_400)));
     }
 
-    @Disabled //TODO
     @Test
     public void testNullPath() throws Exception
     {
@@ -604,5 +622,17 @@ public class WebAppContextTest
         Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+    }
+
+    @Test
+    void testSetServerPropagation()
+    {
+        Server server = new Server();
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        DefaultHandler handler = new DefaultHandler();
+        server.setHandler(new Handler.Collection(context, handler));
+
+        assertThat(handler.getServer(), sameInstance(server));
     }
 }

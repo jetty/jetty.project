@@ -74,6 +74,9 @@ public class ResourceHandler extends Handler.Wrapper
 
         setupContentFactory();
 
+        if (_resourceService.getStylesheet() == null)
+            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+
         super.doStart();
     }
 
@@ -107,7 +110,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext());
+        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 
@@ -123,7 +126,7 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the resourceBase.
      */
-    public Resource getResourceBase()
+    public Resource getBaseResource()
     {
         return _resourceBase;
     }
@@ -154,7 +157,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        return getServer().getDefaultStyleSheet();
+        return _resourceService.getStylesheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -216,6 +219,8 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarted())
+            throw new IllegalStateException(getState());
         _resourceBase = base;
     }
 
@@ -299,10 +304,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    // TODO accept a Resource instead of a String?
-    public void setStylesheet(String stylesheet)
+    public void setStylesheet(Resource stylesheet)
     {
-        // TODO
+        _resourceService.setStylesheet(stylesheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)

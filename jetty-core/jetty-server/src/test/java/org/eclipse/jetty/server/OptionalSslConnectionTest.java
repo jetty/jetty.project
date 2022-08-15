@@ -22,6 +22,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -218,7 +219,8 @@ public class OptionalSslConnectionTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort()))
+        try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort());
+             StacklessLogging ignored = new StacklessLogging(DetectorConnectionFactory.class))
         {
             OutputStream sslOutput = socket.getOutputStream();
             String request =

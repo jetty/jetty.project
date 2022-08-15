@@ -23,6 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -274,5 +275,51 @@ public class HandlerTest
 
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> a.insertHandler(b));
         assertThat(e.getMessage(), containsString("bad tail"));
+    }
+
+    @Test
+    public void testSetServerPropagation()
+    {
+        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Collection collection = new Handler.Collection();
+        Handler handler = new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                return null;
+            }
+        };
+
+        collection.addHandler(wrapper);
+        wrapper.setHandler(handler);
+
+        Server server = new Server();
+        collection.setServer(server);
+
+        assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testSetHandlerServerPropagation()
+    {
+        Handler.Wrapper wrapper = new Handler.Wrapper();
+        Handler.Collection collection = new Handler.Collection();
+        Handler handler = new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                return null;
+            }
+        };
+
+        Server server = new Server();
+        collection.setServer(server);
+
+        collection.addHandler(wrapper);
+        wrapper.setHandler(handler);
+
+        assertThat(handler.getServer(), sameInstance(server));
     }
 }

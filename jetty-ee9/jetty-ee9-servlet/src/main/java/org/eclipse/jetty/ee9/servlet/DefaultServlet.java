@@ -83,17 +83,17 @@ import org.slf4j.LoggerFactory;
  *                    If set to a boolean True, then a default set of compressed formats
  *                    will be used, otherwise no precompressed formats.
  *
- *  resourceBase      Set to replace the context resource base
+ *  baseResource      Set to replace the context resource base
  *
  *  resourceCache     If set, this is a context attribute name, which the servlet
  *                    will use to look for a shared ResourceCache instance.
  *
- *  relativeResourceBase
+ *  relativeBaseResource
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
- *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
+ *  pathInfoOnly      If true, only the path info will be applied to the baseResource
  *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
@@ -136,7 +136,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
 
-    private Resource _resourceBase;
+    private Resource _baseResource;
     private CachedContentFactory _cache;
 
     private MimeTypes _mimeTypes;
@@ -144,7 +144,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
-    private String _relativeResourceBase;
+    private String _relativeBaseResource;
     private ServletHandler _servletHandler;
 
     public DefaultServlet(ResourceService resourceService)
@@ -188,25 +188,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
 
-        _relativeResourceBase = getInitParameter("relativeResourceBase");
+        _relativeBaseResource = getInitParameter("relativeBaseResource", "relativeResourceBase");
 
-        String rb = getInitParameter("resourceBase");
-        if (rb != null)
+        String br = getInitParameter("baseResource", "resourceBase");
+        if (br != null)
         {
-            if (_relativeResourceBase != null)
-                throw new UnavailableException("resourceBase & relativeResourceBase");
+            if (_relativeBaseResource != null)
+                throw new UnavailableException("baseResource & relativeBaseResource");
             try
             {
-                _resourceBase = _contextHandler.newResource(rb);
+                _baseResource = _contextHandler.newResource(br);
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                LOG.warn("Unable to create baseResource from {}", br, e);
                 throw new UnavailableException(e.toString());
             }
         }
 
-        // TODO move most of this to Resource Service
         String stylesheet = getInitParameter("stylesheet");
         try
         {
@@ -248,7 +247,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
                 LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
-            if (_relativeResourceBase != null || _resourceBase != null)
+            if (_relativeBaseResource != null || _baseResource != null)
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
         }
@@ -305,7 +304,26 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("resource base = {}", _resourceBase);
+            LOG.debug("resource base = {}", _baseResource);
+    }
+
+    private String getInitParameter(String name, String... deprecated)
+    {
+        String value = super.getInitParameter(name);
+        if (value != null)
+            return value;
+
+        for (String d : deprecated)
+        {
+            value = super.getInitParameter(d);
+            if (value != name)
+            {
+                LOG.warn("Deprecated {} used instead of {}", d, name);
+                return value;
+            }
+        }
+
+        return null;
     }
 
     private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
@@ -431,14 +449,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             subUriPath = URIUtil.encodePath(subUriPath);
 
         Resource r = null;
-        if (_relativeResourceBase != null)
-            subUriPath = URIUtil.addPaths(_relativeResourceBase, subUriPath);
+        if (_relativeBaseResource != null)
+            subUriPath = URIUtil.addPaths(_relativeBaseResource, subUriPath);
 
         try
         {
-            if (_resourceBase != null)
+            if (_baseResource != null)
             {
-                r = _resourceBase.resolve(subUriPath);
+                r = _baseResource.resolve(subUriPath);
                 if (!_contextHandler.checkAlias(subUriPath, r))
                     r = null;
             }
@@ -459,7 +477,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             LOG.trace("IGNORED", e);
         }
 
-        // TODO Move to ResourceService
         if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
             r = _stylesheet;
 

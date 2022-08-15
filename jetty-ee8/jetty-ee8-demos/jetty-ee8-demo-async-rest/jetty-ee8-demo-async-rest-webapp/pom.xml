@@ -10,7 +10,9 @@
   <packaging>war</packaging>
   <name>EE8 :: Jetty Demo :: Async Rest :: WebApp</name>
 
-  <!-- FIXME we should be able to reuse some files from the original ee9 src/main/webapp path -->
+  <properties>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp</ee9.module>
+  </properties>
 
   <dependencies>
     <dependency>

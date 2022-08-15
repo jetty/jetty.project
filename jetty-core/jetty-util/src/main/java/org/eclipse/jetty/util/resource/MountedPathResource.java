@@ -37,7 +37,7 @@ public class MountedPathResource extends PathResource
     @Override
     public boolean isContainedIn(Resource r)
     {
-        return r.getURI().equals(containerUri);
+        return URIUtil.unwrapContainer(r.getURI()).equals(containerUri);
     }
 
     public Path getContainerPath()

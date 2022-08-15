@@ -142,7 +142,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             _originAttribute = DEFAULT_ORIGIN_ATTRIBUTE_NAME;
         context.getMetaData().getOrigins();
 
-        if (context.getResourceBase() == null)
+        if (context.getBaseResource() == null)
             throw new IllegalArgumentException("No base resource for " + this);
 
         MetaData md = context.getMetaData();
@@ -166,7 +166,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         // Set some special context parameters
 
         // The location of the war file on disk
-        AttributeNormalizer normalizer = new AttributeNormalizer(context.getResourceBase());
+        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
 
         // The library order
         addContextParamFromAttribute(context, out, ServletContext.ORDERED_LIBS);

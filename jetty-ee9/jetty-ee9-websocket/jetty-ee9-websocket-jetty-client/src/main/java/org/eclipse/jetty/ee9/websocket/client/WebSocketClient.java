@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
@@ -389,7 +390,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
-     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.ee9.websocket.api.StatusCode#SHUTDOWN}.
+     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link StatusCode#SHUTDOWN}.
      * @param stopTimeout the time in ms to wait for the graceful close, use a value less than or equal to 0 to not gracefully close.
      */
     public void setStopTimeout(long stopTimeout)
