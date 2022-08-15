@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -21,10 +22,13 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface AliasCheck
 {
     /**
-     * Check an alias
+     * Check if an alias is allowed to be served. If any {@link AliasCheck} returns
+     * true then the alias will be allowed to be served, therefore any alias checker
+     * should take things like the {@link ContextHandler#getProtectedTargets()} and
+     * Security Constraints into consideration before allowing a return a value of true.
      *
-     * @param pathInContext The path the aliased resource was created for
-     * @param resource The aliased resourced
+     * @param pathInContext The path the aliased resource was created for.
+     * @param resource The aliased resourced.
      * @return True if the resource is OK to be served.
      */
     boolean checkAlias(String pathInContext, Resource resource);
