@@ -14,8 +14,8 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
@@ -95,9 +95,9 @@ public class TestJettyEmbedder
         jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
         jetty.setServer(server);
-        jetty.setContextHandlers(Arrays.asList(otherHandler));
+        jetty.setContextHandlers(List.of(otherHandler));
         jetty.setRequestLog(null);
-        jetty.setJettyXmlFiles(Arrays.asList(MavenTestingUtils.getTestResourceFile("embedder-jetty.xml")));
+        jetty.setJettyXmlFiles(List.of(MavenTestingUtils.getTestResourceFile("embedder-jetty.xml")));
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
         jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());

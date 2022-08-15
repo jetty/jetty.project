@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.ee8.maven.plugin.MavenWebAppContext">
+
+  <Call class="org.eclipse.jetty.ee8.maven.plugin.WebAppPropertyConverter" name="fromProperties">
+    <Arg>
+      <Ref refid="wac" />
+    </Arg>
+    <Arg><Property name="jetty.base"/>/etc/maven.props</Arg>
+    <Arg>
+      <Ref refid="Server" />
+    </Arg>
+    <Arg></Arg>
+  </Call>
+
+</Configure>

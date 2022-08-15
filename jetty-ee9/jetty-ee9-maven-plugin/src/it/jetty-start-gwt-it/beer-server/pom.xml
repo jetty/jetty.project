@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.olamy</groupId>
+    <artifactId>beer</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>beer-server</artifactId>
+  <packaging>war</packaging>
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-start-mojo.txt</jetty.port.file>
+    <jetty.deployMode>EMBED</jetty.deployMode>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>beer-shared</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-maven-plugin</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>IntegrationTest*.java</include>
+          </includes>
+          <systemPropertyVariables>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <contentCheck>Please enter your name</contentCheck>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
+          </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty.ee9:jetty-ee9-maven-plugin</dependency>
+          </dependenciesToScan>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>run</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <systemProperties>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              </systemProperties>
+              <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
+              <jettyXmls>
+                  <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

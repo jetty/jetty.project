@@ -48,6 +48,8 @@ pipeline {
                 dir("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                   mavenBuild("jdk17", "clean -f jetty-core", "maven3")
+                  mavenBuild("jdk17", "clean install -DskipTests", "maven3")
+                  mavenBuild("jdk17", "clean", "maven3")
                 }
               }
             }
