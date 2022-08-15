@@ -1638,7 +1638,7 @@ public final class URIUtil
         else if (!uriA.getAuthority().equals(uriB.getAuthority()))
             return false;
 
-        return equalsIgnoreEncodings(uriA.getPath(), uriB.getPath());
+        return equalsIgnoreEncodings(uriA.getRawPath(), uriB.getRawPath());
     }
 
     /**

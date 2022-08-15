@@ -351,10 +351,10 @@ public class WebAppContextTest
         "/foo/%u002e%u002e/WEB-INF/test.xml",
         "/%2E/WEB-INF/test.xml",
         "/%u002E/WEB-INF/test.xml",
-        "//WEB-INF/test.xml" /* TODO,
+        "//WEB-INF/test.xml",
         "/WEB-INF%2Ftest.xml",
         "/WEB-INF%u002Ftest.xml",
-        "/WEB-INF%2ftest.xml" */
+        "/WEB-INF%2ftest.xml"
     })
     public void testProtectedTarget(String target) throws Exception
     {
