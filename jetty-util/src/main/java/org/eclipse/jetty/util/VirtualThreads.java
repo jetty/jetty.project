@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,20 +25,20 @@ import org.slf4j.LoggerFactory;
  * and, if virtual threads are supported, to start virtual threads.</p>
  *
  * @see #areSupported()
- * @see #startVirtualThread(Runnable)
+ * @see #executeOnVirtualThread(Runnable)
  * @see #isVirtualThread()
  */
 public class VirtualThreads
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreads.class);
-    private static final Method startVirtualThread = probeStartVirtualThread();
+    private static final Executor executor = probeVirtualThreadExecutor();
     private static final Method isVirtualThread = probeIsVirtualThread();
 
-    private static Method probeStartVirtualThread()
+    private static Executor probeVirtualThreadExecutor()
     {
         try
         {
-            return Thread.class.getMethod("startVirtualThread", Runnable.class);
+            return (Executor)Executors.class.getMethod("newVirtualThreadPerTaskExecutor").invoke(null);
         }
         catch (Throwable x)
         {
@@ -67,7 +68,7 @@ public class VirtualThreads
      */
     public static boolean areSupported()
     {
-        return startVirtualThread != null;
+        return executor != null;
     }
 
     /**
@@ -78,13 +79,13 @@ public class VirtualThreads
      * @param task the task to execute in a virtual thread
      * @see #areSupported()
      */
-    public static void startVirtualThread(Runnable task)
+    public static void executeOnVirtualThread(Runnable task)
     {
         try
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting in virtual thread: {}", task);
-            startVirtualThread.invoke(null, task);
+            executor.execute(task);
         }
         catch (Throwable x)
         {
