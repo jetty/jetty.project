@@ -37,12 +37,14 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,14 +73,34 @@ public class ResourceService
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
+    private Resource _stylesheet;
 
     public ResourceService()
     {
     }
 
+    /**
+     * @param stylesheet The location of the stylesheet to be used as a String.
+     */
+    public void setStylesheet(Resource stylesheet)
+    {
+        _stylesheet = stylesheet;
+    }
+
+    /**
+     * @return Returns the stylesheet as a Resource.
+     */
+    public Resource getStylesheet()
+    {
+        return _stylesheet;
+    }
+
     public HttpContent getContent(String path) throws IOException
     {
-        return _contentFactory.getContent(path == null ? "" : path);
+        HttpContent content = _contentFactory.getContent(path == null ? "" : path);
+        if ((content == null) && (_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
+            content = new ResourceHttpContent(_stylesheet, "text/css");
+        return content;
     }
 
     public HttpContent.ContentFactory getContentFactory()
