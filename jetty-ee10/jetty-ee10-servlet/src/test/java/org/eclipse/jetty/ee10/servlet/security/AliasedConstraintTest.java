@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -77,8 +76,6 @@ public class AliasedConstraintTest
         context.setBaseResource(MavenTestingUtils.getTestResourcePathDir("docroot"));
 
         server.setHandler(new HandlerList(context, new DefaultHandler()));
-
-        context.addAliasCheck(new AllowSymLinkAliasChecker());
 
         server.addBean(loginService);
 
