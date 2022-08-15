@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -95,11 +96,24 @@ public class ResourceService
         return _stylesheet;
     }
 
-    public HttpContent getContent(String path) throws IOException
+    public HttpContent getContent(String path, Request request) throws IOException
+    {
+        ContextHandler contextHandler = ContextHandler.getContextHandler(request);
+        return getContent(path, contextHandler);
+    }
+
+    public HttpContent getContent(String path, AliasCheck aliasCheck) throws IOException
     {
         HttpContent content = _contentFactory.getContent(path == null ? "" : path);
-        if ((content == null) && (_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-            content = new ResourceHttpContent(_stylesheet, "text/css");
+        if (content != null)
+        {
+            if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
+                return null;
+
+            if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
+                content = new ResourceHttpContent(_stylesheet, "text/css");
+        }
+
         return content;
     }
 

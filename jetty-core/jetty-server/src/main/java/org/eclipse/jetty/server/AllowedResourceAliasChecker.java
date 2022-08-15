@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
-public class AllowedResourceAliasChecker extends AbstractLifeCycle implements ContextHandler.AliasCheck
+public class AllowedResourceAliasChecker extends AbstractLifeCycle implements AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(AllowedResourceAliasChecker.class);
     protected static final LinkOption[] FOLLOW_LINKS = new LinkOption[0];
@@ -75,9 +75,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     private String[] getProtectedTargets()
     {
-        // TODO: Add protected targets to ContextHandler.
-        // return _contextHandler.getProtectedTargets();
-        return null;
+        return _contextHandler.getProtectedTargets();
     }
 
     private void extractBaseResourceFromContext()
@@ -130,7 +128,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     }
 
     @Override
-    public boolean check(String pathInContext, Resource resource)
+    public boolean checkAlias(String pathInContext, Resource resource)
     {
         if (!_initialized)
             extractBaseResourceFromContext();

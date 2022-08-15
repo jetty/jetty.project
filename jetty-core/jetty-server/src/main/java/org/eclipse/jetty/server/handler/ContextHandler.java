@@ -20,6 +20,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
@@ -33,14 +34,17 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -48,13 +52,14 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful
+public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck
 {
     // TODO where should the alias checking go?
     // TODO add protected paths to ServletContextHandler?
@@ -92,6 +97,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
+    private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
+    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     public enum Availability
     {
@@ -100,6 +107,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         AVAILABLE,      // running normally
         UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
         SHUTDOWN,       // graceful shutdown
+    }
+
+    /**
+     * The type of protected target match
+     * @see #_protectedTargets
+     */
+    private enum ProtectedTargetType
+    {
+        EXACT,
+        PREFIX
+    }
+
+    public static ContextHandler getContextHandler(Request request)
+    {
+        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        return (contextRequest == null) ? null : contextRequest.getContext().getContextHandler();
     }
 
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
@@ -122,6 +145,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             setContextPath(contextPath);
         if (parent != null)
             parent.addHandler(this);
+
+        if (File.separatorChar == '/')
+            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
     }
 
     protected Context newContext()
@@ -728,6 +754,124 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _persistentAttributes.clearAttributes();
     }
 
+    /**
+     * Check the target when a target within a context is determined. If
+     * the target is protected, 404 is returned.
+     *
+     * @param target the target to test
+     * @return true if target is a protected target
+     */
+    public boolean isProtectedTarget(String target)
+    {
+        if (target == null || _protectedTargets.isEmpty())
+            return false;
+
+        if (target.startsWith("//"))
+            target = URIUtil.compactPath(target);
+
+        ProtectedTargetType type = _protectedTargets.getBest(target);
+
+        return type == ProtectedTargetType.PREFIX ||
+            type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
+    }
+
+    /**
+     * @param targets Array of URL prefix. Each prefix is in the form /path and will match either /path exactly or /path/anything
+     */
+    public void setProtectedTargets(String[] targets)
+    {
+        Index.Builder<ProtectedTargetType> builder = new Index.Builder<>();
+        if (targets != null)
+        {
+            for (String t : targets)
+            {
+                if (!t.startsWith("/"))
+                    throw new IllegalArgumentException("Bad protected target: " + t);
+
+                builder.with(t, ProtectedTargetType.EXACT);
+                builder.with(t + "/", ProtectedTargetType.PREFIX);
+                builder.with(t + "?", ProtectedTargetType.PREFIX);
+                builder.with(t + "#", ProtectedTargetType.PREFIX);
+                builder.with(t + ";", ProtectedTargetType.PREFIX);
+            }
+        }
+        _protectedTargets = builder.caseSensitive(false).build();
+    }
+
+    public String[] getProtectedTargets()
+    {
+        if (_protectedTargets == null)
+            return null;
+
+        return _protectedTargets.keySet().stream()
+            .filter(s -> _protectedTargets.get(s) == ProtectedTargetType.EXACT)
+            .toArray(String[]::new);
+    }
+
+    /**
+     * Add an AliasCheck instance to possibly permit aliased resources
+     *
+     * @param check The alias checker
+     */
+    public void addAliasCheck(AliasCheck check)
+    {
+        _aliasChecks.add(check);
+        if (check instanceof LifeCycle)
+            addManaged((LifeCycle)check);
+        else
+            addBean(check);
+    }
+
+    /**
+     * @return Immutable list of Alias checks
+     */
+    public List<AliasCheck> getAliasChecks()
+    {
+        return Collections.unmodifiableList(_aliasChecks);
+    }
+
+    /**
+     * @param checks list of AliasCheck instances
+     */
+    public void setAliasChecks(List<AliasCheck> checks)
+    {
+        clearAliasChecks();
+        checks.forEach(this::addAliasCheck);
+    }
+
+    /**
+     * clear the list of AliasChecks
+     */
+    public void clearAliasChecks()
+    {
+        _aliasChecks.forEach(this::removeBean);
+        _aliasChecks.clear();
+    }
+
+    @Override
+    public boolean checkAlias(String pathInContext, Resource resource)
+    {
+        // Is the resource aliased?
+        if (resource.isAlias())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
+
+            // alias checks
+            for (AliasCheck check : _aliasChecks)
+            {
+                if (check.checkAlias(pathInContext, resource))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public String toString()
     {
@@ -985,22 +1129,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             if (factory != null)
                 factory.destroy(o);
         }
-    }
-
-    /**
-     * Interface to check aliases
-     * TODO REVIEW!!!
-     */
-    public interface AliasCheck
-    {
-        /**
-         * Check an alias
-         *
-         * @param pathInContext The path the aliased resource was created for
-         * @param resource The aliased resourced
-         * @return True if the resource is OK to be served.
-         */
-        boolean check(String pathInContext, Resource resource);
     }
 
     /**

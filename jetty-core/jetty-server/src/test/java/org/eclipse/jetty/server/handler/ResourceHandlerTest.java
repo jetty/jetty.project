@@ -675,12 +675,12 @@ public class ResourceHandlerTest
         _server.addConnector(_local);
 
         _rootResourceHandler = new ResourceHandler();
-        _rootResourceHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
         _rootResourceHandler.setRedirectWelcome(false);
 
         ContextHandler contextHandler = new ContextHandler("/context");
         contextHandler.setHandler(_rootResourceHandler);
+        contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
 
         _contextHandlerCollection = new ContextHandlerCollection();
         _contextHandlerCollection.addHandler(contextHandler);
