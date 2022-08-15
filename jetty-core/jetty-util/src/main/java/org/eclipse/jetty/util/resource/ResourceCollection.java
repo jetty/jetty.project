@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.resource;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
@@ -107,7 +106,6 @@ public class ResourceCollection extends Resource
      *   <li>is a directory that exists in several of the collection, then a ResourceCollection of those directories is returned</li>
      *   <li>do not exist in any of the collection, then a new non existent resource relative to the first in the collection is returned.</li>
      * </ul>
-     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
     public Resource resolve(String subUriPath)

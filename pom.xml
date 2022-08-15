@@ -634,7 +634,7 @@
           <configuration>
             <verbose>true</verbose>
             <debug>true</debug>
-            <source>11</source>
+            <source>17</source>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>

@@ -375,7 +375,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         {
             try
             {
-                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), false, destination, 1);
+                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
                 pool.preCreateConnections(parallelism * 2).get();
                 return pool;
             }

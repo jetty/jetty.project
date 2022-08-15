@@ -216,6 +216,8 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarted())
+            throw new IllegalStateException(getState());
         _resourceBase = base;
     }
 

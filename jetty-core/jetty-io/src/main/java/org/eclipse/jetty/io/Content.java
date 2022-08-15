@@ -92,7 +92,7 @@ public class Content
 
     /**
      * <p>A source of content that can be read with a read/demand model.</p>
-     * <a id="idiom"><h3>Idiomatic usage</h3></a>
+     * <h2><a id="idiom">Idiomatic usage</a></h2>
      * <p>The read/demand model typical usage is the following:</p>
      * <pre>{@code
      * public void onContentAvailable() {
@@ -519,6 +519,7 @@ public class Content
         /**
          * <p>Returns the chunk that follows a chunk that has been consumed.</p>
          * <table>
+         * <caption>Next Chunk</caption>
          * <thead>
          *   <tr>
          *     <th>Input Chunk</th>
@@ -531,8 +532,8 @@ public class Content
          *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
-         *     <td>{@link Error}</td>
-         *     <td>{@link Error}</td>
+         *     <td>{@link Error Error}</td>
+         *     <td>{@link Error Error}</td>
          *   </tr>
          *   <tr>
          *     <td>{@link #isLast()}</td>

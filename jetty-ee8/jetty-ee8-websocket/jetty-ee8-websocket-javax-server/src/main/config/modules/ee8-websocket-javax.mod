@@ -16,7 +16,7 @@ lib/ee8-websocket/jetty-websocket-core-common-${jetty.version}.jar
 lib/ee8-websocket/jetty-websocket-core-client-${jetty.version}.jar
 lib/ee8-websocket/jetty-websocket-core-server-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-servlet-${jetty.version}.jar
-lib/ee8-websocket/jetty-jakarta-websocket-api-2.0.0.jar
+lib/ee8-websocket/jetty-jakarta-websocket-api-@jakarta.websocket.api.version@.jar
 lib/ee8-websocket/jetty-ee8-websocket-javax-client-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-javax-common-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jakarta-server-${jetty.version}.jar

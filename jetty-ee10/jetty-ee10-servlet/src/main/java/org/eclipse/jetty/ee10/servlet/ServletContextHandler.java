@@ -890,7 +890,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
 
             // alias checks
-            for (AliasCheck check : getAliasChecks())
+            for (AliasCheck check : _aliasChecks)
             {
                 if (check.check(path, resource))
                 {

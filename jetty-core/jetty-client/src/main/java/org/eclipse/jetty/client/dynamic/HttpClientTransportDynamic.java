@@ -32,7 +32,6 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
@@ -179,7 +178,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public HttpDestination newHttpDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
-        return new MultiplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override
