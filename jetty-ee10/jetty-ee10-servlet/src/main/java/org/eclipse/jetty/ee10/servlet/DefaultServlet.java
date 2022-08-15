@@ -73,6 +73,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO restore javadoc
+ */
 public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
@@ -94,8 +97,8 @@ public class DefaultServlet extends HttpServlet
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        _baseResource = servletContextHandler.getResourceBase();
-        String rb = getInitParameter("resourceBase");
+        _baseResource = servletContextHandler.getBaseResource();
+        String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
@@ -105,7 +108,7 @@ public class DefaultServlet extends HttpServlet
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                LOG.warn("Unable to create baseResource from {}", rb, e);
                 throw new UnavailableException(e.toString());
             }
         }
@@ -223,6 +226,25 @@ public class DefaultServlet extends HttpServlet
 
         if (LOG.isDebugEnabled())
             LOG.debug("base resource = {}", _baseResource);
+    }
+
+    private String getInitParameter(String name, String... deprecated)
+    {
+        String value = super.getInitParameter(name);
+        if (value != null)
+            return value;
+
+        for (String d : deprecated)
+        {
+            value = super.getInitParameter(d);
+            if (value != name)
+            {
+                LOG.warn("Deprecated {} used instead of {}", d, name);
+                return value;
+            }
+        }
+
+        return null;
     }
 
     @Override

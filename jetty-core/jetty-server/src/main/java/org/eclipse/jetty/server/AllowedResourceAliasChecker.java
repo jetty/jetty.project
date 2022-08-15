@@ -54,7 +54,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        this(contextHandler, contextHandler::getResourceBase);
+        this(contextHandler, contextHandler::getBaseResource);
     }
 
     public AllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)

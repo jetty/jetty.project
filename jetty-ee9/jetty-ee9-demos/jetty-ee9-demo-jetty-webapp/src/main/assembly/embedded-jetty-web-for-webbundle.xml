@@ -16,7 +16,7 @@ detected.
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
   <!--  + contextPath                                                  -->
-  <!--  + war OR resourceBase                                          -->
+  <!--  + war OR baseResource                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/</Set>
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/ee9-demo-jetty.war</Set>

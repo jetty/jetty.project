@@ -197,7 +197,7 @@ public class ServletTester extends ContainerLifeCycle
 
     public Resource getResourceBase()
     {
-        return _context.getResourceBase();
+        return _context.getBaseResource();
     }
 
     public void setResourceBase(Resource base)

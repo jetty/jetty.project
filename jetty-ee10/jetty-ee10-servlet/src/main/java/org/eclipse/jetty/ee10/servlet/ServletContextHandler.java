@@ -853,7 +853,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        Resource baseResource = getResourceBase();
+        Resource baseResource = getBaseResource();
         if (baseResource == null)
             return null;
 
@@ -1235,7 +1235,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (getContextPath() == null)
                 throw new IllegalStateException("Null contextPath");
 
-            Resource baseResource = getResourceBase();
+            Resource baseResource = getBaseResource();
             if (baseResource != null && baseResource.isAlias())
                 LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
                     baseResource, baseResource.getAlias(), this);

@@ -786,7 +786,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * @return Returns the war as a file or URL string (Resource).
-     * The war may be different to the @link {@link #getResourceBase()}
+     * The war may be different to the @link {@link #getBaseResource()}
      * if the war has been expanded and/or copied.
      */
     @ManagedAttribute(value = "war file location", readonly = true)
@@ -794,9 +794,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_war == null)
         {
-            if (getResourceBase() != null)
+            if (getBaseResource() != null)
             {
-                Path warPath = getResourceBase().getPath();
+                Path warPath = getBaseResource().getPath();
                 if (warPath != null)
                     _war = warPath.toUri().toASCIIString();
             }
@@ -806,7 +806,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public Resource getWebInf() throws IOException
     {
-        if (getResourceBase() == null)
+        if (getBaseResource() == null)
             return null;
 
         // Is there a WEB-INF directory anywhere in the Resource Base?
@@ -814,7 +814,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // The result could be a ResourceCollection with multiple WEB-INF directories
         // Can return from WEB-INF/lib/foo.jar!/WEB-INF
         // Can also never return from a META-INF/versions/#/WEB-INF location
-        Resource webInf = getResourceBase().resolve("WEB-INF/");
+        Resource webInf = getBaseResource().resolve("WEB-INF/");
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
@@ -929,9 +929,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 else
                     name = _war;
             }
-            else if (getResourceBase() != null)
+            else if (getBaseResource() != null)
             {
-                name = getResourceBase().getURI().toASCIIString();
+                name = getBaseResource().getURI().toASCIIString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
                     name = name.substring(webapps + 8);
