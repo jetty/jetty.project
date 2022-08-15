@@ -1571,7 +1571,8 @@ public final class URIUtil
         }
     }
 
-    public static boolean equalsIgnoreEncodings(String uriA, String uriB)
+    // Only URIUtil is using this method
+    protected static boolean equalsIgnoreEncodings(String uriA, String uriB)
     {
         int lenA = uriA.length();
         int lenB = uriB.length();
@@ -1638,6 +1639,9 @@ public final class URIUtil
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
     {
         if (uriA.equals(uriB))
+            return true;
+
+        if (uriA.toASCIIString().equals(uriB.toASCIIString()))
             return true;
 
         if (uriA.getScheme() == null)

@@ -752,8 +752,19 @@ public class URIUtilTest
             Arguments.of(
                 URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
                 URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
+            ),
+            Arguments.of(
+                URI.create("jar:file:///path/to/test.jar!/bãm/"),
+                URI.create("jar:file:///path/to/test.jar!/b%C3%A3m/")
             )
         );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingURITrueSource")
+    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
+    {
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
     public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
