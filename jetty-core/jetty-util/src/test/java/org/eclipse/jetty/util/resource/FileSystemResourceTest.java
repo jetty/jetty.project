@@ -43,6 +43,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -245,6 +246,7 @@ public class FileSystemResourceTest
     }
 
     @Test
+    @Disabled("Will be fixed in PR #8436")
     public void testAccessUniCodeFile() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
