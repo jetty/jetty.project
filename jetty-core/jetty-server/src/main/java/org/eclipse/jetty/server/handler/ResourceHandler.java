@@ -123,7 +123,7 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the resourceBase.
      */
-    public Resource getResourceBase()
+    public Resource getBaseResource()
     {
         return _resourceBase;
     }
@@ -216,6 +216,8 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarted())
+            throw new IllegalStateException(getState());
         _resourceBase = base;
     }
 

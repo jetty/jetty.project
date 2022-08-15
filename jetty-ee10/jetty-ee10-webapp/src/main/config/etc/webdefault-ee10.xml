@@ -94,17 +94,17 @@
  *                    If set to a boolean True, then a default set of compressed formats
  *                    will be used, otherwise no precompressed formats.
  *
- *  resourceBase      Set to replace the context resource base
+ *  baseResource      Set to replace the context resource base
  *
  *  resourceCache     If set, this is a context attribute name, which the servlet
  *                    will use to look for a shared ResourceCache instance.
  *
- *  relativeResourceBase
+ *  relativeBaseResource
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
- *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
+ *  pathInfoOnly      If true, only the path info will be applied to the baseResource
  *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.

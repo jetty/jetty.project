@@ -264,7 +264,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (resources != null && !resources.isEmpty())
         {
             List<Resource> collection = new ArrayList<>();
-            collection.add(context.getResourceBase());
+            collection.add(context.getBaseResource());
             collection.addAll(resources);
             context.setBaseResource(Resource.combine(collection));
         }

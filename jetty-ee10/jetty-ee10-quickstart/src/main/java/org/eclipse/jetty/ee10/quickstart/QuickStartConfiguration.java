@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.annotations.AnnotationDecorator;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
@@ -96,7 +95,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         //check that webapp is suitable for quick start - it is not a packed war
         String war = context.getWar();
-        if (war == null || war.length() <= 0 || !context.getResourceBase().isDirectory())
+        if (war == null || war.length() <= 0 || !context.getBaseResource().isDirectory())
             throw new IllegalStateException("Bad Quickstart location");
 
         //look for quickstart-web.xml in WEB-INF of webapp
@@ -233,7 +232,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
-            Files.createDirectories(context.getResourceBase().getPath().resolve("WEB-INF"));
+            Files.createDirectories(context.getBaseResource().getPath().resolve("WEB-INF"));
             webInf = context.getWebInf();
         }
 

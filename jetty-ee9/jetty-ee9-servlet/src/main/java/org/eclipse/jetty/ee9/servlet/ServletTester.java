@@ -203,11 +203,13 @@ public class ServletTester extends ContainerLifeCycle
         _context.setBaseResource(resource);
     }
 
+    @Deprecated
     public String getResourceBase()
     {
         return _context.getResourceBase();
     }
 
+    @Deprecated
     public void setResourceBase(String resourceBase)
     {
         _context.setResourceBase(resourceBase);

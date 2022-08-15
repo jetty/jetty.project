@@ -126,7 +126,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //The first time we run, remember the original base dir
         if (originalBaseResource == null)
         {
-            if (webApp.getResourceBase() == null)
+            if (webApp.getBaseResource() == null)
             {
                 //Use the default static resource location
                 if (!webAppSourceDirectory.exists())
@@ -134,7 +134,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 originalBaseResource = ResourceFactory.of(webApp).newResource(webAppSourceDirectory.getCanonicalPath());
             }
             else
-                originalBaseResource = webApp.getResourceBase();
+                originalBaseResource = webApp.getBaseResource();
         }
 
         //On every subsequent re-run set it back to the original base dir before
@@ -175,11 +175,11 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }
 
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
-            if (webApp.getDescriptor() == null && webApp.getResourceBase() != null)
+            if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/web.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/web.xml location
-                Resource r = webApp.getResourceBase().resolve("WEB-INF/web.xml");
+                Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
