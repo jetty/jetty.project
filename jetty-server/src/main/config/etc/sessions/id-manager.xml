@@ -5,7 +5,6 @@
   <!-- ===================================================================== -->
   <!-- Configure a SessionIdManager                                          -->
   <!-- ===================================================================== -->
-  <Set name="sessionIdManager">
     <New id="idMgr" class="org.eclipse.jetty.server.session.DefaultSessionIdManager">
       <Arg>
         <Ref refid="Server"/>
@@ -32,5 +31,4 @@
        </New>
       </Set>
    </New>
-  </Set>
 </Configure>

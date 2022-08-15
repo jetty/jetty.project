@@ -68,6 +68,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     public DefaultSessionIdManager(Server server)
     {
         _server = server;
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -86,6 +87,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     public void setServer(Server server)
     {
         _server = server;
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -193,6 +195,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public String newSessionId(HttpServletRequest request, long created)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+        
         if (request == null)
             return newSessionId(created);
 
@@ -223,6 +228,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      */
     public String newSessionId(long seedTerm)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+        
         // pick a new unique ID!
         String id = null;
 
@@ -270,10 +278,13 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
         return id;
     }
-
+    
     @Override
     public boolean isIdInUse(String id)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+
         if (id == null)
             return false;
 
@@ -379,6 +390,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public String getExtendedId(String clusterId, HttpServletRequest request)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+        
         if (!StringUtil.isBlank(_workerName))
         {
             if (_workerAttr == null)
@@ -413,6 +427,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public void expireAll(String id)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Expiring {}", id);
 
@@ -440,6 +457,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
     {
+        if (!isStarted())
+            throw new IllegalStateException("DefaultSessionIdManager not started");
+        
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
 
