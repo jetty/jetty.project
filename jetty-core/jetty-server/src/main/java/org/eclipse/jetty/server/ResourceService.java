@@ -109,7 +109,9 @@ public class ResourceService
         {
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
-
+        }
+        else
+        {
             if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
                 content = new ResourceHttpContent(_stylesheet, "text/css");
         }
