@@ -100,8 +100,8 @@ public class URIUtilTest
 
         // UTF8 and unicode handling
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        arguments.add(Arguments.of("/foo/b\u00e4\u00e4", "/foo/b%E4%E4", "/foo/b\u00e4\u00e4"));
-        arguments.add(Arguments.of("/f%d8%a9%D8%A9/bar", "/f%D8%A9%D8%A9/bar", "/f\u0629\u0629/bar"));
+        arguments.add(Arguments.of("/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4", "/foo/b\u00e4\u00e4"));
+        arguments.add(Arguments.of("/f%d8%a9%D8%A9/bar", "/f\u0629\u0629/bar", "/f\u0629\u0629/bar"));
 
         // Encoded delimiters
         arguments.add(Arguments.of("/foo%2fbar", "/foo%2Fbar", "/foo/bar"));
@@ -111,20 +111,20 @@ public class URIUtilTest
 
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         arguments.add(Arguments.of("/f%20o/b%20r", "/f%20o/b%20r", "/f o/b r"));
-        arguments.add(Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f%E4%E4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="));
-        arguments.add(Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f%D8%A9%D8%A9%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"));
+        arguments.add(Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="));
+        arguments.add(Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"));
 
         // path parameters should be ignored
         arguments.add(Arguments.of("/foo;ignore/bar;ignore", "/foo/bar", "/foo/bar"));
-        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/f%E4%E4/bar", "/fää/bar"));
-        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f%D8%A9%D8%A9%2523/bar", "/f\u0629\u0629%23/bar"));
+        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar", "/fää/bar"));
+        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"));
         arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%2523%3B,:=b%20a%20r", "foo%23;,:=b a r"));
 
         // test for chars that are somehow already decoded, but shouldn't be
         arguments.add(Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"));
         arguments.add(Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"));
-        arguments.add(Arguments.of("/foo/bär", "/foo/b%E4r", "/foo/bär"));
-        // arguments.add(Arguments.of("/foo/€/bar", "/foo/%E2%82%AC/bar", "/foo/€/bar")); // TODO: doesn't convert 3-byte unicode codepoint to UTF-8 percent-encoding properly
+        arguments.add(Arguments.of("/foo/bär", "/foo/bär", "/foo/bär"));
+        arguments.add(Arguments.of("/foo/€/bar", "/foo/€/bar", "/foo/€/bar"));
         arguments.add(Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"));
 
         // Test for null character (real world ugly test case)
@@ -133,7 +133,7 @@ public class URIUtilTest
         arguments.add(Arguments.of("/%00/", "/%00/", odd));
 
         // Deprecated Microsoft Percent-U encoding
-        arguments.add(Arguments.of("abc%u3040", "abc%E3%81%80", "abc\u3040"));
+        arguments.add(Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"));
 
         // Canonical paths are also normalized
         arguments.add(Arguments.of("./bar", "bar", "./bar"));
@@ -742,6 +742,10 @@ public class URIUtilTest
     {
         return Stream.of(
             Arguments.of(
+                URI.create("HTTP:/foo/b%61r"),
+                URI.create("http:/f%6Fo/bar")
+            ),
+            Arguments.of(
                 URI.create("jar:file:/path/to/main.jar!/META-INF/versions/"),
                 URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/")
             ),
@@ -752,11 +756,21 @@ public class URIUtilTest
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURITrueSource")
-    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
+    public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
     {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+        return Stream.of(
+            Arguments.of(
+                URI.create("/foo%2Fbar"),
+                URI.create("/foo/bar")
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingURIFalseSource")
+    public void testEqualsIgnoreEncodingURIFalse(URI uriA, URI uriB)
+    {
+        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
     public static Stream<Arguments> correctBadFileURICases()
@@ -1142,7 +1156,8 @@ public class URIUtilTest
         // Bad java file.uri syntax
         String input = "file:/home/user/lib/acme.jar";
         List<URI> uris = URIUtil.split(input);
-        String expected = String.format("jar:%s!/", input);
+        // As zipfs with corrected file.uri syntax as well
+        String expected = "jar:file:///home/user/lib/acme.jar!/";
         assertThat(uris.get(0).toString(), is(expected));
     }
 

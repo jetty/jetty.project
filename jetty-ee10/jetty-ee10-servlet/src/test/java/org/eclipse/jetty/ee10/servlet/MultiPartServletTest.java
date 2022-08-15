@@ -45,7 +45,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
@@ -235,12 +235,12 @@ public class MultiPartServletTest
         assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
 
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-        String boundary = MultiParts.extractBoundary(contentType);
-        MultiParts multiParts = new MultiParts(boundary);
+        String boundary = MultiPart.extractBoundary(contentType);
+        MultiPartFormData formData = new MultiPartFormData(boundary);
 
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        multiParts.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));
-        MultiParts.Parts parts = multiParts.join();
+        formData.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));
+        MultiPartFormData.Parts parts = formData.join();
 
         assertThat(parts.size(), is(1));
         assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));

@@ -63,7 +63,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -121,11 +121,26 @@
       <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- sounds cyclic -->
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <type>zip</type>
       <scope>test</scope>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
     </dependency>
   </dependencies>
   <build>

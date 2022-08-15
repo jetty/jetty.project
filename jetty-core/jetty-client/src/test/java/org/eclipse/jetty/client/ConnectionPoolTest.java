@@ -585,11 +585,11 @@ public class ConnectionPoolTest
     {
         startServer(new EmptyServerHandler());
 
-        int maxUsageCount = 2;
+        int maxUsage = 2;
         startClient(destination ->
         {
             AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
-            connectionPool.setMaxUsageCount(maxUsageCount);
+            connectionPool.setMaxUsage(maxUsage);
             connectionPool.setMaxDuration(0); // Disable max duration expiry as it may expire the connection between the 1st and 2nd request.
             return connectionPool;
         });

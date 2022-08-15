@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
-import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
@@ -70,7 +69,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public HttpDestination newHttpDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
-        return new DuplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override

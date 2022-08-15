@@ -389,13 +389,13 @@ public class HttpURITest
                 {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
                 {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
-                {"/foo/%u20AC/bar", "/foo/%E2%82%AC/bar", "/foo/€/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+                {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
 
                 // nfc encoded unicode path
-                {"/dir/swedish-%C3%A5.txt", "/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
+                {"/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
 
                 // nfd encoded unicode path
-                {"/dir/swedish-a%CC%8A.txt", "/dir/swedish-a%CC%8A.txt", URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), EnumSet.noneOf(Violation.class)},
+                {"/dir/swedish-a%CC%8A.txt", URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), EnumSet.noneOf(Violation.class)},
 
                 // illegal paths
                 {"//host/../path/info", null, null, EnumSet.noneOf(Violation.class)},

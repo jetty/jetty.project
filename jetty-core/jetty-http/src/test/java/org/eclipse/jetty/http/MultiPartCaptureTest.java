@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -254,9 +255,9 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 String charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
-                Promise.Completable<String> promise = new Promise.Completable<>();
-                Content.Source.asString(part.getContent(), Charset.forName(charset), promise);
-                assertThat("Part[" + expected.name + "].contents", promise.get(), containsString(expected.value));
+                assertTrue(part.getContent().rewind());
+                String partContent = Content.Source.asString(part.getContent(), Charset.forName(charset));
+                assertThat("Part[" + expected.name + "].contents", partContent, containsString(expected.value));
             }
 
             // Evaluate expected filenames
@@ -309,6 +310,7 @@ public class MultiPartCaptureTest
     {
         // Preserve parts order.
         private final Map<String, List<MultiPart.Part>> parts = new LinkedHashMap<>();
+        private final List<ByteBuffer> partByteBuffers = new ArrayList<>();
         private final MultiPartExpectations expectations;
 
         private TestPartsListener(MultiPartExpectations expectations)
@@ -317,16 +319,18 @@ public class MultiPartCaptureTest
         }
 
         @Override
-        public void onPart(MultiPart.Part part)
+        public void onPartContent(Content.Chunk chunk)
         {
             // Copy the part content, as we need to iterate over it multiple times.
-            Promise.Completable<List<ByteBuffer>> promise = new Promise.Completable<>();
-            Content.Source.asByteBuffers(part.getContent(), promise);
-            promise.thenAccept(byteBuffers ->
-            {
-                MultiPart.Part newPart = new MultiPart.ByteBufferPart(part.getName(), part.getFileName(), part.getHeaders(), byteBuffers);
-                parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
-            });
+            partByteBuffers.add(BufferUtil.copy(chunk.getByteBuffer()));
+        }
+
+        @Override
+        public void onPart(String name, String fileName, HttpFields headers)
+        {
+            MultiPart.Part newPart = new MultiPart.ByteBufferPart(name, fileName, headers, List.copyOf(partByteBuffers));
+            partByteBuffers.clear();
+            parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
         }
 
         private void assertParts() throws Exception

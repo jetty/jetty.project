@@ -29,7 +29,7 @@ The Maven artifact coordinates for the HTTP/2 client library are the following:
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>http2-server</artifactId>
+  <artifactId>jetty-http2-server</artifactId>
   <version>{version}</version>
 </dependency>
 ----

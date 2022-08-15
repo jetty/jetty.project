@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -113,11 +115,18 @@ public class ChunksContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
+        List<Content.Chunk> toFail = List.of();
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 return;
             terminated = Content.Chunk.from(failure);
+            if (iterator != null)
+            {
+                toFail = new ArrayList<>();
+                iterator.forEachRemaining(toFail::add);
+            }
         }
+        toFail.forEach(Content.Chunk::release);
     }
 }

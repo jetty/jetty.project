@@ -472,7 +472,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         try
         {
             if (isUseVirtualThreads())
-                VirtualThreads.startVirtualThread(task);
+                VirtualThreads.executeOnVirtualThread(task);
             else
                 _executor.execute(task);
         }

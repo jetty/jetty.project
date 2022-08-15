@@ -15,16 +15,19 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,8 +40,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
+    private static Stream<Arguments> provideEnvironmentsToTest()
+    {
+        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10");
+        return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testDemoAddServerClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -54,7 +63,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -82,7 +91,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testJspDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -98,7 +107,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
@@ -120,6 +129,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump.jsp");
+
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
@@ -127,9 +137,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    @Tag("external")
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -145,14 +154,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -163,7 +172,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response;
@@ -188,7 +197,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSpec(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -204,7 +213,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -246,9 +255,10 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled //TODO needs DefaultServlet and ee9-demo
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    //@MethodSource("provideEnvironmentsToTest")
+    @Disabled("not yet ready for this")
+    @ValueSource(strings = "ee10")
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -265,20 +275,21 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
             int httpsPort = distribution.freePort();
             String[] argsStart = {
                 "--jpms",
+                "--debug",
                 "jetty.http.port=" + httpPort,
                 "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
@@ -291,7 +302,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @MethodSource("provideEnvironmentsToTest")
     public void testSessionDump(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -303,12 +314,12 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
@@ -320,7 +331,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 

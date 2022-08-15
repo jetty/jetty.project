@@ -34,7 +34,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -62,7 +62,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts)
+            protected void process(MultiPartFormData.Parts parts)
             {
                 assertEquals(0, parts.size());
             }
@@ -88,7 +88,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts)
+            protected void process(MultiPartFormData.Parts parts)
             {
                 assertEquals(1, parts.size());
                 MultiPart.Part part = parts.iterator().next();
@@ -119,7 +119,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(1, parts.size());
                 MultiPart.Part part = parts.iterator().next();
@@ -157,7 +157,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(1, parts.size());
                 MultiPart.Part part = parts.iterator().next();
@@ -209,7 +209,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(1, parts.size());
                 MultiPart.Part part = parts.iterator().next();
@@ -265,7 +265,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(1, parts.size());
                 MultiPart.Part part = parts.iterator().next();
@@ -317,7 +317,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(2, parts.size());
                 MultiPart.Part fieldPart = parts.get(0);
@@ -364,7 +364,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
-            protected void process(MultiParts.Parts parts) throws Exception
+            protected void process(MultiPartFormData.Parts parts) throws Exception
             {
                 assertEquals(2, parts.size());
                 MultiPart.Part fieldPart = parts.get(0);
@@ -422,13 +422,13 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
-            String boundary = MultiParts.extractBoundary(contentType);
-            MultiParts multiParts = new MultiParts(boundary);
-            multiParts.setFilesDirectory(tmpDir);
-            multiParts.parse(request);
+            String boundary = MultiPart.extractBoundary(contentType);
+            MultiPartFormData formData = new MultiPartFormData(boundary);
+            formData.setFilesDirectory(tmpDir);
+            formData.parse(request);
             try
             {
-                process(multiParts.join());
+                process(formData.join());
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
             catch (Exception x)
@@ -437,6 +437,6 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             }
         }
 
-        protected abstract void process(MultiParts.Parts parts) throws Exception;
+        protected abstract void process(MultiPartFormData.Parts parts) throws Exception;
     }
 }

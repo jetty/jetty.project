@@ -47,7 +47,7 @@
                    <Item>VirtualHost</Item>
                  </Array>
                </Set>
-               <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
+               <Set name="BaseResource"><Property name="test.docroot.base"/>/virtualhost</Set>
                <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                <Set name="DisplayName">virtual</Set>
              </New>
@@ -55,7 +55,7 @@
            <Item>
              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
-               <Set name="ResourceBase"><Property name="test.docroot.base"/>/default</Set>
+               <Set name="BaseResource"><Property name="test.docroot.base"/>/default</Set>
                <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                <Set name="DisplayName">default</Set>
              </New>

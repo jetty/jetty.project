@@ -23,6 +23,7 @@
     <checkstyle.skip>true</checkstyle.skip>
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
+    <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <modify-sources-plugin.version>1.0.0-SNAPSHOT</modify-sources-plugin.version>
   </properties>
 
@@ -83,6 +84,9 @@
             <nonFilteredFileExtension>br</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
             <nonFilteredFileExtension>jsp</nonFilteredFileExtension>
+            <nonFilteredFileExtension>icon</nonFilteredFileExtension>
+            <nonFilteredFileExtension>png</nonFilteredFileExtension>
+            <nonFilteredFileExtension>webp</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
@@ -106,9 +110,13 @@
             </goals>
             <configuration>
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+              <mavenFilteringHints>
+                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
+              </mavenFilteringHints>
               <resources>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/resources</directory>
+                  <filtering>true</filtering>
+                  <directory>${ee9.module.path}/src/main/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -128,7 +136,7 @@
 <!--              <resources>-->
 <!--                <resource>-->
 <!--                  <filtering>true</filtering>-->
-<!--                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/config</directory>-->
+<!--                  <directory>${ee9.module.path}/src/main/config</directory>-->
 <!--                </resource>-->
 <!--              </resources>-->
 <!--            </configuration>-->
@@ -147,7 +155,7 @@
               <resources>
                 <resource>
                   <filtering>true</filtering>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/resources</directory>
+                  <directory>${ee9.module.path}/src/test/resources</directory>
                 </resource>
               </resources>
             </configuration>
@@ -165,7 +173,7 @@
               <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
             <configuration>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/main/java</sourceProjectLocation>
+              <sourceProjectLocation>${ee9.module.path}/src/main/java</sourceProjectLocation>
               <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
             </configuration>
           </execution>
@@ -177,7 +185,7 @@
             </goals>
             <configuration>
               <testSources>true</testSources>
-              <sourceProjectLocation>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/java</sourceProjectLocation>
+              <sourceProjectLocation>${ee9.module.path}/src/test/java</sourceProjectLocation>
               <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
             </configuration>
           </execution>
@@ -228,9 +236,14 @@
           <version>1.2.7</version>
         </dependency>
         <dependency>
+          <groupId>jakarta.servlet.jsp</groupId>
+          <artifactId>jakarta.servlet.jsp-api</artifactId>
+          <version>2.3.6</version>
+        </dependency>
+        <dependency>
           <groupId>org.glassfish.web</groupId>
-          <artifactId>jstl-impl</artifactId>
-          <version>1.2</version>
+          <artifactId>javax.servlet.jsp.jstl</artifactId>
+          <version>1.2.5</version>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -250,6 +263,11 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-annotations</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-proxy</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -280,6 +298,16 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-plus</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-openid</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-glassfish-jstl</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -320,6 +348,21 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8.websocket</groupId>
           <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.demos</groupId>
+          <artifactId>jetty-ee8-demo-mock-resources</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.demos</groupId>
+          <artifactId>jetty-ee8-demo-web-fragment</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8.demos</groupId>
+          <artifactId>jetty-ee8-demo-container-initializer</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

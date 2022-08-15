@@ -8,13 +8,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.fcgi</groupId>
-  <artifactId>fcgi</artifactId>
+  <artifactId>jetty-fcgi</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty Core :: FastCGI :: Parent</name>
+  <name>Jetty Core :: FastCGI</name>
 
   <modules>
-    <module>fcgi-client</module>
-    <module>fcgi-server</module>
+    <module>jetty-fcgi-client</module>
+    <module>jetty-fcgi-server</module>
   </modules>
 
   <dependencies>

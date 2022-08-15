@@ -253,7 +253,7 @@ public class ExceptionUtil
     /**
      * <p>Combine two, possible null, {@link Throwable}s in a style to facilitate handling
      * multiple exceptions that are accumulated as suppressed exceptions. This is freqently
-     * used in the following pattern:
+     * used in the following pattern:</p>
      * <pre>
      *     Throwable multiException = null;
      *     for (Runnable task : manyThings)
@@ -269,7 +269,6 @@ public class ExceptionUtil
      *     }
      *     MultiException.ifExceptionalThrow(multiException);
      * </pre>
-     * </p>
      * @param t1 A Throwable or null
      * @param t2 Another Throwable or null
      * @return t1 with t2 suppressed, or null.

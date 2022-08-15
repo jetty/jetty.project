@@ -49,6 +49,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.internal.impl.Maven2RepositoryLayoutFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -148,7 +149,7 @@ public class JettyHomeTester
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
         commands.addAll(config.getJVMArgs());
-        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
+        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath());
         int debugPort = Integer.getInteger("distribution.debug.port", 0);
         if (debugPort > 0)
         {
@@ -545,6 +546,9 @@ public class JettyHomeTester
         public void close()
         {
             stop();
+            // delete the content of temporary base and home?
+            //IO.delete(this.config.getJettyBase());
+            //IO.delete(this.config.getJettyHome().getParent());
         }
 
         /**

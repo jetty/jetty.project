@@ -19,22 +19,17 @@ import javax.security.auth.Subject;
 /**
  * Default Identity Service implementation.
  * This service handles only role reference maps passed in an
- * associated {@link UserIdentity.Scope}.  If there are roles
+ * associated {@link UserIdentity}.  If there are roles
  * refs present, then associate will wrap the UserIdentity with one
  * that uses the role references in the
- * {@link UserIdentity#isUserInRole(String, UserIdentity.Scope)}
+ * {@link UserIdentity#isUserInRole(String)}
  * implementation. All other operations are effectively noops.
  */
 public class DefaultIdentityService implements IdentityService
 {
-
-    public DefaultIdentityService()
-    {
-    }
-
     /**
      * If there are roles refs present in the scope, then wrap the UserIdentity
-     * with one that uses the role references in the {@link UserIdentity#isUserInRole(String, UserIdentity.Scope)}
+     * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
      */
     @Override
     public Object associate(UserIdentity user)

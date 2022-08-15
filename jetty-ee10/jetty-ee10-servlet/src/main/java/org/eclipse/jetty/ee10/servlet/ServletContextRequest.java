@@ -333,7 +333,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private boolean _requestedSessionIdFromCookie;
         private Authentication _authentication;
         private String _method;
-        private ServletMultiParts.Parts _multiParts;
+        private ServletMultiPartFormData.Parts _parts;
 
         public static Session getSession(HttpSession httpSession)
         {
@@ -769,16 +769,16 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             String contentType = getContentType();
             if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
                 throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
-            if (_multiParts == null)
-                _multiParts = ServletMultiParts.from(this);
-            return _multiParts.getParts();
+            if (_parts == null)
+                _parts = ServletMultiPartFormData.from(this);
+            return _parts.getParts();
         }
 
         @Override
         public Part getPart(String name) throws IOException, ServletException
         {
             getParts();
-            return _multiParts.getPart(name);
+            return _parts.getPart(name);
         }
 
         @Override

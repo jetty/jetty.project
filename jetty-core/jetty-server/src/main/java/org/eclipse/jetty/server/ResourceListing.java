@@ -13,24 +13,18 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,26 +53,7 @@ public class ResourceListing
         if (base == null || !resource.isDirectory())
             return null;
 
-        Path path = resource.getPath();
-        if (path == null) // Should never happen, as new Resource contract is that all Resources are a Path.
-            return null;
-
-        List<Path> listing = null;
-        try (Stream<Path> listStream = Files.list(resource.getPath()))
-        {
-
-            listing = listStream.collect(Collectors.toCollection(ArrayList::new));
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to get Directory Listing for: {}", resource, e);
-        }
-
-        if (listing == null)
-        {
-            return null;
-        }
+        List<Resource> listing = new ArrayList<>(resource.list().stream().map(URIUtil::encodePath).map(resource::resolve).toList());
 
         boolean sortOrderAscending = true;
         String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
@@ -109,18 +84,13 @@ public class ResourceListing
         }
 
         // Perform sort
-        if (sortColumn.equals("M"))
+        Comparator<? super Resource> sort = switch (sortColumn)
         {
-            listing.sort(PathCollators.byLastModified(sortOrderAscending));
-        }
-        else if (sortColumn.equals("S"))
-        {
-            listing.sort(PathCollators.bySize(sortOrderAscending));
-        }
-        else
-        {
-            listing.sort(PathCollators.byName(sortOrderAscending));
-        }
+            case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
+            case "S" -> ResourceCollators.bySize(sortOrderAscending);
+            default -> ResourceCollators.byName(sortOrderAscending);
+        };
+        listing.sort(sort);
 
         String decodedBase = URIUtil.decodePath(base);
         String title = "Directory: " + deTag(decodedBase);
@@ -230,30 +200,22 @@ public class ResourceListing
 
         DateFormat dfmt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
 
-        for (Path item : listing)
+        for (Resource item : listing)
         {
-            Path fileName = item.getFileName();
-            if (fileName == null)
-            {
-                continue; // skip
-            }
-
-            String name = fileName.toString();
+            // TODO this feels fragile, as collections probably should not return a Path here
+            //      and even if they do, it might not be named correctly
+            String name = item.getPath().toFile().getName();
             if (StringUtil.isBlank(name))
-            {
-                return null;
-            }
+                continue;
 
-            if (Files.isDirectory(item))
-            {
+            if (item.isDirectory() && !name.endsWith("/"))
                 name += URIUtil.SLASH;
-            }
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
-
-            String href = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
-            buf.append(href);
+            // TODO should this be a relative link?
+            String path = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
+            buf.append(path);
             buf.append("\">");
             buf.append(deTag(name));
             buf.append("&nbsp;");
@@ -261,35 +223,21 @@ public class ResourceListing
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-
-            try
-            {
-                FileTime lastModified = Files.getLastModifiedTime(item, LinkOption.NOFOLLOW_LINKS);
-                buf.append(dfmt.format(new Date(lastModified.toMillis())));
-            }
-            catch (IOException ignore)
-            {
-                // do nothing (lastModifiedTime not supported by this file system)
-            }
+            long lastModified = item.lastModified();
+            if (lastModified > 0)
+                buf.append(dfmt.format(new Date(item.lastModified())));
             buf.append("&nbsp;</td>");
 
             // Size
             buf.append("<td class=\"size\">");
-
-            try
+            long length = item.length();
+            if (length >= 0)
             {
-                long length = Files.size(item);
-                if (length >= 0)
-                {
-                    buf.append(String.format("%,d bytes", length));
-                }
-            }
-            catch (IOException ignore)
-            {
-                // do nothing (size not supported by this file system)
+                buf.append(String.format("%,d bytes", item.length()));
             }
             buf.append("&nbsp;</td></tr>\n");
         }
+
         buf.append("</tbody>\n");
         buf.append("</table>\n");
         buf.append("</body></html>\n");

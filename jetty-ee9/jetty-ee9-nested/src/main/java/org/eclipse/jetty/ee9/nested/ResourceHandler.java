@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -193,6 +194,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     /**
      * @return Returns the base resource as a string.
      */
+    @Deprecated
     public String getResourceBase()
     {
         if (_baseResource == null)
@@ -320,6 +322,15 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
+     * @param basePath The resourceBase to server content from. If null the
+     * context resource base is used.
+     */
+    public void setBaseResource(Path basePath)
+    {
+        setBaseResource(ResourceFactory.root().newResource(basePath));
+    }
+
+    /**
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -395,7 +406,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
     /**
      * @param resourceBase The base resource as a string.
+     * @deprecated use {@link #setBaseResource(Resource)}
      */
+    @Deprecated
     public void setResourceBase(String resourceBase)
     {
         try
