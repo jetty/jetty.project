@@ -527,14 +527,14 @@ public class URIUtilTest
         return Stream.of(
             Arguments.of("/foo", "/foo"),
             Arguments.of("/barry's", "/barry's"),
+            Arguments.of("/barry%27s", "/barry's"),
             // encode utf-8 unicode
             Arguments.of("/bãm/", "/b%C3%A3m/"),
             Arguments.of("/bä€ãm/", "/b%C3%A4%E2%82%AC%C3%A3m/"),
-            // encode nake % to %25
+            // encode naked % to %25
             Arguments.of("/abc%x", "/abc%25x"),
             // encoded characters to leave as-is
-            Arguments.of("/foo/%2F", "/foo/%2F"),
-            Arguments.of("/barry%27s", "/barry%27s")
+            Arguments.of("/foo/%2F", "/foo/%2F")
         );
     }
 
@@ -593,6 +593,10 @@ public class URIUtilTest
             Arguments.of("http://example.com/foo/bar", "http://example.com/foo/bar"),
             Arguments.of("/barry%27s", "/barry%27s"),
             Arguments.of("/b rry%27s", "/b%20rry%27s"),
+            Arguments.of("/barry's", "/barry%27s"),
+            Arguments.of("/barry%27s", "/barry's"),
+            Arguments.of("/b rry's", "/b%20rry%27s"),
+            Arguments.of("/b rry%27s", "/b%20rry's"),
             Arguments.of("/re bar", "/re%20bar"),
 
             Arguments.of("/foo%2fbar", "/foo%2fbar"),
@@ -623,11 +627,6 @@ public class URIUtilTest
             Arguments.of("ABC", "abc"),
             // Encoding difference ("'" is "%27")
             Arguments.of("/barry's", "/barry%26s"),
-            // %27 is a reserved character and should not be compared
-            Arguments.of("/barry's", "/barry%27s"),
-            Arguments.of("/barry%27s", "/barry's"),
-            Arguments.of("/b rry's", "/b%20rry%27s"),
-            Arguments.of("/b rry%27s", "/b%20rry's"),
             // Never match on "%2f" differences - only intested in filename / directory name differences
             // This could be a directory called "foo" with a file called "bar" on the left, and just a file "foo%2fbar" on the right
             Arguments.of("/foo/bar", "/foo%2fbar"),
