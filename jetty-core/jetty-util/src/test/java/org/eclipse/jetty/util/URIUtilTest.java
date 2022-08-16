@@ -753,9 +753,15 @@ public class URIUtilTest
                 URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
                 URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
             ),
+            // unicode in opaque jar:file: URI
             Arguments.of(
                 URI.create("jar:file:///path/to/test.jar!/bãm/"),
                 URI.create("jar:file:///path/to/test.jar!/b%C3%A3m/")
+            ),
+            // multiple consecutive unicode
+            Arguments.of(
+                URI.create("file:///path/to/bä€ãm/"),
+                URI.create("file:///path/to/b%C3%A4%E2%82%AC%C3%A3m/")
             )
         );
     }
@@ -773,6 +779,21 @@ public class URIUtilTest
             Arguments.of(
                 URI.create("/foo%2Fbar"),
                 URI.create("/foo/bar")
+            ),
+            // %2F then unicode
+            Arguments.of(
+                URI.create("file:///path/to/bãm/"),
+                URI.create("file:///path%2Fto/b%C3%A3m/")
+            ),
+            // unicode then %2F
+            Arguments.of(
+                URI.create("file:///path/bãm/or/bust"),
+                URI.create("file:///path/b%C3%A3m/or%2Fbust")
+            ),
+            // mix of %2F and multiple consecutive unicode
+            Arguments.of(
+                URI.create("file:///path/to/bä€ãm/"),
+                URI.create("file:///path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
             )
         );
     }
