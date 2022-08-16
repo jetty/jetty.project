@@ -1742,6 +1742,7 @@ public final class URIUtil
         if (uriA.toASCIIString().equals(uriB.toASCIIString()))
             return true;
 
+        // TODO: this check occurs in uriA.equals(uriB)
         if (uriA.getScheme() == null)
         {
             if (uriB.getScheme() != null)

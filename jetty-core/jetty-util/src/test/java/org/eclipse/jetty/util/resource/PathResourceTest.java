@@ -225,7 +225,6 @@ public class PathResourceTest
             {
                 Path utf8Dir = root.resolve("bãm");
                 Files.createDirectories(utf8Dir);
-                System.out.println("bam = " + utf8Dir.toUri().toASCIIString());
                 supportsUtf8Dir = true;
             }
             catch (InvalidPathException e)
