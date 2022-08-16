@@ -674,7 +674,7 @@ public class Server extends Handler.Wrapper implements Attributes
         URL url = getClass().getResource(name);
         if (url == null)
             throw new IllegalStateException("Missing server resource: " + name);
-        return ResourceFactory.of(this).newResource(URI.create(url.toExternalForm()));
+        return ResourceFactory.root().newMemoryResource(url);
     }
 
     @Override

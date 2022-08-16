@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -24,6 +23,7 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -79,7 +79,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -154,16 +153,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         DESTROYED
     }
 
-    /**
-     * The type of protected target match
-     * @see #_protectedTargets
-     */
-    protected enum ProtectedTargetType
-    {
-        EXACT,
-        PREFIX
-    }
-
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
@@ -224,8 +213,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
-    private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
-    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     protected final DecoratedObjectFactory _objFactory;
 //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
@@ -280,9 +267,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         _servletContext = newServletContextApi();
-        
-        if (File.separatorChar == '/')
-            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
         if (contextPath != null)
             setContextPath(contextPath);
@@ -606,60 +590,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    /**
-     * Check the target. Called by {@link #handle(Request)} when a target within a context is determined. If
-     * the target is protected, 404 is returned.
-     *
-     * @param target the target to test
-     * @return true if target is a protected target
-     */
-    public boolean isProtectedTarget(String target)
-    {
-        if (target == null || _protectedTargets.isEmpty())
-            return false;
-
-        if (target.startsWith("//"))
-            target = URIUtil.compactPath(target);
-
-        ProtectedTargetType type = _protectedTargets.getBest(target);
-
-        return type == ProtectedTargetType.PREFIX ||
-            type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
-    }
-
-    /**
-     * @param targets Array of URL prefix. Each prefix is in the form /path and will match either /path exactly or /path/anything
-     */
-    public void setProtectedTargets(String[] targets)
-    {
-        Index.Builder<ProtectedTargetType> builder = new Index.Builder<>();
-        if (targets != null)
-        {
-            for (String t : targets)
-            {
-                if (!t.startsWith("/"))
-                    throw new IllegalArgumentException("Bad protected target: " + t);
-
-                builder.with(t, ProtectedTargetType.EXACT);
-                builder.with(t + "/", ProtectedTargetType.PREFIX);
-                builder.with(t + "?", ProtectedTargetType.PREFIX);
-                builder.with(t + "#", ProtectedTargetType.PREFIX);
-                builder.with(t + ";", ProtectedTargetType.PREFIX);
-            }
-        }
-        _protectedTargets = builder.caseSensitive(false).build();
-    }
-
-    public String[] getProtectedTargets()
-    {
-        if (_protectedTargets == null)
-            return null;
-
-        return _protectedTargets.keySet().stream()
-            .filter(s -> _protectedTargets.get(s) == ProtectedTargetType.EXACT)
-            .toArray(String[]::new);
-    }
-
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -856,57 +786,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        Resource baseResource = getResourceBase();
+        Resource baseResource = getBaseResource();
         if (baseResource == null)
             return null;
 
-        try
-        {
-            // addPath with accept non-canonical paths that don't go above the root,
-            // but will treat them as aliases. So unless allowed by an AliasChecker
-            // they will be rejected below.
-
-            // TODO: This can result in a ResourceCollection, but the checkAlias is not aware of this
-            Resource resource = baseResource.resolve(pathInContext);
-
-            if (checkAlias(pathInContext, resource))
-                return resource;
-            return null;
-        }
-        catch (Exception e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param path the path to check the alias for
-     * @param resource the resource
-     * @return True if the alias is OK
-     */
-    public boolean checkAlias(String path, Resource resource)
-    {
-        // Is the resource aliased?
-        if (resource.isAlias())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
-
-            // alias checks
-            for (AliasCheck check : getAliasChecks())
-            {
-                if (check.check(path, resource))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
-                    return true;
-                }
-            }
-            return false;
-        }
-        return true;
+        return baseResource.resolve(pathInContext);
     }
 
     /**
@@ -1006,46 +890,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             host += connector;
 
         return host;
-    }
-
-    /**
-     * Add an AliasCheck instance to possibly permit aliased resources
-     *
-     * @param check The alias checker
-     */
-    public void addAliasCheck(AliasCheck check)
-    {
-        _aliasChecks.add(check);
-        if (check instanceof LifeCycle)
-            addManaged((LifeCycle)check);
-        else
-            addBean(check);
-    }
-
-    /**
-     * @return Immutable list of Alias checks
-     */
-    public List<AliasCheck> getAliasChecks()
-    {
-        return Collections.unmodifiableList(_aliasChecks);
-    }
-
-    /**
-     * @param checks list of AliasCheck instances
-     */
-    public void setAliasChecks(List<AliasCheck> checks)
-    {
-        clearAliasChecks();
-        checks.forEach(this::addAliasCheck);
-    }
-
-    /**
-     * clear the list of AliasChecks
-     */
-    public void clearAliasChecks()
-    {
-        _aliasChecks.forEach(this::removeBean);
-        _aliasChecks.clear();
     }
 
     /**
@@ -1253,7 +1097,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (getContextPath() == null)
                 throw new IllegalStateException("Null contextPath");
 
-            Resource baseResource = getResourceBase();
+            Resource baseResource = getBaseResource();
             if (baseResource != null && baseResource.isAlias())
                 LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
                     baseResource, baseResource.getAlias(), this);
@@ -1752,8 +1596,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     protected void addRoles(String... roleNames)
     {
-        /*
-        TODO: implement security.
         //Get a reference to the SecurityHandler, which must be ConstraintAware
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
@@ -1764,7 +1606,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             union.addAll(Arrays.asList(roleNames));
             ((ConstraintSecurityHandler)_securityHandler).setRoles(union);
         }
-         */
     }
 
     /**

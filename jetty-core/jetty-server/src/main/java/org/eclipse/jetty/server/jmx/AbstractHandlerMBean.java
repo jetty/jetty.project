@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.jmx;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
@@ -71,8 +70,8 @@ public class AbstractHandlerMBean extends ObjectMBean
                 name = "ROOT";
         }
 
-        if (name == null && context.getResourceBase() != null)
-            name = context.getResourceBase().getPath().getFileName().toString();
+        if (name == null && context.getBaseResource() != null)
+            name = context.getBaseResource().getPath().getFileName().toString();
 
         List<String> vhosts = context.getVirtualHosts();
         if (vhosts.size() > 0)

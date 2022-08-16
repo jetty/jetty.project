@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -67,6 +67,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -610,5 +611,17 @@ public class WebAppContextTest
         Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+    }
+
+    @Test
+    void testSetServerPropagation()
+    {
+        Server server = new Server();
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        DefaultHandler handler = new DefaultHandler();
+        server.setHandler(new Handler.Collection(context.get(), handler));
+
+        assertThat(handler.getServer(), sameInstance(server));
     }
 }

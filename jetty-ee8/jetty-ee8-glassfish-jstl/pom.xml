@@ -22,7 +22,7 @@
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
           <systemPropertyVariables>
-            <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*jstl-impl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
+            <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*jsp.jstl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -51,7 +51,7 @@
 
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>jstl-impl</artifactId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet.jsp</groupId>

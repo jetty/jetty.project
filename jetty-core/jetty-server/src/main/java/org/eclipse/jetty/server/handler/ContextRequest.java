@@ -110,7 +110,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public org.eclipse.jetty.server.Context getContext()
+    public ContextHandler.Context getContext()
     {
         return _context;
     }

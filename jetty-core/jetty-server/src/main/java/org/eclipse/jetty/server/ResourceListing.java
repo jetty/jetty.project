@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +64,6 @@ public class ResourceListing
 
         List<Path> listing = new ArrayList<>();
         collectListing(listing, resource);
-
 
         if (listing == null)
         {

@@ -73,7 +73,7 @@
     <junit.version>5.9.0</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.18.0</log4j2.version>
-    <logback.version>1.3.0-alpha16</logback.version>
+    <logback.version>1.3.0-beta0</logback.version>
     <mariadb.version>3.0.6</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
@@ -88,7 +88,7 @@
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.2</plexus-utils.version>
-    <slf4j.version>2.0.0-alpha6</slf4j.version>
+    <slf4j.version>2.0.0-beta1</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
@@ -634,7 +634,7 @@
           <configuration>
             <verbose>true</verbose>
             <debug>true</debug>
-            <source>11</source>
+            <source>17</source>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
@@ -1361,12 +1361,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-client</artifactId>
+        <artifactId>jetty-fcgi-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>fcgi-server</artifactId>
+        <artifactId>jetty-fcgi-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1376,52 +1376,52 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-client</artifactId>
+        <artifactId>jetty-http2-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-common</artifactId>
+        <artifactId>jetty-http2-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-hpack</artifactId>
+        <artifactId>jetty-http2-hpack</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-http-client-transport</artifactId>
+        <artifactId>jetty-http2-client-transport</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-server</artifactId>
+        <artifactId>jetty-http2-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>http3-client</artifactId>
+        <artifactId>jetty-http3-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>http3-common</artifactId>
+        <artifactId>jetty-http3-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>http3-qpack</artifactId>
+        <artifactId>jetty-http3-qpack</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>http3-http-client-transport</artifactId>
+        <artifactId>jetty-http3-client-transport</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>http3-server</artifactId>
+        <artifactId>jetty-http3-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1457,32 +1457,32 @@
 
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-client</artifactId>
+        <artifactId>jetty-quic-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-common</artifactId>
+        <artifactId>jetty-quic-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-common</artifactId>
+        <artifactId>jetty-quic-quiche-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-jna</artifactId>
+        <artifactId>jetty-quic-quiche-jna</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche-foreign-incubator</artifactId>
+        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-server</artifactId>
+        <artifactId>jetty-quic-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1502,17 +1502,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-client</artifactId>
+        <artifactId>jetty-websocket-core-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-common</artifactId>
+        <artifactId>jetty-websocket-core-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core-server</artifactId>
+        <artifactId>jetty-websocket-core-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

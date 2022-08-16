@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
-import org.eclipse.jetty.io.internal.ContentSourceByteBuffers;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
@@ -92,7 +90,7 @@ public class Content
 
     /**
      * <p>A source of content that can be read with a read/demand model.</p>
-     * <a id="idiom"><h3>Idiomatic usage</h3></a>
+     * <h2><a id="idiom">Idiomatic usage</a></h2>
      * <p>The read/demand model typical usage is the following:</p>
      * <pre>{@code
      * public void onContentAvailable() {
@@ -156,19 +154,6 @@ public class Content
             {
                 throw IO.rethrow(x);
             }
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source, copying each chunk's
-         * {@code ByteBuffer} into a new {@code ByteBuffer} that is added to
-         * a list returned as result.</p>
-         *
-         * @param source the source to read
-         * @param promise the promise to notify when the whole content has been read into a list of ByteBuffers
-         */
-        static void asByteBuffers(Source source, Promise<List<ByteBuffer>> promise)
-        {
-            new ContentSourceByteBuffers(source, promise).run();
         }
 
         /**
@@ -519,6 +504,7 @@ public class Content
         /**
          * <p>Returns the chunk that follows a chunk that has been consumed.</p>
          * <table>
+         * <caption>Next Chunk</caption>
          * <thead>
          *   <tr>
          *     <th>Input Chunk</th>
@@ -531,8 +517,8 @@ public class Content
          *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
-         *     <td>{@link Error}</td>
-         *     <td>{@link Error}</td>
+         *     <td>{@link Error Error}</td>
+         *     <td>{@link Error Error}</td>
          *   </tr>
          *   <tr>
          *     <td>{@link #isLast()}</td>

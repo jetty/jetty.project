@@ -46,6 +46,46 @@ public class FileID
     }
 
     /**
+     * Retrieve the extension of a URI path.
+     * This is the name of the last segment of the URI path with a substring
+     * for the extension (if any), including the dot, lower-cased.
+     *
+     * @param uri The URI to search
+     * @return The last segment extension. Null if input uri is null, or scheme is null, or URI is not a `jar:file:` or `file:` based URI
+     */
+    public static String getExtension(URI uri)
+    {
+        if (uri == null)
+            return null;
+        if (uri.getScheme() == null)
+            return null;
+
+        String path = null;
+        if (uri.getScheme().equalsIgnoreCase("jar"))
+        {
+            URI sspUri = URI.create(uri.getRawSchemeSpecificPart());
+            if (!sspUri.getScheme().equalsIgnoreCase("file"))
+            {
+                return null; // not a `jar:file:` based URI
+            }
+
+            path = sspUri.getPath();
+        }
+        else
+        {
+            path = uri.getPath();
+        }
+
+        // look for `!/` split
+        int jarEnd = path.indexOf("!/");
+        if (jarEnd >= 0)
+        {
+            return getExtension(path.substring(0, jarEnd));
+        }
+        return getExtension(path);
+    }
+
+    /**
      * Retrieve the extension of a file path (not a directory).
      * This is the name of the last segment of the file path with a substring
      * for the extension (if any), including the dot, lower-cased.
@@ -173,35 +213,10 @@ public class FileID
      */
     public static boolean isArchive(URI uri)
     {
-        if (uri == null)
+        String ext = getExtension(uri);
+        if (ext == null)
             return false;
-        if (uri.getScheme() == null)
-            return false;
-        if (uri.getScheme().equalsIgnoreCase("jar"))
-        {
-            URI sspUri = URI.create(uri.getRawSchemeSpecificPart());
-            if (!sspUri.getScheme().equalsIgnoreCase("file"))
-            {
-                return false; // not a `jar:file:` based URI
-            }
-
-            String path = sspUri.getPath();
-
-            int jarEnd = path.indexOf("!/");
-            if (jarEnd >= 0)
-            {
-                return isArchive(path.substring(0, jarEnd));
-            }
-            return isArchive(path);
-        }
-        String path = uri.getPath();
-        // look for `!/` split
-        int jarEnd = path.indexOf("!/");
-        if (jarEnd >= 0)
-        {
-            return isArchive(path.substring(0, jarEnd));
-        }
-        return isArchive(path);
+        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
     }
 
     /**
@@ -277,6 +292,17 @@ public class FileID
         }
 
         return false;
+    }
+
+    /**
+     * Is the URI pointing to a Java Archive (JAR) File (not directory)
+     *
+     * @param uri the uri to test.
+     * @return True if a .jar file.
+     */
+    public static boolean isJavaArchive(URI uri)
+    {
+        return ".jar".equals(getExtension(uri));
     }
 
     /**

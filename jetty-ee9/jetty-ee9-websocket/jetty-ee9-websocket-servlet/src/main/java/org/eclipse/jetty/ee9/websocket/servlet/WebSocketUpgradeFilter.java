@@ -33,7 +33,7 @@ import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.FilterMapping;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -160,13 +160,11 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         HttpServletResponse httpresp = (HttpServletResponse)response;
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
-        try (Blocker.Callback callback = Blocker.callback())
+        FutureCallback callback = new FutureCallback();
+        if (mappings.upgrade(httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, defaultCustomizer))
         {
-            if (mappings.upgrade(httpChannel.getCoreRequest(), httpChannel.getCoreResponse(), callback, defaultCustomizer))
-            {
-                callback.block();
-                return;
-            }
+            callback.block();
+            return;
         }
 
         // If we reach this point, it means we had an incoming request to upgrade

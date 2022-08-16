@@ -78,7 +78,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             arguments.add(Arguments.of(env, "logging-log4j1",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-log4j12-.*\\.jar"
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-reload4j-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",

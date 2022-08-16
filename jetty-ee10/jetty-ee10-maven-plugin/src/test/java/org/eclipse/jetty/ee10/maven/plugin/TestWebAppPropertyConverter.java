@@ -152,9 +152,9 @@ public class TestWebAppPropertyConverter
         assertEquals(true, webApp.isPersistTempDirectory());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
-        assertThat(webApp.getResourceBase(), instanceOf(ResourceCollection.class));
+        assertThat(webApp.getBaseResource(), instanceOf(ResourceCollection.class));
 
-        ResourceCollection resourceCollection = (ResourceCollection)webApp.getResourceBase();
+        ResourceCollection resourceCollection = (ResourceCollection)webApp.getBaseResource();
         List<URI> actual = resourceCollection.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));

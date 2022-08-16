@@ -26,18 +26,17 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
- * is not protected by a protected target as defined by {@link ContextHandler#getProtectedTargets()} at start.</p>
+ * is not protected by a protected target as defined by the {@link ContextHandler} protected targets at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
-public class AllowedResourceAliasChecker extends AbstractLifeCycle implements ContextHandler.AliasCheck
+public class AllowedResourceAliasChecker extends AbstractLifeCycle implements AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(AllowedResourceAliasChecker.class);
     protected static final LinkOption[] FOLLOW_LINKS = new LinkOption[0];
@@ -55,7 +54,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        this(contextHandler, contextHandler::getResourceBase);
+        this(contextHandler, contextHandler::getBaseResource);
     }
 
     public AllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
@@ -76,9 +75,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     private String[] getProtectedTargets()
     {
-        // TODO: Add protected targets to ContextHandler.
-        // return _contextHandler.getProtectedTargets();
-        return null;
+        return _contextHandler.getProtectedTargets();
     }
 
     private void extractBaseResourceFromContext()
@@ -131,7 +128,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     }
 
     @Override
-    public boolean check(String pathInContext, Resource resource)
+    public boolean checkAlias(String pathInContext, Resource resource)
     {
         if (!_initialized)
             extractBaseResourceFromContext();

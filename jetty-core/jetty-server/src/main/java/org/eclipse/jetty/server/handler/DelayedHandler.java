@@ -21,7 +21,8 @@ import java.util.function.BiConsumer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiParts;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -146,7 +147,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
     }
 
-    public static class UntilMultiPart extends DelayedHandler
+    public static class UntilMultiPartFormData extends DelayedHandler
     {
         @Override
         protected Request.Processor delayed(Request request, Request.Processor processor)
@@ -161,22 +162,27 @@ public abstract class DelayedHandler extends Handler.Wrapper
             String contentTypeValue = HttpField.valueParameters(contentType, null);
             if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
                 return processor;
+            String boundary = MultiPart.extractBoundary(contentType);
+            if (boundary == null)
+                return processor;
 
-            return new Processor(request, processor);
+            return new Processor(request, processor, boundary);
         }
 
-        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiParts.Parts, Throwable>
+        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiPartFormData.Parts, Throwable>
         {
             private final Request _request;
             private final Request.Processor _processor;
+            private final String _boundary;
             private Response _response;
             private Callback _callback;
-            private MultiParts _multiParts;
+            private MultiPartFormData _formData;
 
-            private Processor(Request request, Request.Processor processor)
+            private Processor(Request request, Request.Processor processor, String boundary)
             {
                 _request = request;
                 _processor = processor;
+                _boundary = boundary;
             }
 
             @Override
@@ -186,17 +192,16 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 _callback = callback;
 
                 String contentType = _request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-                String boundary = MultiParts.extractBoundary(contentType);
-                _multiParts = new MultiParts(boundary);
-                // TODO: configure _multiParts.
-                _request.setAttribute(MultiParts.class.getName(), _multiParts);
+                _formData = new MultiPartFormData(_boundary);
+                // TODO: configure _formData.
+                _request.setAttribute(MultiPartFormData.class.getName(), _formData);
 
                 run();
 
-                if (_multiParts.isDone())
+                if (_formData.isDone())
                     _processor.process(_request, response, callback);
                 else
-                    _multiParts.whenComplete(this);
+                    _formData.whenComplete(this);
             }
 
             @Override
@@ -212,10 +217,10 @@ public abstract class DelayedHandler extends Handler.Wrapper
                     }
                     if (chunk instanceof Content.Chunk.Error error)
                     {
-                        _multiParts.completeExceptionally(error.getCause());
+                        _formData.completeExceptionally(error.getCause());
                         return;
                     }
-                    _multiParts.parse(chunk);
+                    _formData.parse(chunk);
                     chunk.release();
                     if (chunk.isLast())
                         return;
@@ -223,7 +228,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             }
 
             @Override
-            public void accept(MultiParts.Parts parts, Throwable throwable)
+            public void accept(MultiPartFormData.Parts parts, Throwable throwable)
             {
                 try
                 {

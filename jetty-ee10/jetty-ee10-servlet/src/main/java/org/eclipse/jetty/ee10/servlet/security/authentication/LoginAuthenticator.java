@@ -56,7 +56,7 @@ public abstract class LoginAuthenticator implements Authenticator
      *
      * @param username the username of the client to be authenticated
      * @param password the user's credential
-     * @param servletRequest the inbound request that needs authentication
+     * @param request the inbound request that needs authentication
      */
     public UserIdentity login(String username, Object password, Request request)
     {

@@ -19,8 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NullSessionCache
- *
  * Does not actually cache any Session objects. Useful for testing.
  * Also useful if you do not want to share Session objects with the same id between
  * simultaneous requests: note that this means that context forwarding can't share
@@ -30,9 +28,6 @@ public class NullSessionCache extends AbstractSessionCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(NullSessionCache.class);
 
-    /**
-     * @param handler The SessionHandler related to this SessionCache
-     */
     public NullSessionCache(SessionManager manager)
     {
         super(manager);
@@ -47,8 +42,7 @@ public class NullSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(SessionData data)
     {
-        Session session = new Session(getSessionManager(), data);
-        return session;
+        return new Session(getSessionManager(), data);
     }
 
     @Override

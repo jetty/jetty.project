@@ -370,6 +370,8 @@ public class Dispatcher implements RequestDispatcher
 
     private static class IncludeResponse extends HttpServletResponseWrapper
     {
+        public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+        
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);
@@ -441,13 +443,19 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setHeader(String name, String value)
         {
-            // NOOP for include.
+            //implement jetty-specific extension to include to allow headers
+            //to be set
+            if (!StringUtil.isBlank(name) && name.startsWith(JETTY_INCLUDE_HEADER_PREFIX))
+                super.setHeader(name.substring(JETTY_INCLUDE_HEADER_PREFIX.length()), value);
         }
 
         @Override
         public void addHeader(String name, String value)
         {
-            // NOOP for include.
+            //implement jetty-specific extension to include to allow headers
+            //to be set
+            if (!StringUtil.isBlank(name) && name.startsWith(JETTY_INCLUDE_HEADER_PREFIX))
+                super.addHeader(name.substring(JETTY_INCLUDE_HEADER_PREFIX.length()), value);
         }
 
         @Override

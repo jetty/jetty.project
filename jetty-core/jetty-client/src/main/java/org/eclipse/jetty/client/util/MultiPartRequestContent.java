@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.util.Random;
-
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 
 /**
@@ -43,27 +42,13 @@ import org.eclipse.jetty.io.Content;
  * &lt;/form&gt;
  * </pre>
  */
-public class MultiPartRequestContent extends MultiPart.ContentSource implements Request.Content
+public class MultiPartRequestContent extends MultiPartFormData.ContentSource implements Request.Content
 {
-    private static String makeBoundary()
-    {
-        Random random = new Random();
-        StringBuilder builder = new StringBuilder("JettyHttpClientBoundary");
-        int length = builder.length();
-        while (builder.length() < length + 16)
-        {
-            long rnd = random.nextLong();
-            builder.append(Long.toString(rnd < 0 ? -rnd : rnd, 36));
-        }
-        builder.setLength(length + 16);
-        return builder.toString();
-    }
-
     private final String contentType;
 
     public MultiPartRequestContent()
     {
-        this(makeBoundary());
+        this(MultiPart.generateBoundary("JettyHttpClient-", 24));
     }
 
     public MultiPartRequestContent(String boundary)
@@ -84,6 +69,7 @@ public class MultiPartRequestContent extends MultiPart.ContentSource implements 
         HttpFields headers = super.customizePartHeaders(part);
         if (headers.contains(HttpHeader.CONTENT_TYPE))
             return headers;
+
         Content.Source partContent = part.getContent();
         if (partContent instanceof Request.Content requestContent)
         {
@@ -91,6 +77,7 @@ public class MultiPartRequestContent extends MultiPart.ContentSource implements 
             if (contentType != null)
                 return HttpFields.build(headers).put(HttpHeader.CONTENT_TYPE, contentType);
         }
+
         return headers;
     }
 }

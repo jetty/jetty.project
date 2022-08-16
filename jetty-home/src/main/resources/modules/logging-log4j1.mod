@@ -23,10 +23,10 @@ log4j
 [files]
 basehome:modules/logging/log4j1
 maven://log4j/log4j/${log4j.version}|lib/logging/log4j-${log4j.version}.jar
-maven://org.slf4j/slf4j-log4j12/${slf4j.version}|lib/logging/slf4j-log4j12-${slf4j.version}.jar
+maven://org.slf4j/slf4j-reload4j/${slf4j.version}|lib/logging/slf4j-reload4j-${slf4j.version}.jar
 
 [lib]
-lib/logging/slf4j-log4j12-${slf4j.version}.jar
+lib/logging/slf4j-reload4j-${slf4j.version}.jar
 lib/logging/log4j-${log4j.version}.jar
 
 [ini]

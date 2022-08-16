@@ -47,21 +47,21 @@ public class OverlayManager
         for (Overlay o : getOverlays())
         {
             //can refer to the current project in list of overlays for ordering purposes
-            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getResourceBase().exists())
+            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
             {
-                resourceBases.add(webApp.getResourceBase()); 
+                resourceBases.add(webApp.getBaseResource());
                 continue;
             }
             //add in the selectively unpacked overlay in the correct order to the webapp's resource base
             resourceBases.add(unpackOverlay(o));
         }
 
-        if (!resourceBases.contains(webApp.getResourceBase()) && webApp.getResourceBase().exists())
+        if (!resourceBases.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
         {
             if (webApp.getBaseAppFirst())
-                resourceBases.add(0, webApp.getResourceBase());
+                resourceBases.add(0, webApp.getBaseResource());
             else
-                resourceBases.add(webApp.getResourceBase());
+                resourceBases.add(webApp.getBaseResource());
         }
 
         webApp.setBaseResource(Resource.combine(resourceBases));

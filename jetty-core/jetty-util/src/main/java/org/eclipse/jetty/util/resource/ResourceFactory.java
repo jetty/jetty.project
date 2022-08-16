@@ -104,8 +104,6 @@ public interface ResourceFactory
      * Find a classpath resource.
      * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
      * found, then the {@link Loader#getResource(String)} method is used.
-     * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
-     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      *
      * @param resource the relative name of the resource
      * @return Resource or null
@@ -127,6 +125,17 @@ public interface ResourceFactory
         {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    /**
+     * Load a URL into a memory resource.
+     * @param url the URL to load into memory
+     * @return Resource or null
+     * @see #newClassPathResource(String)
+     */
+    default Resource newMemoryResource(URL url)
+    {
+        return new MemoryResource(url);
     }
 
     /**

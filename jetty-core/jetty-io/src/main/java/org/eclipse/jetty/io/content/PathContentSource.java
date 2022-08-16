@@ -14,8 +14,9 @@
 package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -43,30 +44,37 @@ public class PathContentSource implements Content.Source
     private final RetainableByteBufferPool byteBufferPool;
     private int bufferSize = 4096;
     private boolean useDirectByteBuffers = true;
-    private ReadableByteChannel channel;
+    private SeekableByteChannel channel;
     private long totalRead;
     private Runnable demandCallback;
     private Content.Chunk.Error errorChunk;
 
-    public PathContentSource(Path path) throws IOException
+    public PathContentSource(Path path)
     {
         this(path, (ByteBufferPool)null);
     }
 
-    public PathContentSource(Path path, ByteBufferPool byteBufferPool) throws IOException
+    public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
         this(path, (byteBufferPool == null ? ByteBufferPool.NOOP : byteBufferPool).asRetainableByteBufferPool());
     }
 
-    public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool) throws IOException
+    public PathContentSource(Path path, RetainableByteBufferPool byteBufferPool)
     {
-        if (!Files.isRegularFile(path))
-            throw new NoSuchFileException(path.toString());
-        if (!Files.isReadable(path))
-            throw new AccessDeniedException(path.toString());
-        this.path = path;
-        this.length = Files.size(path);
-        this.byteBufferPool = byteBufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : byteBufferPool;
+        try
+        {
+            if (!Files.isRegularFile(path))
+                throw new NoSuchFileException(path.toString());
+            if (!Files.isReadable(path))
+                throw new AccessDeniedException(path.toString());
+            this.path = path;
+            this.length = Files.size(path);
+            this.byteBufferPool = byteBufferPool == null ? ByteBufferPool.NOOP.asRetainableByteBufferPool() : byteBufferPool;
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
+        }
     }
 
     public Path getPath()
@@ -103,7 +111,7 @@ public class PathContentSource implements Content.Source
     @Override
     public Content.Chunk read()
     {
-        ReadableByteChannel channel;
+        SeekableByteChannel channel;
         try (AutoLock ignored = lock.lock())
         {
             if (errorChunk != null)
@@ -113,7 +121,7 @@ public class PathContentSource implements Content.Source
             {
                 try
                 {
-                    this.channel = Files.newByteChannel(path, StandardOpenOption.READ);
+                    this.channel = open();
                 }
                 catch (Throwable x)
                 {
@@ -126,14 +134,14 @@ public class PathContentSource implements Content.Source
         if (!channel.isOpen())
             return Content.Chunk.EOF;
 
-        RetainableByteBuffer retainableBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
-        ByteBuffer byteBuffer = retainableBuffer.getBuffer();
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
+        ByteBuffer byteBuffer = retainableByteBuffer.getBuffer();
 
         int read;
         try
         {
             BufferUtil.clearToFill(byteBuffer);
-            read = channel.read(byteBuffer);
+            read = read(channel, byteBuffer);
             BufferUtil.flipToFlush(byteBuffer, 0);
         }
         catch (Throwable x)
@@ -144,11 +152,26 @@ public class PathContentSource implements Content.Source
         if (read > 0)
             totalRead += read;
 
-        boolean last = totalRead == getLength();
+        boolean last = isReadComplete(totalRead);
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, retainableBuffer);
+        return Content.Chunk.from(byteBuffer, last, retainableByteBuffer);
+    }
+
+    protected SeekableByteChannel open() throws IOException
+    {
+        return Files.newByteChannel(path, StandardOpenOption.READ);
+    }
+
+    protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
+    {
+        return channel.read(byteBuffer);
+    }
+
+    protected boolean isReadComplete(long read)
+    {
+        return read == getLength();
     }
 
     @Override

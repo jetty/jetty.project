@@ -55,6 +55,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
@@ -68,6 +69,7 @@ public abstract class Resource
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
+    // TODO this should be moved to ResourceFactory
     public static ResourceCollection combine(Resource... resources)
     {
         if (resources == null || resources.length == 0)
@@ -264,8 +266,8 @@ public abstract class Resource
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        // TODO should we canonicalize here? Or perhaps just do a URI safe encoding
-        if (URIUtil.normalizePath(subUriPath) == null)
+        // TODO do a URI safe encoding?
+        if (URIUtil.isNotNormalWithinSelf(subUriPath))
             throw new IllegalArgumentException(subUriPath);
 
         if (URIUtil.SLASH.equals(subUriPath))
@@ -277,6 +279,8 @@ public abstract class Resource
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
         {
+            // TODO XXX this appears entirely unneccessary and inefficient.  We already have utilities
+            //      to handle appending path strings with/without slashes.
             subUriPath = subUriPath.substring(1);
         }
 
@@ -293,6 +297,7 @@ public abstract class Resource
             if (subUri.isOpaque())
                 throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
 
+            // TODO see XXX above
             if (!subUri.getPath().endsWith(URIUtil.SLASH))
                 subUri = URI.create(subUri + URIUtil.SLASH);
 
@@ -301,6 +306,7 @@ public abstract class Resource
         }
         else
         {
+            // TODO see XXX above
             if (!uri.getPath().endsWith(URIUtil.SLASH))
                 uri = URI.create(uri + URIUtil.SLASH);
             resolvedUri = uri.resolve(subUriPath);
