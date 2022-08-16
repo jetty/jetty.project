@@ -129,7 +129,7 @@ public class ResourceService
      */
     public void loadDefaultStylesheetIfNotPresent()
     {
-        if (_stylesheetBuffer == null)
+        if (_stylesheetBuffer != null)
             return;
 
         URL url = ResourceService.class.getResource("jetty-dir.css");

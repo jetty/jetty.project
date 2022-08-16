@@ -76,6 +76,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -475,6 +476,58 @@ public class DefaultServletTest
         assertThat(body, containsString("/dir%3B/four/"));
         assertThat(body, containsString("/dir%3B/five/"));
         assertThat(body, containsString("/dir%3B/six/"));
+    }
+
+    @Test
+    public void testListingDirCss() throws Exception
+    {
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        /* create some content in the docroot */
+
+        Path dir = docRoot.resolve("dir"); // this should not be double-encoded.
+        FS.ensureDirExists(dir);
+
+        FS.ensureDirExists(dir.resolve("four"));
+        FS.ensureDirExists(dir.resolve("five"));
+        FS.ensureDirExists(dir.resolve("six"));
+
+        /* At this point we have the following
+         * testListingProperUrlEncoding/
+         * `-- docroot
+         *     `-- dir
+         *         |-- five
+         *         |-- four
+         *         `-- six
+         */
+
+        // Request jetty-dir.css from multiple locations.
+        List<String> paths = List.of(
+            "jetty-dir.css",
+            "dir/jetty-dir.css",
+            "dir/five/jetty-dir.css",
+            "dir/six/jetty-dir.css");
+
+        for (String requestPath: paths)
+        {
+            String rawResponse = connector.getResponse("""
+                GET /context/%s HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """.formatted(requestPath));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.toString(), response.get(HttpHeader.CONTENT_TYPE), is("text/css"));
+            String content = response.getContent();
+            assertThat(response.toString(), response.getContent(), notNullValue());
+            assertThat(response.toString(), response.getContent().length(), greaterThan(0));
+            int contentLength = response.getField(HttpHeader.CONTENT_LENGTH).getIntValue();
+            assertThat(response.toString(), contentLength, greaterThan(0));
+        }
     }
 
     @SuppressWarnings("Duplicates")

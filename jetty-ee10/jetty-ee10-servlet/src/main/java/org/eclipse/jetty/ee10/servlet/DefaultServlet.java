@@ -233,7 +233,7 @@ public class DefaultServlet extends HttpServlet
         for (String d : deprecated)
         {
             value = super.getInitParameter(d);
-            if (value != name)
+            if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
                 return value;
@@ -348,6 +348,10 @@ public class DefaultServlet extends HttpServlet
                     {
                         callback.block();
                         return;
+                    }
+                    else
+                    {
+                        callback.succeeded();
                     }
                 }
 
