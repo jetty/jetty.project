@@ -80,7 +80,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -1470,6 +1469,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             Resource resource = getResource(path);
             Set<String> paths = new HashSet<>();
             collectResourcePaths(paths, path, resource);
+            return paths;
         }
         catch (Exception e)
         {

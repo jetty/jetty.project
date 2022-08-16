@@ -87,7 +87,6 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -837,6 +836,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             Resource resource = getResource(path);
             Set<String> paths = new HashSet<>();
             collectResourcePaths(paths, path, resource);
+            return paths;
         }
         catch (Exception e)
         {
