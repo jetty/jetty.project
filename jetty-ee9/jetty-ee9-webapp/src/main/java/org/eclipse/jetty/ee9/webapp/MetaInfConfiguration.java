@@ -696,26 +696,48 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
             return null;
 
-        // TODO: this means WebAppContext.getWebInf() messed up
-        if (webInf instanceof ResourceCollection)
-            throw new IllegalArgumentException("WebInf cannot be a ResourceCollection");
+        List<Path> webInfLibs = collectLibs(new ArrayList<>(), webInf);
 
-        Resource webInfLib = webInf.resolve("/lib");
+        return webInfLibs.stream()
+            .sorted(PathCollators.byName(true))
+            // return the jar itself, not the contents
+            .map((path) -> context.getResourceFactory().newResource(path))
+            .toList();
+    }
+
+    /**
+     * Collect all Jars in the {resource}/lib/ directories.
+     *
+     * @param paths the paths found
+     * @param resource the resource to search first for lib, then all jars
+     * @return the collected paths found
+     * @throws IOException if unable to collect libs
+     */
+    private List<Path> collectLibs(List<Path> paths, Resource resource) throws IOException
+    {
+        if (resource instanceof ResourceCollection resourceCollection)
+        {
+            for (Resource child : resourceCollection.getResources())
+            {
+                collectLibs(paths, child);
+            }
+        }
+
+        Resource webInfLib = resource.resolve("/lib");
         if (!webInfLib.exists() || !webInfLib.isDirectory())
         {
-            return List.of();
+            return paths;
         }
 
         try (Stream<Path> entries = Files.list(webInfLib.getPath()))
         {
-            return entries
+            entries
                 .filter(Files::isRegularFile)
                 .filter(FileID::isArchive)
-                .sorted(PathCollators.byName(true))
-                // return the jar itself, not the contents
-                .map((path) -> context.getResourceFactory().newResource(path))
-                .toList();
+                .forEach(paths::add);
         }
+
+        return paths;
     }
 
     /**
