@@ -34,4 +34,9 @@ module org.eclipse.jetty.server
 
     // TODO required for testing ????
     exports org.eclipse.jetty.server.ssl;
+
+    // expose jetty-dir.css to ee9/ee8
+    opens org.eclipse.jetty.server to
+        org.eclipse.jetty.ee9.nested,
+        org.eclipse.jetty.ee8.nested;
 }
