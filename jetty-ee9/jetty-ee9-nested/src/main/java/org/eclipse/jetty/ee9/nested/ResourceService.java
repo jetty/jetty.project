@@ -272,6 +272,11 @@ public class ResourceService
         }
     }
 
+    public boolean isStylesheetRequest(String pathInContext)
+    {
+        return pathInContext.endsWith("/jetty-dir.css");
+    }
+
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
@@ -317,7 +322,7 @@ public class ResourceService
             // Not found?
             if (content == null || !content.getResource().exists())
             {
-                if (pathInContext.endsWith("/jetty-dir.css") && _stylesheetBuffer != null)
+                if (isStylesheetRequest(pathInContext) && _stylesheetBuffer != null)
                 {
                     sendStylesheet(request, response);
                     return response.isCommitted();
@@ -407,6 +412,9 @@ public class ResourceService
 
     private void sendStylesheet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        if (_stylesheetBuffer == null)
+            return;
+
         if (_stylesheetModifiedMs > 0 && request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) == _stylesheetModifiedMs)
         {
             response.setStatus(HttpStatus.NOT_MODIFIED_304);

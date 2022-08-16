@@ -196,6 +196,11 @@ public class ResourceService
         return _gzipEquivalentFileExtensions;
     }
 
+    public boolean isStylesheetRequest(String pathInContext)
+    {
+        return pathInContext.endsWith("/jetty-dir.css");
+    }
+
     public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
     {
         String pathInContext = request.getPathInContext();
@@ -208,11 +213,12 @@ public class ResourceService
 
         try
         {
-            if (pathInContext.endsWith("/jetty-dir.css"))
+            if (isStylesheetRequest(pathInContext))
             {
                 if (sendStylesheet(pathInContext, request, response, callback))
                     return;
                 else
+                    // this should not happen, but is here as a safety valve
                     Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
             }
 
@@ -480,7 +486,7 @@ public class ResourceService
         if (_stylesheetBuffer == null)
             return false;
 
-        if (pathInContext.endsWith("/jetty-dir.css"))
+        if (isStylesheetRequest(pathInContext))
         {
             ByteBuffer content = BufferUtil.EMPTY_BUFFER;
             if (_stylesheetModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _stylesheetModifiedMs)
