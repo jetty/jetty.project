@@ -695,7 +695,7 @@ public final class URIUtil
     }
 
     /**
-     * Test if codepoint is safe to decode for URI
+     * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
      *
      * @param code the codepoint code to test
      * @return true if safe to decode, otherwise false;
@@ -712,7 +712,7 @@ public final class URIUtil
      *
      * @param code the codepoint to check
      * @param builder The builder to encode into
-     * @return true if the character is safe and not encoded into the buffer
+     * @return true if the decoded value is safe to pass as input to {@link URI}, otherwise false;
      */
     private static boolean isSafeElseEncode(int code, Utf8StringBuilder builder)
     {
