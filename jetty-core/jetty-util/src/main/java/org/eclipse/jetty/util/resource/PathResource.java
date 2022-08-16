@@ -349,11 +349,14 @@ public class PathResource extends Resource
 
     private static URI normalize(Path path)
     {
-        String raw = URIUtil.correctFileURI(path.toUri()).toASCIIString();
+        URI fixedUri = URIUtil.correctFileURI(path.toUri());
+        String raw = fixedUri.toASCIIString();
 
         if (Files.isDirectory(path) && !raw.endsWith("/"))
-            raw += '/';
-        return URI.create(raw);
+        {
+            return URI.create(raw + '/');
+        }
+        return fixedUri;
     }
 
     @Override

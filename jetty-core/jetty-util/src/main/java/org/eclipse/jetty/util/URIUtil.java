@@ -630,8 +630,11 @@ public final class URIUtil
                             if (u == 'u')
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                                // This is wrong. This is a codepoint not a char
-                                builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
+                                int[] codePoints = {(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16))};
+                                String str = new String(codePoints, 0, 1);
+                                byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                                for (byte b: bytes)
+                                    builder.append(b);
                                 i += 5;
                             }
                             else
@@ -719,6 +722,12 @@ public final class URIUtil
         if (isSafe(code))
             return true;
 
+        encodeCodepoint(code, builder);
+        return false;
+    }
+
+    private static void encodeCodepoint(int code, Utf8StringBuilder builder)
+    {
         // Code point is 7-bit, simple encode
         if (code <= 0x7F)
         {
@@ -737,7 +746,6 @@ public final class URIUtil
                 appendHexValue(builder, b);
             }
         }
-        return false;
     }
 
     private static void appendHexValue(Utf8StringBuilder builder, byte value)
@@ -1579,66 +1587,151 @@ public final class URIUtil
     // Only URIUtil is using this method
     static boolean equalsIgnoreEncodings(String uriA, String uriB)
     {
-        int lenA = uriA.length();
-        int lenB = uriB.length();
-        int a = 0;
-        int b = 0;
-
-        while (a < lenA && b < lenB)
+        try
         {
-            int oa = uriA.charAt(a++);
-            int ca = oa;
-            if (ca == '%')
-            {
-                ca = lenientPercentDecode(uriA, a);
-                if (ca == (-1))
-                {
-                    ca = '%';
-                }
-                else
-                {
-                    a += 2;
-                }
-            }
-
-            int ob = uriB.charAt(b++);
-            int cb = ob;
-            if (cb == '%')
-            {
-                cb = lenientPercentDecode(uriB, b);
-                if (cb == (-1))
-                {
-                    cb = '%';
-                }
-                else
-                {
-                    b += 2;
-                }
-            }
-
-            // Don't match on encoded slash
-            if (ca == '/' && oa != ob)
-                return false;
-
-            if (ca != cb)
-                return false;
+            String safeDecodedUriA = ensureSafeEncoding(uriA);
+            String safeDecodedUriB = ensureSafeEncoding(uriB);
+            return safeDecodedUriA.equals(safeDecodedUriB);
         }
-        return a == lenA && b == lenB;
+        catch (IllegalArgumentException e)
+        {
+            return false;
+        }
     }
 
-    private static int lenientPercentDecode(String str, int offset)
+    static String ensureSafeEncoding(String path)
     {
-        if (offset >= str.length())
-            return -1;
+        if (path == null)
+            return null;
+        if ("".equals(path) || "/".equals(path))
+            return path;
 
-        if (StringUtil.isHex(str, offset, 2))
+        int offset = 0;
+        int length = path.length();
+
+        try
         {
-            return TypeUtil.parseInt(str, offset, 2, 16);
+            Utf8StringBuilder builder = null;
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+            {
+                char c = path.charAt(i);
+                if (c == '%')
+                {
+                    if (builder == null)
+                    {
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, offset, i - offset);
+                    }
+                    if ((i + 2) < end)
+                    {
+                        char u = path.charAt(i + 1);
+                        if (u == 'u')
+                        {
+                            if (TypeUtil.isHex(path, i + 2, 4))
+                            {
+                                // Always decode percent-u encoding to UTF-8
+                                int codepoint = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
+                                encodeCodepoint(codepoint, builder);
+                                i += 5;
+                            }
+                            else
+                            {
+                                // not valid percent-u, encode the percent symbol
+                                builder.append("%25");
+                            }
+                        }
+                        else
+                        {
+                            if (TypeUtil.isHex(path, i + 1, 2))
+                            {
+                                // valid Hex, attempt to decode it
+                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                                if (mustBeEncoded(b) || b == 0x2F)
+                                {
+                                    // unsafe, keep encoding
+                                    encodeCodepoint(b, builder);
+                                }
+                                else
+                                {
+                                    // safe to decode
+                                    builder.append(b);
+                                }
+                                i += 2;
+                            }
+                            else
+                            {
+                                // not valid percent encoding, encode the percent symbol
+                                builder.append("%25");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // incomplete percent encoding, encode the percent symbol
+                        builder.append("%25");
+                    }
+                }
+                else
+                {
+                    if (mustBeEncoded(c))
+                    {
+                        if (builder == null)
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+                        encodeCodepoint(c, builder);
+                    }
+                    else
+                    {
+                        if (builder != null)
+                            builder.append(c);
+                    }
+                }
+            }
+
+            if (builder != null)
+                return builder.toString();
+            return path;
         }
-        else
+        catch (IllegalArgumentException e)
         {
-            return -1;
+            throw e;
         }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("cannot decode URI", e);
+        }
+    }
+
+    /**
+     * Check codepoint for rules on URI encoding.
+     *
+     * @param codepoint the codepoint to check
+     * @return true if the codepoint must be encoded, false otherwise
+     */
+    private static boolean mustBeEncoded(int codepoint)
+    {
+        // 8-bit
+        if (codepoint > 0x7F)
+            return true;
+
+        // control characters
+        if ((codepoint <= 0x1F) || (codepoint == 0x7F)) // control characters
+            return true;
+
+        // unsafe characters
+        if (codepoint == '"' || codepoint == '<' || codepoint == '>' || codepoint == '%' ||
+            codepoint == '{' || codepoint == '}' || codepoint == '|' || codepoint == '\\' ||
+            codepoint == '^' || codepoint == '`')
+            return true;
+
+        // characters rejected by java.net.URI
+        if (codepoint == ' ')
+            return true;
+
+        return false;
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
@@ -1680,16 +1773,15 @@ public final class URIUtil
      * Add a sub path to an existing URI.
      *
      * @param uri A URI to add the path to
-     * @param path A decoded path element
-     * @param encodePath true to encode provided path, false to leave it alone in resulting URI
+     * @param path A safe path element
      * @return URI with path added.
      * @see #addPaths(String, String)
      */
-    public static URI addPath(URI uri, String path, boolean encodePath)
+    public static URI addPath(URI uri, String path)
     {
         Objects.requireNonNull(uri, "URI");
 
-        if (path == null)
+        if (path == null || "".equals(path))
             return uri;
 
         // collapse any "//" paths in the path portion
@@ -1712,10 +1804,7 @@ public final class URIUtil
 
         // collapse any "//" paths in the path portion
         int offset = path.charAt(0) == '/' ? 1 : 0;
-        if (encodePath)
-            encodePath(buf, path, offset);
-        else
-            buf.append(path, offset, pathLen);
+        buf.append(path, offset, pathLen);
 
         return URI.create(buf.toString());
     }

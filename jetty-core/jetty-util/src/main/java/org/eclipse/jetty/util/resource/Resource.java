@@ -332,13 +332,13 @@ public abstract class Resource
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
         {
-            // TODO XXX this appears entirely unneccessary and inefficient.  We already have utilities
+            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
             //      to handle appending path strings with/without slashes.
             subUriPath = subUriPath.substring(1);
         }
 
         URI uri = getURI();
-        URI resolvedUri = URIUtil.addPath(uri, subUriPath, false);
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
         return create(resolvedUri);
     }
 

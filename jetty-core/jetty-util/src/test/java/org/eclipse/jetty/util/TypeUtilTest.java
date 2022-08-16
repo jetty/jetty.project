@@ -15,11 +15,15 @@ package org.eclipse.jetty.util;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -94,6 +98,47 @@ public class TypeUtilTest
         b.setLength(0);
         TypeUtil.toHex(0x123456789abcdef0L, b);
         assertEquals("123456789ABCDEF0", b.toString());
+    }
+
+    public static Stream<Arguments> isHexTrueSource()
+    {
+        return Stream.of(
+            Arguments.of("2A", 0, 2),
+            Arguments.of("2a", 0, 2),
+            Arguments.of("0x2F", 2, 2),
+            Arguments.of("0x2f", 2, 2),
+            Arguments.of("%25", 1, 2),
+            Arguments.of("%0d", 1, 2),
+            Arguments.of("%uC0AC", 2, 4),
+            Arguments.of("%uc0ac", 2, 4)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isHexTrueSource")
+    public void testIsHexTrue(String input, int offset, int length)
+    {
+        assertTrue(TypeUtil.isHex(input, offset, length));
+    }
+
+    public static Stream<Arguments> isHexFalseSource()
+    {
+        return Stream.of(
+            Arguments.of("gg", 0, 2),
+            Arguments.of("GG", 0, 2),
+            Arguments.of("0xZZ", 2, 2),
+            Arguments.of("0xyz", 2, 2),
+            Arguments.of("%xy", 1, 2),
+            Arguments.of("%0z", 1, 2),
+            Arguments.of("%users", 2, 4)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isHexFalseSource")
+    public void testIsHexFalse(String input, int offset, int length)
+    {
+        assertFalse(TypeUtil.isHex(input, offset, length));
     }
 
     @Test
