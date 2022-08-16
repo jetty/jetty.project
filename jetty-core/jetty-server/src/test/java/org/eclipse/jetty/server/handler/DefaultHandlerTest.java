@@ -71,10 +71,12 @@ public class DefaultHandlerTest
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request =
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    Connection: close\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -97,10 +99,12 @@ public class DefaultHandlerTest
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request =
-                "GET /some/path HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = """
+                GET /some/path HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -123,10 +127,12 @@ public class DefaultHandlerTest
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request =
-                "GET /favicon.ico HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = """
+                GET /favicon.ico HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
