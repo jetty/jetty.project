@@ -1708,6 +1708,10 @@ public final class URIUtil
     /**
      * Check codepoint for rules on URI encoding.
      *
+     * <p>
+     *     This does not allow 8-bit characters, unlike {@link #isSafe(int)}
+     * </p>
+     *
      * @param codepoint the codepoint to check
      * @return true if the codepoint must be encoded, false otherwise
      */
@@ -1727,11 +1731,8 @@ public final class URIUtil
             codepoint == '^' || codepoint == '`')
             return true;
 
-        // characters rejected by java.net.URI
-        if (codepoint == ' ')
-            return true;
-
-        return false;
+        // raw characters rejected by java.net.URI
+        return (codepoint == ' ') || (codepoint == '[') || (codepoint == ']');
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
@@ -1790,10 +1791,18 @@ public final class URIUtil
 
         int pathLen = path.length();
 
-        if (pathLen <= 0)
+        if (pathLen == 0)
             return uri;
 
+        // Correct any bad `file:/path` usages, and
+        // force encoding of characters that must be encoded (such as unicode)
+        // for the base
         String base = correctFileURI(uri).toASCIIString();
+
+        // ensure that the base has a safe encoding suitable for both
+        // URI and Paths.get(URI) later usage
+        path = ensureSafeEncoding(path);
+        pathLen = path.length();
 
         if (base.length() == 0)
             return URI.create(path);

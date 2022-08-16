@@ -853,9 +853,12 @@ public class FileSystemResourceTest
         }
 
         Resource base = ResourceFactory.root().newResource(dir);
+        // access via encoded form
         Resource test = base.resolve("foo'%20bar");
         assertTrue(test.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo' bar"));
+        // access via raw form
+        test = base.resolve("foo' bar");
+        assertTrue(test.exists());
     }
 
     @Test
@@ -876,9 +879,12 @@ public class FileSystemResourceTest
         }
 
         Resource base = ResourceFactory.root().newResource(dir);
+        // access via encoded form
         Resource file = base.resolve("foo%60%20bar");
         assertTrue(file.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo` bar"));
+        // access via raw form
+        file = base.resolve("foo` bar");
+        assertTrue(file.exists());
     }
 
     @Test
@@ -899,9 +905,12 @@ public class FileSystemResourceTest
         }
 
         Resource base = ResourceFactory.root().newResource(dir);
+        // access via encoded form
         Resource file = base.resolve("foo%5B1%5D");
         assertTrue(file.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo[1]"));
+        // access via raw form
+        file = base.resolve("foo[1]");
+        assertTrue(file.exists());
     }
 
     @Test
@@ -924,7 +933,11 @@ public class FileSystemResourceTest
         Resource base = ResourceFactory.root().newResource(dir);
         Resource file = base.resolve("foo.%7Bbar%7D.txt");
         assertTrue(file.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo.{bar}.txt"));
+
+        // access in un-encoded way
+        file = base.resolve("foo.{bar}.txt");
+        assertTrue(file.exists());
+
     }
 
     @Test
@@ -945,9 +958,12 @@ public class FileSystemResourceTest
         }
 
         Resource base = ResourceFactory.root().newResource(dir);
+        // access via encoded form
         Resource file = base.resolve("foo%5E3.txt");
         assertTrue(file.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo^3.txt"));
+        // access via raw form
+        file = base.resolve("foo^3.txt");
+        assertTrue(file.exists());
     }
 
     @Test
@@ -968,9 +984,12 @@ public class FileSystemResourceTest
         }
 
         Resource base = ResourceFactory.root().newResource(dir);
+        // access via encoded form
         Resource file = base.resolve("foo%7Cbar.txt");
         assertTrue(file.exists());
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("foo|bar.txt"));
+        // access via raw form
+        file = base.resolve("foo|bar.txt");
+        assertTrue(file.exists());
     }
 
     /**

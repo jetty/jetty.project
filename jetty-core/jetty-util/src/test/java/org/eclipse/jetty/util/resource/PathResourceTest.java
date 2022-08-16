@@ -433,4 +433,45 @@ public class PathResourceTest
             LOG.trace("IGNORED", e);
         }
     }
+
+    @Test
+    public void testResolveNavigation(WorkDir workDir) throws Exception
+    {
+        Path docroot = workDir.getEmptyPathDir();
+
+        Path dir = docroot.resolve("dir");
+        Files.createDirectory(dir);
+
+        Path testText = dir.resolve("test.txt");
+        Files.createFile(testText);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource rootRes = resourceFactory.newResource(docroot);
+            // This is the heart of the test, we should support this
+            Resource fileRes = rootRes.resolve("bar/../dir/test.txt");
+            assertTrue(fileRes.exists());
+        }
+    }
+
+    @Test
+    public void testUnicodeResolve(WorkDir workDir) throws Exception
+    {
+        Path docroot = workDir.getEmptyPathDir();
+
+        Path dir = docroot.resolve("dir");
+        Files.createDirectory(dir);
+
+        Path swedishText = dir.resolve("swedish-å.txt");
+        Files.createFile(swedishText);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource rootRes = resourceFactory.newResource(docroot);
+            Resource dirRes = rootRes.resolve("dir/");
+            // This is the heart of the test, we should support this
+            Resource fileRes = dirRes.resolve("swedish-å.txt");
+            assertTrue(fileRes.exists());
+        }
+    }
 }
