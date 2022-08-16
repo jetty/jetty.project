@@ -52,7 +52,7 @@ public class ServletPathSpecOrderTest
         data.add(Arguments.of("/animal/arhive.gz", "animals"));
         data.add(Arguments.of("/Other/path", "default"));
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        data.add(Arguments.of("/%E2%82%ACuro/path", "money"));
+        data.add(Arguments.of("/\u20ACuro/path", "money"));
         // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/", "root"));
 
@@ -81,7 +81,7 @@ public class ServletPathSpecOrderTest
         mappings.put(new ServletPathSpec("/"), "default"); // 8
         // 9 was the old Jetty ":" spec delimited case (no longer valid)
         mappings.put(new ServletPathSpec(""), "root"); // 10
-        mappings.put(new ServletPathSpec("/%E2%82%ACuro/*"), "money"); // 11
+        mappings.put(new ServletPathSpec("/\u20ACuro/*"), "money"); // 11
     }
 
     @ParameterizedTest
