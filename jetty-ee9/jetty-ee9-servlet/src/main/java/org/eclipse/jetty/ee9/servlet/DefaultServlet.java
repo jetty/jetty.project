@@ -142,7 +142,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
     private ResourceFactory.Closeable _resourceFactory;
-    private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
     private String _relativeBaseResource;
     private ServletHandler _servletHandler;
@@ -211,16 +210,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (stylesheet != null)
             {
-                _stylesheet = _resourceFactory.newResource(stylesheet);
-                if (!_stylesheet.exists())
+                // don't need to hold onto this resource
+                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                 {
-                    LOG.warn("Stylesheet {} does not exist", stylesheet);
-                    _stylesheet = null;
+                    Resource resource = resourceFactory.newResource(stylesheet);
+                    _resourceService.loadStylesheet(resource);
                 }
-            }
-            if (_stylesheet == null)
-            {
-                _stylesheet = _contextHandler.getServer().getDefaultStyleSheet();
             }
         }
         catch (Exception e)
@@ -230,6 +225,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             else
                 LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
         }
+        _resourceService.loadDefaultStylesheetIfNotPresent();
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)
@@ -476,9 +472,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             LOG.trace("IGNORED", e);
         }
-
-        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
-            r = _stylesheet;
 
         return r;
     }

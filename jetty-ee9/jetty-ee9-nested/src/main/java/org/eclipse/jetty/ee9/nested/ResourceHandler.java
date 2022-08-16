@@ -48,10 +48,8 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
     Resource _baseResource;
     ContextHandler _context;
-    Resource _defaultStylesheet;
     MimeTypes _mimeTypes;
     private final ResourceService _resourceService;
-    Resource _stylesheet;
     String[] _welcomes = {"index.html"};
 
     public ResourceHandler(ResourceService resourceService)
@@ -152,9 +150,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
                 r = contextBase.resolve(path);
         }
 
-        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
-            r = getStylesheet();
-
         if (r == null)
         {
             throw new IllegalArgumentException("Resource: " + path);
@@ -180,9 +175,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             r = ResourceFactory.of(_context).newResource(uri);
         }
 
-        if ((r == null || !r.exists()) && uri.getPath().endsWith("/jetty-dir.css"))
-            r = getStylesheet();
-
         if (r == null)
         {
             throw new IllegalArgumentException("Resource: " + uri);
@@ -200,25 +192,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_baseResource == null)
             return null;
         return _baseResource.toString();
-    }
-
-    /**
-     * @return Returns the stylesheet as a Resource.
-     */
-    public Resource getStylesheet()
-    {
-        if (_stylesheet != null)
-        {
-            return _stylesheet;
-        }
-        else
-        {
-            if (_defaultStylesheet == null)
-            {
-                _defaultStylesheet = getServer().getDefaultStyleSheet();
-            }
-            return _defaultStylesheet;
-        }
     }
 
     public String[] getWelcomeFiles()
@@ -425,16 +398,12 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    public void setStylesheet(String stylesheet)
+    public void loadStylesheet(String stylesheet)
     {
-        try
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            _stylesheet = ResourceFactory.of(this).newResource(stylesheet);
-            if (!_stylesheet.exists())
-            {
-                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
-                _stylesheet = null;
-            }
+            Resource resource = resourceFactory.newResource(stylesheet);
+            _resourceService.loadStylesheet(resource);
         }
         catch (Exception e)
         {

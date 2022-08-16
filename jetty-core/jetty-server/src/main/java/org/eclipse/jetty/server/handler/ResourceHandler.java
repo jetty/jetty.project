@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -74,8 +75,7 @@ public class ResourceHandler extends Handler.Wrapper
 
         setupContentFactory();
 
-        if (_resourceService.getStylesheet() == null)
-            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+        _resourceService.loadDefaultStylesheetIfNotPresent();
 
         super.doStart();
     }
@@ -150,14 +150,6 @@ public class ResourceHandler extends Handler.Wrapper
     public MimeTypes getMimeTypes()
     {
         return _mimeTypes;
-    }
-
-    /**
-     * @return Returns the stylesheet as a Resource.
-     */
-    public Resource getStylesheet()
-    {
-        return _resourceService.getStylesheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -304,9 +296,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void loadStylesheet(Resource stylesheet) throws IOException
     {
-        _resourceService.setStylesheet(stylesheet);
+        _resourceService.loadStylesheet(stylesheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)

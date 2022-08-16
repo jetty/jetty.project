@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -641,30 +639,6 @@ public class Server extends Handler.Wrapper implements Attributes
     public Server getServer()
     {
         return this;
-    }
-
-    /**
-     * Get the Default CSS
-     *
-     * @return the default CSS
-     */
-    public Resource getDefaultStyleSheet()
-    {
-        return newResource("jetty-dir.css");
-    }
-
-    /**
-     * Create a new Resource representing a resources that is managed by the Server.
-     *
-     * @param name the name of the resource (relative to `/org/eclipse/jetty/server/`)
-     * @return the Resource found, or null if not found.
-     */
-    private Resource newResource(String name)
-    {
-        URL url = getClass().getResource(name);
-        if (url == null)
-            throw new IllegalStateException("Missing server resource: " + name);
-        return ResourceFactory.root().newMemoryResource(url);
     }
 
     @Override

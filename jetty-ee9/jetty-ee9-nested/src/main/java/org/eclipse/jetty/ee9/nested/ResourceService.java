@@ -13,18 +13,22 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -38,11 +42,13 @@ import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -52,6 +58,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -83,6 +90,10 @@ public class ResourceService
     private boolean _etags = false;
     private HttpField _cacheControl;
     private List<String> _gzipEquivalentFileExtensions;
+
+    private ByteBuffer _stylesheetBuffer;
+    private final long _stylesheetModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
+    private final HttpField _stylesheetModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_stylesheetModifiedMs));
 
     public HttpContent.ContentFactory getContentFactory()
     {
@@ -201,6 +212,66 @@ public class ResourceService
         _gzipEquivalentFileExtensions = gzipEquivalentFileExtensions;
     }
 
+    /**
+     * Load the stylesheet buffer
+     *
+     * @param stylesheet The location of the stylesheet to be used as-is.
+     */
+    public void loadStylesheet(Resource stylesheet) throws IOException
+    {
+        Objects.requireNonNull(stylesheet);
+
+        if (!stylesheet.exists())
+        {
+            LOG.warn("Stylesheet does not exist: {}", stylesheet);
+            return;
+        }
+
+        if (stylesheet.isDirectory())
+        {
+            LOG.warn("Stylesheet is a directory: {}", stylesheet);
+            return;
+        }
+
+        Path path = stylesheet.getPath();
+        if (path == null)
+        {
+            LOG.warn("Stylesheet is not a path resource: {}", stylesheet);
+            return;
+        }
+
+        byte[] buf = Files.readAllBytes(path);
+        _stylesheetBuffer = ByteBuffer.wrap(buf);
+    }
+
+    /**
+     * Load the default Stylesheet if one has not been previously with a call to {@link #loadStylesheet(Resource)}
+     */
+    public void loadDefaultStylesheetIfNotPresent()
+    {
+        if (_stylesheetBuffer == null)
+            return;
+
+        URL url = org.eclipse.jetty.server.ResourceService.class.getResource("jetty-dir.css");
+        if (url == null)
+        {
+            LOG.warn("Unable to find resource: %s/jetty-dir.css".formatted(TypeUtil.toClassReference(org.eclipse.jetty.server.ResourceService.class.getPackageName())));
+        }
+        else
+        {
+            try (InputStream in = url.openStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream())
+            {
+                IO.copy(in, out);
+                _stylesheetBuffer = ByteBuffer.wrap(out.toByteArray());
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to load resource: " + url, e);
+            }
+        }
+    }
+
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
@@ -246,6 +317,12 @@ public class ResourceService
             // Not found?
             if (content == null || !content.getResource().exists())
             {
+                if (pathInContext.endsWith("/jetty-dir.css") && _stylesheetBuffer != null)
+                {
+                    sendStylesheet(request, response);
+                    return response.isCommitted();
+                }
+
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
                 notFound(request, response);
@@ -326,6 +403,27 @@ public class ResourceService
         }
 
         return true;
+    }
+
+    private void sendStylesheet(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        if (_stylesheetModifiedMs > 0 && request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) == _stylesheetModifiedMs)
+        {
+            response.setStatus(HttpStatus.NOT_MODIFIED_304);
+            response.flushBuffer();
+        }
+        else
+        {
+            response.setStatus(HttpStatus.OK_200);
+            response.setHeader(HttpHeader.CONTENT_TYPE.asString(), "text/css");
+            response.setContentLengthLong(_stylesheetBuffer.remaining());
+            response.setHeader(_stylesheetModified.getName(), _stylesheetModified.getValue());
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), "max-age=360000,public");
+            try (OutputStream out = response.getOutputStream())
+            {
+                BufferUtil.writeTo(_stylesheetBuffer.slice(), out);
+            }
+        }
     }
 
     private List<String> getPreferredEncodingOrder(HttpServletRequest request)

@@ -13,21 +13,27 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
@@ -40,13 +46,13 @@ import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -77,26 +83,73 @@ public class ResourceService
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
-    private Resource _stylesheet;
+
+    private ByteBuffer _stylesheetBuffer;
+    private final long _stylesheetModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
+    private final HttpField _stylesheetModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_stylesheetModifiedMs));
 
     public ResourceService()
     {
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * Load the stylesheet buffer
+     *
+     * @param stylesheet The location of the stylesheet to be used as-is.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void loadStylesheet(Resource stylesheet) throws IOException
     {
-        _stylesheet = stylesheet;
+        Objects.requireNonNull(stylesheet);
+
+        if (!stylesheet.exists())
+        {
+            LOG.warn("Stylesheet does not exist: {}", stylesheet);
+            return;
+        }
+
+        if (stylesheet.isDirectory())
+        {
+            LOG.warn("Stylesheet is a directory: {}", stylesheet);
+            return;
+        }
+
+        Path path = stylesheet.getPath();
+        if (path == null)
+        {
+            LOG.warn("Stylesheet is not a path resource: {}", stylesheet);
+            return;
+        }
+
+        byte[] buf = Files.readAllBytes(path);
+        _stylesheetBuffer = ByteBuffer.wrap(buf);
     }
 
     /**
-     * @return Returns the stylesheet as a Resource.
+     * Load the default Stylesheet if one has not been previously with a call to {@link #loadStylesheet(Resource)}
      */
-    public Resource getStylesheet()
+    public void loadDefaultStylesheetIfNotPresent()
     {
-        return _stylesheet;
+        if (_stylesheetBuffer == null)
+            return;
+
+        URL url = ResourceService.class.getResource("jetty-dir.css");
+        if (url == null)
+        {
+            LOG.warn("Unable to find resource: %s/jetty-dir.css".formatted(TypeUtil.toClassReference(ResourceService.class.getPackageName())));
+        }
+        else
+        {
+            try (InputStream in = url.openStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream())
+            {
+                IO.copy(in, out);
+                _stylesheetBuffer = ByteBuffer.wrap(out.toByteArray());
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to load resource: " + url, e);
+            }
+        }
     }
 
     public HttpContent getContent(String path, Request request) throws IOException
@@ -112,11 +165,6 @@ public class ResourceService
         {
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
-        }
-        else
-        {
-            if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-                content = new ResourceHttpContent(_stylesheet, "text/css");
         }
 
         return content;
@@ -408,6 +456,39 @@ public class ResourceService
             throw iae;
         }
 
+        return false;
+    }
+
+    /**
+     * Send the optional stylesheet if requested.
+     *
+     * @param pathInContext the path in context to evaluate
+     * @param request the request
+     * @param response the response to use
+     * @return true if stylesheet was served
+     */
+    public boolean sendStylesheet(String pathInContext, Request request, Response response, Callback callback)
+    {
+        if (_stylesheetBuffer == null)
+            return false;
+
+        if (pathInContext.endsWith("/jetty-dir.css"))
+        {
+            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+            if (_stylesheetModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _stylesheetModifiedMs)
+                response.setStatus(HttpStatus.NOT_MODIFIED_304);
+            else
+            {
+                response.setStatus(HttpStatus.OK_200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/css");
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, _stylesheetBuffer.remaining());
+                response.getHeaders().add(_stylesheetModified);
+                response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
+                content = _stylesheetBuffer.slice();
+            }
+            response.write(true, content, callback);
+            return true;
+        }
         return false;
     }
 

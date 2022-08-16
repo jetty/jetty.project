@@ -166,8 +166,6 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
-        // Use the servers default stylesheet unless there is one explicitly set by an init param.
-        _resourceService.setStylesheet(servletContextHandler.getServer().getDefaultStyleSheet());
         String stylesheetParam = getInitParameter("stylesheet");
         if (stylesheetParam != null)
         {
@@ -176,7 +174,7 @@ public class DefaultServlet extends HttpServlet
                 Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
                 if (stylesheet.exists())
                 {
-                    _resourceService.setStylesheet(stylesheet);
+                    _resourceService.loadStylesheet(stylesheet);
                 }
                 else
                 {
@@ -191,6 +189,7 @@ public class DefaultServlet extends HttpServlet
                     LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
             }
         }
+        _resourceService.loadDefaultStylesheetIfNotPresent();
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)
@@ -338,9 +337,20 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getBaseRequest(req));
+            ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(req);
+            HttpContent content = _resourceService.getContent(pathInContext, servletContextRequest);
             if (content == null || !content.getResource().exists())
             {
+                try (Blocker.Callback callback = Blocker.callback())
+                {
+                    ServletContextResponse servletContextResponse = ServletContextResponse.getBaseResponse(resp);
+                    if (_resourceService.sendStylesheet(pathInContext, servletContextRequest, servletContextResponse, callback))
+                    {
+                        callback.block();
+                        return;
+                    }
+                }
+
                 if (included)
                 {
                     /* https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#93-the-include-method
