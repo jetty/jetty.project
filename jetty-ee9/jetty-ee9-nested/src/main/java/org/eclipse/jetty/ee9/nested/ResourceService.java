@@ -249,7 +249,7 @@ public class ResourceService
      */
     public void loadDefaultStylesheetIfNotPresent()
     {
-        if (_stylesheetBuffer == null)
+        if (_stylesheetBuffer != null)
             return;
 
         URL url = org.eclipse.jetty.server.ResourceService.class.getResource("jetty-dir.css");
