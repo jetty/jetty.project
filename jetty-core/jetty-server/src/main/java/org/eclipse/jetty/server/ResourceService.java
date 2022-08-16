@@ -208,6 +208,14 @@ public class ResourceService
 
         try
         {
+            if (pathInContext.endsWith("/jetty-dir.css"))
+            {
+                if (sendStylesheet(pathInContext, request, response, callback))
+                    return;
+                else
+                    Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            }
+
             // Directory?
             if (content.getResource().isDirectory())
             {

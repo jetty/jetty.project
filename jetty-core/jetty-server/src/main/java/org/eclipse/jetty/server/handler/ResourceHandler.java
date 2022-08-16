@@ -110,8 +110,9 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
-        if (content == null)
+        String pathInContext = request.getPathInContext();
+        HttpContent content = _resourceService.getContent(pathInContext, request);
+        if ((content == null) && (!pathInContext.endsWith("/jetty-dir.css")))
             return super.handle(request); // no content - try other handlers
 
         return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
