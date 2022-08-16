@@ -654,16 +654,6 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
-     * Get the default Favicon
-     *
-     * @return the default Favicon
-     */
-    public Resource getDefaultFavicon()
-    {
-        return newResource("favicon.ico");
-    }
-
-    /**
      * Create a new Resource representing a resources that is managed by the Server.
      *
      * @param name the name of the resource (relative to `/org/eclipse/jetty/server/`)

@@ -14,12 +14,13 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -36,9 +37,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,42 +65,23 @@ public class DefaultHandler extends Handler.Processor
 
     public DefaultHandler()
     {
-    }
-
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-        if (server != null)
-            initFavIcon();
-    }
-
-    private void initFavIcon()
-    {
-        if (_favicon != null)
-            return;
-
-        Server server = Objects.requireNonNull(getServer());
-
-        byte[] favbytes = null;
-        try
+        URL url = DefaultHandler.class.getResource("favicon.ico");
+        if (url == null)
         {
-            Resource faviconRes = server.getDefaultFavicon();
-            if (faviconRes != null)
+            LOG.warn("Unable to find resource: %s/favicon.ico".formatted(TypeUtil.toClassReference(DefaultHandler.class.getPackageName())));
+        }
+        else
+        {
+            try (InputStream in = url.openStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream())
             {
-                try (InputStream is = faviconRes.newInputStream())
-                {
-                    favbytes = IO.readBytes(is);
-                }
+                IO.copy(in, out);
+                _favicon = ByteBuffer.wrap(out.toByteArray());
             }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to find default favicon", e);
-        }
-        finally
-        {
-            _favicon = BufferUtil.toBuffer(favbytes);
+            catch (IOException e)
+            {
+                LOG.warn("Unable to load resource: " + url, e);
+            }
         }
     }
 
