@@ -695,27 +695,31 @@ public final class URIUtil
     }
 
     /**
-     * Test if character that is encoded with <code>%##</code> is safe to decode.
+     * Test if codepoint is safe to decode for URI
      *
-     * @param code the character code to test
+     * @param code the codepoint code to test
      * @return true if safe to decode, otherwise false;
      */
     private static boolean isSafe(int code)
     {
-        // Reject 8-bit and any character labeled with false in __uriSupportedCharacters
+        // Allow any 8-bit character (as it's likely unicode).
+        // or any character labeled with true in __uriSupportedCharacters static
         return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
     }
 
     /**
-     * @param code the character code to check
+     * If the codepoint is safe, do nothing, else add the UTF-8 URI encoded form of the codepoint.
+     *
+     * @param code the codepoint to check
      * @param builder The builder to encode into
-     * @return True if the character is safe and not encoded into the buffer
+     * @return true if the character is safe and not encoded into the buffer
      */
     private static boolean isSafeElseEncode(int code, Utf8StringBuilder builder)
     {
         if (isSafe(code))
             return true;
 
+        // Code point is 7-bit, simple encode
         if (code <= 0x7F)
         {
             builder.append('%');
@@ -723,9 +727,10 @@ public final class URIUtil
         }
         else
         {
+            // Code point is 8-bit, figure out the UTF-8 percent encoding for that codepoint and add it
             int[] codePoints = {code};
-            String string = new String(codePoints, 0, 1);
-            byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+            String str = new String(codePoints, 0, 1);
+            byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
             for (byte b: bytes)
             {
                 builder.append('%');
