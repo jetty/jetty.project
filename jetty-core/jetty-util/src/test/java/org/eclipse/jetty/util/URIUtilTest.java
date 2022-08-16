@@ -529,6 +529,7 @@ public class URIUtilTest
             Arguments.of("/barry's", "/barry's"),
             Arguments.of("/barry%27s", "/barry's"),
             Arguments.of("/section[42]", "/section%5B42%5D"),
+            Arguments.of("/dir?", "/dir%3F"),
             // encode utf-8 unicode
             Arguments.of("/bãm/", "/b%C3%A3m/"),
             Arguments.of("/bä€ãm/", "/b%C3%A4%E2%82%AC%C3%A3m/"),

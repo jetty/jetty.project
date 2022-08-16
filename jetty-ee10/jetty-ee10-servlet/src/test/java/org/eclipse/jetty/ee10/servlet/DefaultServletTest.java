@@ -560,7 +560,7 @@ public class DefaultServletTest
             );
 
             // A Raw Question mark in the prefix can be interpreted as a query section
-            if (prefix.contains("?"))
+            if (prefix.contains("?") || prefix.contains(";"))
             {
                 scenarios.addScenario("""
                         GET @PREFIX@/../index.html HTTP/1.1\r

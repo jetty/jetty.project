@@ -1731,8 +1731,12 @@ public final class URIUtil
             codepoint == '^' || codepoint == '`')
             return true;
 
-        // raw characters rejected by java.net.URI
-        return (codepoint == ' ') || (codepoint == '[') || (codepoint == ']');
+        // additional raw characters rejected by java.net.URI
+        if ((codepoint == ' ') || (codepoint == '[') || (codepoint == ']'))
+            return true;
+
+        // additional raw characters rejected by Paths.get(URI)
+        return (codepoint == '?');
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)

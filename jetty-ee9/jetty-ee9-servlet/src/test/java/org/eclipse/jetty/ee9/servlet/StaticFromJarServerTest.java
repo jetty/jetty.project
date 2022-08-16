@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -118,6 +119,7 @@ public class StaticFromJarServerTest
     }
 
     @Test
+    @Disabled("Fixed in PR #8427")
     public void testGetDir0Listing() throws Exception
     {
         URI uri = server.getURI().resolve("/dir0/");
