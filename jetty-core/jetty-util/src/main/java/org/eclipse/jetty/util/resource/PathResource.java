@@ -50,6 +50,11 @@ public class PathResource extends Resource
     {
         Path abs = path;
 
+        // TODO: is this a valid shortcut?
+        // If the path doesn't exist, then there's no alias to reference
+        if (!Files.exists(path))
+            return null;
+
         /* Catch situation where the Path class has already normalized
          * the URI eg. input path "aa./foo.txt"
          * from an #resolve(String) is normalized away during
@@ -62,7 +67,9 @@ public class PathResource extends Resource
         {
             try
             {
-                return Paths.get(uri).toRealPath();
+                // Use normalized path to get past navigational references like "/bar/../foo/test.txt"
+                Path ref = Paths.get(uri.normalize());
+                return ref.toRealPath();
             }
             catch (IOException ioe)
             {
@@ -202,7 +209,9 @@ public class PathResource extends Resource
 
         try
         {
-            this.path = Paths.get(uri);
+            // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
+            // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
+            this.path = Paths.get(uri.normalize());
             String uriString = uri.toString();
             if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
                 uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
@@ -347,16 +356,23 @@ public class PathResource extends Resource
             Files.copy(this.path, destination);
     }
 
+    /**
+     * Ensure Path to URI is sane when it returns a directory reference.
+     * Even if it's an opaque scheme specific part like `jar:file:`
+     *
+     * @param path the path to convert to URI
+     * @return the appropriate URI for the path
+     */
     private static URI normalize(Path path)
     {
-        URI fixedUri = URIUtil.correctFileURI(path.toUri());
-        String raw = fixedUri.toASCIIString();
+        URI pathUri = path.toUri();
+        String rawUri = path.toUri().toASCIIString();
 
-        if (Files.isDirectory(path) && !raw.endsWith("/"))
+        if (Files.isDirectory(path) && !rawUri.endsWith("/"))
         {
-            return URI.create(raw + '/');
+            return URI.create(rawUri + '/');
         }
-        return fixedUri;
+        return pathUri;
     }
 
     @Override
