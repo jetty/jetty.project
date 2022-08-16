@@ -128,17 +128,6 @@ public interface ResourceFactory
     }
 
     /**
-     * Load a URL into a memory resource.
-     * @param url the URL to load into memory
-     * @return Resource or null
-     * @see #newClassPathResource(String)
-     */
-    default Resource newMemoryResource(URL url)
-    {
-        return new MemoryResource(url);
-    }
-
-    /**
      * Construct a resource from a string.
      *
      * @param resource A URL or filename.
