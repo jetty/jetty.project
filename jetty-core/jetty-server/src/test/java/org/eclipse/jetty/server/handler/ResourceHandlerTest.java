@@ -54,7 +54,9 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +82,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -662,6 +665,7 @@ public class ResourceHandlerTest
     @BeforeEach
     public void before() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         docRoot = workDir.getEmptyPathDir().resolve("docroot");
         FS.ensureEmpty(docRoot);
 
@@ -671,12 +675,12 @@ public class ResourceHandlerTest
         _server.addConnector(_local);
 
         _rootResourceHandler = new ResourceHandler();
-        _rootResourceHandler.setBaseResource(Resource.newResource(docRoot));
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
         _rootResourceHandler.setRedirectWelcome(false);
 
         ContextHandler contextHandler = new ContextHandler("/context");
         contextHandler.setHandler(_rootResourceHandler);
+        contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
 
         _contextHandlerCollection = new ContextHandlerCollection();
         _contextHandlerCollection.addHandler(contextHandler);
@@ -690,6 +694,7 @@ public class ResourceHandlerTest
     {
         _server.stop();
         _server.setHandler((Handler)null);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -1765,6 +1770,150 @@ public class ResourceHandlerTest
                 """));
         assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), endsWith("/context/directory/;JSESSIONID=12345678?name=value"));
+    }
+
+    @Test
+    public void testDirectory() throws Exception
+    {
+        copySimpleTestResource(docRoot);
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContent();
+        assertThat(content, containsString("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />"));
+        assertThat(content, containsString("Directory: /context"));
+        assertThat(content, containsString("/context/big.txt")); // TODO should these be relative links?
+        assertThat(content, containsString("/context/simple.txt"));
+        assertThat(content, containsString("/context/directory/"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/jetty-dir.css HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testDirectoryOfCollection() throws Exception
+    {
+        copySimpleTestResource(docRoot);
+        _rootResourceHandler.stop();
+        _rootResourceHandler.setBaseResource(Resource.combine(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
+            _rootResourceHandler.getBaseResource()));
+        _rootResourceHandler.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/other/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContent();
+        assertThat(content, containsString("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />"));
+        assertThat(content, containsString("Directory: /context/other"));
+        assertThat(content, containsString("/context/other/data.txt"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/other/jetty-dir.css HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/double/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContent();
+        assertThat(content, containsString("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />"));
+        assertThat(content, containsString("Directory: /context/double"));
+        assertThat(content, containsString("/context/double/zero.txt"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/double/jetty-dir.css HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testDirectoryOfCollections() throws Exception
+    {
+        copySimpleTestResource(docRoot);
+        _rootResourceHandler.stop();
+        _rootResourceHandler.setBaseResource(Resource.combine(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer1/")),
+            _rootResourceHandler.getBaseResource()));
+        _rootResourceHandler.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String content = response.getContent();
+        assertThat(content, containsString("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />"));
+        assertThat(content, containsString("Directory: /context"));
+        assertThat(content, containsString("/context/big.txt")); // TODO should these be relative links?
+        assertThat(content, containsString("/context/simple.txt"));
+        assertThat(content, containsString("/context/directory/"));
+        assertThat(content, containsString("/context/other/"));
+        assertThat(content, containsString("/context/double/"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/double/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContent();
+        assertThat(content, containsString("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />"));
+        assertThat(content, containsString("Directory: /context/double"));
+        assertThat(content, containsString("/context/double/zero.txt"));
+        assertThat(content, containsString("/context/double/one.txt"));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/double/jetty-dir.css HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test
@@ -3254,7 +3403,7 @@ public class ResourceHandlerTest
         Path altIndex = altDir.resolve("index.html");
 
         ResourceHandler altResourceHandler = new ResourceHandler();
-        altResourceHandler.setBaseResource(Resource.newResource(altRoot));
+        altResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         altResourceHandler.setDirAllowed(false); // Cannot see listings
         altResourceHandler.setRedirectWelcome(false);
         altResourceHandler.setWelcomeFiles("index.html", "index.htm");
@@ -3264,7 +3413,7 @@ public class ResourceHandlerTest
         altContext.start(); // Correct behavior, after ContextHandlerCollection is started, it's on us to start the handler.
 
         ResourceHandler otherResourceHandler = new ResourceHandler();
-        otherResourceHandler.setBaseResource(Resource.newResource(altRoot));
+        otherResourceHandler.setBaseResource(ResourceFactory.root().newResource(altRoot));
         otherResourceHandler.setDirAllowed(true); // Can see listings
         otherResourceHandler.setRedirectWelcome(false);
         otherResourceHandler.setWelcomeFiles("index.html", "index.htm");

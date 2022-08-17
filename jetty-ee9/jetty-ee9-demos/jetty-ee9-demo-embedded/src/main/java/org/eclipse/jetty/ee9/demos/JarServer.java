@@ -14,17 +14,24 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Example of serving content from a JAR file.
@@ -32,28 +39,37 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JarServer
 {
-    public static Server createServer(int port) throws Exception
+    public static Server createServer(int port, URI jarBase) throws Exception
     {
-        Server server = new Server(port);
+        Objects.requireNonNull(jarBase);
 
-        Path jarFile = Paths.get("src/main/other/content.jar");
-        if (!Files.exists(jarFile))
-            throw new FileNotFoundException(jarFile.toString());
+        URI baseUri = jarBase;
+        if (FileID.isArchive(baseUri))
+            baseUri = URIUtil.toJarFileUri(baseUri);
+
+        Server server = new Server(port);
+//        server.setDumpAfterStart(true);
+//        server.setDumpBeforeStop(true);
+        Resource baseResource = ResourceFactory.of(server).newResource(baseUri);
 
         ServletContextHandler context = new ServletContextHandler();
-        Resource.setDefaultUseCaches(true);
-        Resource base = Resource.newResource("jar:" + jarFile.toAbsolutePath().toUri().toASCIIString() + "!/");
-        context.setBaseResource(base);
-        context.addServlet(new ServletHolder(new DefaultServlet()), "/");
+        context.setBaseResource(baseResource);
+        ServletHolder defaultHolder = new ServletHolder("default", new DefaultServlet());
+        context.addServlet(defaultHolder, "/");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context.getCoreContextHandler(), new DefaultHandler()));
         return server;
     }
 
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Server server = createServer(port);
+
+        Path jarFile = Paths.get("src/main/other/content.jar");
+        if (!Files.exists(jarFile))
+            throw new FileNotFoundException(jarFile.toString());
+
+        Server server = createServer(port, jarFile.toUri());
         server.start();
         server.join();
     }

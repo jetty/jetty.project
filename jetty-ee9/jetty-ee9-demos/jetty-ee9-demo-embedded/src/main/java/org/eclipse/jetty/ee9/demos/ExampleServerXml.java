@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.demos;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -26,7 +27,8 @@ public class ExampleServerXml
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/exampleserver.xml
-        Resource serverXml = Resource.newSystemResource("exampleserver.xml");
+        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
+        Resource serverXml = resourceFactory.newSystemResource("exampleserver.xml");
         XmlConfiguration xml = new XmlConfiguration(serverXml);
         xml.getProperties().put("http.port", Integer.toString(port));
         Server server = (Server)xml.configure();

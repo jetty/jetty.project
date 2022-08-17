@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.URI;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Resource Handler.
@@ -74,12 +74,15 @@ public class ResourceHandler extends Handler.Wrapper
 
         setupContentFactory();
 
+        if (_resourceService.getStylesheet() == null)
+            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+
         super.doStart();
     }
 
     private void setupContentFactory()
     {
-        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(_resourceBase, _mimeTypes, _resourceService.getPrecompressedFormats()));
+        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes, _resourceService.getPrecompressedFormats()));
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(request ->
         {
@@ -107,7 +110,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext(), request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 
@@ -123,7 +126,7 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the resourceBase.
      */
-    public Resource getResourceBase()
+    public Resource getBaseResource()
     {
         return _resourceBase;
     }
@@ -154,17 +157,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStylesheet()
     {
-        // TODO
-        return getDefaultStyleSheet();
-    }
-
-    public static Resource getDefaultStyleSheet()
-    {
-        // TODO do this some other way.  It is expensive to mount a whole jar when we could
-        //      just read the resource from the URL. We also leak the Mount.
-        URI css = Resource.toURI(ResourceHandler.class.getResource("/jetty-dir.css").toString());
-        Resource.mountIfNeeded(css);
-        return Resource.newResource(css);
+        return _resourceService.getStylesheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -226,6 +219,8 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarted())
+            throw new IllegalStateException(getState());
         _resourceBase = base;
     }
 
@@ -309,10 +304,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    // TODO accept a Resource instead of a String?
-    public void setStylesheet(String stylesheet)
+    public void setStylesheet(Resource stylesheet)
     {
-        // TODO
+        _resourceService.setStylesheet(stylesheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)
@@ -323,5 +317,15 @@ public class ResourceHandler extends Handler.Wrapper
     public void setWelcomeFiles(List<String> welcomeFiles)
     {
         _welcomes = welcomeFiles;
+    }
+
+    /**
+     * Utility class to create a ContextHandler containing a ResourceHandler.
+     */
+    public static class ResourceContext extends ContextHandler
+    {
+        {
+            setHandler(new ResourceHandler());
+        }
     }
 }

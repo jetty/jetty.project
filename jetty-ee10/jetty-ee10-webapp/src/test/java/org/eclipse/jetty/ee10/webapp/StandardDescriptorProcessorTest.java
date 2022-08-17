@@ -14,28 +14,112 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StandardDescriptorProcessorTest
 {
     //TODO add tests for other methods
-    
+    Server _server;
+
+    @BeforeEach
+    public void beforeEach() throws Exception
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        _server = new Server();
+        _server.start();
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        _server.stop();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @Test
     public void testVisitSessionConfig() throws Exception
     {
         File webXml = MavenTestingUtils.getTestResourceFile("web-session-config.xml");
-        Server server = new Server();
         WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
-        wac.setBaseResource(MavenTestingUtils.getTargetTestingDir("testSessionConfig").getAbsoluteFile().toPath());
+        wac.setServer(_server);
+        wac.setBaseResource(MavenTestingUtils.getTargetTestingPath("testSessionConfig"));
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
+        
+        //test the CookieConfig attributes and getters, and the getters on SessionHandler
+        //name
+        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookieConfig().getName());
+        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Name"));
+        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookie());
+        
+        //comment
+        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getComment());
+        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Comment"));
+        assertEquals("nocomment", wac.getSessionHandler().getSessionComment());
+        
+        //domain
+        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getDomain());
+        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Domain"));
+        assertEquals("universe", wac.getSessionHandler().getSessionDomain());
+        
+        //path
+        assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getPath());
+        assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Path"));
+        assertEquals("foo", wac.getSessionHandler().getSessionPath());
+        
+        //max-age
+        assertEquals(10, wac.getSessionHandler().getSessionCookieConfig().getMaxAge());
+        assertEquals("10", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Max-Age"));
+        assertEquals(10, wac.getSessionHandler().getMaxCookieAge());
+        
+        //secure
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isSecure());
+        assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("Secure"));
+        assertEquals(false, wac.getSessionHandler().isSecureCookies());
+        
+        //httponly
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
+        assertEquals("false", wac.getSessionHandler().getSessionCookieConfig().getAttribute("HttpOnly"));
+        assertEquals(false, wac.getSessionHandler().isHttpOnly());
+
+        Map<String, String> attributes = wac.getSessionHandler().getSessionCookieConfig().getAttributes();
+
+        //SessionCookieConfig javadoc states that all setters must be also represented as attributes
+        assertThat(wac.getSessionHandler().getSessionCookieConfig().getAttributes().keySet(), 
+            containsInAnyOrder(Arrays.asList(
+                equalToIgnoringCase("name"),
+                equalToIgnoringCase("comment"), 
+                equalToIgnoringCase("domain"),
+                equalToIgnoringCase("path"),
+                equalToIgnoringCase("max-age"),
+                equalToIgnoringCase("secure"),
+                equalToIgnoringCase("httponly"),
+                equalToIgnoringCase("length"),
+                equalToIgnoringCase("width"),
+                equalToIgnoringCase("SameSite"))));
+
+        //test the attributes on SessionHandler do NOT contain the well-known ones of Name, Comment, Domain etc etc
+        assertThat(wac.getSessionHandler().getSessionAttributes().keySet(), 
+            containsInAnyOrder(Arrays.asList(
+                equalToIgnoringCase("length"),
+                equalToIgnoringCase("width"),
+                equalToIgnoringCase("SameSite"))));
     }
 }

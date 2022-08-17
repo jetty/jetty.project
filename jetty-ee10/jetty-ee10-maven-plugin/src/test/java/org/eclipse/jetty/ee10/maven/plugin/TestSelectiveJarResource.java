@@ -22,6 +22,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -39,9 +40,10 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.mountJar(testJar))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
+            Resource resource = resourceFactory.newJarFileResource(testJar.toUri());
+            SelectiveJarResource sjr = new SelectiveJarResource(resource);
             sjr.setCaseSensitive(false);
             List<String> includes = new ArrayList<>();
             includes.add("**/*.html");
@@ -64,9 +66,10 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.mountJar(testJar))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
+            Resource resource = resourceFactory.newJarFileResource(testJar.toUri());
+            SelectiveJarResource sjr = new SelectiveJarResource(resource);
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/*");
@@ -89,9 +92,10 @@ public class TestSelectiveJarResource
         Path unpackDir = workDir.getEmptyPathDir();
 
         Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
-        try (Resource.Mount mount = Resource.mountJar(testJar))
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            SelectiveJarResource sjr = new SelectiveJarResource(mount.root());
+            Resource resource = resourceFactory.newJarFileResource(testJar.toUri());
+            SelectiveJarResource sjr = new SelectiveJarResource(resource);
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
             excludes.add("**/deep/*");

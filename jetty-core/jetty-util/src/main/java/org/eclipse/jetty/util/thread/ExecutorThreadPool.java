@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
  * A {@link org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool} wrapper around {@link ThreadPoolExecutor}.
  */
 @ManagedObject("A thread pool")
-public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor
+public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private final ThreadPoolExecutor _executor;
     private final ThreadPoolBudget _budget;
@@ -46,6 +47,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon;
     private boolean _detailedDump;
+    private boolean _useVirtualThreads;
 
     public ExecutorThreadPool()
     {
@@ -266,6 +268,25 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     public boolean isLowOnThreads()
     {
         return getThreads() == getMaxThreads() && _executor.getQueue().size() >= getIdleThreads();
+    }
+
+    @Override
+    public boolean isUseVirtualThreads()
+    {
+        return _useVirtualThreads;
+    }
+
+    @Override
+    public void setUseVirtualThreads(boolean useVirtualThreads)
+    {
+        try
+        {
+            VirtualThreads.Configurable.super.setUseVirtualThreads(useVirtualThreads);
+            _useVirtualThreads = useVirtualThreads;
+        }
+        catch (UnsupportedOperationException ignored)
+        {
+        }
     }
 
     @Override

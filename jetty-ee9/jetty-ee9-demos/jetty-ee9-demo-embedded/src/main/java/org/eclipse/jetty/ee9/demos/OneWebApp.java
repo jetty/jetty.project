@@ -39,7 +39,7 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("demo-async-rest/demo-async-rest-webapp/target/demo-async-rest-webapp-@VER@.war");
+        Path warFile = JettyDemos.find("jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-@VER@.war");
         webapp.setWar(warFile.toString());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to

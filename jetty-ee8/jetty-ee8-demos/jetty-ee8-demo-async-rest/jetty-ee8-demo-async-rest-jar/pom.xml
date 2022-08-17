@@ -11,7 +11,7 @@
   <name>EE8 :: Jetty Demo :: Async Rest :: Jar</name>
 
   <properties>
-    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-async-rest-jar</ee9.module>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-jar</ee9.module>
     <bundle-symbolic-name>${project.parent.groupId}.async.rest</bundle-symbolic-name>
   </properties>
 

@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -29,15 +30,19 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class FileServerXml
 {
-    public static Server createServer(int port, Path baseResource) throws Exception
+    public static Server createServer(int port, Path basePath) throws Exception
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/fileserver.xml
-        Resource fileServerXml = Resource.newSystemResource("fileserver.xml");
+        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
+        Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
+        Resource baseResource = resourceFactory.newResource(basePath);
         XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
+        configuration.getIdMap().put("fileserver.baseResource", baseResource);
         configuration.getProperties().put("http.port", Integer.toString(port));
-        configuration.getProperties().put("fileserver.baseresource", baseResource.toAbsolutePath().toString());
-        return (Server)configuration.configure();
+        Server server = (Server)configuration.configure();
+        server.addBean(resourceFactory, true);
+        return server;
     }
 
     public static void main(String[] args) throws Exception

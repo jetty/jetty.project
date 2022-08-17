@@ -35,9 +35,9 @@
 
   <profiles>
     <profile>
-      <id>jdk17</id>
+      <id>enable-incubator-foreign</id>
       <activation>
-        <jdk>[17,)</jdk>
+        <jdk>[17,19)</jdk>
       </activation>
       <build>
         <plugins>
@@ -49,6 +49,25 @@
                 ${jetty.surefire.argLine}
                 --add-modules jdk.incubator.foreign
                 --enable-native-access ALL-UNNAMED
+              </argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>enable-foreign-and-virtual-threads-preview</id>
+      <activation>
+        <jdk>[19,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                @{argLine}
+                --enable-preview
               </argLine>
             </configuration>
           </plugin>
@@ -95,22 +114,22 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-http-client-transport</artifactId>
+      <artifactId>jetty-http2-client-transport</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-server</artifactId>
+      <artifactId>jetty-http3-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-http-client-transport</artifactId>
+      <artifactId>jetty-http3-client-transport</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -120,7 +139,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>fcgi-server</artifactId>
+      <artifactId>jetty-fcgi-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

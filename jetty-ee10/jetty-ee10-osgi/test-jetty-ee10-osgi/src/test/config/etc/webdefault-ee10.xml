@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app 
-   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
    metadata-complete="false"
-   version="3.1"> 
+   version="6.0">
 
   <!-- ===================================================================== -->
   <!-- This file contains the default descriptor for web applications.       -->
@@ -94,17 +94,17 @@
  *                    gzip content encoded if a matching resource is
  *                    found ending with ".gz"
  *
- *  resourceBase      Set to replace the context resource base
+ *  baseResource      Set to replace the context resource base
  *
  *  resourceCache     If set, this is a context attribute name, which the servlet
  *                    will use to look for a shared ResourceCache instance.
  *
- *  relativeResourceBase
+ *  relativeBaseResource
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
- *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
+ *  pathInfoOnly      If true, only the path info will be applied to the baseResource
  *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.

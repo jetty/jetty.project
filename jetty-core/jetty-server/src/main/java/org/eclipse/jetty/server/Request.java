@@ -121,7 +121,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
-     * @see HttpStream#getId();
+     * @see HttpStream#getId()
      */
     String getId();
 

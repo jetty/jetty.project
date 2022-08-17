@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 import static org.eclipse.jetty.ee10.webapp.Configurations.getKnown;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
@@ -30,11 +32,13 @@ public class ConfigurationsTest
     public void tearDown()
     {
         Configurations.cleanKnown();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @BeforeEach
     public void setup()
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         Configurations.cleanKnown();
     }
 

@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,6 +78,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +89,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
@@ -290,29 +293,41 @@ public class ServletContextHandlerTest
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.declareRoles"));
+            try
+            {
+                sce.getServletContext().declareRoles("foo", "bar");
+                sce.getServletContext().setAttribute("MyContextListener.declareRoles", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call declareRoles from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.declareRoles", Boolean.TRUE);
+            }
 
             assertNull(sce.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
             try
             {
                 sce.getServletContext().getDefaultSessionTrackingModes();
-                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE);
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
-                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE);
+                //Servlet 6, should be able to call getDefaultSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
             }
 
             assertNull(sce.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
             try
             {
                 sce.getServletContext().getEffectiveSessionTrackingModes();
-                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE);
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
-                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE);
+                //Servlet 6,, should be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
             }
 
             assertNull(sce.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
@@ -343,12 +358,12 @@ public class ServletContextHandlerTest
                 try
                 {
                     sce.getServletContext().getSessionTimeout();
-                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE);
                 }
                 catch (UnsupportedOperationException e)
                 {
-                    //Should NOT be able to call getSessionTimeout from this SCL
-                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE);
+                    //Servlet 6 should be able to call getSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
                 }
             }
         }
@@ -843,6 +858,7 @@ public class ServletContextHandlerTest
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.effectiveSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.setSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.declareRoles"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
@@ -1490,6 +1506,18 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Hello World"));
     }
+    
+    @Test
+    public void testDeclareRoles() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setSecurityHandler(new ConstraintSecurityHandler());
+        context.addEventListener(new RolesListener());
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+        assertThat(((ConstraintSecurityHandler)context.getSecurityHandler()).getRoles(), containsInAnyOrder("tom", "dick", "harry"));
+    }
 
     @Test
     public void testServletRegistrationByClass() throws Exception
@@ -1863,6 +1891,7 @@ public class ServletContextHandlerTest
         ServletHandler shandler = servletContextHandler.getServletHandler();
 
         ResourceHandler rh = new ResourceHandler();
+        rh.setBaseResource(ResourceFactory.of(rh).newResource(Paths.get(".")));
 
         servletContextHandler.insertHandler(rh);
         assertEquals(shandler, servletContextHandler.getServletHandler());
@@ -1931,6 +1960,22 @@ public class ServletContextHandlerTest
 
         expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
         assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
+    
+    public static class RolesListener implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            sce.getServletContext().declareRoles("tom", "dick", "harry");
+            ServletContextListener.super.contextInitialized(sce);
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            ServletContextListener.super.contextDestroyed(sce);
+        }
     }
 
     public static class HelloServlet extends HttpServlet

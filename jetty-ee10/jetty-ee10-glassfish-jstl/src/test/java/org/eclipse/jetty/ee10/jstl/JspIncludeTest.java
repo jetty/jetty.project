@@ -40,7 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-@Disabled //TODO
 public class JspIncludeTest
 {
     private static Server server;
@@ -131,7 +130,6 @@ public class JspIncludeTest
             // System.out.printf("Response%n%s",response);
             assertThat("Response", response, containsString("<h2> Hello, this is the top page."));
             assertThat("Response", response, containsString("<h3> This is the included page"));
-
             assertThat("Response Header[main-page-key]", connection.getHeaderField("main-page-key"), is("main-page-value"));
             assertThat("Response Header[included-page-key]", connection.getHeaderField("included-page-key"), is("included-page-value"));
         }

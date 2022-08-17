@@ -22,7 +22,11 @@ import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.HashLoginService;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
@@ -44,14 +48,15 @@ public class SecuredHelloHandler
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
         String realmResourceName = "etc/realm.properties";
-        ClassLoader classLoader = SecuredHelloHandler.class.getClassLoader();
-        URL realmProps = classLoader.getResource(realmResourceName);
-        if (realmProps == null)
+        Resource realmResource = ResourceFactory.of(server).newClassPathResource("etc/realm.properties");
+        if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
-        LoginService loginService = new HashLoginService("MyRealm",
-            realmProps.toExternalForm());
+        LoginService loginService = new HashLoginService("MyRealm", realmResource);
         server.addBean(loginService);
+
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
 
         // A security handler is a jetty handler that secures content behind a
         // particular portion of a url space. The ConstraintSecurityHandler is a
@@ -60,7 +65,7 @@ public class SecuredHelloHandler
         // effectively applying these constraints to all subsequent handlers in
         // the chain.
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        server.setHandler(security);
+        context.setSecurityHandler(security);
 
         // This constraint requires authentication and in addition that an
         // authenticated user be a member of a given set of roles for
@@ -87,13 +92,9 @@ public class SecuredHelloHandler
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
 
-        // The Hello Handler is the handler we are securing so we create one,
-        // and then set it as the handler on the
-        // security handler to complain the simple handler chain.
-        HelloHandler hh = new HelloHandler();
-
-        // chain the hello handler into the security handler
-        security.setHandler(hh);
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(new HelloServlet("Hello World"));
+        context.getServletHandler().addServletWithMapping(holder, "/");
 
         return server;
     }

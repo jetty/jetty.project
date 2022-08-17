@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,12 +50,13 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.JavaVersion;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +91,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
+    private ResourceFactory.Closeable _resourceFactory;
 
     public AnnotationConfiguration()
     {
@@ -433,6 +433,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
         _sciExcludePattern = (tmp == null ? null : Pattern.compile(tmp));
+        _resourceFactory = ResourceFactory.closeable();
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
     }
 
     public void addDiscoverableAnnotationHandler(AbstractDiscoverableAnnotationHandler handler)
@@ -683,12 +691,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     public Resource getJarFor(ServletContainerInitializer service)
-        throws MalformedURLException, IOException
     {
         URI uri = TypeUtil.getLocationOfClass(service.getClass());
         if (uri == null)
             return null;
-        return Resource.newResource(uri);
+        return _resourceFactory.newResource(uri);
     }
 
     /**

@@ -28,7 +28,7 @@ public interface IdentityService
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
-     * {@link SecurityHandler#handle(String, Request, jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)}
+     * {@link SecurityHandler#handle(Request)}
      * method and then again with a null argument as that call exits.
      *
      * @param user The current user or null for no user to associated.

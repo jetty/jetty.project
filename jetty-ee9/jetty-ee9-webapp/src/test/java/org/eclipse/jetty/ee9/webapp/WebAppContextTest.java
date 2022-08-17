@@ -40,15 +40,18 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,8 +64,10 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -76,11 +81,18 @@ public class WebAppContextTest
     public WorkDir workDir;
     private final List<Object> lifeCycles = new ArrayList<>();
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     @AfterEach
     public void tearDown()
     {
         lifeCycles.forEach(LifeCycle::stop);
         Configurations.cleanKnown();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private Server newServer()
@@ -273,12 +285,15 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(Resource.newResource(tempDir));
+        context.setBaseResource(ResourceFactory.root().newResource(tempDir));
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
-        assertTrue(Resource.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
-        assertTrue(Resource.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            assertTrue(resourceFactory.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
+            assertTrue(resourceFactory.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
+        }
     }
 
     @Test
@@ -304,7 +319,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(Resource.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -368,7 +383,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(Resource.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
         contexts.addHandler(context);
 
@@ -391,7 +406,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(Resource.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -421,7 +436,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(Resource.newResource(testWebapp));
+        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -503,7 +518,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(Resource.newResource(warPath));
+        context.setBaseResource(ResourceFactory.of(context).newResource(warPath));
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -577,7 +592,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(Resource.newResource(warPath));
+        context.setBaseResource(ResourceFactory.of(context).newResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
 
@@ -596,5 +611,17 @@ public class WebAppContextTest
         Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+    }
+
+    @Test
+    void testSetServerPropagation()
+    {
+        Server server = new Server();
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        DefaultHandler handler = new DefaultHandler();
+        server.setHandler(new Handler.Collection(context.get(), handler));
+
+        assertThat(handler.getServer(), sameInstance(server));
     }
 }

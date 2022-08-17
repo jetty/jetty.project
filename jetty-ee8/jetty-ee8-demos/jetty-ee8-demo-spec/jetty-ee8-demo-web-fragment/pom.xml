@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee8.demos</groupId>
+    <artifactId>jetty-ee8-demo-spec</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <name>EE8 :: Jetty Demo :: Servlet Spec :: Fragment Jar</name>
+  <artifactId>jetty-ee8-demo-web-fragment</artifactId>
+  <packaging>jar</packaging>
+
+  <properties>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-web-fragment</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.spec.fragment</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>

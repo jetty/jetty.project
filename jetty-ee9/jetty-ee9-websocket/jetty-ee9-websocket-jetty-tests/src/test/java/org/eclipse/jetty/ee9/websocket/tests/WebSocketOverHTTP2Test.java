@@ -45,7 +45,7 @@ import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContai
 import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;

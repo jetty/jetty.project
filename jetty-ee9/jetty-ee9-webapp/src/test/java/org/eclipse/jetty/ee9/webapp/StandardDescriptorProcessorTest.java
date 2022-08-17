@@ -18,10 +18,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StandardDescriptorProcessorTest
@@ -32,6 +35,7 @@ public class StandardDescriptorProcessorTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         _server = new Server();
         _server.start();
     }
@@ -40,7 +44,7 @@ public class StandardDescriptorProcessorTest
     public void afterEach() throws Exception
     {
         _server.stop();
-        Configurations.getKnown().forEach(System.err::println);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -53,5 +57,34 @@ public class StandardDescriptorProcessorTest
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
+        
+        //test the CookieConfig attributes and getters, and the getters on SessionHandler
+        //name
+        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookieConfig().getName());
+        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookie());
+        
+        //comment
+        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getComment());
+        assertEquals("nocomment", wac.getSessionHandler().getSessionComment());
+        
+        //domain
+        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getDomain());
+        assertEquals("universe", wac.getSessionHandler().getSessionDomain());
+        
+        //path
+        assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getPath());
+        assertEquals("foo", wac.getSessionHandler().getSessionPath());
+        
+        //max-age
+        assertEquals(10, wac.getSessionHandler().getSessionCookieConfig().getMaxAge());
+        assertEquals(10, wac.getSessionHandler().getMaxCookieAge());
+        
+        //secure
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isSecure());
+        assertEquals(false, wac.getSessionHandler().isSecureCookies());
+        
+        //httponly
+        assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
+        assertEquals(false, wac.getSessionHandler().isHttpOnly());
     }
 }

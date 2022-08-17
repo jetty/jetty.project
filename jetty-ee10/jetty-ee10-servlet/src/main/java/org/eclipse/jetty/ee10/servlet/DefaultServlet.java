@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -64,16 +63,19 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO restore javadoc
+ */
 public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
@@ -81,10 +83,8 @@ public class DefaultServlet extends HttpServlet
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
 
-    private Resource.Mount _resourceBaseMount;
+    private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private Resource.Mount _stylesheetMount;
-    private Resource _stylesheet;
     private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
@@ -96,19 +96,18 @@ public class DefaultServlet extends HttpServlet
         _resourceService = new ServletResourceService(servletContextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
 
-        _baseResource = servletContextHandler.getResourceBase();
-        String rb = getInitParameter("resourceBase");
+        _baseResource = servletContextHandler.getBaseResource();
+        String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                URI resourceUri = Resource.toURI(rb);
-                _resourceBaseMount = Resource.mountIfNeeded(resourceUri);
-                _baseResource = Resource.newResource(resourceUri);
+                _resourceFactory = ResourceFactory.closeable();
+                _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to create resourceBase from {}", rb, e);
+                LOG.warn("Unable to create baseResource from {}", rb, e);
                 throw new UnavailableException(e.toString());
             }
         }
@@ -119,7 +118,7 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = List.of();
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(_baseResource, mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
         CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -167,34 +166,30 @@ public class DefaultServlet extends HttpServlet
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
-        // TODO Move most of this to ResourceService
-        String stylesheet = getInitParameter("stylesheet");
-        try
+        // Use the servers default stylesheet unless there is one explicitly set by an init param.
+        _resourceService.setStylesheet(servletContextHandler.getServer().getDefaultStyleSheet());
+        String stylesheetParam = getInitParameter("stylesheet");
+        if (stylesheetParam != null)
         {
-            if (stylesheet != null)
+            try
             {
-                URI uri = Resource.toURI(stylesheet);
-                _stylesheetMount = Resource.mountIfNeeded(uri);
-                _stylesheet = Resource.newResource(uri);
-                if (!_stylesheet.exists())
+                Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
+                if (stylesheet.exists())
                 {
-                    LOG.warn("Stylesheet {} does not exist", stylesheet);
-                    _stylesheet = null;
+                    _resourceService.setStylesheet(stylesheet);
+                }
+                else
+                {
+                    LOG.warn("Stylesheet {} does not exist", stylesheetParam);
                 }
             }
-            if (_stylesheet == null)
+            catch (Exception e)
             {
-                _stylesheet = ResourceHandler.getDefaultStyleSheet();
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
+                else
+                    LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
             }
-
-            // TODO the stylesheet is never actually used ?
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Unable to use stylesheet: {}", stylesheet, e);
-            else
-                LOG.warn("Unable to use stylesheet: {} - {}", stylesheet, e.toString());
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
@@ -230,12 +225,30 @@ public class DefaultServlet extends HttpServlet
             LOG.debug("base resource = {}", _baseResource);
     }
 
+    private String getInitParameter(String name, String... deprecated)
+    {
+        String value = super.getInitParameter(name);
+        if (value != null)
+            return value;
+
+        for (String d : deprecated)
+        {
+            value = super.getInitParameter(d);
+            if (value != name)
+            {
+                LOG.warn("Deprecated {} used instead of {}", d, name);
+                return value;
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public void destroy()
     {
         super.destroy();
-        IO.close(_stylesheetMount);
-        IO.close(_resourceBaseMount);
+        IO.close(_resourceFactory);
     }
 
     private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
@@ -325,7 +338,7 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, resp.getBufferSize());
+            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getBaseRequest(req));
             if (content == null || !content.getResource().exists())
             {
                 if (included)
@@ -903,20 +916,6 @@ public class DefaultServlet extends HttpServlet
         ServletResourceService(ServletContextHandler servletContextHandler)
         {
             _servletContextHandler = servletContextHandler;
-        }
-
-        @Override
-        public HttpContent getContent(String path, int outputBufferSize) throws IOException
-        {
-            HttpContent httpContent = super.getContent(path, outputBufferSize);
-
-            if (httpContent != null)
-            {
-                if (!_servletContextHandler.checkAlias(path, httpContent.getResource()))
-                    return null;
-            }
-
-            return httpContent;
         }
 
         @Override

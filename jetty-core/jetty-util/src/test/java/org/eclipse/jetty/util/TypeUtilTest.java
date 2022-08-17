@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -161,8 +162,11 @@ public class TypeUtilTest
         Path mavenRepoPath = Paths.get(mavenRepoPathProperty);
 
         // Classes from maven dependencies
-        Resource resource = Resource.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
-        assertThat(resource.getPath().toString(), Matchers.startsWith(mavenRepoPath.toString()));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
+            assertThat(resource.getPath().toString(), Matchers.startsWith(mavenRepoPath.toString()));
+        }
     }
 
     @Test

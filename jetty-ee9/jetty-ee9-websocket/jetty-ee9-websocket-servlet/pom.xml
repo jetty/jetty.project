@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-core-server</artifactId>
+      <artifactId>jetty-websocket-core-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>

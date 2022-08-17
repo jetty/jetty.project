@@ -22,8 +22,19 @@ Webapp Example
 --------------
 ```shell
 $ mkdir base && cd base
-$ java -jar $JETTY_HOME/start.jar --add-modules=http,deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy
 $ cp ~/src/myproj/target/mywebapp.war webapps
+$ java -jar $JETTY_HOME/start.jar 
+```
+
+Multiple Versions Webapp Example
+--------------------------------
+```shell
+$ mkdir base && cd base
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy,ee8-deploy
+$ cp ~/src/myproj/target/mywebapp10.war webapps
+$ cp ~/src/myproj/target/mywebapp8.war webapps
+$ echo environment: ee8 > webapps/mywebapp8.properties
 $ java -jar $JETTY_HOME/start.jar 
 ```
 

@@ -346,17 +346,21 @@ public class HttpTester
             return _content.toByteArray();
         }
 
+        public ByteBuffer getContentByteBuffer()
+        {
+            return ByteBuffer.wrap(getContentBytes());
+        }
+
         public String getContent()
         {
             if (_content == null)
                 return null;
-            byte[] bytes = _content.toByteArray();
 
             String contentType = get(HttpHeader.CONTENT_TYPE);
             String encoding = MimeTypes.getCharsetFromContentType(contentType);
             Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
-            return new String(bytes, charset);
+            return _content.toString(charset);
         }
 
         @Override

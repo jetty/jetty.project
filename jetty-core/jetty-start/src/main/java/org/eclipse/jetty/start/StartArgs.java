@@ -541,7 +541,29 @@ public class StartArgs
             {
                 Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(coreEnvironment.getClasspath().spliterator(), false)
                     .collect(Collectors.groupingBy(Files::isDirectory));
-                List<Path> files = dirsAndFiles.get(false);
+                Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
+
+                // FIXMW I'm not sure it's a good idea especially with multiple environment..
+                // ee9 may use jakarta.annotation 2.0.0
+                // but ee10 use jakarta.annotation 2.1.0
+                // and both having different module-info.
+                getEnvironments().stream().filter(environment -> !environment.getName().equals(coreEnvironment.getName()))
+                        .forEach(environment ->
+                        {
+                            Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
+                                    .collect(Collectors.groupingBy(Files::isDirectory));
+                            dirsAndFiles.putAll(dirsAndFilesModules);
+                            if (dirsAndFilesModules.containsKey(false))
+                            {
+                                files.addAll(dirsAndFilesModules.get(false));
+                            }
+                            else
+                            {
+                                System.out.println("null dirsAndFilesModules");
+                            }
+                });
+
+
                 if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");

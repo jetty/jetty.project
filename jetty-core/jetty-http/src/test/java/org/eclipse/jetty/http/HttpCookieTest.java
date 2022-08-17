@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie.SameSite;
@@ -64,9 +65,28 @@ public class HttpCookieTest
     }
 
     @Test
-    public void testConstructFromSetCookie()
+    public void testMatchCookie()
     {
-        HttpCookie cookie = new HttpCookie("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly");
+        //match with header string   
+        assertTrue(HttpCookie.match("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar",
+            "everything", "domain", "path"));
+        assertFalse(HttpCookie.match("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar",
+            "something", "domain", "path"));
+        assertFalse(HttpCookie.match("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar",
+            "everything", "realm", "path"));
+        assertFalse(HttpCookie.match("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar",
+            "everything", "domain", "street"));
+        
+        //match including set-cookie:, this is really testing the java.net.HttpCookie parser, but worth throwing in there
+        assertTrue(HttpCookie.match("Set-Cookie: everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax; Foo=Bar",
+            "everything", "domain", "path"));
+        
+        //match via cookie
+        HttpCookie httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "comment", 0);
+        assertTrue(HttpCookie.match(httpCookie, "everything", "domain", "path"));
+        assertFalse(HttpCookie.match(httpCookie, "something", "domain", "path"));
+        assertFalse(HttpCookie.match(httpCookie, "everything", "realm", "path"));
+        assertFalse(HttpCookie.match(httpCookie, "everything", "domain", "street"));
     }
 
     @Test
@@ -131,6 +151,9 @@ public class HttpCookieTest
 
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
+        
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, Collections.singletonMap("SameSite", "None"));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
     }
 
     public static Stream<String> rfc6265BadNameSource()

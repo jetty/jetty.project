@@ -24,6 +24,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Base class for all goals that operate on unassembled webapps.
@@ -125,15 +126,15 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //The first time we run, remember the original base dir
         if (originalBaseResource == null)
         {
-            if (webApp.getResourceBase() == null)
+            if (webApp.getBaseResource() == null)
             {
                 //Use the default static resource location
                 if (!webAppSourceDirectory.exists())
                     webAppSourceDirectory.mkdirs();
-                originalBaseResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
+                originalBaseResource = ResourceFactory.of(webApp).newResource(webAppSourceDirectory.getCanonicalPath());
             }
             else
-                originalBaseResource = webApp.getResourceBase();
+                originalBaseResource = webApp.getBaseResource();
         }
 
         //On every subsequent re-run set it back to the original base dir before
@@ -166,7 +167,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
             {
-                Resource r = Resource.newResource(webXml.toPath());
+                Resource r = ResourceFactory.of(webApp).newResource(webXml.toPath());
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -174,11 +175,11 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }
 
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
-            if (webApp.getDescriptor() == null && webApp.getResourceBase() != null)
+            if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/web.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/web.xml location
-                Resource r = webApp.getResourceBase().resolve("WEB-INF/web.xml");
+                Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());

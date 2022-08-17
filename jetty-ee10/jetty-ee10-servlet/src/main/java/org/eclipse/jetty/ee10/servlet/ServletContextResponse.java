@@ -500,21 +500,33 @@ public class ServletContextResponse extends ContextResponse
 
             String comment = cookie.getComment();
             // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-            boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-            HttpCookie.SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+            boolean httpOnlyFromComment = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+            HttpCookie.SameSite sameSiteFromComment = HttpCookie.getSameSiteFromComment(comment);
             comment = HttpCookie.getCommentWithoutAttributes(comment);
-
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                httpOnly,
-                cookie.getSecure(),
-                comment,
-                cookie.getVersion(),
-                sameSite));
+            //old style cookie
+            if (sameSiteFromComment != null || httpOnlyFromComment)
+            {
+                addCookie(new HttpCookie(
+                    cookie.getName(),
+                    cookie.getValue(),
+                    cookie.getDomain(),
+                    cookie.getPath(),
+                    cookie.getMaxAge(),
+                    httpOnlyFromComment,
+                    cookie.getSecure(),
+                    comment,
+                    cookie.getVersion(),
+                    sameSiteFromComment));
+            }
+            else
+            {
+                //new style cookie, everything is an attribute
+                addCookie(new HttpCookie(
+                    cookie.getName(),
+                    cookie.getValue(),
+                    cookie.getVersion(),
+                    cookie.getAttributes()));
+            }
         }
 
         public void addCookie(HttpCookie cookie)

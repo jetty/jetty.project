@@ -14,11 +14,11 @@
 package org.eclipse.jetty.ee10.servlet.security;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -34,8 +34,14 @@ import java.util.jar.JarOutputStream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -43,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -55,7 +62,7 @@ public class PropertyUserStoreTest
     private final class UserCount implements PropertyUserStore.UserListener
     {
         private final AtomicInteger userCount = new AtomicInteger();
-        private final List<String> users = new ArrayList<String>();
+        private final List<String> users = new ArrayList<>();
 
         private UserCount()
         {
@@ -103,6 +110,18 @@ public class PropertyUserStoreTest
 
     public WorkDir testdir;
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
     private Path initUsersText() throws Exception
     {
         Path dir = testdir.getPath();
@@ -113,17 +132,17 @@ public class PropertyUserStoreTest
         return users;
     }
 
-    private String initUsersPackedFileText()
+    private URI initUsersPackedFileText()
         throws Exception
     {
         Path dir = testdir.getPath();
-        File users = dir.resolve("users.txt").toFile();
+        Path users = dir.resolve("users.txt");
         writeUser(users);
-        File usersJar = dir.resolve("users.jar").toFile();
+        Path usersJar = dir.resolve("users.jar");
         String entryPath = "mountain_goat/pale_ale.txt";
-        try (FileInputStream fileInputStream = new FileInputStream(users))
+        try (InputStream fileInputStream = Files.newInputStream(users))
         {
-            try (OutputStream outputStream = new FileOutputStream(usersJar))
+            try (OutputStream outputStream = Files.newOutputStream(usersJar))
             {
                 try (JarOutputStream jarOutputStream = new JarOutputStream(outputStream))
                 {
@@ -143,7 +162,7 @@ public class PropertyUserStoreTest
                 }
             }
         }
-        return "jar:" + usersJar.toURI().toASCIIString() + "!/" + entryPath;
+        return URIUtil.uriJarPrefix(usersJar.toUri(), "!/" + entryPath);
     }
 
     private void writeUser(File usersFile) throws IOException
@@ -179,7 +198,7 @@ public class PropertyUserStoreTest
         final Path usersFile = initUsersText();
 
         PropertyUserStore store = new PropertyUserStore();
-        store.setConfigFile(usersFile.toFile());
+        store.setConfig(ResourceFactory.root().newResource(usersFile));
 
         store.registerUserListener(userCount);
 
@@ -198,7 +217,8 @@ public class PropertyUserStoreTest
         assertThrows(IllegalStateException.class, () ->
         {
             PropertyUserStore store = new PropertyUserStore();
-            store.setConfig("file:/this/file/does/not/exist.txt");
+            Resource doesNotExist = ResourceFactory.root().newResource("file:///this/file/does/not/exist.txt");
+            store.setConfig(doesNotExist);
             store.start();
         });
     }
@@ -209,23 +229,27 @@ public class PropertyUserStoreTest
         testdir.ensureEmpty();
 
         final UserCount userCount = new UserCount();
-        final String usersFile = initUsersPackedFileText();
+        final URI usersFile = initUsersPackedFileText();
 
-        PropertyUserStore store = new PropertyUserStore();
-        store.setConfig(usersFile);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource jarResource = resourceFactory.newResource(usersFile);
+            PropertyUserStore store = new PropertyUserStore();
+            store.setConfig(jarResource);
 
-        store.registerUserListener(userCount);
+            store.registerUserListener(userCount);
 
-        store.start();
+            store.start();
 
-        assertThat("Failed to retrieve user directly from PropertyUserStore", //
-            store.getUserPrincipal("tom"), notNullValue());
-        assertThat("Failed to retrieve user directly from PropertyUserStore", //
-            store.getUserPrincipal("dick"), notNullValue());
-        assertThat("Failed to retrieve user directly from PropertyUserStore", //
-            store.getUserPrincipal("harry"), notNullValue());
-        userCount.assertThatCount(is(3));
-        userCount.awaitCount(3);
+            assertThat("Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("tom"), notNullValue());
+            assertThat("Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("dick"), notNullValue());
+            assertThat("Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("harry"), notNullValue());
+            userCount.assertThatCount(is(3));
+            userCount.awaitCount(3);
+        }
     }
 
     @Test
@@ -247,7 +271,7 @@ public class PropertyUserStoreTest
             }
         };
         store.setHotReload(true);
-        store.setConfigFile(usersFile.toFile());
+        store.setConfig(ResourceFactory.root().newResource(usersFile));
         store.registerUserListener(userCount);
 
         store.start();
@@ -289,7 +313,7 @@ public class PropertyUserStoreTest
 
         PropertyUserStore store = new PropertyUserStore();
         store.setHotReload(true);
-        store.setConfigFile(usersFile.toFile());
+        store.setConfig(ResourceFactory.root().newResource(usersFile));
 
         store.registerUserListener(userCount);
 

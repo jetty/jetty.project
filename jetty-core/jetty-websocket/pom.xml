@@ -8,15 +8,15 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.websocket</groupId>
-  <artifactId>websocket</artifactId>
+  <artifactId>jetty-websocket</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Core :: WebSocket</name>
 
   <modules>
-    <module>websocket-core-client</module>
-    <module>websocket-core-common</module>
-    <module>websocket-core-server</module>
-    <module>websocket-core-tests</module>
+    <module>jetty-websocket-core-client</module>
+    <module>jetty-websocket-core-common</module>
+    <module>jetty-websocket-core-server</module>
+    <module>jetty-websocket-core-tests</module>
   </modules>
 
 </project>

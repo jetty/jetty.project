@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -39,6 +40,7 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
@@ -46,6 +48,7 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -565,6 +568,81 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         protected RequestedSession resolveRequestedSessionId(org.eclipse.jetty.server.Request request)
         {
             return super.resolveRequestedSessionId(request);
+        }
+
+        @Override
+        public HttpCookie.SameSite getSameSite()
+        {
+            return HttpCookie.getSameSiteFromComment(getSessionComment());
+        }
+        
+        /**
+         * Set Session cookie sameSite mode.
+         *
+         * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
+         */
+        @Override
+        public void setSameSite(HttpCookie.SameSite sameSite)
+        {
+            setSessionComment(HttpCookie.getCommentWithAttributes(getSessionComment(), false, sameSite));
+        }
+        
+        /**
+         * A session cookie is marked as secure IFF any of the following conditions are true:
+         * <ol>
+         * <li>SessionCookieConfig.setSecure == true</li>
+         * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
+         * </ol>
+         * According to SessionCookieConfig javadoc, case 1 can be used when:
+         * "... even though the request that initiated the session came over HTTP,
+         * is to support a topology where the web container is front-ended by an
+         * SSL offloading load balancer. In this case, the traffic between the client
+         * and the load balancer will be over HTTPS, whereas the traffic between the
+         * load balancer and the web container will be over HTTP."
+         * <p>
+         * For case 2, you can use _secureRequestOnly to determine if you want the
+         * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
+         * which is:
+         * <cite>
+         * "they shall be marked as secure only if the request that initiated the
+         * corresponding session was also secure"
+         * </cite>
+         * <p>
+         * The default for _secureRequestOnly is true, which gives the above behavior. If
+         * you set it to false, then a session cookie is NEVER marked as secure, even if
+         * the initiating request was secure.
+         *
+         * @param session the session to which the cookie should refer.
+         * @param contextPath the context to which the cookie should be linked.
+         * The client will only send the cookie value when requesting resources under this path.
+         * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
+         * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
+         * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
+         * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
+         */
+        @Override
+        public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
+        {
+            if (isUsingCookies())
+            {
+                String sessionPath = getSessionPath();
+                sessionPath = (sessionPath == null) ? contextPath : sessionPath;
+                sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
+                SameSite sameSite = HttpCookie.getSameSiteFromComment(getSessionComment());
+                Map<String, String> attributes = Collections.emptyMap();
+                if (sameSite != null)
+                    attributes = Collections.singletonMap("SameSite", sameSite.getAttributeValue());
+                return session.generateSetCookie((getSessionCookie() == null ? __DefaultSessionCookie : getSessionCookie()),
+                    getSessionDomain(),
+                    sessionPath,
+                    getMaxCookieAge(),
+                    isHttpOnly(),
+                    isSecureCookies() || (isSecureRequestOnly() && requestIsSecure),
+                    HttpCookie.getCommentWithoutAttributes(getSessionComment()),
+                    0,
+                    attributes);
+            }
+            return null;
         }
 
         @Override

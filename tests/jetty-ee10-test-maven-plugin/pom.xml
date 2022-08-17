@@ -116,6 +116,7 @@
           </execution>
         </executions>
         <configuration>
+          <streamLogsOnFailures>true</streamLogsOnFailures>
           <addTestClassPath>true</addTestClassPath>
           <ignoreFailures>true</ignoreFailures>
           <setupIncludes>

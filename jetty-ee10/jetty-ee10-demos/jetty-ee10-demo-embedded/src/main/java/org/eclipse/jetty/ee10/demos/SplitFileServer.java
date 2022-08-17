@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * A {@link ContextHandlerCollection} handler may be used to direct a request to
@@ -78,8 +79,8 @@ public class SplitFileServer
     public static void main(String[] args) throws Exception
     {
         int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Resource resource0 = Resource.newResource(Paths.get("src/test/resources/dir0"));
-        Resource resource1 = Resource.newResource(Paths.get("src/test/resources/dir1"));
+        Resource resource0 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir0"));
+        Resource resource1 = ResourceFactory.root().newResource(Paths.get("src/test/resources/dir1"));
 
         Server server = createServer(port, resource0, resource1);
 

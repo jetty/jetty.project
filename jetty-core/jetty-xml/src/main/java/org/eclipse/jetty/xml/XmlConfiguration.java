@@ -26,6 +26,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -47,7 +48,6 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -57,9 +57,11 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -97,7 +99,7 @@ public class XmlConfiguration
         };
     private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceProviderStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
         .flatMap(p -> Stream.of(p.get()))
-        .collect(Collectors.toList());
+        .toList();
     private static final Pool<ConfigurationParser> __parsers =
         new Pool<>(Pool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
@@ -217,23 +219,23 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        this(resource.getPath(), null, null);
+        this(resource, null, null);
     }
 
     /**
      * Reads and parses the XML configuration file.
      *
-     * @param path the XML configuration
+     * @param resource the Resource to the XML configuration
      * @param idMap Map of objects with IDs
      * @param properties Map of properties
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
      */
-    public XmlConfiguration(Path path, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
+    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = Files.newInputStream(path))
+        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.newInputStream())
         {
-            _location = Resource.newResource(path);
+            _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
             _idMap = idMap == null ? new HashMap<>() : idMap;
@@ -1831,6 +1833,8 @@ public class XmlConfiguration
             XmlConfiguration lastEnvConfiguration = null;
             XmlConfiguration lastCoreConfiguration = null;
             List<Object> objects = new ArrayList<>();
+            ContainerLifeCycle mountContainer = new ContainerLifeCycle();
+            objects.add(mountContainer);
 
             for (int i = 0; i < args.length; i++)
             {
@@ -1885,7 +1889,7 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
-                            Resource resource = Resource.newResource(arg);
+                            Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
                             try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                             {
                                 (envBuilder == null ? coreProperties : envProperties).load(inputStream);
@@ -1894,7 +1898,7 @@ public class XmlConfiguration
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
                             // Create an XmlConfiguration
-                            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
+                            XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
 
                             // Copy Id map
                             if (lastCoreConfiguration != null)
@@ -1993,43 +1997,17 @@ public class XmlConfiguration
         {
             _entry = entry;
 
-            Class<?> klass = XmlConfiguration.class;
-            URL config60 = klass.getResource("configure_6_0.dtd");
-            URL config76 = klass.getResource("configure_7_6.dtd");
-            URL config90 = klass.getResource("configure_9_0.dtd");
-            URL config93 = klass.getResource("configure_9_3.dtd");
-            URL config100 = klass.getResource("configure_10_0.dtd");
-
-            redirectEntity("configure.dtd", config93);
-            redirectEntity("configure_1_0.dtd", config60);
-            redirectEntity("configure_1_1.dtd", config60);
-            redirectEntity("configure_1_2.dtd", config60);
-            redirectEntity("configure_1_3.dtd", config60);
-            redirectEntity("configure_6_0.dtd", config60);
-            redirectEntity("configure_7_6.dtd", config76);
-            redirectEntity("configure_9_0.dtd", config90);
-            redirectEntity("configure_9_3.dtd", config93);
-            redirectEntity("configure_10_0.dtd", config100);
-
-            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
-            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
-            redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
-
-            redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
-            redirectEntity("-//Jetty//Configure//EN", config100);
+            URL catalogUrl = XmlConfiguration.class.getResource("catalog-configure.xml");
+            if (catalogUrl == null)
+                throw new IllegalStateException("Catalog not found: catalog-configure.xml");
+            addCatalog(URI.create(catalogUrl.toExternalForm()));
         }
 
         @Override
         public void close()
         {
             if (_entry != null)
-                __parsers.release(_entry);
+                _entry.release();
         }
     }
 }

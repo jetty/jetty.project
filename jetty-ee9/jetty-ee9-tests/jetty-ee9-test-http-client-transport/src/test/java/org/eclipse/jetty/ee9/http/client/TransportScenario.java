@@ -34,12 +34,12 @@ import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
-import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
@@ -120,7 +120,7 @@ public class TransportScenario
             case H2C:
             case H2:
             case FCGI:
-                return new ServerConnector(server, provideServerConnectionFactory(transport));
+                return new ServerConnector(server, 1, 1, provideServerConnectionFactory(transport));
             case H3:
                 return new HTTP3ServerConnector(server, sslContextFactory, provideServerConnectionFactory(transport));
             case UNIX_DOMAIN:
@@ -344,6 +344,12 @@ public class TransportScenario
 
     public void startServer(Handler handler) throws Exception
     {
+        prepareServer(handler);
+        server.start();
+    }
+
+    protected void prepareServer(Handler handler)
+    {
         sslContextFactory = newServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -353,23 +359,12 @@ public class TransportScenario
         server.addBean(mbeanContainer);
         connector = newServerConnector(server);
         server.addConnector(connector);
-
         server.setRequestLog((request, response) ->
         {
             int status = response.getCommittedMetaData().getStatus();
             requestLog.offer(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
         });
-
         server.setHandler(handler);
-
-        try
-        {
-            server.start();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
     }
 
     protected SslContextFactory.Server newServerSslContextFactory()

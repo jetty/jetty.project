@@ -27,13 +27,18 @@ import java.util.List;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -45,17 +50,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class WebAppClassLoaderTest
 {
-    private Path testWebappDir;
+    private Path _testWebappDir;
     private WebAppContext _context;
     protected WebAppClassLoader _loader;
+    private Server _server;
 
     @BeforeEach
     public void init() throws Exception
     {
-        this.testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        Resource webapp = Resource.newResource(testWebappDir);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        _server = new Server();
 
+        _testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
         _context = new WebAppContext();
+        Resource webapp = ResourceFactory.of(_context).newResource(_testWebappDir);
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
         _context.setExtraClasspath("target/test-classes/ext/*");
@@ -65,7 +73,16 @@ public class WebAppClassLoaderTest
         _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
-        _context.setServer(new Server());
+        _server.setHandler(_context);
+        _server.start();
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        IO.close(_loader);
+        LifeCycle.stop(_server);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     public void assertCanLoadClass(String clazz) throws ClassNotFoundException
@@ -293,8 +310,8 @@ public class WebAppClassLoaderTest
         List<URL> resources;
 
         // Expected Locations
-        URL webappWebInfLibAcme = new URI("jar:" + testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
-        URL webappWebInfClasses = testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
+        URL webappWebInfLibAcme = new URI("jar:" + _testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
+        URL webappWebInfClasses = _testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
         // (from parent classloader)
         URL targetTestClasses = this.getClass().getClassLoader().getResource("org/acme/resource.txt");
 

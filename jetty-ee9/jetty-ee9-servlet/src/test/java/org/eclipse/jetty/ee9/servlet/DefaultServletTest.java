@@ -40,10 +40,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.AllowedResourceAliasChecker;
 import org.eclipse.jetty.ee9.nested.ResourceContentFactory;
 import org.eclipse.jetty.ee9.nested.ResourceService;
-import org.eclipse.jetty.ee9.nested.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
@@ -51,16 +49,18 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -79,6 +79,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -105,6 +106,7 @@ public class DefaultServletTest
     @BeforeEach
     public void init() throws Exception
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         docRoot = workDir.getEmptyPathDir().resolve("docroot");
         FS.ensureDirExists(docRoot);
 
@@ -120,7 +122,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(Resource.newResource(docRoot));
+        context.setBaseResource(ResourceFactory.root().newResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);
@@ -136,6 +138,7 @@ public class DefaultServletTest
     {
         server.stop();
         server.join();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -1129,7 +1132,7 @@ public class DefaultServletTest
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            context.addAliasCheck(new SymlinkAllowedResourceAliasChecker(context));
+            context.addAliasCheck(new SymlinkAllowedResourceAliasChecker(context.getCoreContextHandler()));
             rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -1239,10 +1242,10 @@ public class DefaultServletTest
 
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
 
-        HttpContent content = factory.getContent("/index.html", 200);
+        HttpContent content = factory.getContent("/index.html");
         ByteBuffer buffer = content.getBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
+        content = factory.getContent("/index.html");
         buffer = content.getBuffer();
         assertThat("Direct buffer", buffer, is(nullValue()));
     }
@@ -2105,7 +2108,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new AllowedResourceAliasChecker(context));
+        context.addAliasCheck(new AllowedResourceAliasChecker(context.getCoreContextHandler()));
 
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
@@ -2145,7 +2148,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new AllowedResourceAliasChecker(context));
+        context.addAliasCheck(new AllowedResourceAliasChecker(context.getCoreContextHandler()));
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";

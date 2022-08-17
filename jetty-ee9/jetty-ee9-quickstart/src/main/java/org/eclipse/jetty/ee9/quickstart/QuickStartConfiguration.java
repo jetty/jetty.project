@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.annotations.AnnotationDecorator;
-import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.StandardDescriptorProcessor;
@@ -30,8 +29,10 @@ import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
         __replacedConfigurations.add(org.eclipse.jetty.ee9.webapp.FragmentConfiguration.class);
         __replacedConfigurations.add(org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class);
     }
+
+    private ResourceFactory.Closeable _resourceFactory;
 
     /** Configure the server for the quickstart mode.
      * <p>In practise this means calling <code>server.setDryRun(true)</code> for GENERATE mode</p>
@@ -90,6 +93,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
+        _resourceFactory = ResourceFactory.closeable();
+
         //check that webapp is suitable for quick start - it is not a packed war
         String war = context.getWar();
         if (war == null || war.length() <= 0 || !context.getBaseResource().isDirectory())
@@ -178,14 +183,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-            //add a context bean that will run ServletContainerInitializers as the context starts
-            ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-            if (starter != null)
-                throw new IllegalStateException("ServletContainerInitializersStarter already exists");
-            starter = new ServletContainerInitializersStarter(context);
-            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-            context.addBean(starter, true);
-
             LOG.debug("configured {}", this);
         }
     }
@@ -194,12 +191,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public void postConfigure(WebAppContext context) throws Exception
     {
         super.postConfigure(context);
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-        {
-            context.removeBean(starter);
-            context.removeAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        }
     }
 
     @Override
@@ -211,6 +202,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             _quickStartDescriptorProcessor.close();
             _quickStartDescriptorProcessor = null;
         }
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
     }
 
     protected void quickStart(WebAppContext context)
@@ -256,12 +249,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
             try
             {
                 // Try a relative resolution
-                qstart = Resource.newResource(webInf.getPath().resolve(attr.toString()));
+                qstart = _resourceFactory.newResource(webInf.getPath().resolve(attr.toString()));
             }
             catch (Throwable th)
             {
                 // try as a resource
-                qstart = (Resource.newResource(attr.toString()));
+                qstart = _resourceFactory.newResource(attr.toString());
             }
             context.setAttribute(QUICKSTART_WEB_XML, qstart);
         }

@@ -13,8 +13,18 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+
+import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * ResourceFactory.
@@ -22,22 +32,238 @@ import java.net.URI;
 public interface ResourceFactory
 {
     /**
-     * <p>
-     * Returns the resource contained inside the current resource with the
-     * given name, which may or may not exist.
-     * </p>
-     * <p>
-     * The {@code subUriPath} parameter is interpreted like {@link URI#resolve(String)} would, except for a few convenient differences:
-     * <ul>
-     *     <li>{@code subUriPath} must not contain URI-invalid characters (<code>', [, %, ?</code> ...)</li>
-     *     <li>{@code subUriPath} can contain escaped characters that are going to be correctly interpreted</li>
-     *     <li>All prepended slashes are ignored</li>
-     *     <li>If the resulting resource provably points to an existing directory, a / is automatically appended</li>
-     * </ul>
-     *</p>
-     * @param subUriPath The path segment to add.
-     * @return the Resource for the resolved path within this Resource, never null
-     * @throws IOException if unable to resolve the path
+     * Construct a resource from a uri.
+     *
+     * @param uri A URI.
+     * @return A Resource object.
      */
-    Resource resolve(String subUriPath) throws IOException;
+    Resource newResource(URI uri);
+
+    /**
+     * Construct a system resource from a string.
+     * The resource is tried as classloader resource before being
+     * treated as a normal resource.
+     *
+     * @param resource Resource as string representation
+     * @return The new Resource
+     */
+    default Resource newSystemResource(String resource)
+    {
+        URL url = null;
+        // Try to format as a URL?
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        if (loader != null)
+        {
+            try
+            {
+                url = loader.getResource(resource);
+                if (url == null && resource.startsWith("/"))
+                    url = loader.getResource(resource.substring(1));
+            }
+            catch (IllegalArgumentException e)
+            {
+                // Catches scenario where a bad Windows path like "C:\dev" is
+                // improperly escaped, which various downstream classloaders
+                // tend to have a problem with
+            }
+        }
+
+        if (url == null)
+        {
+            loader = ResourceFactory.class.getClassLoader();
+            if (loader != null)
+            {
+                url = loader.getResource(resource);
+                if (url == null && resource.startsWith("/"))
+                    url = loader.getResource(resource.substring(1));
+            }
+        }
+
+        if (url == null)
+        {
+            url = ClassLoader.getSystemResource(resource);
+            if (url == null && resource.startsWith("/"))
+                url = ClassLoader.getSystemResource(resource.substring(1));
+        }
+
+        if (url == null)
+            return null;
+
+        try
+        {
+            URI uri = url.toURI();
+            return newResource(uri);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
+    }
+
+    /**
+     * Find a classpath resource.
+     * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
+     * found, then the {@link Loader#getResource(String)} method is used.
+     *
+     * @param resource the relative name of the resource
+     * @return Resource or null
+     */
+    default Resource newClassPathResource(String resource)
+    {
+        URL url = ResourceFactory.class.getResource(resource);
+
+        if (url == null)
+            url = Loader.getResource(resource);
+        if (url == null)
+            return null;
+        try
+        {
+            URI uri = url.toURI();
+            return Resource.create(uri);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    /**
+     * Load a URL into a memory resource.
+     * @param url the URL to load into memory
+     * @return Resource or null
+     * @see #newClassPathResource(String)
+     */
+    default Resource newMemoryResource(URL url)
+    {
+        return new MemoryResource(url);
+    }
+
+    /**
+     * Construct a resource from a string.
+     *
+     * @param resource A URL or filename.
+     * @return A Resource object.
+     */
+    default Resource newResource(String resource)
+    {
+        return newResource(URIUtil.toURI(resource));
+    }
+
+    /**
+     * Construct a Resource from provided path
+     *
+     * @param path the path
+     * @return the Resource for the provided path
+     */
+    default Resource newResource(Path path)
+    {
+        return newResource(path.toUri());
+    }
+
+    /**
+     * Construct a ResourceCollection from a list of URIs
+     *
+     * @param uris the URIs
+     * @return the Resource for the provided path
+     */
+    default ResourceCollection newResource(List<URI> uris)
+    {
+        return Resource.combine(uris.stream().map(this::newResource).toList());
+    }
+
+    default Resource newResource(URL url)
+    {
+        try
+        {
+            return newResource(url.toURI());
+        }
+        catch (URISyntaxException e)
+        {
+            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
+        }
+    }
+
+    default Resource newJarFileResource(URI uri)
+    {
+        if (!FileID.isArchive(uri))
+            throw new IllegalArgumentException("Path is not a Java Archive: " + uri);
+        if (!uri.getScheme().equalsIgnoreCase("file"))
+            throw new IllegalArgumentException("Not an allowed path: " + uri);
+        return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    static ResourceFactory root()
+    {
+        return ResourceFactoryInternals.ROOT;
+    }
+
+    static ResourceFactory.Closeable closeable()
+    {
+        return new ResourceFactoryInternals.Closeable();
+    }
+
+    static ResourceFactory.LifeCycle lifecycle()
+    {
+        LifeCycle factory = new ResourceFactoryInternals.LifeCycle();
+        org.eclipse.jetty.util.component.LifeCycle.start(factory);
+        return factory;
+    }
+
+    static ResourceFactory of(Resource baseResource)
+    {
+        Objects.requireNonNull(baseResource);
+
+        if (baseResource instanceof ResourceFactory resourceFactory)
+            return resourceFactory;
+
+        return new ResourceFactory()
+        {
+            @Override
+            public Resource newResource(URI resource)
+            {
+                // TODO add an optimized pathway that keeps the URI and doesn't go via String
+                return newResource(resource.toString());
+            }
+
+            @Override
+            public Resource newResource(String resource)
+            {
+                return baseResource.resolve(resource);
+            }
+        };
+    }
+
+    static ResourceFactory of(Container container)
+    {
+        Objects.requireNonNull(container);
+
+        // TODO this needs to be made thread-safe; the getBean/addBean pair must be atomic
+        LifeCycle factory = container.getBean(LifeCycle.class);
+        if (factory == null)
+        {
+            factory = lifecycle();
+            container.addBean(factory, true);
+            final LifeCycle finalFactory = factory;
+            container.addEventListener(new org.eclipse.jetty.util.component.LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopped(org.eclipse.jetty.util.component.LifeCycle event)
+                {
+                    container.removeBean(this);
+                    container.removeBean(finalFactory);
+                }
+            });
+        }
+        return factory;
+    }
+
+    interface Closeable extends ResourceFactory, java.io.Closeable
+    {
+        @Override
+        void close();
+    }
+
+    interface LifeCycle extends org.eclipse.jetty.util.component.LifeCycle, ResourceFactory, Dumpable
+    {
+    }
 }

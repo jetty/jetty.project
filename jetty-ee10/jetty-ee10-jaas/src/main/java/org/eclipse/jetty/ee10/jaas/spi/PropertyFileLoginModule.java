@@ -25,6 +25,8 @@ import org.eclipse.jetty.ee10.jaas.PropertyUserStoreManager;
 import org.eclipse.jetty.ee10.servlet.security.PropertyUserStore;
 import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
 import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +99,9 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 }
             }
             PropertyUserStore newStore = new PropertyUserStore();
-            newStore.setConfig(filename);
+            ResourceFactory resourceFactory = ResourceFactory.of(newStore);
+            Resource config = resourceFactory.newResource(filename);
+            newStore.setConfig(config);
             newStore.setHotReload(hotReload);
             _store = mgr.addPropertyUserStore(filename, newStore);
             try
@@ -106,7 +110,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
             }
             catch (Exception e)
             {
-                LOG.warn("Exception starting propertyUserStore {} ", filename, e);
+                LOG.warn("Exception starting propertyUserStore {} ", config, e);
             }
         }
     }

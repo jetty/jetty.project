@@ -25,6 +25,7 @@ import org.eclipse.jetty.ee9.jaas.PropertyUserStoreManager;
 import org.eclipse.jetty.ee9.security.PropertyUserStore;
 import org.eclipse.jetty.ee9.security.RolePrincipal;
 import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 }
             }
             PropertyUserStore newStore = new PropertyUserStore();
-            newStore.setConfig(filename);
+            ResourceFactory resourceFactory = ResourceFactory.of(newStore);
+            newStore.setConfig(resourceFactory.newResource(filename));
             newStore.setHotReload(hotReload);
             _store = mgr.addPropertyUserStore(filename, newStore);
             try

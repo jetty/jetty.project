@@ -27,8 +27,8 @@ import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
-import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @SuppressWarnings("unused")

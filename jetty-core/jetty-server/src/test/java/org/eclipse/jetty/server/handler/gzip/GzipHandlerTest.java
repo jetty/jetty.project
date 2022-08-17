@@ -37,7 +37,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.FutureFormFields;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -294,7 +294,7 @@ public class GzipHandlerTest
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             Fields parameters = Request.extractQueryParameters(request);
-            FutureFormFields futureFormFields = new FutureFormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
+            FormFields futureFormFields = new FormFields(request, StandardCharsets.UTF_8, -1, -1, parameters);
             futureFormFields.run();
             parameters = futureFormFields.get();
 

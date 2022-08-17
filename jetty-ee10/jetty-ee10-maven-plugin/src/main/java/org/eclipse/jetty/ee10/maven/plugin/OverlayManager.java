@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * OverlayManager
@@ -46,24 +47,24 @@ public class OverlayManager
         for (Overlay o : getOverlays())
         {
             //can refer to the current project in list of overlays for ordering purposes
-            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getResourceBase().exists())
+            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
             {
-                resourceBases.add(webApp.getResourceBase()); 
+                resourceBases.add(webApp.getBaseResource());
                 continue;
             }
             //add in the selectively unpacked overlay in the correct order to the webapp's resource base
             resourceBases.add(unpackOverlay(o));
         }
 
-        if (!resourceBases.contains(webApp.getResourceBase()) && webApp.getResourceBase().exists())
+        if (!resourceBases.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
         {
             if (webApp.getBaseAppFirst())
-                resourceBases.add(0, webApp.getResourceBase());
+                resourceBases.add(0, webApp.getBaseResource());
             else
-                resourceBases.add(webApp.getResourceBase());
+                resourceBases.add(webApp.getBaseResource());
         }
 
-        webApp.setBaseResource(Resource.of(resourceBases));
+        webApp.setBaseResource(Resource.combine(resourceBases));
     }
     
     /**
@@ -95,8 +96,8 @@ public class OverlayManager
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                Resource.Mount mount = Resource.mountJar(a.getFile().toPath());
-                SelectiveJarResource r = new SelectiveJarResource(mount.root());
+                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                SelectiveJarResource r = new SelectiveJarResource(resource);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -109,8 +110,8 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource.Mount mount = Resource.mountJar(a.getFile().toPath());
-                Overlay overlay = new Overlay(null, mount.root());
+                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                Overlay overlay = new Overlay(null, resource);
                 overlays.add(overlay);
             }
         }
@@ -151,6 +152,6 @@ public class OverlayManager
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content
-        return Resource.newResource(unpackDir.getCanonicalPath());
+        return ResourceFactory.root().newResource(unpackDir.getCanonicalPath()); // TODO leak
     }
 }

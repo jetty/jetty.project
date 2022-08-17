@@ -47,7 +47,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -375,7 +375,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         {
             try
             {
-                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), false, destination, 1);
+                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
                 pool.preCreateConnections(parallelism * 2).get();
                 return pool;
             }

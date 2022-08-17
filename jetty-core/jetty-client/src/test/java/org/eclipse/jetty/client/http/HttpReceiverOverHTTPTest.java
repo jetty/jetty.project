@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -74,7 +73,7 @@ public class HttpReceiverOverHTTPTest
         client = new HttpClient();
         client.setHttpCompliance(compliance);
         client.start();
-        destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
+        destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
         destination.start();
         endPoint = new ByteArrayEndPoint();
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());

@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,10 +31,10 @@ public class WebDescriptorTest
     public WorkDir workDir;
 
     /**
-     * Test to ensure that the XMLParser mapResources is functioning properly.
+     * Test to ensure that the XMLParser XML entity mapping is functioning properly.
      */
     @Test
-    public void testMapResourcesXmlWithXsd() throws Exception
+    public void testXmlWithXsd() throws Exception
     {
         Path xml = workDir.getEmptyPathDir().resolve("test.xml");
         Files.writeString(xml, """
@@ -47,7 +48,7 @@ public class WebDescriptorTest
             </web-app>
             """, StandardCharsets.UTF_8);
 
-        Resource xmlRes = Resource.newResource(xml);
+        Resource xmlRes = ResourceFactory.root().newResource(xml);
         WebDescriptor webDescriptor = new WebDescriptor(xmlRes);
         XmlParser xmlParser = WebDescriptor.newParser(true);
         // This should not throw an exception, if it does then you have a bad state.

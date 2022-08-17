@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -104,11 +105,11 @@ public class WebAppPropertyConverter
         props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isPersistTempDirectory()));
 
         //send over the calculated resource bases that includes unpacked overlays
-        Resource baseResource = webApp.getResourceBase();
+        Resource baseResource = webApp.getBaseResource();
         if (baseResource instanceof ResourceCollection)
-            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getResourceBase()).getResources()));
+            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
         else if (baseResource instanceof Resource)
-            props.put(BASE_DIRS, webApp.getResourceBase().toString());
+            props.put(BASE_DIRS, webApp.getBaseResource().toString());
         
         //if there is a war file, use that
         if (webApp.getWar() != null)
@@ -173,7 +174,7 @@ public class WebAppPropertyConverter
         if (resource == null)
             throw new IllegalStateException("No resource");
 
-        fromProperties(webApp, Resource.newResource(resource).getPath(), server, jettyProperties);
+        fromProperties(webApp, ResourceFactory.of(webApp).newResource(resource).getPath(), server, jettyProperties);
     }
 
     /**
@@ -208,7 +209,7 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(QUICKSTART_WEB_XML);
         if (!StringUtil.isBlank(str))
         {
-            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(str));
+            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, ResourceFactory.of(webApp).newResource(str));
         }
 
         // - the tmp directory
@@ -226,11 +227,8 @@ public class WebAppPropertyConverter
         {
             // This is a use provided list of overlays, which could have mountable entries.
             List<URI> uris = URIUtil.split(str);
-            // TODO: need a better place to close/release this mount.
-            Resource.Mount mount = Resource.mountCollection(uris);
-            webApp.addBean(mount); // let jetty-core ContextHandler.doStop() release mount
             webApp.setWar(null);
-            webApp.setBaseResource(mount.root());
+            webApp.setBaseResource(ResourceFactory.of(webApp).newResource(uris));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
@@ -292,7 +290,7 @@ public class WebAppPropertyConverter
         str = (String)webAppProperties.getProperty(CONTEXT_XML);
         if (!StringUtil.isBlank(str))
         {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str));
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(str));
             xmlConfiguration.getIdMap().put("Server", server);
             //add in any properties
             if (jettyProperties != null)

@@ -61,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -458,6 +459,45 @@ public class SessionHandlerTest
         {
             return "";
         }
+    }
+    
+    @Test
+    public void testSessionCookie() throws Exception
+    {
+        Server server = new Server();
+        MockSessionIdManager idMgr = new MockSessionIdManager(server);
+        idMgr.setWorkerName("node1");
+        SessionHandler mgr = new SessionHandler();
+        MockSessionCache cache = new MockSessionCache(mgr);
+        cache.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(cache);
+        mgr.setSessionIdManager(idMgr);
+
+        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+
+        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        session.setExtendedId("123.node1");
+        SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
+        sessionCookieConfig.setName("SPECIAL");
+        sessionCookieConfig.setDomain("universe");
+        sessionCookieConfig.setHttpOnly(false);
+        sessionCookieConfig.setSecure(false);
+        sessionCookieConfig.setPath("/foo");
+        sessionCookieConfig.setMaxAge(99);
+        sessionCookieConfig.setAttribute("SameSite", "Strict");
+        sessionCookieConfig.setAttribute("ham", "cheese");
+        
+        HttpCookie cookie = mgr.getSessionCookie(session, "/bar", false);
+        assertEquals("SPECIAL", cookie.getName());
+        assertEquals("universe", cookie.getDomain());
+        assertEquals("/foo", cookie.getPath());
+        assertFalse(cookie.isHttpOnly());
+        assertFalse(cookie.isSecure());
+        assertEquals(99, cookie.getMaxAge());
+        assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
+        
+        String cookieStr = cookie.getRFC6265SetCookie();
+        assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
     }
 
     @Test
