@@ -33,8 +33,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-ee10-test-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
@@ -78,7 +78,7 @@
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty.tests:jetty-ee10-test-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee10:jetty-ee10-maven-plugin</dependency>
           </dependenciesToScan>
         </configuration>
       </plugin>

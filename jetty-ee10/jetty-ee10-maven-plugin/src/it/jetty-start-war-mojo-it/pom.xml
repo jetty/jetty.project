@@ -21,8 +21,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-ee10-test-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
@@ -46,7 +46,7 @@
             <contentCheck>Bean Validation Webapp example</contentCheck>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty.tests:jetty-ee10-test-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee10:jetty-ee10-maven-plugin</dependency>
           </dependenciesToScan>
           <includes>
             <include>**/*TestGetContent*</include>
