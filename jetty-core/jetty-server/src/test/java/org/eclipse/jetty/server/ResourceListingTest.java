@@ -243,11 +243,11 @@ public class ResourceListingTest
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            // Collection consisting of [file, dir]
+            // Collection consisting of inputs [file, dir]
             Resource resourceCollectionA = resourceFactory.newResource(List.of(docNonRootC.toUri(), docrootB.toUri()));
             // Basic resource, just a dir
             Resource basicResource = resourceFactory.newResource(docrootA);
-            // New Collection consisting of [collection, dir]
+            // New Collection consisting of inputs [collection, dir] - resulting in [file, dir, dir]
             Resource resourceCollectionB = Resource.combine(resourceCollectionA, basicResource);
 
             // Use collection in generating the output
