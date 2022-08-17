@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,6 +38,7 @@ import org.xml.sax.SAXException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -112,6 +114,8 @@ public class ResourceListingTest
         Files.createDirectory(docrootA);
         FS.touch(docrootA.resolve("entry1.txt"));
         FS.touch(docrootA.resolve("entry2.dat"));
+        FS.touch(docrootA.resolve("similar.txt"));
+        Files.createDirectory(docrootA.resolve("dirSame"));
         Files.createDirectory(docrootA.resolve("dirFoo"));
         Files.createDirectory(docrootA.resolve("dirBar"));
 
@@ -119,6 +123,8 @@ public class ResourceListingTest
         Files.createDirectory(docrootB);
         FS.touch(docrootB.resolve("entry3.png"));
         FS.touch(docrootB.resolve("entry4.tar.gz"));
+        FS.touch(docrootB.resolve("similar.txt")); // same filename as in docrootA
+        Files.createDirectory(docrootB.resolve("dirSame")); // same directory name as in docrootA
         Files.createDirectory(docrootB.resolve("dirCid"));
         Files.createDirectory(docrootB.resolve("dirZed"));
 
@@ -145,6 +151,16 @@ public class ResourceListingTest
             assertThat(content, containsString("<a href=\"/context/dirCid/\">"));
             assertThat(content, containsString("dirZed/"));
             assertThat(content, containsString("<a href=\"/context/dirZed/\">"));
+
+            int count;
+
+            // how many dirSame links do we have?
+            count = content.split(Pattern.quote("<a href=\"/context/dirSame/\">"), -1).length - 1;
+            assertThat(count, is(1));
+
+            // how many similar.txt do we have?
+            count = content.split(Pattern.quote("<a href=\"/context/similar.txt\">"), -1).length - 1;
+            assertThat(count, is(1));
         }
     }
 
