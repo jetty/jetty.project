@@ -40,7 +40,7 @@ import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -222,7 +222,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         Request baseRequest = httpChannel.getCoreRequest();
         Response baseResponse = httpChannel.getCoreResponse();
 
-        try (Blocker.Callback callback = Blocker.callback())
+        FutureCallback callback = new FutureCallback();
+        try
         {
             // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.

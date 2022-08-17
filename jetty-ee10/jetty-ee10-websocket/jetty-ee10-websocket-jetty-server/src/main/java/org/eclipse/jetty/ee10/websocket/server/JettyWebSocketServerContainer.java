@@ -39,7 +39,7 @@ import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRe
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -223,7 +223,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        try (Blocker.Callback callback = Blocker.callback())
+        FutureCallback callback = new FutureCallback();
+        try
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.

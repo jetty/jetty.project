@@ -33,7 +33,7 @@ import org.eclipse.jetty.ee9.servlet.FilterMapping;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -165,7 +165,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
         {
             // provide a null default customizer the customizer will be on the negotiator in the mapping
-            try (Blocker.Callback callback = Blocker.callback())
+            FutureCallback callback = new FutureCallback();
+            try
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.

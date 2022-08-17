@@ -37,7 +37,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketSe
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -304,7 +304,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             throw new IllegalStateException();
         ServletContextResponse baseResponse = baseRequest.getResponse();
 
-        try (Blocker.Callback callback = Blocker.callback())
+        FutureCallback callback = new FutureCallback();
+        try
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
