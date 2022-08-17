@@ -41,16 +41,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     @Override
     public boolean isWebSocketUpgradeRequest(Request request)
     {
-        if (!HttpVersion.HTTP_1_1.is(request.getConnectionMetaData().getProtocol()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded version!=1.1 {}", request);
-            return false;
-        }
-
-        if (!super.isWebSocketUpgradeRequest(request))
-            return false;
-
         if (!HttpMethod.GET.is(request.getMethod()))
         {
             if (LOG.isDebugEnabled())
@@ -58,7 +48,14 @@ public final class RFC6455Handshaker extends AbstractHandshaker
             return false;
         }
 
-        return true;
+        if (!HttpVersion.HTTP_1_1.is(request.getConnectionMetaData().getProtocol()))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded version!=1.1 {}", request);
+            return false;
+        }
+
+        return super.isWebSocketUpgradeRequest(request);
     }
 
     @Override

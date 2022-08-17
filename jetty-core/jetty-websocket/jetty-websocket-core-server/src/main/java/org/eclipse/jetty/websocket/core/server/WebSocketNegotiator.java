@@ -21,11 +21,11 @@ import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 public interface WebSocketNegotiator extends Configuration.Customizer
 {
     /**
-     * Create a {@link FrameHandler} from the incoming request.
+     * <p>Creates a {@link FrameHandler} from the incoming request.</p>
      *
      * <p>If the negotiator returns null it is responsible for completing the {@link Callback} and sending a response.
      * If the negotiator intends to return non-null {@link FrameHandler}, it MUST NOT write content to the response or
-     * complete the {@link Callback}.</p>
+     * complete the {@link Callback}, but it may modify the response headers.</p>
      *
      * @param request the request details
      * @param response the response details

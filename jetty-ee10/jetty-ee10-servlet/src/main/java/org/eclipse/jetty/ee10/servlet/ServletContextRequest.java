@@ -31,7 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncListener;
@@ -125,7 +124,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     final HttpInput _httpInput;
     final String _pathInContext;
     Charset _queryEncoding;
-    final AtomicReference<Object> _attachment = new AtomicReference<>();
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 

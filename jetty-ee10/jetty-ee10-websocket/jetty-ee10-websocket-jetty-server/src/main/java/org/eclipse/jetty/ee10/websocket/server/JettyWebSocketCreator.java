@@ -23,7 +23,7 @@ package org.eclipse.jetty.ee10.websocket.server;
 public interface JettyWebSocketCreator
 {
     /**
-     * Create a websocket from the incoming request.
+     * <p>Creates a websocket from the incoming request.</p>
      *
      * <p>If no websocket is to be created (return value of null), the {@link JettyWebSocketCreator}
      * is responsible for sending a response with {@link JettyServerUpgradeResponse#sendError(int, String)},

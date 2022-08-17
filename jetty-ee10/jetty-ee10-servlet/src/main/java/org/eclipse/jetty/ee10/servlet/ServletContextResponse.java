@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletOutputStream;
@@ -86,7 +85,6 @@ public class ServletContextResponse extends ContextResponse
     private ResponseWriter _writer;
 
     private long _contentLength = -1;
-    final AtomicReference<Object> _attachment = new AtomicReference<>();
 
     public static ServletContextResponse getBaseResponse(ServletResponse response)
     {
