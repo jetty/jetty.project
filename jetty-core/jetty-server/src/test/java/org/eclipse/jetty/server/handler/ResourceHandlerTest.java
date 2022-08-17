@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -2634,26 +2635,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    public void testJettyDirListing() throws Exception
-    {
-        copySimpleTestResource(docRoot);
-
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
-                GET /context/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """));
-        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("jetty-dir.css"));
-        assertThat(response.getContent(), containsString("Directory: /context/"));
-        assertThat(response.getContent(), containsString("big.txt"));
-        assertThat(response.getContent(), containsString("directory"));
-        assertThat(response.getContent(), containsString("simple.txt"));
-    }
-
-    @Test
     public void testJettyDirRedirect() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(
@@ -2667,9 +2648,14 @@ public class ResourceHandlerTest
         assertThat(response.get(LOCATION), endsWith("/context/"));
     }
 
+    /**
+     * Tests to attempt to break out of the Context restrictions by
+     * abusing encoding (or lack thereof), listing output,
+     * welcome file behaviors, and more.
+     */
     @ParameterizedTest
     @MethodSource("contextBreakoutScenarios")
-    public void testListingContextBreakout(ResourceHandlerTest.Scenario scenario) throws Exception
+    public void testContextBreakout(ResourceHandlerTest.Scenario scenario) throws Exception
     {
         _rootResourceHandler.setDirAllowed(true);
         _rootResourceHandler.setWelcomeFiles("index.html");
@@ -2711,134 +2697,40 @@ public class ResourceHandlerTest
     }
 
     /**
-     * A regression on windows allowed the directory listing show
-     * the fully qualified paths within the directory listing.
-     * This test ensures that this behavior will not arise again.
+     * <p>
+     * Tests to ensure that when requesting a legit directory listing, you
+     * cannot arbitrarily include XSS in the output via careful manipulation
+     * of the request path.
+     * </p>
+     * <p>
+     * This is mainly a test of how the raw request details evolve over time, and
+     * migrate through the ResourceHandler before it hits the
+     * ResourceListing.getAsXHTML for output production
+     * </p>
      */
-    @Test
-    public void testListingFilenamesOnly() throws Exception
-    {
-        /* create some content in the docroot */
-        FS.ensureDirExists(docRoot);
-        Path one = docRoot.resolve("one");
-        FS.ensureDirExists(one);
-        Path deep = one.resolve("deep");
-        FS.ensureDirExists(deep);
-        FS.touch(deep.resolve("foo"));
-        FS.ensureDirExists(docRoot.resolve("two"));
-        FS.ensureDirExists(docRoot.resolve("three"));
-
-        String resBasePath = docRoot.toAbsolutePath().toString();
-
-        String req1 = """
-            GET /context/one/deep/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """;
-        String rawResponse = _local.getResponse(req1);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        String body = response.getContent();
-        assertThat(body, containsString("/foo"));
-        assertThat(body, not(containsString(resBasePath)));
-    }
-
-    @Test
-    public void testListingProperUrlEncoding() throws Exception
-    {
-        /* create some content in the docroot */
-
-        Path wackyDir = docRoot.resolve("dir;"); // this should not be double-encoded.
-        FS.ensureDirExists(wackyDir);
-
-        FS.ensureDirExists(wackyDir.resolve("four"));
-        FS.ensureDirExists(wackyDir.resolve("five"));
-        FS.ensureDirExists(wackyDir.resolve("six"));
-
-        /* At this point we have the following
-         * testListingProperUrlEncoding/
-         * `-- docroot
-         *     `-- dir;
-         *         |-- five
-         *         |-- four
-         *         `-- six
-         */
-
-        // First send request in improper, unencoded way.
-        String rawResponse = _local.getResponse("""
-            GET /context/dir;/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-
-        // Now send request in proper, encoded format.
-        rawResponse = _local.getResponse("""
-            GET /context/dir%3B/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-
-        String body = response.getContent();
-        // Should not see double-encoded ";"
-        // First encoding: ";" -> "%3b"
-        // Second encoding: "%3B" -> "%253B" (BAD!)
-        assertThat(body, not(containsString("%253B")));
-
-        assertThat(body, containsString("/dir%3B/"));
-        assertThat(body, containsString("/dir%3B/four/"));
-        assertThat(body, containsString("/dir%3B/five/"));
-        assertThat(body, containsString("/dir%3B/six/"));
-    }
-
-    @Test
-    public void testListingWithQuestionMarks() throws Exception
-    {
-        /* create some content in the docroot */
-        FS.ensureDirExists(docRoot.resolve("one"));
-        FS.ensureDirExists(docRoot.resolve("two"));
-        FS.ensureDirExists(docRoot.resolve("three"));
-
-        // Creating dir 'f??r' (Might not work in Windows)
-        assumeMkDirSupported(docRoot, "f??r");
-
-        String rawResponse = _local.getResponse("""
-            GET /context/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        String body = response.getContent();
-        assertThat(body, containsString("f??r"));
-    }
-
     @Test
     public void testListingXSS() throws Exception
     {
+        // Allow unsafe URI requests for this test case specifically
+        // The requests below abuse the path-param features of URI, and the default UriCompliance mode
+        // will prevent the use those requests as a 400 Bad Request: Ambiguous URI empty segment
+        HttpConfiguration httpConfiguration = _local.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration();
+        httpConfiguration.setUriCompliance(UriCompliance.UNSAFE);
+
         /* create some content in the docroot */
         Path one = docRoot.resolve("one");
         FS.ensureDirExists(one);
         FS.ensureDirExists(docRoot.resolve("two"));
         FS.ensureDirExists(docRoot.resolve("three"));
 
-        Path alert = one.resolve("onmouseclick='alert(oops)'");
-        FS.touch(alert);
-
         /*
          * Intentionally bad request URI. Sending a non-encoded URI with typically
-         * encoded characters '<', '>', and '"'.
+         * encoded characters '<', '>', and '"', using the path-param feature of the
+         * URI spec to still produce a listing.  This path-param value should not make it
+         * down to the ResourceListing.getAsXHTML() method.
          */
+        // TODO: investigate why ResourceHandler isn't producing a directory listing when asked here.
+        // TODO: this request currently produces a 404
         String req1 = """
             GET /context/;<script>window.alert("hi");</script> HTTP/1.1\r
             Host: local\r

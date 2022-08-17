@@ -14,10 +14,12 @@
 package org.eclipse.jetty.server;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
 import javax.xml.XMLConstants;
@@ -35,7 +37,9 @@ import org.xml.sax.SAXException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ResourceListingTest
 {
@@ -254,6 +258,135 @@ public class ResourceListingTest
         }
     }
 
+    /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly(WorkDir workDir) throws Exception
+    {
+        Path docRoot = workDir.getEmptyPathDir();
+
+        /* create some content in the docroot */
+        FS.ensureDirExists(docRoot);
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
+        Path deep = one.resolve("deep");
+        FS.ensureDirExists(deep);
+        FS.touch(deep.resolve("foo"));
+        FS.ensureDirExists(docRoot.resolve("two"));
+        FS.ensureDirExists(docRoot.resolve("three"));
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(docRoot);
+            Resource resource = resourceBase.resolve("one/deep/");
+
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
+            assertTrue(isValidXHtml(content));
+
+            assertThat(content, containsString("/foo"));
+
+            String resBasePath = docRoot.toAbsolutePath().toString();
+            assertThat(content, not(containsString(resBasePath)));
+        }
+    }
+
+    @Test
+    public void testListingProperUrlEncoding(WorkDir workDir) throws Exception
+    {
+        Path docRoot = workDir.getEmptyPathDir();
+        /* create some content in the docroot */
+
+        Path wackyDir = docRoot.resolve("dir;"); // this should not be double-encoded.
+        FS.ensureDirExists(wackyDir);
+
+        FS.ensureDirExists(wackyDir.resolve("four"));
+        FS.ensureDirExists(wackyDir.resolve("five"));
+        FS.ensureDirExists(wackyDir.resolve("six"));
+
+        /* At this point we have the following
+         * testListingProperUrlEncoding/
+         * `-- docroot
+         *     `-- dir;
+         *         |-- five
+         *         |-- four
+         *         `-- six
+         */
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(docRoot);
+
+            // Resolve directory
+            Resource resource = resourceBase.resolve("dir%3B");
+
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
+            assertTrue(isValidXHtml(content));
+
+            // Should not see double-encoded ";"
+            // First encoding: ";" -> "%3B"
+            // Second encoding: "%3B" -> "%253B" (BAD!)
+            assertThat(content, not(containsString("%253B")));
+
+            assertThat(content, containsString("/dir%3B/"));
+            assertThat(content, containsString("/dir%3B/four/"));
+            assertThat(content, containsString("/dir%3B/five/"));
+            assertThat(content, containsString("/dir%3B/six/"));
+        }
+    }
+
+    @Test
+    public void testListingWithQuestionMarks(WorkDir workDir) throws Exception
+    {
+        Path docRoot = workDir.getEmptyPathDir();
+
+        /* create some content in the docroot */
+        FS.ensureDirExists(docRoot.resolve("one"));
+        FS.ensureDirExists(docRoot.resolve("two"));
+        FS.ensureDirExists(docRoot.resolve("three"));
+
+        // Creating dir 'f??r' (Might not work in Windows)
+        assumeMkDirSupported(docRoot, "f??r");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(docRoot);
+
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
+            assertTrue(isValidXHtml(content));
+
+            assertThat(content, containsString("f??r"));
+        }
+    }
+
+    @Test
+    public void testListingEncoding(WorkDir workDir) throws Exception
+    {
+        Path docRoot = workDir.getEmptyPathDir();
+
+        /* create some content in the docroot */
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
+
+        // example of content on disk that could cause problems when taken to the HTML space.
+        Path alert = one.resolve("onmouseclick='alert(oops)'");
+        FS.touch(alert);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(docRoot);
+            Resource resource = resourceBase.resolve("one");
+
+            String content = ResourceListing.getAsXHTML(resource, "/context/one", false, null);
+            assertTrue(isValidXHtml(content));
+
+            // Entry should be properly encoded
+            assertThat(content, containsString("<a href=\"/context/one/onmouseclick=%27alert(oops)%27\">"));
+        }
+    }
+
     private static boolean isValidXHtml(String content)
     {
         // we expect that our generated output conforms to text/xhtml is well formed
@@ -272,5 +405,32 @@ public class ResourceListingTest
             e.printStackTrace(System.err);
             return false; // XHTML has got issues
         }
+    }
+
+    /**
+     * Attempt to create the directory, skip testcase if not supported on OS.
+     */
+    private static Path assumeMkDirSupported(Path path, String subpath)
+    {
+        Path ret = null;
+
+        try
+        {
+            ret = path.resolve(subpath);
+
+            if (Files.exists(ret))
+                return ret;
+
+            Files.createDirectories(ret);
+        }
+        catch (InvalidPathException | IOException ignore)
+        {
+            // ignore
+        }
+
+        assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);
+        assumeTrue(Files.exists(ret), "Directory creation not supported on OS: " + ret);
+
+        return ret;
     }
 }
