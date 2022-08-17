@@ -530,14 +530,16 @@ public class URIUtilTest
             Arguments.of("/barry%27s", "/barry's"),
             Arguments.of("/section[42]", "/section%5B42%5D"),
             Arguments.of("/dir?", "/dir%3F"),
+            Arguments.of("/dir#", "/dir%23"),
             // encode utf-8 unicode
             Arguments.of("/bãm/", "/b%C3%A3m/"),
             Arguments.of("/bä€ãm/", "/b%C3%A4%E2%82%AC%C3%A3m/"),
             // encode naked % to %25
             Arguments.of("/abc%x", "/abc%25x"),
             // encoded characters to leave as-is
-            Arguments.of("/foo/%2F", "/foo/%2F"),
-            Arguments.of("/foo%5B1%5D", "/foo%5B1%5D"),
+            Arguments.of("/foo/%2F", "/foo/%2F"), // the path "/" symbol
+            Arguments.of("/foo%5B1%5D", "/foo%5B1%5D"), // the "[" and "]" symbols
+            Arguments.of("/bar%23", "/bar%23"), // hash "#" symbol
             // normalize hex codes
             Arguments.of("/b%c3%a4%e2%82%ac%c3%a3m/", "/b%C3%A4%E2%82%AC%C3%A3m/")
         );

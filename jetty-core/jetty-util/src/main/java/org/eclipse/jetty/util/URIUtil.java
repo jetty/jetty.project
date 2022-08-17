@@ -1736,7 +1736,7 @@ public final class URIUtil
             return true;
 
         // additional raw characters rejected by Paths.get(URI)
-        return (codepoint == '?');
+        return ((codepoint == '?') || (codepoint == '#'));
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
