@@ -86,8 +86,6 @@ import org.slf4j.LoggerFactory;
 public class ServletContextRequest extends ContextRequest implements Runnable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedRequest";
-    public static final String WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedResponse";
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;

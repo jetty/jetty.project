@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,8 +169,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-                baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
                 if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
                 {
@@ -179,8 +180,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             }
             finally
             {
-                baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-                baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 

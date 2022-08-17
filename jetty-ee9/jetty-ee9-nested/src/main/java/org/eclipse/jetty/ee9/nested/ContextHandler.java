@@ -2350,9 +2350,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public static class CoreContextRequest extends ContextRequest
     {
-        public static final String WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedRequest";
-        public static final String WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedResponse";
-
         private final HttpChannel _httpChannel;
 
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,

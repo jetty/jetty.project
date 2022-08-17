@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
@@ -226,8 +227,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
             {
@@ -237,8 +238,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         }
         finally
         {
-            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
 
         return false;

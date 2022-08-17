@@ -22,13 +22,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
@@ -41,7 +41,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         upgradeResponse = response;
         ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
         this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
-            .getAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
     }
 
     @Override

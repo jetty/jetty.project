@@ -32,6 +32,10 @@ public final class WebSocketConstants
     public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ofSeconds(30);
     public static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ZERO;
 
+    // Attributes for storing API requests as attributes on the base jetty-core request.
+    public static final String WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedRequest";
+    public static final String WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE = "org.eclipse.jetty.websocket.wrappedResponse";
+
     /**
      * Globally Unique Identifier for use in WebSocket handshake within {@code Sec-WebSocket-Accept} and <code>Sec-WebSocket-Key</code> http headers.
      * <p>

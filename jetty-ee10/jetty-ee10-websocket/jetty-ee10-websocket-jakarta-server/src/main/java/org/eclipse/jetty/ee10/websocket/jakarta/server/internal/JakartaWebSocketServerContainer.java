@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
@@ -307,8 +308,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
             {
@@ -317,8 +318,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         }
         finally
         {
-            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            baseRequest.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 

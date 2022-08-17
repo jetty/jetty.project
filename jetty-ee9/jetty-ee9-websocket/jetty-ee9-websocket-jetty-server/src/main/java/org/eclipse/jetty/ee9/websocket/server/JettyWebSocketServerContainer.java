@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
@@ -226,8 +226,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             // Set the wrapped req and resp as attachments on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
             {
@@ -237,8 +237,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         }
         finally
         {
-            baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            baseRequest.removeAttribute(ContextHandler.CoreContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
         return false;
     }

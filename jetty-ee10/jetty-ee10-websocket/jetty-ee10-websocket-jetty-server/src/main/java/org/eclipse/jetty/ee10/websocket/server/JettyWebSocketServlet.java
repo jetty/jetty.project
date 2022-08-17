@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -193,8 +194,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                request.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
-                request.setAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
+                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
+                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
 
                 if (mapping.upgrade(request, response, callback, null))
                 {
@@ -204,8 +205,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             }
             finally
             {
-                request.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-                request.removeAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 

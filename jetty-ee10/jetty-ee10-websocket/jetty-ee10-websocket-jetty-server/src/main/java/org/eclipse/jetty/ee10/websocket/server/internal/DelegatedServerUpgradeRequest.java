@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
@@ -52,7 +52,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
         this.httpServletRequest = (HttpServletRequest)request
-            .getAttribute(ServletContextRequest.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
         this.queryString = httpServletRequest.getQueryString();
 
