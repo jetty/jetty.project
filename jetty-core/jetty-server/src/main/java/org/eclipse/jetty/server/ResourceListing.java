@@ -13,18 +13,25 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollators;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +43,11 @@ import org.slf4j.LoggerFactory;
 public class ResourceListing
 {
     public static final Logger LOG = LoggerFactory.getLogger(ResourceListing.class);
+    // Non-Breaking Space suitable for XHTML and XML
+    private static final String NBSP = "&#160;";
 
     /**
-     * Convert the Resource directory into an HTML directory listing.
+     * Convert the Resource directory into an XHTML directory listing.
      *
      * @param resource the resource to build the listing from
      * @param base The base URL
@@ -46,14 +55,15 @@ public class ResourceListing
      * @param query query params
      * @return the HTML as String
      */
-    public static String getAsHTML(Resource resource, String base, boolean parent, String query)
+    public static String getAsXHTML(Resource resource, String base, boolean parent, String query)
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
         if (base == null || !resource.isDirectory())
             return null;
 
-        List<Resource> listing = new ArrayList<>(resource.list().stream().map(URIUtil::encodePath).map(resource::resolve).toList());
+        List<Path> listing = new ArrayList<>();
+        collectListing(listing, resource);
 
         boolean sortOrderAscending = true;
         String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
@@ -84,12 +94,12 @@ public class ResourceListing
         }
 
         // Perform sort
-        Comparator<? super Resource> sort = switch (sortColumn)
-        {
-            case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
-            case "S" -> ResourceCollators.bySize(sortOrderAscending);
-            default -> ResourceCollators.byName(sortOrderAscending);
-        };
+        Comparator<? super Path> sort = switch (sortColumn)
+            {
+                case "M" -> PathCollators.byLastModified(sortOrderAscending);
+                case "S" -> PathCollators.bySize(sortOrderAscending);
+                default -> PathCollators.byName(sortOrderAscending);
+            };
         listing.sort(sort);
 
         String decodedBase = URIUtil.decodePath(base);
@@ -103,7 +113,7 @@ public class ResourceListing
 
         // HTML Header
         buf.append("<head>\n");
-        buf.append("<meta charset=\"utf-8\">\n");
+        buf.append("<meta charset=\"utf-8\"/>\n");
         buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
         buf.append("<title>");
         buf.append(title);
@@ -115,8 +125,8 @@ public class ResourceListing
         buf.append("<h1 class=\"title\">").append(title).append("</h1>\n");
 
         // HTML Table
-        final String ARROW_DOWN = "&nbsp; &#8681;";
-        final String ARROW_UP = "&nbsp; &#8679;";
+        final String ARROW_DOWN = NBSP + " &#8681;";
+        final String ARROW_UP = NBSP + " &#8679;";
 
         buf.append("<table class=\"listing\">\n");
         buf.append("<thead>\n");
@@ -137,7 +147,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<tr><th class=\"name\"><a href=\"?C=N&O=").append(order).append("\">");
+        buf.append("<tr><th class=\"name\"><a href=\"?C=N&amp;O=").append(order).append("\">");
         buf.append("Name").append(arrow);
         buf.append("</a></th>");
 
@@ -157,7 +167,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&O=").append(order).append("\">");
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&amp;O=").append(order).append("\">");
         buf.append("Last Modified").append(arrow);
         buf.append("</a></th>");
 
@@ -176,7 +186,7 @@ public class ResourceListing
                 arrow = ARROW_DOWN;
             }
         }
-        buf.append("<th class=\"size\"><a href=\"?C=S&O=").append(order).append("\">");
+        buf.append("<th class=\"size\"><a href=\"?C=S&amp;O=").append(order).append("\">");
         buf.append("Size").append(arrow);
         buf.append("</a></th></tr>\n");
         buf.append("</thead>\n");
@@ -200,44 +210,66 @@ public class ResourceListing
 
         DateFormat dfmt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
 
-        for (Resource item : listing)
+        for (Path item : listing)
         {
-            // TODO this feels fragile, as collections probably should not return a Path here
-            //      and even if they do, it might not be named correctly
-            String name = item.getPath().toFile().getName();
-            if (StringUtil.isBlank(name))
-                continue;
+            Path fileName = item.getFileName();
+            if (fileName == null)
+            {
+                continue; // skip
+            }
 
-            if (item.isDirectory() && !name.endsWith("/"))
+            String name = fileName.toString();
+            if (StringUtil.isBlank(name))
+            {
+                return null;
+            }
+
+            if (Files.isDirectory(item))
+            {
                 name += URIUtil.SLASH;
+            }
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
-            // TODO should this be a relative link?
-            String path = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
-            buf.append(path);
+
+            String href = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
+            buf.append(href);
             buf.append("\">");
             buf.append(deTag(name));
-            buf.append("&nbsp;");
+            buf.append(NBSP);
             buf.append("</a></td>");
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-            long lastModified = item.lastModified();
-            if (lastModified > 0)
-                buf.append(dfmt.format(new Date(item.lastModified())));
-            buf.append("&nbsp;</td>");
+
+            try
+            {
+                FileTime lastModified = Files.getLastModifiedTime(item, LinkOption.NOFOLLOW_LINKS);
+                buf.append(dfmt.format(new Date(lastModified.toMillis())));
+            }
+            catch (IOException ignore)
+            {
+                // do nothing (lastModifiedTime not supported by this file system)
+            }
+            buf.append(NBSP).append("</td>");
 
             // Size
             buf.append("<td class=\"size\">");
-            long length = item.length();
-            if (length >= 0)
-            {
-                buf.append(String.format("%,d bytes", item.length()));
-            }
-            buf.append("&nbsp;</td></tr>\n");
-        }
 
+            try
+            {
+                long length = Files.size(item);
+                if (length >= 0)
+                {
+                    buf.append(String.format("%,d bytes", length));
+                }
+            }
+            catch (IOException ignore)
+            {
+                // do nothing (size not supported by this file system)
+            }
+            buf.append(NBSP).append("</td></tr>\n");
+        }
         buf.append("</tbody>\n");
         buf.append("</table>\n");
         buf.append("</body></html>\n");
@@ -245,12 +277,52 @@ public class ResourceListing
         return buf.toString();
     }
 
+    private static void collectListing(List<Path> listing, Resource resource)
+    {
+        if (resource == null)
+            return;
+
+        if (resource instanceof ResourceCollection resourceCollection)
+        {
+            for (Resource child: resourceCollection.getResources())
+            {
+                collectListing(listing, child);
+            }
+            return;
+        }
+
+        Path path = resource.getPath();
+        if (path == null)
+            return;
+
+        try (Stream<Path> listStream = Files.list(resource.getPath()))
+        {
+            listStream.forEach((entry) ->
+            {
+                if (!listing.contains(entry))
+                    listing.add(entry);
+            });
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to get Directory Listing for: {}", resource, e);
+        }
+    }
+
     /**
+     * <p>
      * Encode any characters that could break the URI string in an HREF.
-     * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>
+     * </p>
      *
+     * <p>
+     *   Such as:
+     *   {@code <a href="/path/to;<script>Window.alert('XSS'+'%20'+'here');</script>">Link</a>}
+     * </p>
+     * <p>
      * The above example would parse incorrectly on various browsers as the "<" or '"' characters
      * would end the href attribute value string prematurely.
+     * </p>
      *
      * @param raw the raw text to encode.
      * @return the defanged text.
