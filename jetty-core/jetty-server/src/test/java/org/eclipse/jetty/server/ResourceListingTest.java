@@ -223,12 +223,14 @@ public class ResourceListingTest
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            // Collection consisting of file, dir, dir
-            List<URI> uriRootList = List.of(docNonRootC.toUri(), docrootB.toUri());
-            Resource resourceCollectionA = resourceFactory.newResource(uriRootList);
+            // Collection consisting of [file, dir]
+            Resource resourceCollectionA = resourceFactory.newResource(List.of(docNonRootC.toUri(), docrootB.toUri()));
+            // Basic resource, just a dir
             Resource basicResource = resourceFactory.newResource(docrootA);
+            // New Collection consisting of [collection, dir]
             Resource resourceCollectionB = Resource.combine(resourceCollectionA, basicResource);
 
+            // Use collection in generating the output
             String content = ResourceListing.getAsXHTML(resourceCollectionB, "/context/", false, null);
             assertTrue(isValidXHtml(content));
 
