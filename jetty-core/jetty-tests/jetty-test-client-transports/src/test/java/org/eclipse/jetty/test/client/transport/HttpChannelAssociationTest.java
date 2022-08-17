@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,42 +37,45 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpChannelOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;
-import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
+public class HttpChannelAssociationTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testAssociationFailedAbortsRequest(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.startServer(new EmptyServerHandler());
+        startServer(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
-        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false));
+        client = new HttpClient(newHttpClientTransport(transport, exchange -> false));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        scenario.client.setExecutor(clientThreads);
-        scenario.client.start();
+        client.setExecutor(clientThreads);
+        client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .send(result ->
             {
                 if (result.isFailed())
@@ -84,14 +86,20 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testIdleTimeoutJustBeforeAssociation(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.startServer(new EmptyServerHandler());
+        startServer(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         long idleTimeout = 1000;
-        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange ->
+        client = new HttpClient(newHttpClientTransport(transport, exchange ->
         {
             // We idle timeout just before the association,
             // we must be able to send the request successfully.
@@ -100,12 +108,12 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         }));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        scenario.client.setExecutor(clientThreads);
-        scenario.client.setIdleTimeout(idleTimeout);
-        scenario.client.start();
+        client.setExecutor(clientThreads);
+        client.setIdleTimeout(idleTimeout);
+        client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .send(result ->
             {
                 if (result.isSucceeded())
@@ -115,17 +123,17 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private HttpClientTransport newHttpClientTransport(TransportScenario scenario, Predicate<HttpExchange> code)
+    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code)
     {
-        switch (scenario.transport)
+        return switch (transport)
         {
             case HTTP:
             case HTTPS:
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
-                return new HttpClientTransportOverHTTP(clientConnector)
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
                     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
@@ -153,9 +161,9 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
-                return new HttpClientTransportOverHTTP2(http2Client)
+                yield new HttpClientTransportOverHTTP2(http2Client)
                 {
                     @Override
                     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
@@ -182,9 +190,9 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             {
                 HTTP3Client http3Client = new HTTP3Client();
                 http3Client.getClientConnector().setSelectors(1);
-                http3Client.getClientConnector().setSslContextFactory(scenario.newClientSslContextFactory());
+                http3Client.getClientConnector().setSslContextFactory(newSslContextFactoryClient());
                 http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
-                return new HttpClientTransportOverHTTP3(http3Client)
+                yield new HttpClientTransportOverHTTP3(http3Client)
                 {
                     @Override
                     protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
@@ -211,8 +219,8 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
-                return new HttpClientTransportOverFCGI(clientConnector, "")
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverFCGI(clientConnector, "")
                 {
                     @Override
                     protected org.eclipse.jetty.io.Connection newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
@@ -237,10 +245,10 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             }
             case UNIX_DOMAIN:
             {
-                ClientConnector clientConnector = ClientConnector.forUnixDomain(scenario.unixDomainPath);
+                ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
                 clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
-                return new HttpClientTransportOverHTTP(clientConnector)
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
                     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
@@ -263,11 +271,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                     }
                 };
             }
-            default:
-            {
-                throw new IllegalArgumentException();
-            }
-        }
+        };
     }
 
     private void sleep(long time)

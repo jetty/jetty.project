@@ -15,10 +15,10 @@ package org.eclipse.jetty.unixdomain.server;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.ProtocolFamily;
 import java.net.SocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -238,34 +237,10 @@ public class UnixDomainServerConnector extends AbstractConnector
     private ServerSocketChannel bindServerSocketChannel() throws IOException
     {
         Path unixDomainPath = getUnixDomainPath();
-
-        ServerSocketChannel serverChannel;
-        SocketAddress socketAddress;
-        try
-        {
-            ProtocolFamily family = Enum.valueOf(StandardProtocolFamily.class, "UNIX");
-            Class<?> channelClass = Class.forName("java.nio.channels.ServerSocketChannel");
-            serverChannel = (ServerSocketChannel)channelClass.getMethod("open", ProtocolFamily.class).invoke(null, family);
-            // Unix-Domain does not support SO_REUSEADDR.
-            Class<?> addressClass = Class.forName("java.net.UnixDomainSocketAddress");
-            socketAddress = (SocketAddress)addressClass.getMethod("of", Path.class).invoke(null, unixDomainPath);
-        }
-        catch (Throwable x)
-        {
-            String message = "Unix-Domain SocketChannels are available starting from Java 16, your Java version is: " + JavaVersion.VERSION;
-            throw new UnsupportedOperationException(message, x);
-        }
-
-        try
-        {
-            serverChannel.bind(socketAddress, getAcceptQueueSize());
-            return serverChannel;
-        }
-        catch (IOException x)
-        {
-            String message = String.format("Could not bind %s to %s", UnixDomainServerConnector.class.getSimpleName(), unixDomainPath);
-            throw new IOException(message, x);
-        }
+        ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        SocketAddress socketAddress = UnixDomainSocketAddress.of(unixDomainPath);
+        serverChannel.bind(socketAddress, getAcceptQueueSize());
+        return serverChannel;
     }
 
     @Override

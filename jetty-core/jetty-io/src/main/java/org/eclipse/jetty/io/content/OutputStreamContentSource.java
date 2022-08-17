@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.IO;
  * </p>
  * @see AsyncContent
  */
-public class OutputStreamContentSource implements Content.Source
+public class OutputStreamContentSource implements Content.Source, Closeable
 {
     private final AsyncContent async = new AsyncContent();
     private final AsyncOutputStream output = new AsyncOutputStream();
@@ -62,6 +63,12 @@ public class OutputStreamContentSource implements Content.Source
     public void fail(Throwable failure)
     {
         async.fail(failure);
+    }
+
+    @Override
+    public void close()
+    {
+        output.close();
     }
 
     private class AsyncOutputStream extends OutputStream
