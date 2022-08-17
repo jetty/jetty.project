@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 
 public interface WebSocketNegotiator extends Configuration.Customizer
 {
@@ -32,6 +33,16 @@ public interface WebSocketNegotiator extends Configuration.Customizer
      * @return the FrameHandler, or null to take responsibility to send error response if no WebSocket is to be created.
      */
     FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback);
+
+    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory)
+    {
+        return from(creator, factory, null);
+    }
+
+    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
+    {
+        return new CreatorNegotiator(creator, factory, customizer);
+    }
 
     @Override
     default void customize(Configuration configurable)

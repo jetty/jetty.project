@@ -49,7 +49,6 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -216,7 +215,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
         };
 
-        WebSocketNegotiator negotiator = new CreatorNegotiator(coreCreator, frameHandlerFactory);
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
