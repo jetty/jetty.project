@@ -62,8 +62,13 @@ public class PathResource extends Resource
          * If the URI is different from the Path.toUri() then
          * we will just use the original URI to construct the
          * alias reference Path.
+         *
+         * We use the method `toUri(Path)` here, instead of
+         * Path.toUri() to ensure that the path contains
+         * a trailing slash if it's a directory, (something
+         * not all FileSystems seem to support)
          */
-        if (!URIUtil.equalsIgnoreEncodings(uri, normalize(path)))
+        if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
         {
             try
             {
@@ -358,12 +363,17 @@ public class PathResource extends Resource
 
     /**
      * Ensure Path to URI is sane when it returns a directory reference.
-     * Even if it's an opaque scheme specific part like `jar:file:`
+     *
+     * <p>
+     *     This is different than {@link Path#toUri()} in that not
+     *     all FileSystems seem to put the trailing slash on a directory
+     *     reference in the URI.
+     * </p>
      *
      * @param path the path to convert to URI
      * @return the appropriate URI for the path
      */
-    private static URI normalize(Path path)
+    private static URI toUri(Path path)
     {
         URI pathUri = path.toUri();
         String rawUri = path.toUri().toASCIIString();
