@@ -295,6 +295,12 @@ public class ResourceListing
         if (path == null)
             return;
 
+        if (!Files.isDirectory(path))
+        {
+            listing.add(path);
+            return;
+        }
+
         try (Stream<Path> listStream = Files.list(resource.getPath()))
         {
             listStream.forEach((entry) ->

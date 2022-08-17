@@ -144,6 +144,57 @@ public class ResourceListingTest
         }
     }
 
+    @Test
+    public void testResourceCollectionMixedTypesXHtmlListingContext(WorkDir workDir) throws IOException
+    {
+        Path root = workDir.getEmptyPathDir();
+
+        Path docrootA = root.resolve("docrootA");
+        Files.createDirectory(docrootA);
+        FS.touch(docrootA.resolve("entry1.txt"));
+        FS.touch(docrootA.resolve("entry2.dat"));
+        Files.createDirectory(docrootA.resolve("dirFoo"));
+        Files.createDirectory(docrootA.resolve("dirBar"));
+
+        Path docrootB = root.resolve("docrootB");
+        Files.createDirectory(docrootB);
+        FS.touch(docrootB.resolve("entry3.png"));
+        FS.touch(docrootB.resolve("entry4.tar.gz"));
+        Files.createDirectory(docrootB.resolve("dirCid"));
+        Files.createDirectory(docrootB.resolve("dirZed"));
+
+        // Introduce a non-directory entry
+        Path docNonRootC = root.resolve("non-root.dat");
+        FS.touch(docNonRootC);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            // Collection consisting of file, dir, dir
+            List<URI> uriRootList = List.of(docNonRootC.toUri(), docrootA.toUri(), docrootB.toUri());
+            Resource resource = resourceFactory.newResource(uriRootList);
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
+            assertTrue(isValidXHtml(content));
+
+            assertThat(content, containsString("entry1.txt"));
+            assertThat(content, containsString("<a href=\"/context/entry1.txt\">"));
+            assertThat(content, containsString("entry2.dat"));
+            assertThat(content, containsString("<a href=\"/context/entry2.dat\">"));
+            assertThat(content, containsString("entry3.png"));
+            assertThat(content, containsString("<a href=\"/context/entry3.png\">"));
+            assertThat(content, containsString("entry4.tar.gz"));
+            assertThat(content, containsString("<a href=\"/context/entry4.tar.gz\">"));
+            assertThat(content, containsString("dirFoo/"));
+            assertThat(content, containsString("<a href=\"/context/dirFoo/\">"));
+            assertThat(content, containsString("dirBar/"));
+            assertThat(content, containsString("<a href=\"/context/dirBar/\">"));
+            assertThat(content, containsString("dirCid/"));
+            assertThat(content, containsString("<a href=\"/context/dirCid/\">"));
+            assertThat(content, containsString("dirZed/"));
+            assertThat(content, containsString("<a href=\"/context/dirZed/\">"));
+            assertThat(content, containsString("<a href=\"/context/non-root.dat\">"));
+        }
+    }
+
     private static boolean isValidXHtml(String content)
     {
         // we expect that our generated output conforms to text/xhtml is well formed
