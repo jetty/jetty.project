@@ -199,6 +199,7 @@ public class ResourceListing
         {
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
+            // TODO This produces an absolute link from the /context/<listing-dir> path, investigate if we can use relative links reliably now
             buf.append(URIUtil.addPaths(encodedBase, "../"));
             buf.append("\">Parent Directory</a></td>");
             // Last Modified
@@ -232,6 +233,7 @@ public class ResourceListing
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
 
+            // TODO This produces absolute links with the /context/ path included, investigate if we can use relative links reliably now
             String href = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
             buf.append(href);
             buf.append("\">");
