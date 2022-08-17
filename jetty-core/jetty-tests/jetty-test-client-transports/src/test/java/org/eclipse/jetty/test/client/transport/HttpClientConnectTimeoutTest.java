@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,46 +22,43 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-// TODO: these tests seems to fail spuriously, figure out why.
-@Disabled
-@Tag("Unstable")
-public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario>
+public class HttpClientConnectTimeoutTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testConnectTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        final String host = "10.255.255.1";
-        final int port = 80;
+        String host = "10.255.255.1";
+        int port = 80;
         int connectTimeout = 1000;
-        assumeConnectTimeout(host, port, connectTimeout);
+        assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        scenario.start(new EmptyServerHandler());
-        scenario.client.stop();
-        scenario.client.setConnectTimeout(connectTimeout);
-        scenario.client.start();
+        start(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                callback.succeeded();
+            }
+        });
+        client.stop();
+        client.setConnectTimeout(connectTimeout);
+        client.start();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request = scenario.client.newRequest(host, port);
+        CountDownLatch latch = new CountDownLatch(1);
+        Request request = client.newRequest(host, port);
         request.send(result ->
         {
             if (result.isFailed())
@@ -73,23 +70,29 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
-        init(transport);
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
-        assumeConnectTimeout(host, port, connectTimeout);
+        assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        scenario.start(new EmptyServerHandler());
-        scenario.client.stop();
-        scenario.client.setConnectTimeout(connectTimeout);
-        scenario.client.start();
+        start(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                callback.succeeded();
+            }
+        });
+        client.stop();
+        client.setConnectTimeout(connectTimeout);
+        client.start();
 
-        final AtomicInteger completes = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(2);
-        Request request = scenario.client.newRequest(host, port);
+        AtomicInteger completes = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(2);
+        Request request = client.newRequest(host, port);
         request.timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
             .send(result ->
             {
@@ -103,28 +106,34 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void retryAfterConnectTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        final String host = "10.255.255.1";
-        final int port = 80;
+        String host = "10.255.255.1";
+        int port = 80;
         int connectTimeout = 1000;
-        assumeConnectTimeout(host, port, connectTimeout);
+        assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        scenario.start(new EmptyServerHandler());
-        scenario.client.stop();
-        scenario.client.setConnectTimeout(connectTimeout);
-        scenario.client.start();
+        start(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                callback.succeeded();
+            }
+        });
+        client.stop();
+        client.setConnectTimeout(connectTimeout);
+        client.start();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request = scenario.client.newRequest(host, port);
+        CountDownLatch latch = new CountDownLatch(1);
+        Request request = client.newRequest(host, port);
         request.send(result1 ->
         {
             if (result1.isFailed())
             {
                 // Retry
-                scenario.client.newRequest(host, port).send(result2 ->
+                client.newRequest(host, port).send(result2 ->
                 {
                     if (result2.isFailed())
                         latch.countDown();
@@ -136,7 +145,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
         assertNotNull(request.getAbortCause());
     }
 
-    private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
+    private boolean connectTimeout(String host, int port, int connectTimeout) throws IOException
     {
         try (Socket socket = new Socket())
         {
@@ -145,18 +154,12 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
             // connect to them will hang the connection attempt, which is
             // what we want to simulate in this test.
             socket.connect(new InetSocketAddress(host, port), connectTimeout);
-            // Abort the test if we can connect.
-            Assumptions.assumeTrue(false, "Should not have been able to connect to " + host + ":" + port);
+            return false;
         }
         catch (SocketTimeoutException x)
         {
             // Expected timeout during connect, continue the test.
-            return;
-        }
-        catch (Throwable x)
-        {
-            // Abort if any other exception happens.
-            fail(x);
+            return true;
         }
     }
 }

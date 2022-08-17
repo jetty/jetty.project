@@ -11,15 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,40 +23,36 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.eclipse.jetty.ee9.http.client.Transport.H2C;
-import static org.eclipse.jetty.ee9.http.client.Transport.HTTP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
+public class ConnectionStatisticsTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-        Assumptions.assumeTrue(scenario.transport == HTTP || scenario.transport == H2C);
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testConnectionStatistics(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        // Counting SslConnection opening/closing makes the test more complicated.
+        assumeTrue(!transport.isSecure());
+        // FastCGI server does not have statistics.
+        assumeTrue(transport != Transport.FCGI);
+
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                Content.copy(request, response, callback);
             }
         });
 
@@ -80,21 +72,21 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         };
 
         ConnectionStatistics serverStats = new ConnectionStatistics();
-        scenario.connector.addBean(serverStats);
-        scenario.connector.addBean(closer);
+        connector.addBean(serverStats);
+        connector.addBean(closer);
         serverStats.start();
 
         ConnectionStatistics clientStats = new ConnectionStatistics();
-        scenario.client.addBean(clientStats);
-        scenario.client.addBean(closer);
+        client.addBean(clientStats);
+        client.addBean(closer);
         clientStats.start();
 
         long idleTimeout = 1000;
-        scenario.client.setIdleTimeout(idleTimeout);
+        client.setIdleTimeout(idleTimeout);
 
         byte[] content = new byte[3072];
         long contentLength = content.length;
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)

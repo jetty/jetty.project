@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -28,20 +27,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.zip.GZIPOutputStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,37 +48,27 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpClientDemandTest extends AbstractTest<TransportScenario>
+public class HttpClientDemandTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testDemandInTwoChunks(Transport transport) throws Exception
     {
-        init(transport);
-
         // Tests a special case where the first chunk is automatically
         // delivered, and the second chunk is explicitly demanded and
         // completes the response content.
         CountDownLatch contentLatch = new CountDownLatch(1);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
-                    response.setContentLength(2);
-                    ServletOutputStream out = response.getOutputStream();
-                    out.write('A');
-                    out.flush();
+                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+                    response.write(false, ByteBuffer.wrap(new byte[]{'A'}), Callback.NOOP);
                     contentLatch.await();
-                    out.write('B');
+                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -90,7 +78,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         });
 
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .send(new BufferingResponseListener()
             {
                 private final AtomicInteger chunks = new AtomicInteger();
@@ -121,36 +109,34 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testDemand(Transport transport) throws Exception
     {
-        init(transport);
-
         // A small buffer size so the response content is
         // read in multiple buffers, but big enough for HTTP/3.
         int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
-        scenario.startServer(new EmptyServerHandler()
+        startServer(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentLength(content.length);
-                response.getOutputStream().write(content);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
-        scenario.startClient(client ->
-        {
-            client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
-            client.setResponseBufferSize(bufferSize);
-        });
+        startClient(transport);
+        client.stop();
+        client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
+        client.setResponseBufferSize(bufferSize);
+        client.start();
 
         Queue<LongConsumer> demandQueue = new ConcurrentLinkedQueue<>();
         Queue<ByteBuffer> contentQueue = new ConcurrentLinkedQueue<>();
         Queue<Callback> callbackQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .send(new BufferingResponseListener()
             {
                 @Override
@@ -209,25 +195,21 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testContentWhileStalling(Transport transport) throws Exception
     {
-        init(transport);
-
         CountDownLatch serverContentLatch = new CountDownLatch(1);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
-                    response.setContentLength(2);
-                    ServletOutputStream out = response.getOutputStream();
-                    out.write('A');
-                    out.flush();
+                    response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+                    response.write(false, ByteBuffer.wrap(new byte[]{'A'}), Callback.NOOP);
                     serverContentLatch.await();
-                    out.write('B');
+                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -240,7 +222,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
         CountDownLatch clientContentLatch = new CountDownLatch(2);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .onResponseContentDemanded((response, demand, content, callback) ->
             {
                 try
@@ -264,7 +246,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
-                assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
+                Assertions.assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
                 Response response = result.getResponse();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 resultLatch.countDown();
@@ -283,28 +265,26 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTwoListenersWithDifferentDemand(Transport transport) throws Exception
     {
-        init(transport);
-
         int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
-        scenario.startServer(new EmptyServerHandler()
+        startServer(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentLength(content.length);
-                response.getOutputStream().write(content);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
-        scenario.startClient(client ->
-        {
-            client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
-            client.setResponseBufferSize(bufferSize);
-        });
+        startClient(transport);
+        client.stop();
+        client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
+        client.setResponseBufferSize(bufferSize);
+        client.start();
 
         AtomicInteger chunks = new AtomicInteger();
         Response.DemandedContentListener listener1 = (response, demand, content1, callback) ->
@@ -319,18 +299,18 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         AtomicReference<CountDownLatch> demandLatch = new AtomicReference<>(new CountDownLatch(1));
         Response.DemandedContentListener listener2 = (response, demand, content12, callback) ->
         {
-            contentQueue.offer(content12);
+            assertTrue(contentQueue.offer(content12));
             demandRef.set(demand);
             demandLatch.get().countDown();
         };
 
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .onResponseContentDemanded(listener1)
             .onResponseContentDemanded(listener2)
             .send(result ->
             {
-                assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
+                Assertions.assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
                 Response response = result.getResponse();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 resultLatch.countDown();
@@ -361,23 +341,21 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testGZippedResponseContentWithAsyncDemand(Transport transport) throws Exception
     {
-        init(transport);
-
         int chunks = 64;
         byte[] content = new byte[chunks * 1024];
         new Random().nextBytes(content);
 
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                try (GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream()))
+                try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
                 {
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                     for (int i = 0; i < chunks; ++i)
                     {
                         Thread.sleep(10);
@@ -394,7 +372,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         byte[] bytes = new byte[content.length];
         ByteBuffer received = ByteBuffer.wrap(bytes);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .onResponseContentDemanded((response, demand, buffer, callback) ->
             {
                 received.put(buffer);
@@ -403,8 +381,8 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
             })
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
@@ -412,20 +390,18 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testDelayedBeforeContentDemand(Transport transport) throws Exception
     {
-        init(transport);
-
         byte[] content = new byte[1024];
         new Random().nextBytes(content);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentLength(content.length);
-                response.getOutputStream().write(content);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
+                response.write(true, ByteBuffer.wrap(content), callback);
             }
         });
 
@@ -435,7 +411,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .onResponseContentDemanded(new Response.DemandedContentListener()
             {
                 @Override
@@ -457,8 +433,8 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
             })
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
 
@@ -475,18 +451,23 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testDelayedBeforeContentDemandWithNoResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-
-        scenario.start(new EmptyServerHandler());
+        start(transport, new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .onResponseContentDemanded(new Response.DemandedContentListener()
             {
                 @Override
@@ -507,8 +488,8 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
             })
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
 
