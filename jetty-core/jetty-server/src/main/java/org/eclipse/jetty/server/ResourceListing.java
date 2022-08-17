@@ -98,7 +98,7 @@ public class ResourceListing
             {
                 case "M" -> PathCollators.byLastModified(sortOrderAscending);
                 case "S" -> PathCollators.bySize(sortOrderAscending);
-                default -> PathCollators.byName(sortOrderAscending);
+                default -> PathCollators.byName(sortOrderAscending); // sorts by filename only (not full path)
             };
         listing.sort(sort);
 
@@ -301,7 +301,7 @@ public class ResourceListing
             return;
         }
 
-        try (Stream<Path> listStream = Files.list(resource.getPath()))
+        try (Stream<Path> listStream = Files.list(path))
         {
             listStream.forEach((entry) ->
             {
