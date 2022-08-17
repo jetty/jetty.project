@@ -29,6 +29,15 @@ public interface Handshaker
         return new HandshakerSelector();
     }
 
+    /**
+     * <p>A preliminary check to see if a request is likely to be a valid WebSocket Upgrade Request. If this returns true
+     * the {@link Request} may be a valid upgrade request, but if this returns false returns false you can avoid calling
+     * {@link #upgradeRequest(WebSocketNegotiator, Request, Response, Callback, WebSocketComponents, Configuration.Customizer)}
+     * entirely as it will always fail</p>
+     *
+     * @param request the request
+     * @return true if the request is thought to be a valid websocket upgrade request.
+     */
     boolean isWebSocketUpgradeRequest(Request request);
 
     /**
