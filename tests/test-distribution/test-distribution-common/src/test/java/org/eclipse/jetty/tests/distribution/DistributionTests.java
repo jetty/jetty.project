@@ -1032,9 +1032,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             File testFile = wellKnown.resolve("testFile").toFile();
             assertTrue(testFile.createNewFile());
             testFile.deleteOnExit();
-            FileWriter fileWriter = new FileWriter(testFile);
-            fileWriter.write(testFileContent);
-            fileWriter.close();
+            try (FileWriter fileWriter = new FileWriter(testFile))
+            {
+                fileWriter.write(testFileContent);
+            }
 
             int port = distribution.freePort();
             String[] args2 = {
