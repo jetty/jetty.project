@@ -217,7 +217,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
 
-            SecureRequestCustomizer.SslSessionData data = (SecureRequestCustomizer.SslSessionData)request.getAttribute("SSL_SESSION_data");
+            SecureRequestCustomizer.SslSessionData data = (SecureRequestCustomizer.SslSessionData)request.getAttribute("SSL_SESSIONData");
 
             out.append("Hello world").append('\n');
             out.append("scheme='").append(request.getHttpURI().getScheme()).append("'").append('\n');
