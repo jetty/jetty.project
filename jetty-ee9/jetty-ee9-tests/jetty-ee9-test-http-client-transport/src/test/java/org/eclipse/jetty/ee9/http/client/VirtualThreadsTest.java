@@ -20,17 +20,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.Assumptions;
@@ -59,10 +58,10 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
         Assumptions.assumeTrue(transport != Transport.FCGI);
 
         init(transport);
-        scenario.prepareServer(new EmptyServerHandler()
+        scenario.prepareServer(new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
@@ -90,10 +89,10 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
 
         init(transport);
         byte[] data = new byte[128 * 1024 * 1024];
-        scenario.prepareServer(new EmptyServerHandler()
+        scenario.prepareServer(new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);

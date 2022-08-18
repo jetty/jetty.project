@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -27,50 +26,45 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario>
+public class RoundRobinConnectionPoolTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRoundRobin(Transport transport) throws Exception
     {
-        init(transport);
         AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 if (record.get())
-                    remotePorts.add(request.getRemotePort());
+                    remotePorts.add(Request.getRemotePort(request));
+                callback.succeeded();
             }
         });
 
         int maxConnections = 3;
         CompletableFuture<Void> setup = new CompletableFuture<>();
-        scenario.client.getTransport().setConnectionPoolFactory(destination ->
+        client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
@@ -80,7 +74,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         setup.get(5, TimeUnit.SECONDS);
@@ -89,7 +83,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         int requests = 2 * maxConnections - 1;
         for (int i = 0; i < requests; ++i)
         {
-            ContentResponse response = scenario.client.newRequest(scenario.newURI())
+            ContentResponse response = client.newRequest(newURI(transport))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -101,19 +95,18 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
+            assertThat(client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
             if (transport != Transport.UNIX_DOMAIN && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testMultiplex(Transport transport) throws Exception
     {
-        init(transport);
         int multiplex = 1;
-        if (scenario.transport.isMultiplexed())
+        if (transport.isMultiplexed())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -125,30 +118,31 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 try
                 {
                     if (record.get())
                     {
-                        remotePorts.add(request.getRemotePort());
+                        remotePorts.add(Request.getRemotePort(request));
                         requestLatch.get().countDown();
                         serverLatch.countDown();
                         barrier.await();
                     }
+                    callback.succeeded();
                 }
                 catch (Exception x)
                 {
-                    throw new RuntimeException(x);
+                    callback.failed(x);
                 }
             }
         });
 
         CompletableFuture<Void> setup = new CompletableFuture<>();
-        scenario.client.getTransport().setConnectionPoolFactory(destination ->
+        client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
@@ -158,7 +152,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         setup.get(5, TimeUnit.SECONDS);
@@ -170,7 +164,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         {
             CountDownLatch latch = new CountDownLatch(1);
             requestLatch.set(latch);
-            scenario.client.newRequest(scenario.newURI())
+            client.newRequest(newURI(transport))
                 .path("/" + i)
                 .onRequestQueued(request -> requests.incrementAndGet())
                 .onRequestBegin(request -> requests.decrementAndGet())
@@ -195,20 +189,18 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
+            assertThat(client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
             if (transport != Transport.UNIX_DOMAIN && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testMultiplexWithMaxUsage(Transport transport) throws Exception
     {
-        init(transport);
-
         int multiplex = 1;
-        if (scenario.transport.isMultiplexed())
+        if (transport.isMultiplexed())
             multiplex = 2;
         int maxMultiplex = multiplex;
 
@@ -217,27 +209,28 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         int count = 2 * maxConnections * maxMultiplex * maxUsage;
 
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                remotePorts.add(request.getRemotePort());
+                remotePorts.add(Request.getRemotePort(request));
+                callback.succeeded();
             }
         });
         if (transport == Transport.H3)
-            ((QuicServerConnector)scenario.connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
-        scenario.client.getTransport().setConnectionPoolFactory(destination ->
+            ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
+        client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);
-            pool.setMaxUsageCount(maxUsage);
+            pool.setMaxUsage(maxUsage);
             return pool;
         });
 
         CountDownLatch clientLatch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
-            scenario.client.newRequest(scenario.newURI())
+            client.newRequest(newURI(transport))
                 .path("/" + i)
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result ->

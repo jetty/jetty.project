@@ -11,11 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -27,9 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -42,20 +37,23 @@ import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,40 +63,32 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
+public class HttpClientTimeoutTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutOnFuture(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(2 * timeout));
+        start(transport, new TimeoutHandler(2 * timeout));
 
         assertThrows(TimeoutException.class, () ->
         {
-            scenario.client.newRequest(scenario.newURI())
+            client.newRequest(newURI(transport))
                 .timeout(timeout, TimeUnit.MILLISECONDS)
                 .send();
         });
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutOnListener(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(2 * timeout));
+        start(transport, new TimeoutHandler(2 * timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Request request = scenario.client.newRequest(scenario.newURI())
+        Request request = client.newRequest(newURI(transport))
             .timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
@@ -109,19 +99,18 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutOnQueuedRequest(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(3 * timeout));
+        start(transport, new TimeoutHandler(3 * timeout));
 
         // Only one connection so requests get queued
-        scenario.client.setMaxConnectionsPerDestination(1);
+        client.setMaxConnectionsPerDestination(1);
 
         // The first request has a long timeout
         final CountDownLatch firstLatch = new CountDownLatch(1);
-        Request request = scenario.client.newRequest(scenario.newURI())
+        Request request = client.newRequest(newURI(transport))
             .timeout(4 * timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
@@ -131,7 +120,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         // Second request has a short timeout and should fail in the queue
         final CountDownLatch secondLatch = new CountDownLatch(1);
-        request = scenario.client.newRequest(scenario.newURI())
+        request = client.newRequest(newURI(transport))
             .timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
@@ -146,16 +135,15 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutIsCancelledOnSuccess(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(timeout));
+        start(transport, new TimeoutHandler(timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        Request request = scenario.client.newRequest(scenario.newURI())
+        Request request = client.newRequest(newURI(transport))
             .body(new InputStreamRequestContent(new ByteArrayInputStream(content)))
             .timeout(2 * timeout, TimeUnit.MILLISECONDS);
         request.send(new BufferingResponseListener()
@@ -177,17 +165,16 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutOnListenerWithExplicitConnection(Transport transport) throws Exception
     {
-        init(transport);
 
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(2 * timeout));
+        start(transport, new TimeoutHandler(2 * timeout));
 
-        Request request = scenario.client.newRequest(scenario.newURI()).timeout(timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(newURI(transport)).timeout(timeout, TimeUnit.MILLISECONDS);
         CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.resolveDestination(request);
+        Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -203,17 +190,16 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection(Transport transport) throws Exception
     {
-        init(transport);
 
         long timeout = 1000;
-        scenario.start(new TimeoutHandler(timeout));
+        start(transport, new TimeoutHandler(timeout));
 
-        Request request = scenario.client.newRequest(scenario.newURI()).timeout(2 * timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(newURI(transport)).timeout(2 * timeout, TimeUnit.MILLISECONDS);
         CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.resolveDestination(request);
+        Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -235,16 +221,16 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 1000;
-        scenario.startServer(new TimeoutHandler(2 * timeout));
+        startServer(transport, new TimeoutHandler(2 * timeout));
 
         AtomicBoolean sslIdle = new AtomicBoolean();
-        SslContextFactory.Client sslContextFactory = scenario.newClientSslContextFactory();
-        scenario.client = new HttpClient(scenario.provideClientTransport(transport, sslContextFactory))
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        client = new HttpClient(newHttpClientTransport(transport))
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -269,54 +255,50 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
                 };
             }
         };
-        scenario.client.setIdleTimeout(timeout);
-        scenario.client.start();
+        client.setExecutor(clientThreads);
+        client.setIdleTimeout(timeout);
+        client.start();
 
         assertThrows(TimeoutException.class, () ->
         {
-            scenario.client.newRequest(scenario.newURI())
+            client.newRequest(newURI(transport))
                 .send();
         });
         assertFalse(sslIdle.get());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-        init(transport);
-        testConnectTimeoutFailsRequest(true);
+        testConnectTimeoutFailsRequest(transport, true);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-        init(transport);
-        testConnectTimeoutFailsRequest(false);
+        testConnectTimeoutFailsRequest(transport, false);
     }
 
-    private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
+    private void testConnectTimeoutFailsRequest(Transport transport, boolean blocking) throws Exception
     {
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        scenario.start(new EmptyServerHandler());
-        HttpClient client = scenario.client;
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
         client.setConnectBlocking(blocking);
-        client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.scheme(scenario.getScheme())
+        request.scheme(newURI(transport).getScheme())
             .send(result ->
             {
                 if (result.isFailed())
@@ -328,29 +310,24 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-
-        init(transport);
 
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        scenario.start(new EmptyServerHandler());
-        HttpClient client = scenario.client;
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
-        client.start();
 
         final AtomicInteger completes = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(2);
         Request request = client.newRequest(host, port);
-        request.scheme(scenario.getScheme())
+        request.scheme(newURI(transport).getScheme())
             .timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
             .send(result ->
             {
@@ -364,35 +341,31 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-
-        init(transport);
 
         final String host = "10.255.255.1";
         final int port = 80;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        scenario.start(new EmptyServerHandler());
-        HttpClient client = scenario.client;
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
-        client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.scheme(scenario.getScheme())
+        String scheme = newURI(transport).getScheme();
+        request.scheme(scheme)
             .send(result ->
             {
                 if (result.isFailed())
                 {
                     // Retry
                     client.newRequest(host, port)
-                        .scheme(scenario.getScheme())
+                        .scheme(scheme)
                         .send(retryResult ->
                         {
                             if (retryResult.isFailed())
@@ -406,14 +379,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testVeryShortTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler());
+        start(transport, new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .timeout(1, TimeUnit.MILLISECONDS) // Very short timeout
             .send(result -> latch.countDown());
 
@@ -421,18 +393,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testTimeoutCancelledWhenSendingThrowsException(Transport transport) throws Exception
     {
-        init(transport);
-
-        scenario.start(new EmptyServerHandler());
+        start(transport, new EmptyServerHandler());
 
         long timeout = 1000;
-        String uri = "badscheme://0.0.0.1";
-        if (scenario.getServerPort().isPresent())
-            uri += ":" + scenario.getServerPort().getAsInt();
-        Request request = scenario.client.newRequest(uri);
+        Request request = client.newRequest("badscheme://0.0.0.1/");
 
         // TODO: assert a more specific Throwable
         assertThrows(Exception.class, () ->
@@ -450,32 +417,23 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testFirstRequestTimeoutAfterSecondRequestCompletes(Transport transport) throws Exception
     {
-        init(transport);
         long timeout = 2000;
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getRequestURI().startsWith("/one"))
-                {
-                    try
-                    {
-                        Thread.sleep(3 * timeout);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        throw new InterruptedIOException();
-                    }
-                }
+                if (request.getPathInContext().startsWith("/one"))
+                    Thread.sleep(3 * timeout);
+                callback.succeeded();
             }
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .path("/one")
             .timeout(2 * timeout, TimeUnit.MILLISECONDS)
             .send(result ->
@@ -484,7 +442,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
                     latch.countDown();
             });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .path("/two")
             .timeout(timeout, TimeUnit.MILLISECONDS)
             .send();
@@ -494,55 +452,45 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestQueuedDoesNotCancelTimeoutOfQueuedRequests(Transport transport) throws Exception
     {
-        init(transport);
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getRequestURI().startsWith("/one"))
-                {
-                    try
-                    {
-                        serverLatch.await();
-                    }
-                    catch (InterruptedException x)
-                    {
-                        throw new InterruptedIOException();
-                    }
-                }
+                if (request.getPathInContext().startsWith("/one"))
+                    serverLatch.await();
+                callback.succeeded();
             }
         });
-
-        scenario.client.setMaxConnectionsPerDestination(1);
-        scenario.setMaxRequestsPerConnection(1);
+        setMaxRequestsPerConnection(1);
+        client.setMaxConnectionsPerDestination(1);
 
         // Send the first request so that the others get queued.
         CountDownLatch latch1 = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .path("/one")
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 latch1.countDown();
             });
 
         // Queue a second request, it should expire in the queue.
         long timeout = 1000;
         CountDownLatch latch2 = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .path("/two")
             .timeout(2 * timeout, TimeUnit.MILLISECONDS)
             .send(result ->
             {
-                assertTrue(result.isFailed());
-                assertThat(result.getFailure(), Matchers.instanceOf(TimeoutException.class));
+                Assertions.assertTrue(result.isFailed());
+                MatcherAssert.assertThat(result.getFailure(), Matchers.instanceOf(TimeoutException.class));
                 latch2.countDown();
             });
 
@@ -550,13 +498,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         // Queue a third request, it should not reset the timeout of the second request.
         CountDownLatch latch3 = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .path("/three")
             .timeout(2 * timeout, TimeUnit.MILLISECONDS)
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 latch3.countDown();
             });
 
@@ -593,7 +541,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         }
     }
 
-    private static class TimeoutHandler extends AbstractHandler
+    private static class TimeoutHandler extends Handler.Processor
     {
         private final long timeout;
 
@@ -603,18 +551,10 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
-            try
-            {
-                TimeUnit.MILLISECONDS.sleep(timeout);
-                IO.copy(request.getInputStream(), response.getOutputStream());
-            }
-            catch (InterruptedException x)
-            {
-                throw new ServletException(x);
-            }
+            TimeUnit.MILLISECONDS.sleep(timeout);
+            Content.copy(request, response, callback);
         }
     }
 }

@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -22,8 +21,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -50,15 +47,17 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -397,13 +396,13 @@ public class HttpClientTransportDynamicTest
         // client :1234 <-> :8888 proxy :5678 <-> server :8080
         // client :2345 <-> :8888 proxy :6789 <-> server :8080
 
-        startServer(this::proxyH1H2C, new EmptyServerHandler()
+        startServer(this::proxyH1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
+                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
         startClient(HttpClientConnectionFactory.HTTP11);
@@ -494,13 +493,13 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2C() throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new EmptyServerHandler()
+        startServer(this::h1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain; charset=UTF-8");
-                response.getOutputStream().print(content);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                Content.Sink.write(response, true, content, callback);
             }
         });
         ClientConnector clientConnector = new ClientConnector();
@@ -569,13 +568,13 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2CWithForwardProxy() throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new EmptyServerHandler()
+        startServer(this::h1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain; charset=UTF-8");
-                response.getOutputStream().print(content);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                Content.Sink.write(response, true, content, callback);
             }
         });
         ClientConnector clientConnector = new ClientConnector();
@@ -608,13 +607,13 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2COverTLS() throws Exception
     {
         String content = "upgrade";
-        startServer(this::sslH1H2C, new EmptyServerHandler()
+        startServer(this::h1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                response.setContentType("text/plain; charset=UTF-8");
-                response.getOutputStream().print(content);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                Content.Sink.write(response, true, content, callback);
             }
         });
         ClientConnector clientConnector = new ClientConnector();
@@ -641,12 +640,12 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testHTTP11UpgradeToH2CWithRequestContentDoesNotUpgrade() throws Exception
     {
-        startServer(this::h1H2C, new EmptyServerHandler()
+        startServer(this::h1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                Content.copy(request, response, callback);
             }
         });
         ClientConnector clientConnector = new ClientConnector();
@@ -708,12 +707,13 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testHTTP11UpgradeToH2CFailedServerClose() throws Exception
     {
-        startServer(this::h1H2C, new EmptyServerHandler()
+        startServer(this::h1H2C, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.getHttpChannel().getEndPoint().close();
+                request.getConnectionMetaData().getConnection().getEndPoint().close();
+                callback.succeeded();
             }
         });
         ClientConnector clientConnector = new ClientConnector();

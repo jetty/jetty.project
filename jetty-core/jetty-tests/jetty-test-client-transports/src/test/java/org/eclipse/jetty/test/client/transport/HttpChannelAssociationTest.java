@@ -43,9 +43,6 @@ import org.eclipse.jetty.http3.client.transport.internal.HttpChannelOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,14 +56,7 @@ public class HttpChannelAssociationTest extends AbstractTest
     @MethodSource("transports")
     public void testAssociationFailedAbortsRequest(Transport transport) throws Exception
     {
-        startServer(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
-            {
-                callback.succeeded();
-            }
-        });
+        startServer(transport, new EmptyServerHandler());
 
         client = new HttpClient(newHttpClientTransport(transport, exchange -> false));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
@@ -89,14 +79,7 @@ public class HttpChannelAssociationTest extends AbstractTest
     @MethodSource("transports")
     public void testIdleTimeoutJustBeforeAssociation(Transport transport) throws Exception
     {
-        startServer(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
-            {
-                callback.succeeded();
-            }
-        });
+        startServer(transport, new EmptyServerHandler());
 
         long idleTimeout = 1000;
         client = new HttpClient(newHttpClientTransport(transport, exchange ->

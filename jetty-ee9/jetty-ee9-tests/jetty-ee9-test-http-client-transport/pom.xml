@@ -56,7 +56,7 @@
       </build>
     </profile>
     <profile>
-      <id>enable-foreign-and-virtual-threads-preview</id>
+      <id>enable-preview</id>
       <activation>
         <jdk>[19,)</jdk>
       </activation>
