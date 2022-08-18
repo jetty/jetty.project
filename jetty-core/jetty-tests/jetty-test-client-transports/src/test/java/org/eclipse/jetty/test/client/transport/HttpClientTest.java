@@ -11,11 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Random;
@@ -27,12 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -43,23 +39,23 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -70,32 +66,26 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class  HttpClientTest extends AbstractTest<TransportScenario>
+public class HttpClientTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithoutResponseContent(Transport transport) throws Exception
     {
-        init(transport);
         final int status = HttpStatus.NO_CONTENT_204;
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(status);
+                callback.succeeded();
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -104,37 +94,34 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithSmallResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestWithResponseContent(1024);
+        testRequestWithResponseContent(transport, 1024);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithLargeResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestWithResponseContent(1024 * 1024);
+        testRequestWithResponseContent(transport, 1024 * 1024);
     }
 
-    private void testRequestWithResponseContent(int length) throws Exception
+    private void testRequestWithResponseContent(Transport transport, int length) throws Exception
     {
         final byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.setContentLength(length);
-                response.getOutputStream().write(bytes);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
+                response.write(true, ByteBuffer.wrap(bytes), callback);
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI());
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -144,22 +131,20 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithSmallResponseContentChunked(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestWithResponseContentChunked(512);
+        testRequestWithResponseContentChunked(transport, 512);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithLargeResponseContentChunked(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestWithResponseContentChunked(512 * 512);
+        testRequestWithResponseContentChunked(transport, 512 * 512);
     }
 
-    private void testRequestWithResponseContentChunked(int length) throws Exception
+    private void testRequestWithResponseContentChunked(Transport transport, int length) throws Exception
     {
         final byte[] chunk1 = new byte[length];
         final byte[] chunk2 = new byte[length];
@@ -169,20 +154,17 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         byte[] bytes = new byte[chunk1.length + chunk2.length];
         System.arraycopy(chunk1, 0, bytes, 0, chunk1.length);
         System.arraycopy(chunk2, 0, bytes, chunk1.length, chunk2.length);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                ServletOutputStream output = response.getOutputStream();
-                output.write(chunk1);
-                output.flush();
-                output.write(chunk2);
+                response.write(false, ByteBuffer.wrap(chunk1), Callback.NOOP);
+                response.write(true, ByteBuffer.wrap(chunk2), callback);
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI());
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, 2 * length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -192,49 +174,45 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testUploadZeroLengthWithoutResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-        testUploadWithoutResponseContent(0);
+        testUploadWithoutResponseContent(transport, 0);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testUploadSmallWithoutResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-        testUploadWithoutResponseContent(1024);
+        testUploadWithoutResponseContent(transport, 1024);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testUploadLargeWithoutResponseContent(Transport transport) throws Exception
     {
-        init(transport);
-        testUploadWithoutResponseContent(1024 * 1024);
+        testUploadWithoutResponseContent(transport, 1024 * 1024);
     }
 
-    private void testUploadWithoutResponseContent(int length) throws Exception
+    private void testUploadWithoutResponseContent(Transport transport, int length) throws Exception
     {
         final byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                ServletInputStream input = request.getInputStream();
+                InputStream input = Request.asInputStream(request);
                 for (byte b : bytes)
                 {
-                    assertEquals(b & 0xFF, input.read());
+                    Assertions.assertEquals(b & 0xFF, input.read());
                 }
-                assertEquals(-1, input.read());
+                Assertions.assertEquals(-1, input.read());
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
             .body(new BytesRequestContent(bytes))
             .timeout(15, TimeUnit.SECONDS)
@@ -245,35 +223,43 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testClientManyWritesSlowServer(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-
                 long sleep = 1024;
                 long total = 0;
-                ServletInputStream input = request.getInputStream();
-                byte[] buffer = new byte[1024];
                 while (true)
                 {
-                    int read = input.read(buffer);
-                    if (read < 0)
-                        break;
-                    total += read;
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
+                    {
+                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        {
+                            request.demand(blocker);
+                            blocker.block();
+                            continue;
+                        }
+                    }
+                    if (chunk instanceof Content.Chunk.Error error)
+                        throw IO.rethrow(error.getCause());
+
+                    total += chunk.remaining();
                     if (total >= sleep)
                     {
                         sleep(250);
                         sleep += 256;
                     }
+                    chunk.release();
+                    if (chunk.isLast())
+                        break;
                 }
 
-                response.getOutputStream().print(total);
+                Content.Sink.write(response, true, String.valueOf(total), callback);
             }
         });
 
@@ -281,7 +267,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         int chunkSize = 16;
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesRequestContent content = new BytesRequestContent("application/octet-stream", bytes);
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
             .body(content)
             .timeout(15, TimeUnit.SECONDS)
@@ -292,29 +278,22 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestAfterFailedRequest(Transport transport) throws Exception
     {
-        init(transport);
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    response.getOutputStream().write(new byte[length]);
-                }
-                catch (IOException ignored)
-                {
-                }
+                response.write(true, ByteBuffer.allocate(length), Callback.NOOP);
+                callback.succeeded();
             }
         });
 
         // Make a request with a large enough response buffer.
-        org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI());
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
         ContentResponse response = listener.get(15, TimeUnit.SECONDS);
@@ -323,7 +302,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         // Make a request with a small response buffer, should fail.
         try
         {
-            request = scenario.client.newRequest(scenario.newURI());
+            request = client.newRequest(newURI(transport));
             listener = new FutureResponseListener(request, length / 10);
             request.send(listener);
             listener.get(15, TimeUnit.SECONDS);
@@ -335,7 +314,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         }
 
         // Verify that we can make another request.
-        request = scenario.client.newRequest(scenario.newURI());
+        request = client.newRequest(newURI(transport));
         listener = new FutureResponseListener(request, length);
         request.send(listener);
         response = listener.get(15, TimeUnit.SECONDS);
@@ -343,64 +322,58 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testClientCannotValidateServerCertificate(Transport transport) throws Exception
     {
-        init(transport);
         // Only run this test for transports over TLS.
-        Assumptions.assumeTrue(scenario.transport.isTlsBased());
+        assumeTrue(transport.isSecure());
 
-        scenario.startServer(new EmptyServerHandler());
+        start(transport, new EmptyServerHandler());
         // Disable validations on the server to be sure
         // that the test failure happens during the
         // validation of the certificate on the client.
-        scenario.httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
+        httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
-        // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
-        SslContextFactory.Client clientTLS = scenario.newClientSslContextFactory();
+        // Use a SslContextFactory.Client that verifies server certificates,
+        // requests should fail because the server certificate is unknown.
+        SslContextFactory.Client clientTLS = newSslContextFactoryClient();
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
-        scenario.client = scenario.newHttpClient(scenario.provideClientTransport(transport, clientTLS));
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        scenario.client.setExecutor(clientThreads);
-        scenario.client.start();
+        client.stop();
+        client.setSslContextFactory(clientTLS);
+        client.start();
         if (transport == Transport.H3)
         {
-            Assumptions.assumeTrue(false, "certificate verification not yet supported in quic");
+            assumeTrue(false, "certificate verification not yet supported in quic");
             // TODO: the lines below should be enough, but they don't work. To be investigated.
-            HttpClientTransportOverHTTP3 http3Transport = (HttpClientTransportOverHTTP3)scenario.client.getTransport();
+            HttpClientTransportOverHTTP3 http3Transport = (HttpClientTransportOverHTTP3)client.getTransport();
             http3Transport.getHTTP3Client().getQuicConfiguration().setVerifyPeerCertificates(true);
         }
 
         assertThrows(ExecutionException.class, () ->
         {
             // Use an IP address not present in the certificate.
-            int serverPort = scenario.getServerPort().orElse(0);
-            scenario.client.newRequest("https://127.0.0.2:" + serverPort)
+            int serverPort = newURI(transport).getPort();
+            client.newRequest("https://127.0.0.2:" + serverPort)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testOPTIONS(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
                 assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
-                assertEquals("*", target);
-                assertEquals("*", request.getPathInfo());
+                assertEquals("*", request.getPathInContext());
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.OPTIONS)
             .path("*")
             .timeout(5, TimeUnit.SECONDS)
@@ -410,28 +383,25 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testOPTIONSWithRelativeRedirect(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                if ("*".equals(target))
+                if ("*".equals(request.getPathInContext()))
                 {
                     // Be nasty and send a relative redirect.
                     // Code 303 will change the method to GET.
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader("Location", "/");
+                    response.getHeaders().put(HttpHeader.LOCATION, "/");
                 }
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.OPTIONS)
             .path("*")
             .timeout(5, TimeUnit.SECONDS)
@@ -441,25 +411,22 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testDownloadWithInputStreamResponseListener(Transport transport) throws Exception
     {
-        init(transport);
         String content = "hello world";
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().print(content);
+                Content.Sink.write(response, true, content, callback);
             }
         });
 
         CountDownLatch latch = new CountDownLatch(1);
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        client.newRequest(newURI(transport))
             .onResponseSuccess(response -> latch.countDown())
             .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -475,17 +442,16 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testConnectionListener(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.startServer(new EmptyServerHandler());
+        start(transport, new EmptyServerHandler());
         long idleTimeout = 1000;
-        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        client.setIdleTimeout(idleTimeout);
 
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
-        scenario.client.addBean(new org.eclipse.jetty.io.Connection.Listener()
+        client.addBean(new org.eclipse.jetty.io.Connection.Listener()
         {
             @Override
             public void onOpened(org.eclipse.jetty.io.Connection connection)
@@ -500,8 +466,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        ContentResponse response = client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -513,18 +478,16 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testAsyncResponseContentBackPressure(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
                 // Large write to generate multiple DATA frames.
-                response.getOutputStream().write(new byte[256 * 1024]);
+                response.write(true, ByteBuffer.allocate(256 * 1024), callback);
             }
         });
 
@@ -532,8 +495,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         AtomicInteger counter = new AtomicInteger();
         AtomicReference<Callback> callbackRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
-        scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        client.newRequest(newURI(transport))
             .onResponseContentAsync((response, content, callback) ->
             {
                 if (counter.incrementAndGet() == 1)
@@ -558,21 +520,20 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testResponseWithContentCompleteListenerInvokedOnce(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getWriter().write("Jetty");
+                Content.Sink.write(response, true, "Jetty", callback);
             }
         });
 
         AtomicInteger completes = new AtomicInteger();
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .send(result -> completes.incrementAndGet());
 
         sleep(1000);
@@ -581,35 +542,37 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testHEADResponds200(Transport transport) throws Exception
     {
-        init(transport);
-        testHEAD(scenario.servletPath, HttpStatus.OK_200);
+        testHEAD(transport, "/", HttpStatus.OK_200);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testHEADResponds404(Transport transport) throws Exception
     {
-        init(transport);
-        testHEAD("/notMapped", HttpStatus.NOT_FOUND_404);
+        testHEAD(transport, "/notMapped", HttpStatus.NOT_FOUND_404);
     }
 
-    private void testHEAD(String path, int status) throws Exception
+    private void testHEAD(Transport transport, String path, int status) throws Exception
     {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        scenario.start(new HttpServlet()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getOutputStream().write(data);
+                String target = request.getPathInContext();
+                if ("/notMapped".equals(target))
+                    org.eclipse.jetty.server.Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                else
+                    response.write(true, ByteBuffer.wrap(data), callback);
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.HEAD)
             .path(path)
             .send();
@@ -619,23 +582,21 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testHEADWithAcceptHeaderAndSendError(Transport transport) throws Exception
     {
-        init(transport);
         int status = HttpStatus.BAD_REQUEST_400;
-        scenario.start(new HttpServlet()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                resp.sendError(status);
+                org.eclipse.jetty.server.Response.writeError(request, response, callback, status);
             }
         });
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.HEAD)
-            .path(scenario.servletPath)
             .headers(headers -> headers.put(HttpHeader.ACCEPT, "*/*"))
             .send();
 
@@ -644,25 +605,22 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testHEADWithContentLengthGreaterThanMaxBufferingCapacity(Transport transport) throws Exception
     {
         int length = 1024;
-        init(transport);
-        scenario.start(new HttpServlet()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentLength(length);
-                response.getOutputStream().write(new byte[length]);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
+                response.write(true, ByteBuffer.allocate(length), callback);
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = scenario.client
-            .newRequest(scenario.newURI())
-            .method(HttpMethod.HEAD)
-            .path(scenario.servletPath);
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport))
+            .method(HttpMethod.HEAD);
         FutureResponseListener listener = new FutureResponseListener(request, length / 2);
         request.send(listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
@@ -672,52 +630,50 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testOneDestinationPerUser(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler());
-
+        start(transport, new EmptyServerHandler());
         int runs = 4;
         int users = 16;
         for (int i = 0; i < runs; ++i)
         {
             for (int j = 0; j < users; ++j)
             {
-                ContentResponse response = scenario.client.newRequest(scenario.newURI())
+                ContentResponse response = client.newRequest(newURI(transport))
                     .tag(j)
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
 
-        List<Destination> destinations = scenario.client.getDestinations();
+        List<Destination> destinations = client.getDestinations();
         assertEquals(users, destinations.size());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testIPv6Host(Transport transport) throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+        assumeTrue(Net.isIpv6InterfaceAvailable());
+        assumeTrue(transport != Transport.UNIX_DOMAIN);
 
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.setContentType("text/plain");
-                response.getOutputStream().print(request.getHeader("Host"));
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Content.Sink.write(response, true, request.getHeaders().get("Host"), callback);
             }
         });
 
         // Test with a full URI.
         String hostAddress = "::1";
         String host = "[" + hostAddress + "]";
-        String uri = scenario.newURI().replace("localhost", host) + "/path";
-        ContentResponse response = scenario.client.newRequest(uri)
+        URI serverURI = newURI(transport);
+        String uri = serverURI.toString().replace("localhost", host) + "/path";
+        ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.PUT)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -726,9 +682,9 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
         // Test with host address.
-        int port = scenario.getServerPort().orElse(0);
-        response = scenario.client.newRequest(hostAddress, port)
-            .scheme(scenario.getScheme())
+        int port = serverURI.getPort();
+        response = client.newRequest(hostAddress, port)
+            .scheme(serverURI.getScheme())
             .method(HttpMethod.PUT)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -736,9 +692,9 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         assertEquals(200, response.getStatus());
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
-        // Test with host.
-        response = scenario.client.newRequest(host, port)
-            .scheme(scenario.getScheme())
+        // Test with host name.
+        response = client.newRequest(host, port)
+            .scheme(serverURI.getScheme())
             .method(HttpMethod.PUT)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -746,37 +702,35 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         assertEquals(200, response.getStatus());
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
-        assertEquals(1, scenario.client.getDestinations().size());
+        Assertions.assertEquals(1, client.getDestinations().size());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestWithDifferentDestination(Transport transport) throws Exception
     {
-        init(transport);
-
-        String requestScheme = HttpScheme.HTTPS.is(scenario.getScheme()) ? "http" : "https";
+        String requestScheme = newURI(transport).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
-        scenario.start(new EmptyServerHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                HttpURI uri = jettyRequest.getHttpURI();
+                HttpURI uri = request.getHttpURI();
                 assertEquals(requestHost, uri.getHost());
                 assertEquals(requestPort, uri.getPort());
-                if (scenario.transport == Transport.H2C || scenario.transport == Transport.H2)
-                    assertEquals(requestScheme, jettyRequest.getMetaData().getURI().getScheme());
+                if (transport == Transport.H2C || transport == Transport.H2)
+                    assertEquals(requestScheme, uri.getScheme());
             }
         });
-        if (transport.isTlsBased())
-            scenario.httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
+        if (transport.isSecure())
+            httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
-        Origin origin = new Origin(scenario.getScheme(), "localhost", scenario.getServerPort().orElse(0));
-        HttpDestination destination = scenario.client.resolveDestination(origin);
+        Origin origin = new Origin(requestScheme, "localhost", requestPort);
+        HttpDestination destination = client.resolveDestination(origin);
 
-        org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(requestHost, requestPort)
+        org.eclipse.jetty.client.api.Request request = client.newRequest(requestHost, requestPort)
             .scheme(requestScheme)
             .path("/path");
 
@@ -792,38 +746,29 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
 
         CountDownLatch latch = new CountDownLatch(1);
         long idleTimeout = 500;
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    if (target.equals("/1"))
-                        assertTrue(latch.await(5, TimeUnit.SECONDS));
-                    else if (target.equals("/2"))
-                        Thread.sleep(2 * idleTimeout);
-                    else
-                        fail("Unknown path: " + target);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
+                String target = request.getPathInContext();
+                if (target.equals("/1"))
+                    assertTrue(latch.await(5, TimeUnit.SECONDS));
+                else if (target.equals("/2"))
+                    Thread.sleep(2 * idleTimeout);
+                else
+                    fail("Unknown path: " + target);
             }
         });
 
         assertThrows(TimeoutException.class, () ->
-            scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
+            client.newRequest(newURI(transport))
                 .path("/1")
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
@@ -831,8 +776,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         latch.countDown();
 
         // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .scheme(scenario.getScheme())
+        ContentResponse response = client.newRequest(newURI(transport))
             .path("/2")
             .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
             .send();

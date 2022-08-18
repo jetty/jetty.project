@@ -454,14 +454,7 @@ public class HttpClientDemandTest extends AbstractTest
     @MethodSource("transports")
     public void testDelayedBeforeContentDemandWithNoResponseContent(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
-            {
-                callback.succeeded();
-            }
-        });
+        start(transport, new EmptyServerHandler());
 
         AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);

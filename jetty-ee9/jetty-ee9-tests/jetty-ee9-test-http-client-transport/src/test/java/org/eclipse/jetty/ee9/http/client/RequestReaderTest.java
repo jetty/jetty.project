@@ -17,13 +17,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -43,10 +43,10 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
     public void testRecyclingWhenUsingReader(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler()
+        scenario.start(new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 // Must be a Reader and not an InputStream.
                 BufferedReader br = request.getReader();
@@ -58,9 +58,8 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
                 }
                 // Paranoid check.
                 assertThat(br.read(), is(-1));
-                baseRequest.setHandled(true);
             }
-        }, client -> {});
+        });
 
         ContentResponse response1 = scenario.client.newRequest(scenario.newURI())
             .method("POST")

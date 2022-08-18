@@ -45,11 +45,9 @@ import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -80,7 +78,6 @@ public class TransportScenario
     protected SslContextFactory.Server sslContextFactory;
     protected Server server;
     protected Connector connector;
-    protected ServletContextHandler context;
     protected String servletPath = "/servlet";
     protected HttpClient client;
     protected Path unixDomainPath;
@@ -145,6 +142,7 @@ public class TransportScenario
         ret.append(getScheme());
         ret.append("://localhost");
         getServerPort().ifPresent(s -> ret.append(':').append(s));
+        ret.append(servletPath);
         return ret.toString();
     }
 
@@ -278,31 +276,6 @@ public class TransportScenario
         }
     }
 
-    public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
-    {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
-        if (h2 != null)
-        {
-            h2.setMaxConcurrentStreams(maxRequestsPerConnection);
-        }
-        else
-        {
-            if (connector instanceof QuicServerConnector)
-                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
-        }
-    }
-
-    public void start(Handler handler) throws Exception
-    {
-        start(handler, null);
-    }
-
-    public void start(Handler handler, Consumer<HttpClient> config) throws Exception
-    {
-        startServer(handler);
-        startClient(config);
-    }
-
     public void start(HttpServlet servlet) throws Exception
     {
         startServer(servlet);
@@ -334,21 +307,21 @@ public class TransportScenario
 
     public void startServer(HttpServlet servlet) throws Exception
     {
-        context = new ServletContextHandler();
+        prepareServer(servlet);
+        server.start();
+    }
+
+    protected void prepareServer(HttpServlet servlet)
+    {
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
         ServletHolder holder = new ServletHolder(servlet);
         holder.setAsyncSupported(true);
         context.addServlet(holder, servletPath);
-        startServer(context);
+        prepareServer(context);
     }
 
-    public void startServer(Handler handler) throws Exception
-    {
-        prepareServer(handler);
-        server.start();
-    }
-
-    protected void prepareServer(Handler handler)
+    protected void prepareServer(ServletContextHandler handler)
     {
         sslContextFactory = newServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
@@ -360,10 +333,13 @@ public class TransportScenario
         connector = newServerConnector(server);
         server.addConnector(connector);
         server.setRequestLog((request, response) ->
-        {
-            int status = response.getCommittedMetaData().getStatus();
-            requestLog.offer(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
-        });
+            requestLog.offer(String.format("%s %s %s %03d",
+                request.getMethod(),
+                request.getHttpURI(),
+                request.getConnectionMetaData().getProtocol(),
+                response.getStatus())
+            )
+        );
         server.setHandler(handler);
     }
 

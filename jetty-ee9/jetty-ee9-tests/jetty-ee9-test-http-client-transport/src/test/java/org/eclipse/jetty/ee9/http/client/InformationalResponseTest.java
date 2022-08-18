@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee9.http.client;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpConversation;
@@ -33,13 +33,10 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -51,7 +48,7 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
     public void init(Transport transport) throws IOException
     {
         // Skip FCGI for now, not much interested in its server-side behavior.
-        Assumptions.assumeTrue(transport != FCGI);
+        Assumptions.assumeTrue(transport != Transport.FCGI);
         setScenario(new TransportScenario(transport));
     }
 
@@ -60,12 +57,11 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
     public void test102Processing(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler()
+        scenario.start(new HttpServlet()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
                 response.sendError(HttpStatus.PROCESSING_102);
                 response.sendError(HttpStatus.PROCESSING_102);
                 response.setStatus(200);
@@ -144,12 +140,11 @@ public class InformationalResponseTest extends AbstractTest<TransportScenario>
     public void test103EarlyHint(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler()
+        scenario.start(new HttpServlet()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
                 response.setHeader("Hint", "one");
                 response.sendError(HttpStatus.EARLY_HINT_103);
                 response.setHeader("Hint", "two");

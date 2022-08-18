@@ -27,15 +27,18 @@ import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -59,7 +62,7 @@ public class AbstractTest
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;
-    protected Connector connector;
+    protected AbstractConnector connector;
     protected HttpClient client;
     protected Path unixDomainPath;
 
@@ -97,12 +100,18 @@ public class AbstractTest
             Files.delete(unixDomainPath);
         }
         sslContextFactoryServer = newSslContextFactoryServer();
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
-        serverThreads.setName("server");
-        server = new Server(serverThreads);
+        if (server == null)
+            server = newServer();
         connector = newConnector(transport, server);
         server.addConnector(connector);
         server.setHandler(handler);
+    }
+
+    protected Server newServer()
+    {
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        return new Server(serverThreads);
     }
 
     protected SslContextFactory.Server newSslContextFactoryServer()
@@ -125,7 +134,7 @@ public class AbstractTest
         client.start();
     }
 
-    public Connector newConnector(Transport transport, Server server)
+    public AbstractConnector newConnector(Transport transport, Server server)
     {
         return switch (transport)
         {
@@ -238,6 +247,37 @@ public class AbstractTest
         return URI.create(uri);
     }
 
+    protected void setStreamIdleTimeout(long idleTimeout)
+    {
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        if (h2 != null)
+        {
+            h2.setStreamIdleTimeout(idleTimeout);
+        }
+        else
+        {
+            AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+            if (h3 != null)
+                h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
+            else
+                connector.setIdleTimeout(idleTimeout);
+        }
+    }
+
+    protected void setMaxRequestsPerConnection(int maxRequestsPerConnection)
+    {
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        if (h2 != null)
+        {
+            h2.setMaxConcurrentStreams(maxRequestsPerConnection);
+        }
+        else
+        {
+            if (connector instanceof QuicServerConnector)
+                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
+        }
+    }
+
     public enum Transport
     {
         HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
@@ -248,6 +288,15 @@ public class AbstractTest
             {
                 case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
                 case HTTPS, H2, H3 -> true;
+            };
+        }
+
+        public boolean isMultiplexed()
+        {
+            return switch (this)
+            {
+                case HTTP, HTTPS, FCGI, UNIX_DOMAIN -> false;
+                case H2C, H2, H3 -> true;
             };
         }
     }

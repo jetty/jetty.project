@@ -11,57 +11,45 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
+public class HttpClientIdleTimeoutTest extends AbstractTest
 {
     private final long idleTimeout = 1000;
 
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.startServer(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                if (target.equals("/timeout"))
-                {
-                    AsyncContext asyncContext = request.startAsync();
-                    asyncContext.setTimeout(0);
-                }
+                // Do not succeed the callback if it's a timeout request.
+                if (!request.getPathInContext().equals("/timeout"))
+                    callback.succeeded();
             }
         });
-        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        client.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
             .path("/timeout")
             .send(result ->
             {
@@ -72,31 +60,29 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        ContentResponse response = client.newRequest(newURI(transport))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                if (target.equals("/timeout"))
-                {
-                    AsyncContext asyncContext = request.startAsync();
-                    asyncContext.setTimeout(0);
-                }
+                // Do not succeed the callback if it's a timeout request.
+                if (!request.getPathInContext().equals("/timeout"))
+                    callback.succeeded();
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
             .path("/timeout")
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .send(result ->
@@ -108,46 +94,46 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        ContentResponse response = client.newRequest(newURI(transport))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testIdleClientIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.startServer(new EmptyServerHandler());
-        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        start(transport, new EmptyServerHandler());
+        client.setIdleTimeout(idleTimeout);
 
         // Make a first request to open a connection.
-        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        ContentResponse response = client.newRequest(newURI(transport)).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Let the connection idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Verify that after the timeout we can make another request.
-        response = scenario.client.newRequest(scenario.newURI()).send();
+        response = client.newRequest(newURI(transport)).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testIdleServerIdleTimeout(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler());
-        scenario.setConnectionIdleTimeout(idleTimeout);
+        start(transport, new EmptyServerHandler());
+        connector.setIdleTimeout(idleTimeout);
 
-        ContentResponse response1 = scenario.client.newRequest(scenario.newURI()).send();
+        ContentResponse response1 = client.newRequest(newURI(transport)).send();
         assertEquals(HttpStatus.OK_200, response1.getStatus());
 
         // Let the server idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Make sure we can make another request successfully.
-        ContentResponse response2 = scenario.client.newRequest(scenario.newURI()).send();
+        ContentResponse response2 = client.newRequest(newURI(transport)).send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 }

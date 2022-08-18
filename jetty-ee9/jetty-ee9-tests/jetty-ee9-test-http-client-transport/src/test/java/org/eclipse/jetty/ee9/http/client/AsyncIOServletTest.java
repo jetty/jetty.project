@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -51,9 +50,11 @@ import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.ee9.nested.HttpInput;
 import org.eclipse.jetty.ee9.nested.HttpOutput;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -65,7 +66,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -1106,8 +1107,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                     {
                         while (input.isReady() && !input.isFinished())
                         {
-                            int read = input.read();
-                            // System.err.printf("%x%n", read);
+                            input.read();
                             readLatch.countDown();
                         }
                     }
@@ -1677,15 +1677,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
     }
 
-    private ByteBuffer gzipToBuffer(String s) throws IOException
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        GZIPOutputStream gzos = new GZIPOutputStream(baos);
-        gzos.write(s.getBytes(StandardCharsets.ISO_8859_1));
-        gzos.close();
-        return BufferUtil.toBuffer(baos.toByteArray());
-    }
-
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     public void testWriteListenerFromOtherThread(Transport transport) throws Exception
@@ -1743,6 +1734,79 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
         assertThat(failures, empty());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testClientDefersContentServerIdleTimeout(Transport transport) throws Exception
+    {
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        init(transport);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                request.getInputStream().setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        errorLatch.countDown();
+                        response.setStatus(HttpStatus.REQUEST_TIMEOUT_408);
+                        asyncContext.complete();
+                    }
+                });
+            }
+        });
+        long idleTimeout = 1000;
+        scenario.setRequestIdleTimeout(idleTimeout);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);
+        OutputStreamRequestContent content = new OutputStreamRequestContent("application/json;charset=UTF-8")
+        {
+            @Override
+            public long getLength()
+            {
+                return bytes.length;
+            }
+        };
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .body(content)
+            .onResponseSuccess(response ->
+            {
+                Assertions.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
+                latch.countDown();
+            })
+            .send(null);
+
+        // Wait for the server to idle timeout.
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+
+        // Do not send the content to the server.
+
+        assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private static class Listener implements ReadListener, WriteListener
@@ -1833,29 +1897,26 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         }
 
         @Override
-        public void startServer(Handler handler) throws Exception
+        protected void prepareServer(ServletContextHandler handler)
         {
-            if (handler == context)
+            // Add this listener before the context is started, so it's durable.
+            handler.addEventListener(new ContextHandler.ContextScopeListener()
             {
-                // Add this listener before the context is started, so it's durable.
-                context.addEventListener(new ContextHandler.ContextScopeListener()
+                @Override
+                public void enterScope(org.eclipse.jetty.server.Context context, Request request)
                 {
-                    @Override
-                    public void enterScope(org.eclipse.jetty.server.Context context, Request request)
-                    {
-                        checkScope();
-                        scope.set(new RuntimeException());
-                    }
+                    checkScope();
+                    scope.set(new RuntimeException());
+                }
 
-                    @Override
-                    public void exitScope(org.eclipse.jetty.server.Context context, Request request)
-                    {
-                        assertScope();
-                        scope.set(null);
-                    }
-                });
-            }
-            super.startServer(handler);
+                @Override
+                public void exitScope(org.eclipse.jetty.server.Context context, Request request)
+                {
+                    assertScope();
+                    scope.set(null);
+                }
+            });
+            super.prepareServer(handler);
         }
 
         private void assertScope()

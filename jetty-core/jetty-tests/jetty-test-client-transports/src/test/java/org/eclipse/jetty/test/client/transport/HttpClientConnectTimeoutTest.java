@@ -22,9 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -45,17 +42,8 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
-            {
-                callback.succeeded();
-            }
-        });
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
-        client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
@@ -78,17 +66,8 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 2000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
-            {
-                callback.succeeded();
-            }
-        });
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
-        client.start();
 
         AtomicInteger completes = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(2);
@@ -114,17 +93,8 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new Handler.Processor()
-        {
-            @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
-            {
-                callback.succeeded();
-            }
-        });
-        client.stop();
+        start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
-        client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
