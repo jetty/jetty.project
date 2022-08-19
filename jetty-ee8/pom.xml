@@ -309,6 +309,11 @@
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-jndi</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-plus</artifactId>
           <version>${project.version}</version>
         </dependency>

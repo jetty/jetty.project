@@ -14,7 +14,6 @@
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
     <jacoco.skip>true</jacoco.skip>
-    <maven.its.path>${maven.multiModuleProjectDirectory}/jetty-ee10/jetty-ee10-maven-plugin/src/it</maven.its.path>
   </properties>
   <build>
     <plugins>
@@ -101,7 +100,6 @@
           <junitPackageName>org.eclipse.jetty.maven.its.ee9</junitPackageName>
           <addTestClassPath>true</addTestClassPath>
           <ignoreFailures>true</ignoreFailures>
-          <projectsDirectory>${maven.its.path}</projectsDirectory>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
@@ -119,7 +117,7 @@
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
             <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
           </scriptVariables>
-          <settingsFile>${maven.its.path}/settings.xml</settingsFile>
+          <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
             <goal>clean</goal>
           </goals>
