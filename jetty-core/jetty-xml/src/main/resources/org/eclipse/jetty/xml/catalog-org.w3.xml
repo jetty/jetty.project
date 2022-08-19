@@ -15,4 +15,5 @@
   <!-- systemIds for these resources -->
   <system systemId="http://www.w3.org/2001/XMLSchema.dtd" uri="XMLSchema.dtd" />
   <system systemId="https://www.w3.org/2001/XMLSchema.dtd" uri="XMLSchema.dtd" />
+  <system systemId="http://www.w3.org/2001/xml.xsd" uri="xml.xsd" />
 </catalog>
