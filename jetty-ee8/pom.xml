@@ -24,7 +24,7 @@
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
-    <modify-sources-plugin.version>1.0.0-SNAPSHOT</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.1</modify-sources-plugin.version>
   </properties>
 
   <modules>
