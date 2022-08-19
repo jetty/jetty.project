@@ -18,6 +18,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <type>zip</type>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

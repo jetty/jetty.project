@@ -36,6 +36,8 @@
     <module>jetty-ee8-jaas</module>
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-jndi</module>
+    <module>jetty-ee8-maven-plugin</module>
+    <module>jetty-ee8-jspc-maven-plugin</module>
     <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
@@ -268,6 +270,16 @@
         <dependency>
           <groupId>org.eclipse.jetty.ee8</groupId>
           <artifactId>jetty-ee8-proxy</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-quickstart</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-jaas</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
