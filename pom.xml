@@ -2232,4 +2232,5 @@
       <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
     </site>
   </distributionManagement>
+
 </project>
