@@ -139,7 +139,7 @@ public class ClientAuthProxyTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
+                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
                 Assertions.assertNotNull(certificates);
                 X509Certificate certificate = certificates[0];
                 X500Principal principal = certificate.getSubjectX500Principal();
@@ -211,7 +211,7 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
