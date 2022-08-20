@@ -9,6 +9,9 @@
   <artifactId>test-ee8-sessions</artifactId>
   <name>EE8 :: Sessions Tests</name>
   <packaging>pom</packaging>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
   <modules>
     <module>test-ee8-sessions-common</module>
     <module>test-ee8-file-sessions</module>
@@ -23,15 +26,14 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
         <artifactId>test-ee8-sessions-common</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-session</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
       </dependency>
     </dependencies>
   </dependencyManagement>
