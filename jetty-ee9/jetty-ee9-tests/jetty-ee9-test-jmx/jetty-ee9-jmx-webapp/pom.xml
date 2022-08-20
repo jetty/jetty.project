@@ -10,8 +10,8 @@
   <packaging>war</packaging>
   <name>EE9 :: Jetty Test :: JMX :: WebApp</name>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <bundle-symbolic-name>${project.groupId}.jmx.webapp</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <dependencies>
     <dependency>
@@ -35,15 +35,5 @@
   </dependencies>
   <build>
     <finalName>jetty-ee9-jmx-webapp</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 </project>
