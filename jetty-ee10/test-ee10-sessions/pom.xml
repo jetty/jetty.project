@@ -11,7 +11,9 @@
   <name>Jetty EE10 Tests :: Sessions :: Parent</name>
   <packaging>pom</packaging>
   <properties>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.source.skip>true</maven.source.skip>
   </properties>
   <modules>
     <module>test-ee10-sessions-common</module>
