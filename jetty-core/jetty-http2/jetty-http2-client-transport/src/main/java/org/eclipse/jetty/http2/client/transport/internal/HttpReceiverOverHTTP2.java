@@ -213,7 +213,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                 });
 
-                boolean proceed = responseContent(exchange, byteBuffer, callback);
+                // TODO Stream.Data data is lost here
+                boolean proceed = responseContent(exchange, callback);
                 if (proceed)
                 {
                     if (endStream)

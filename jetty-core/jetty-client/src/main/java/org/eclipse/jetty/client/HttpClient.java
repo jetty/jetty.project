@@ -595,6 +595,12 @@ public class HttpClient extends ContainerLifeCycle
         destination.send(request, listeners);
     }
 
+    protected void send(HttpRequest request, Response.ContentSourceListener listener)
+    {
+        HttpDestination destination = (HttpDestination)resolveDestination(request);
+        destination.send(request, listener);
+    }
+
     protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
         // Multiple threads may access the map, especially with DEBUG logging enabled.

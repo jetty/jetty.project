@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
@@ -53,9 +51,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
+    protected boolean responseContent(HttpExchange exchange, Callback callback)
     {
-        return super.responseContent(exchange, buffer, callback);
+        return super.responseContent(exchange, callback);
     }
 
     @Override

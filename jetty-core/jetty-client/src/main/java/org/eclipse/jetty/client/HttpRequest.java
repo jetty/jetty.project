@@ -762,6 +762,14 @@ public class HttpRequest implements Request
         sendAsync(client::send, listener);
     }
 
+    @Override
+    public void send(Response.ContentSourceListener listener, boolean ignore)
+    {
+        Objects.requireNonNull(listener);
+        sent();
+        client.send(this, listener);
+    }
+
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         sendAsync(destination::send, listener);

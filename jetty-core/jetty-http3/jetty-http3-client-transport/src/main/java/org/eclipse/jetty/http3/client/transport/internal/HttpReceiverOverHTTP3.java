@@ -112,11 +112,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             {
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
-                    data.release();
                     if (responseFailure(x))
                         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                 });
-                boolean proceed = responseContent(exchange, byteBuffer, callback);
+
+                // TODO Stream.Data data is lost here
+                boolean proceed = responseContent(exchange, callback);
                 if (proceed)
                 {
                     if (data.isLast())

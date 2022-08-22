@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -122,12 +122,13 @@ public class HttpChannelOverFCGI extends HttpChannel
         return exchange != null && receiver.responseHeaders(exchange);
     }
 
-    protected boolean content(ByteBuffer buffer, Callback callback)
+    protected boolean content(Content.Chunk chunk, Callback callback)
     {
+        // TODO Content.Chunk chunk is lost here
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            return receiver.responseContent(exchange, buffer, callback);
+            return receiver.responseContent(exchange, callback);
         callback.succeeded();
         return false;
     }

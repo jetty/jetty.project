@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
@@ -30,6 +31,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
     private final HttpRequest request;
+    private final Response.ContentSourceListener listener;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
     private State requestState = State.PENDING;
@@ -42,7 +44,20 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     {
         this.destination = destination;
         this.request = request;
+        this.listener = null;
         this.listeners = listeners;
+        this.response = new HttpResponse(request, listeners);
+        HttpConversation conversation = request.getConversation();
+        conversation.getExchanges().offer(this);
+        conversation.updateResponseListeners(null);
+    }
+
+    public HttpExchange(HttpDestination destination, HttpRequest request, Response.ContentSourceListener listener)
+    {
+        this.destination = destination;
+        this.request = request;
+        this.listener = listener;
+        this.listeners = List.of(listener);
         this.response = new HttpResponse(request, listeners);
         HttpConversation conversation = request.getConversation();
         conversation.getExchanges().offer(this);
@@ -75,6 +90,11 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     public List<Response.ResponseListener> getResponseListeners()
     {
         return listeners;
+    }
+
+    public Response.ContentSourceListener getListener()
+    {
+        return listener;
     }
 
     public HttpResponse getResponse()

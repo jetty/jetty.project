@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -92,6 +93,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1102,6 +1104,67 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testContentSourceListener(Scenario scenario) throws Exception
+    {
+        final int timeoutInMs = 5000;
+
+        start(scenario, new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(false, ByteBuffer.wrap("hello1".getBytes(UTF_8)),
+                    Callback.from(() -> response.write(true, ByteBuffer.wrap("hello2".getBytes(UTF_8)), callback)));
+            }
+        });
+
+        ExceptionLessExchanger<String> exchanger = new ExceptionLessExchanger<>();
+        Response.ContentSourceListener contentSourceListener = new Response.ContentSourceListener()
+        {
+            int gotLastCounter;
+            @Override
+            public void onContentSource(Response response, Content.Source contentSource)
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                        return;
+                    }
+                    if (chunk instanceof Content.Chunk.Error error)
+                    {
+                        response.abort(error.getCause());
+                        return;
+                    }
+
+                    String s = BufferUtil.toString(chunk.getByteBuffer());
+                    chunk.release();
+
+                    if (gotLastCounter == 3 && chunk.isLast())
+                    {
+                        exchanger.exchange("--the end--", timeoutInMs, TimeUnit.MILLISECONDS);
+                        return;
+                    }
+
+                    if (!chunk.isLast())
+                        exchanger.exchange(s, timeoutInMs, TimeUnit.MILLISECONDS);
+                    else
+                        gotLastCounter++; // once the last content is reached, make sure we can re-read it
+                }
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .send(contentSourceListener, false);
+        assertThat(exchanger.exchange(null, timeoutInMs, TimeUnit.MILLISECONDS), is("hello1"));
+        assertThat(exchanger.exchange(null, timeoutInMs, TimeUnit.MILLISECONDS), is("hello2"));
+        assertThat(exchanger.exchange(null, timeoutInMs, TimeUnit.MILLISECONDS), is("--the end--"));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void setOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
     {
         byte[] content = new byte[512];
@@ -2017,6 +2080,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .param("attempt", String.valueOf(retries))
                 .body(new StringRequestContent("0123456789ABCDEF"))
                 .send(this);
+        }
+    }
+
+    private static class ExceptionLessExchanger<T> extends Exchanger<T>
+    {
+        @Override
+        public T exchange(T x, long timeout, TimeUnit unit)
+        {
+            try
+            {
+                return super.exchange(x, timeout, unit);
+            }
+            catch (InterruptedException | TimeoutException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

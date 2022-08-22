@@ -16,6 +16,9 @@ package org.eclipse.jetty.io.content;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This abstract {@link Content.Source} wraps another {@link Content.Source} and implementers need only
@@ -28,10 +31,13 @@ import org.eclipse.jetty.io.Content;
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ContentSourceTransformer.class);
+
+    private final SerializedInvoker invoker = new SerializedInvoker();
     private final Content.Source rawSource;
     private Content.Chunk rawChunk;
     private Content.Chunk transformedChunk;
-    private boolean needsRawRead;
+    private boolean needsRawRead = true;
     private Runnable demandCallback;
 
     public ContentSourceTransformer(Content.Source rawSource)
@@ -46,32 +52,54 @@ public abstract class ContentSourceTransformer implements Content.Source
         {
             if (needsRawRead)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("performing raw read");
                 rawChunk = rawSource.read();
                 needsRawRead = rawChunk == null;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("still need raw read? {}", needsRawRead);
                 if (rawChunk == null)
                     return null;
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("raw chunk: {}", rawChunk);
+
             if (rawChunk instanceof Content.Chunk.Error)
                 return rawChunk;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("transformed chunk: {}", transformedChunk);
 
             if (transformedChunk instanceof Content.Chunk.Error)
                 return transformedChunk;
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("need transformation");
             transformedChunk = process(rawChunk);
+            if (LOG.isDebugEnabled())
+                LOG.debug("transformed chunk: {}, raw chunk: {}", transformedChunk, rawChunk);
 
             if (rawChunk != null && rawChunk != transformedChunk)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("releasing raw chunk");
                 rawChunk.release();
+            }
             rawChunk = null;
 
             if (transformedChunk != null)
             {
                 Content.Chunk result = transformedChunk;
                 transformedChunk = Content.Chunk.next(result);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("returning {}, transformed chunk now is: {}", result, transformedChunk);
                 return result;
             }
 
             needsRawRead = true;
+            if (LOG.isDebugEnabled())
+                LOG.debug("setting need for raw read");
         }
     }
 
@@ -79,7 +107,18 @@ public abstract class ContentSourceTransformer implements Content.Source
     public void demand(Runnable demandCallback)
     {
         this.demandCallback = Objects.requireNonNull(demandCallback);
-        rawSource.demand(this::onRawAvailable);
+        if (!needsRawRead)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand, serving immediately");
+            invoker.run(this::onRawAvailable);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand, delegating to raw source");
+            rawSource.demand(this::onRawAvailable);
+        }
     }
 
     @Override

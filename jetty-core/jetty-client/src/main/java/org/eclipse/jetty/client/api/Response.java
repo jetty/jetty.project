@@ -23,6 +23,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -171,6 +172,7 @@ public interface Response
      *
      * @see DemandedContentListener
      */
+    @Deprecated
     interface AsyncContentListener extends DemandedContentListener
     {
         /**
@@ -196,9 +198,35 @@ public interface Response
     }
 
     /**
+     * Replacement for AsyncContentListener, intermediate between ContentListener and ContentSourceListener
+     */
+    interface SimpleContentSourceListener extends ContentSourceListener
+    {
+        void onContent(Response response, Runnable demander, Content.Chunk chunk);
+
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(() -> onContentSource(response, contentSource));
+                return;
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                response.abort(error.getCause());
+                return;
+            }
+
+            onContent(response, () -> contentSource.demand(() -> onContentSource(response, contentSource)), chunk);
+        }
+    }
+
+    /**
      * Asynchronous listener for the response content events.
      */
-    interface DemandedContentListener extends ResponseListener
+    @Deprecated
+    interface DemandedContentListener extends ContentSourceListener
     {
         /**
          * Callback method invoked before response content events.
@@ -228,6 +256,45 @@ public interface Response
          * @param callback the callback to call when the content is consumed
          */
         void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
+
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            onBeforeContent(response, demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource)));
+        }
+
+        private void internalOnContentSource(Response response, Content.Source contentSource)
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(() -> internalOnContentSource(response, contentSource));
+                return;
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                response.abort(error.getCause());
+                return;
+            }
+
+            Callback callback = Callback.from(chunk::release, (x) ->
+            {
+                chunk.release();
+                response.abort(x);
+            });
+
+            LongConsumer longConsumerDemand;
+            if (chunk.isLast())
+                longConsumerDemand = demand -> {};
+            else
+                longConsumerDemand = demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource));
+
+            onContent(response, longConsumerDemand, chunk.getByteBuffer(), callback);
+        }
+    }
+
+    interface ContentSourceListener extends ResponseListener
+    {
+        void onContentSource(Response response, Content.Source contentSource);
     }
 
     /**

@@ -102,6 +102,7 @@ public class GzipRequest extends Request.WrapperProcessor
         }
     }
 
+    // TODO this should be commonalized with HttpReceiver.DecodingContentSource
     private class GzipTransformer extends ContentSourceTransformer
     {
         private Content.Chunk _chunk;
@@ -146,6 +147,7 @@ public class GzipRequest extends Request.WrapperProcessor
         }
     }
 
+    // TODO this should be commonalized with  org.eclipse.jetty.client.ContentDecoder
     private static class Decoder extends GZIPContentDecoder
     {
         private ByteBuffer _decoded;

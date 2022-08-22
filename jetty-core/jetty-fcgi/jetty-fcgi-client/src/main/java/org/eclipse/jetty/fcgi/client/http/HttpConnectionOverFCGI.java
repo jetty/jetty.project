@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -451,7 +452,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                     if (channel != null)
                     {
                         networkBuffer.retain();
-                        return !channel.content(buffer, Callback.from(networkBuffer::release, HttpConnectionOverFCGI.this::close));
+                        Content.Chunk chunk = Content.Chunk.from(buffer, false, networkBuffer);
+                        return !channel.content(chunk, Callback.from(() -> {}, HttpConnectionOverFCGI.this::close));
                     }
                     else
                     {

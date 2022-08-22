@@ -182,6 +182,21 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
         if (invoke)
             invoker.run(this::invokeDemandCallback);
+        else
+            invoker.run(stalled());
+    }
+
+    public boolean hasDemand()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return this.demandCallback != null;
+        }
+    }
+
+    protected Runnable stalled()
+    {
+        return null;
     }
 
     private void invokeDemandCallback()
