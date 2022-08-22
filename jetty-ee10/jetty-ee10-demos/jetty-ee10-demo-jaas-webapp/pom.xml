@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.demos</groupId>
     <artifactId>jetty-ee10-demos</artifactId>
-    <version>12.0.0.alpha0</version>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-demo-jaas-webapp</artifactId>
   <name>EE10 :: Jetty Demo :: JAAS :: WebApp</name>
