@@ -11,7 +11,6 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
-    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <build>
     <pluginManagement>
