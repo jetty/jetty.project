@@ -1,7 +1,7 @@
 jetty-12.0.0-SNAPSHOT
 
 jetty-12.0.0.alpha0 - 22 August 2022
- + First alpah release of Jetty 12. A lot changes but very good changes!
+ + First alpha release of Jetty 12. A lot changes but very good changes!
 
 jetty-11.0.11 - 21 June 2022
  + 8184 All suffix globs except first fail to match if path has `.` character
