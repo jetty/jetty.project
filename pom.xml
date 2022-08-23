@@ -90,8 +90,6 @@
     <plexus-utils.version>3.4.2</plexus-utils.version>
     <slf4j.version>2.0.0</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
-    <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.17.3</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
@@ -1131,30 +1129,6 @@
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
         <version>${maven.plugin-tools.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.taglibs</groupId>
-        <artifactId>taglibs-standard-impl</artifactId>
-        <version>${taglibs-standard-impl.version}</version>
-        <exclusions>
-          <!-- We are using the jakarta.* artifacts instead -->
-          <exclusion>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>jsp-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.taglibs</groupId>
-        <artifactId>taglibs-standard-spec</artifactId>
-        <version>${taglibs-standard-spec.version}</version>
-        <exclusions>
-          <!-- We are using the jakarta.* artifacts instead -->
-          <exclusion>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>jsp-api</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>

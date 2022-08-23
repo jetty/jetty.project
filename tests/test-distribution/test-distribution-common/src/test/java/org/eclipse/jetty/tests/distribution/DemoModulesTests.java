@@ -138,7 +138,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
     public void testJstlDemo(String env) throws Exception
@@ -163,7 +163,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -174,7 +174,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/jstl.jsp");
