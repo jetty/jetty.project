@@ -133,6 +133,59 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
+
+
+            }
+        }
+    }
+    
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testJstlDemo(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+                .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] argsConfig = {
+                "--add-modules=http," + toEnvironment("demos", env)
+        };
+
+        String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                    "jetty.http.port=" + httpPort,
+                    "jetty.httpConfig.port=" + httpsPort,
+                    "jetty.ssl.port=" + httpsPort
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", 20, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET(baseURI + "/jstl.jsp");
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat(response.getContentAsString(), containsString("JSTL Example"));
+                assertThat(response.getContentAsString(), containsString("5"));
+                assertThat(response.getContentAsString(), containsString("10"));
+                assertThat(response.getContentAsString(), not(containsString("<c:forEach")));
+
+
             }
         }
     }
