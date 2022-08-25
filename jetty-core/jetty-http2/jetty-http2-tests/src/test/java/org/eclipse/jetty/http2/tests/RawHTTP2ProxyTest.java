@@ -229,7 +229,8 @@ public class RawHTTP2ProxyTest
                 assertEquals(buffer1.slice(), frame.getData());
                 data.release();
                 latch1.countDown();
-                stream.demand();
+                if (!data.frame().isEndStream())
+                    stream.demand();
             }
         });
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
@@ -250,7 +251,8 @@ public class RawHTTP2ProxyTest
                     LOGGER.debug("CLIENT received {}", frame);
                 if (frame.isEndStream())
                     latch2.countDown();
-                stream.demand();
+                else
+                    stream.demand();
             }
 
             @Override
@@ -260,7 +262,8 @@ public class RawHTTP2ProxyTest
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CLIENT received {}", data.frame());
                 data.release();
-                stream.demand();
+                if (!data.frame().isEndStream())
+                    stream.demand();
             }
         });
         Stream stream2 = streamPromise2.get(5, TimeUnit.SECONDS);
@@ -507,7 +510,8 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS read {} on {}", data, stream);
             offer(stream, data.frame(), Callback.from(data::release));
-            stream.demand();
+            if (!data.frame().isEndStream())
+                stream.demand();
         }
 
         @Override
@@ -669,7 +673,8 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC read {} on {}", data, stream);
             offer(stream, data.frame(), Callback.from(data::release));
-            stream.demand();
+            if (!data.frame().isEndStream())
+                stream.demand();
         }
 
         @Override

@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -66,7 +67,7 @@ public class HttpClientDemandTest extends AbstractTest
                 try
                 {
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
-                    response.write(false, ByteBuffer.wrap(new byte[]{'A'}), Callback.NOOP);
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     contentLatch.await();
                     response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
@@ -207,7 +208,7 @@ public class HttpClientDemandTest extends AbstractTest
                 try
                 {
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
-                    response.write(false, ByteBuffer.wrap(new byte[]{'A'}), Callback.NOOP);
+                    Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     serverContentLatch.await();
                     response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
@@ -260,7 +261,10 @@ public class HttpClientDemandTest extends AbstractTest
         demandRef.get().accept(1);
 
         assertTrue(clientContentLatch.await(5, TimeUnit.SECONDS));
+
+        // Demand once more to trigger response success.
         demandRef.get().accept(1);
+
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -353,19 +357,16 @@ public class HttpClientDemandTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
                 {
-                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                     for (int i = 0; i < chunks; ++i)
                     {
                         Thread.sleep(10);
                         gzip.write(content, i * 1024, 1024);
                     }
                 }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
-                }
+                callback.succeeded();
             }
         });
 

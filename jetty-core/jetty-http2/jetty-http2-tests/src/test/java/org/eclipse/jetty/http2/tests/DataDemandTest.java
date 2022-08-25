@@ -210,9 +210,10 @@ public class DataDemandTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 assertNotNull(data);
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         Stream clientStream = promise.get(5, TimeUnit.SECONDS);
@@ -254,9 +255,10 @@ public class DataDemandTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 assertNotNull(data);
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -302,9 +304,10 @@ public class DataDemandTest extends AbstractTest
                 assertFalse(inHeaders);
                 Stream.Data data = stream.readData();
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -326,11 +329,14 @@ public class DataDemandTest extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        stream.demand();
                         if (data.frame().isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.demand();
                         }
                     }
                 };

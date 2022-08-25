@@ -93,7 +93,7 @@ public class MessageParser
             {
                 switch (state)
                 {
-                    case HEADER:
+                    case HEADER ->
                     {
                         if (headerParser.parse(buffer))
                         {
@@ -101,11 +101,13 @@ public class MessageParser
                             // If we are in data mode, but we did not parse a DATA frame, bail out.
                             if (dataMode && headerParser.getFrameType() != FrameType.DATA.type())
                                 return Result.MODE_SWITCH;
-                            break;
                         }
-                        return Result.NO_FRAME;
+                        else
+                        {
+                            return Result.NO_FRAME;
+                        }
                     }
-                    case BODY:
+                    case BODY ->
                     {
                         BodyParser bodyParser = null;
                         long frameType = headerParser.getFrameType();
@@ -133,7 +135,6 @@ public class MessageParser
                                 LOG.debug("parsed unknown frame body for type {}", Long.toHexString(frameType));
                             if (result == BodyParser.Result.WHOLE_FRAME)
                                 reset();
-                            break;
                         }
                         else
                         {
@@ -157,10 +158,7 @@ public class MessageParser
                             return Result.FRAME;
                         }
                     }
-                    default:
-                    {
-                        throw new IllegalStateException();
-                    }
+                    default -> throw new IllegalStateException();
                 }
             }
         }

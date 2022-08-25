@@ -48,8 +48,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
-    private volatile boolean notifySuccess;
-
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
         super(channel);
@@ -72,10 +70,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return;
 
-        if (notifySuccess)
-            responseSuccess(exchange);
-        else
-            getHttpChannel().getStream().demand();
+        getHttpChannel().getStream().demand();
     }
 
     void onHeaders(Stream stream, HeadersFrame frame)
@@ -123,7 +118,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     upgrade(upgrader, httpResponse, endPoint);
             }
 
-            notifySuccess = frame.isEndStream();
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -148,9 +142,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
-
-        // TODO: this event may be notified before all DATA frames have been consumed.
-        responseSuccess(exchange);
     }
 
     private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
@@ -212,11 +203,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (data != null)
         {
             ByteBuffer byteBuffer = data.frame().getData();
+            boolean endStream = data.frame().isEndStream();
             if (byteBuffer.hasRemaining())
             {
-                if (data.frame().isEndStream())
-                    notifySuccess = true;
-
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
@@ -227,7 +216,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
                 {
-                    if (data.frame().isEndStream())
+                    if (endStream)
                         responseSuccess(exchange);
                     else
                         stream.demand();
@@ -241,7 +230,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             else
             {
                 data.release();
-                if (data.frame().isEndStream())
+                if (endStream)
                     responseSuccess(exchange);
                 else
                     stream.demand();

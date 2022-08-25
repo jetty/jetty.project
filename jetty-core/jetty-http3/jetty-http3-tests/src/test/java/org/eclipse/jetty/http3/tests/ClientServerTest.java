@@ -225,10 +225,10 @@ public class ClientServerTest extends AbstractClientServerTest
                         }
                         // Recycle the ByteBuffer in data.frame.
                         data.release();
-                        // Call me again immediately.
-                        stream.demand();
                         if (data.isLast())
                             serverLatch.get().countDown();
+                        else
+                            stream.demand();
                     }
                 };
             }
@@ -296,8 +296,12 @@ public class ClientServerTest extends AbstractClientServerTest
                         stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
                             // Always release.
                             .whenComplete((s, x) -> data.release())
-                            // Demand only if successful.
-                            .thenRun(stream::demand);
+                            // Demand only if successful and not last.
+                            .thenRun(() ->
+                            {
+                                if (!data.isLast())
+                                    stream.demand();
+                            });
                     }
                 };
             }
@@ -326,16 +330,18 @@ public class ClientServerTest extends AbstractClientServerTest
                 {
                     // Read data.
                     Stream.Data data = stream.readData();
-                    if (data != null)
+                    if (data == null)
                     {
-                        // Consume data.
-                        byteBuffer.put(data.getByteBuffer());
-                        data.release();
-                        if (data.isLast())
-                            clientDataLatch.countDown();
+                        stream.demand();
+                        return;
                     }
-                    // Demand more data.
-                    stream.demand();
+                    // Consume data.
+                    byteBuffer.put(data.getByteBuffer());
+                    data.release();
+                    if (data.isLast())
+                        clientDataLatch.countDown();
+                    else
+                        stream.demand();
                 }
             })
             .get(5, TimeUnit.SECONDS);

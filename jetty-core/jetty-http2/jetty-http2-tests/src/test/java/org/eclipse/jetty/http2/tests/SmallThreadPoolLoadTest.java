@@ -160,9 +160,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             {
                 Stream.Data data = stream.readData();
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     responseLatch.countDown();
+                else
+                    stream.demand();
             }
 
             @Override

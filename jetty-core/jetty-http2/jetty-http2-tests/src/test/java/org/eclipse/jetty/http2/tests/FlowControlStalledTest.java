@@ -174,9 +174,10 @@ public class FlowControlStalledTest
                 Stream.Data data = stream.readData();
                 // Do not release.
                 dataQueue.offer(data);
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
 
@@ -278,9 +279,10 @@ public class FlowControlStalledTest
                 Stream.Data data = stream.readData();
                 // Do not release.
                 dataQueue.offer(data);
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
 

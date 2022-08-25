@@ -1279,7 +1279,10 @@ public class GoAwayTest extends AbstractClientServerTest
                 {
                     data.release();
                     if (data.isLast())
+                    {
                         dataLatch.countDown();
+                        return;
+                    }
                 }
                 stream.demand();
             }
@@ -1334,7 +1337,10 @@ public class GoAwayTest extends AbstractClientServerTest
                 {
                     data.release();
                     if (data.isLast())
+                    {
                         dataLatch.countDown();
+                        return;
+                    }
                 }
                 stream.demand();
             }

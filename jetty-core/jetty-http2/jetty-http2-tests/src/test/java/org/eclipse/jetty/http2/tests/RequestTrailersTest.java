@@ -101,7 +101,6 @@ public class RequestTrailersTest extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        stream.demand();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
                         if (data.frame().isEndStream())
@@ -109,6 +108,10 @@ public class RequestTrailersTest extends AbstractTest
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.demand();
                         }
                     }
                 };

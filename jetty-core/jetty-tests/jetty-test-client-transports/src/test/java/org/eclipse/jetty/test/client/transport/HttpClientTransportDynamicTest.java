@@ -607,7 +607,7 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2COverTLS() throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new Handler.Processor()
+        startServer(this::sslH1H2C, new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

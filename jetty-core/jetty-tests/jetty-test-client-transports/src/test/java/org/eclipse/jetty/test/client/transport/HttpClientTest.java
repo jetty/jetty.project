@@ -45,6 +45,7 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.toolchain.test.Net;
@@ -157,9 +158,9 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.write(false, ByteBuffer.wrap(chunk1), Callback.NOOP);
+                Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
             }
         });
@@ -209,6 +210,7 @@ public class HttpClientTest extends AbstractTest
                     Assertions.assertEquals(b & 0xFF, input.read());
                 }
                 Assertions.assertEquals(-1, input.read());
+                callback.succeeded();
             }
         });
 
@@ -258,7 +260,6 @@ public class HttpClientTest extends AbstractTest
                     if (chunk.isLast())
                         break;
                 }
-
                 Content.Sink.write(response, true, String.valueOf(total), callback);
             }
         });
@@ -287,8 +288,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(length), Callback.NOOP);
-                callback.succeeded();
+                response.write(true, ByteBuffer.allocate(length), callback);
             }
         });
 
@@ -370,6 +370,7 @@ public class HttpClientTest extends AbstractTest
             {
                 assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
                 assertEquals("*", request.getPathInContext());
+                callback.succeeded();
             }
         });
 
@@ -398,6 +399,7 @@ public class HttpClientTest extends AbstractTest
                     response.setStatus(HttpStatus.SEE_OTHER_303);
                     response.getHeaders().put(HttpHeader.LOCATION, "/");
                 }
+                callback.succeeded();
             }
         });
 
@@ -664,7 +666,7 @@ public class HttpClientTest extends AbstractTest
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                Content.Sink.write(response, true, request.getHeaders().get("Host"), callback);
+                Content.Sink.write(response, true, request.getHeaders().get(HttpHeader.HOST), callback);
             }
         });
 
@@ -709,6 +711,8 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestWithDifferentDestination(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         String requestScheme = newURI(transport).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
@@ -722,15 +726,16 @@ public class HttpClientTest extends AbstractTest
                 assertEquals(requestPort, uri.getPort());
                 if (transport == Transport.H2C || transport == Transport.H2)
                     assertEquals(requestScheme, uri.getScheme());
+                callback.succeeded();
             }
         });
         if (transport.isSecure())
             httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
-        Origin origin = new Origin(requestScheme, "localhost", requestPort);
+        Origin origin = new Origin(requestScheme, "localhost", ((NetworkConnector)connector).getLocalPort());
         HttpDestination destination = client.resolveDestination(origin);
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest(requestHost, requestPort)
+        var request = client.newRequest(requestHost, requestPort)
             .scheme(requestScheme)
             .path("/path");
 
@@ -764,6 +769,7 @@ public class HttpClientTest extends AbstractTest
                     Thread.sleep(2 * idleTimeout);
                 else
                     fail("Unknown path: " + target);
+                callback.succeeded();
             }
         });
 

@@ -100,8 +100,8 @@ public interface Stream
     public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
 
     /**
-     * <p>Reads DATA frames from this stream, wrapping them in retainable {@link Data}
-     * objects.</p>
+     * <p>Reads DATA frames from this stream, wrapping them in retainable
+     * {@link Data} objects.</p>
      * <p>The returned {@link Stream.Data} object may be {@code null}, indicating
      * that the end of the read side of the stream has not yet been reached, which
      * may happen in these cases:</p>
@@ -119,6 +119,10 @@ public interface Stream
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
+     * <p>Once the returned {@link Stream.Data} object indicates that the end
+     * of the read side of the stream has been reached, further calls to this
+     * method will return a {@link Stream.Data} object with the same indication,
+     * although the instance may be different).</p>
      *
      * @return a {@link Stream.Data} object containing the DATA frame,
      * or null if no DATA frame is available
@@ -214,9 +218,10 @@ public interface Stream
     public void setIdleTimeout(long idleTimeout);
 
     /**
-     * <p>Demands more {@code DATA} frames for this stream, causing
-     * {@link Listener#onDataAvailable(Stream)} to be invoked, possibly at a later time,
-     * when the stream has data to be read.</p>
+     * <p>Demands more {@code DATA} frames for this stream.</p>
+     * Calling this method causes {@link Listener#onDataAvailable(Stream)}
+     * to be invoked, possibly at a later time, when the stream has data
+     * to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
      * outstanding demand to invoke {@link Listener#onDataAvailable(Stream)}
      * is a no-operation.</p>
@@ -224,8 +229,6 @@ public interface Stream
      * {@link Listener#onDataAvailable(Stream)}, unless another thread
      * that must invoke {@link Listener#onDataAvailable(Stream)}
      * notices the outstanding demand first.</p>
-     * <p>When all bytes have been read (via {@link #readData()}), further
-     * invocations of this method are a no-operation.</p>
      * <p>It is always guaranteed that invoking this method from within
      * {@code onDataAvailable(Stream)} will not cause a
      * {@link StackOverflowError}.</p>

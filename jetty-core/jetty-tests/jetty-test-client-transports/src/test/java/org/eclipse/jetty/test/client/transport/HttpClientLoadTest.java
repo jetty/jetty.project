@@ -330,6 +330,9 @@ public class HttpClientLoadTest extends AbstractTest
             if (timeout != null)
                 Thread.sleep(2L * Integer.parseInt(timeout));
 
+            if (Boolean.parseBoolean(request.getHeaders().get("X-Close")))
+                response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+
             String method = request.getMethod().toUpperCase(Locale.ENGLISH);
             switch (method)
             {
@@ -349,10 +352,8 @@ public class HttpClientLoadTest extends AbstractTest
                     response.getHeaders().putLongField("X-Content", request.getHeaders().getLongField("X-Upload"));
                     Content.copy(request, response, callback);
                 }
+                default -> throw new UnsupportedOperationException();
             }
-
-            if (Boolean.parseBoolean(request.getHeaders().get("X-Close")))
-                response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
         }
     }
 }

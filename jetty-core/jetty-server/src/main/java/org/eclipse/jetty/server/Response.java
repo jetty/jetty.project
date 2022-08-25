@@ -63,7 +63,9 @@ public interface Response extends Content.Sink
     {
         if (chunk instanceof Trailers trailers)
         {
-            getOrCreateTrailers().add(trailers.getTrailers());
+            HttpFields fields = trailers.getTrailers();
+            if (fields != null)
+                getOrCreateTrailers().add(fields);
             write(true, null, callback);
             return true;
         }

@@ -262,8 +262,11 @@ public class HTTP2ClientDocs
                 // Tell the implementation that the buffer has been consumed.
                 data.release();
 
-                // Demand more DATA frames when they are available.
-                stream.demand();
+                if (!data.frame().isEndStream())
+                {
+                    // Demand more DATA frames when they are available.
+                    stream.demand();
+                }
             }
         });
         // end::responseListener[]
@@ -368,6 +371,12 @@ public class HTTP2ClientDocs
                         ByteBuffer buffer = data.frame().getData();
                         // Consume the buffer and release the Data object.
                         data.release();
+
+                        if (!data.frame().isEndStream())
+                        {
+                            // Demand more DATA frames when they are available.
+                            stream.demand();
+                        }
                     }
                 };
             }

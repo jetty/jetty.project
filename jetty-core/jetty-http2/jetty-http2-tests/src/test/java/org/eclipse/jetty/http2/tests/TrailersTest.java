@@ -297,15 +297,17 @@ public class TrailersTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(3, frames.size(), frames.toString());
+        assertEquals(4, frames.size(), frames.toString());
 
         HeadersFrame headers = (HeadersFrame)frames.get(0);
         DataFrame data = (DataFrame)frames.get(1);
         HeadersFrame trailers = (HeadersFrame)frames.get(2);
+        DataFrame eof = (DataFrame)frames.get(3);
 
         assertFalse(headers.isEndStream());
         assertFalse(data.isEndStream());
         assertTrue(trailers.isEndStream());
+        assertTrue(eof.isEndStream());
         assertEquals(trailers.getMetaData().getFields().get(trailerName), trailerValue);
     }
 

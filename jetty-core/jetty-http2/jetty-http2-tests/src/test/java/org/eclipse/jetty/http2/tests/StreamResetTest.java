@@ -537,9 +537,10 @@ public class StreamResetTest extends AbstractTest
                 {
                     Stream.Data data = stream.readData();
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         latch.get().countDown();
+                    else
+                        stream.demand();
                 }
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -675,9 +676,10 @@ public class StreamResetTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 dataQueue.offer(data);
                 // Do not consume the data yet.
-                stream.demand();
                 if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -781,9 +783,10 @@ public class StreamResetTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 dataQueue.offer(data);
                 // Do not consume the data yet.
-                stream.demand();
                 if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);

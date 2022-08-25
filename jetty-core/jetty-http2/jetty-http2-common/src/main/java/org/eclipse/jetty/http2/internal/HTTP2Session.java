@@ -1189,21 +1189,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
     }
 
-    protected void notifyHeaders(Stream stream, HeadersFrame frame)
-    {
-        Stream.Listener listener = stream.getListener();
-        if (listener == null)
-            return;
-        try
-        {
-            listener.onHeaders(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Failure while notifying listener {}", listener, x);
-        }
-    }
-
     protected static boolean isClientStream(int streamId)
     {
         // Client-initiated stream ids are odd.
@@ -2281,7 +2266,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         protected boolean onExpired(HTTP2Stream stream)
         {
-            stream.onIdleExpired(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
             return false;
         }
     }

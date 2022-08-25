@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -47,7 +47,6 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.hpack.internal.AuthorityHttpField;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Connection;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -55,23 +54,27 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ConnectHandler;
+import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -83,9 +86,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProxyWithDynamicTransportTest
+public class ForwardProxyWithDynamicTransportTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ProxyWithDynamicTransportTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ForwardProxyWithDynamicTransportTest.class);
 
     private Server server;
     private ServerConnector serverConnector;
@@ -160,21 +163,24 @@ public class ProxyWithDynamicTransportTest
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
         proxyTLSConnector = new ServerConnector(proxy, 1, 1, ssl, alpn, h2, h1, h2c);
         proxy.addConnector(proxyTLSConnector);
-
         proxy.setHandler(connectHandler);
-        ServletContextHandler context = new ServletContextHandler(connectHandler, "/");
-        ServletHolder holder = new ServletHolder(new AsyncProxyServlet()
+        connectHandler.setHandler(new ProxyHandler.Forward()
         {
             @Override
-            protected HttpClient newHttpClient(ClientConnector clientConnector)
+            protected HttpClient newHttpClient()
             {
+                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                proxyClientThreads.setName("proxy-client");
+                ClientConnector proxyClientConnector = new ClientConnector();
+                proxyClientConnector.setSelectors(1);
+                proxyClientConnector.setExecutor(proxyClientThreads);
+                proxyClientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
                 ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
-                HTTP2Client http2Client = new HTTP2Client(clientConnector);
-                ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
-                return new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, http2));
+                ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client);
+                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, h1, http2));
             }
         });
-        context.addServlet(holder, "/*");
         proxy.start();
         LOG.info("Started proxy on :{} and :{}", proxyConnector.getLocalPort(), proxyTLSConnector.getLocalPort());
     }
@@ -195,17 +201,14 @@ public class ProxyWithDynamicTransportTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
-        if (server != null)
-            server.stop();
-        if (proxy != null)
-            proxy.stop();
-        if (client != null)
-            client.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(proxy);
+        LifeCycle.stop(server);
     }
 
-    private static java.util.stream.Stream<Arguments> testParams()
+    public static java.util.stream.Stream<Arguments> proxyMatrix()
     {
         var h1 = List.of("http/1.1");
         var h2c = List.of("h2c");
@@ -220,35 +223,38 @@ public class ProxyWithDynamicTransportTest
             Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_2, false),
             Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_2, true),
             Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_2, true),
+            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_2, true)
             // HTTP/2 Proxy with HTTP/1.1 Server.
-            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
-            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
-            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
+// TODO: re-enable when HTTP/2 tunnel support is implemented
+//            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
+//            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
+//            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
+//            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
+//            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
+//            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
             // HTTP/2 Proxy with HTTP/2 Server.
-            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
-            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
-            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
-            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
+// TODO: re-enable when HTTP/2 tunnel support is implemented
+//            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
+//            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
+//            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
+//            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
+//            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
+//            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
         );
     }
 
     @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
-    @MethodSource("testParams")
+    @MethodSource("proxyMatrix")
     public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
-        start(new EmptyServerHandler()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
+                callback.succeeded();
             }
         });
 
@@ -276,7 +282,7 @@ public class ProxyWithDynamicTransportTest
 
         List<Destination> destinations = client.getDestinations().stream()
             .filter(d -> d.getPort() == serverPort)
-            .collect(Collectors.toList());
+            .toList();
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
@@ -284,6 +290,7 @@ public class ProxyWithDynamicTransportTest
     }
 
     @Test
+    @Disabled("re-enable when HTTP/2 tunnel support is implemented")
     public void testHTTP2TunnelClosedByClient() throws Exception
     {
         start(new EmptyServerHandler());
@@ -310,7 +317,7 @@ public class ProxyWithDynamicTransportTest
 
         List<Destination> destinations = client.getDestinations().stream()
             .filter(d -> d.getPort() == serverPort)
-            .collect(Collectors.toList());
+            .toList();
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
@@ -319,7 +326,7 @@ public class ProxyWithDynamicTransportTest
         List<HTTP2Connection> serverConnections = proxyConnector.getConnectedEndPoints().stream()
             .map(EndPoint::getConnection)
             .map(HTTP2Connection.class::cast)
-            .collect(Collectors.toList());
+            .toList();
         assertEquals(1, serverConnections.size());
         assertTrue(serverConnections.get(0).getSession().getStreams().isEmpty());
     }
@@ -349,6 +356,7 @@ public class ProxyWithDynamicTransportTest
     }
 
     @Test
+    @Disabled("re-enable when HTTP/2 tunnel support is implemented")
     public void testHTTP2TunnelHardClosedByProxy() throws Exception
     {
         startServer(new EmptyServerHandler());
@@ -356,10 +364,11 @@ public class ProxyWithDynamicTransportTest
         startProxy(new ConnectHandler()
         {
             @Override
-            protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
             {
-                jettyRequest.getHttpChannel().getEndPoint().close();
+                request.getConnectionMetaData().getConnection().getEndPoint().close();
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
         startClient();
@@ -384,7 +393,7 @@ public class ProxyWithDynamicTransportTest
 
         List<Destination> destinations = client.getDestinations().stream()
             .filter(d -> d.getPort() == proxyPort)
-            .collect(Collectors.toList());
+            .toList();
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
@@ -392,6 +401,7 @@ public class ProxyWithDynamicTransportTest
     }
 
     @Test
+    @Disabled("re-enable when HTTP/2 tunnel support is implemented")
     public void testHTTP2TunnelResetByClient() throws Exception
     {
         startServer(new EmptyServerHandler());
@@ -429,10 +439,10 @@ public class ProxyWithDynamicTransportTest
         startClient();
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener(), sessionPromise);
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener() {}, sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
-        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.EMPTY, null);
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(serverAddress), null, HttpFields.EMPTY, null);
         HeadersFrame frame = new HeadersFrame(connect, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch tunnelLatch = new CountDownLatch(1);
@@ -445,14 +455,15 @@ public class ProxyWithDynamicTransportTest
                 MetaData.Response response = (MetaData.Response)frame.getMetaData();
                 if (response.getStatus() == HttpStatus.OK_200)
                     tunnelLatch.countDown();
+                stream.demand();
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callback.succeeded();
-                ByteBuffer data = frame.getData();
-                String response = BufferUtil.toString(data, StandardCharsets.UTF_8);
+                Stream.Data data = stream.readData();
+                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
             }
@@ -462,8 +473,8 @@ public class ProxyWithDynamicTransportTest
 
         // Tunnel is established, send a HTTP/1.1 request.
         String h1 = "GET / HTTP/1.1\r\n" +
-            "Host: " + serverAddress + "\r\n" +
-            "\r\n";
+                    "Host: " + serverAddress + "\r\n" +
+                    "\r\n";
         stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
@@ -473,6 +484,7 @@ public class ProxyWithDynamicTransportTest
     }
 
     @Test
+    @Disabled("re-enable when HTTP/2 tunnel support is implemented")
     public void testHTTP2TunnelProxyStreamTimeout() throws Exception
     {
         startServer(new EmptyServerHandler());
@@ -514,10 +526,10 @@ public class ProxyWithDynamicTransportTest
         ((HTTP2CServerConnectionFactory)h2c).setStreamIdleTimeout(streamIdleTimeout);
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener(), sessionPromise);
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener() {}, sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
-        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.EMPTY, null);
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(serverAddress), null, HttpFields.EMPTY, null);
         HeadersFrame frame = new HeadersFrame(connect, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch tunnelLatch = new CountDownLatch(1);
@@ -531,22 +543,24 @@ public class ProxyWithDynamicTransportTest
                 MetaData.Response response = (MetaData.Response)frame.getMetaData();
                 if (response.getStatus() == HttpStatus.OK_200)
                     tunnelLatch.countDown();
+                stream.demand();
             }
 
             @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
+            public void onDataAvailable(Stream stream)
             {
-                callback.succeeded();
-                ByteBuffer data = frame.getData();
-                String response = BufferUtil.toString(data, StandardCharsets.UTF_8);
+                Stream.Data data = stream.readData();
+                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
             }
 
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
                 resetLatch.countDown();
+                callback.succeeded();
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
@@ -554,8 +568,8 @@ public class ProxyWithDynamicTransportTest
 
         // Tunnel is established, send a HTTP/1.1 request.
         String h1 = "GET / HTTP/1.1\r\n" +
-            "Host: " + serverAddress + "\r\n" +
-            "\r\n";
+                    "Host: " + serverAddress + "\r\n" +
+                    "\r\n";
         stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 

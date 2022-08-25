@@ -230,9 +230,10 @@ public class HTTP2Test extends AbstractTest
             {
                 Stream.Data data = stream.readData();
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         streamCompletable.thenCompose(stream ->
@@ -285,9 +286,10 @@ public class HTTP2Test extends AbstractTest
                 {
                     Stream.Data data = stream.readData();
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         latch.countDown();
+                    else
+                        stream.demand();
                 }
             });
         }
@@ -555,7 +557,6 @@ public class HTTP2Test extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        stream.demand();
                         if (data.frame().isEndStream())
                         {
                             completable.thenRun(() ->
@@ -563,6 +564,10 @@ public class HTTP2Test extends AbstractTest
                                 DataFrame endFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
                                 stream.data(endFrame, Callback.NOOP);
                             });
+                        }
+                        else
+                        {
+                            stream.demand();
                         }
                     }
                 };
@@ -582,9 +587,10 @@ public class HTTP2Test extends AbstractTest
             {
                 Stream.Data data = stream.readData();
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     completeLatch.countDown();
+                else
+                    stream.demand();
             }
         });
         Stream stream = completable.get(5, TimeUnit.SECONDS);
@@ -876,12 +882,15 @@ public class HTTP2Test extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        stream.demand();
                         dataLatch.countDown();
                         if (data.frame().isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.demand();
                         }
                     }
                 };
