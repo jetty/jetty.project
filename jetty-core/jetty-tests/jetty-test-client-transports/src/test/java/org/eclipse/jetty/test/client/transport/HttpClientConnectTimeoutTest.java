@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class HttpClientConnectTimeoutTest extends AbstractTest
 {
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoUnixDomain")
     public void testConnectTimeout(Transport transport) throws Exception
     {
         String host = "10.255.255.1";
@@ -58,7 +58,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoUnixDomain")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         String host = "10.255.255.1";
@@ -85,7 +85,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoUnixDomain")
     public void retryAfterConnectTimeout(Transport transport) throws Exception
     {
         String host = "10.255.255.1";

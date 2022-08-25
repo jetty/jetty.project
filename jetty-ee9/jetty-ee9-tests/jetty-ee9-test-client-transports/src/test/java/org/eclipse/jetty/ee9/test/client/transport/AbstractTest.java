@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.client.transport;
+package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -19,10 +19,13 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -37,10 +40,8 @@ import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -64,6 +65,7 @@ public class AbstractTest
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;
     protected AbstractConnector connector;
+    protected ServletContextHandler servletContextHandler;
     protected HttpClient client;
     protected Path unixDomainPath;
 
@@ -72,9 +74,9 @@ public class AbstractTest
         return List.of(Transport.values());
     }
 
-    public static List<Transport> transportsNoUnixDomain()
+    public static List<Transport> transportsNoFCGI()
     {
-        return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.UNIX_DOMAIN)));
+        return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.FCGI)));
     }
 
     @AfterEach
@@ -84,19 +86,19 @@ public class AbstractTest
         LifeCycle.stop(server);
     }
 
-    protected void start(Transport transport, Handler handler) throws Exception
+    protected void start(Transport transport, HttpServlet servlet) throws Exception
     {
-        startServer(transport, handler);
+        startServer(transport, servlet);
         startClient(transport);
     }
 
-    protected void startServer(Transport transport, Handler handler) throws Exception
+    protected void startServer(Transport transport, HttpServlet servlet) throws Exception
     {
-        prepareServer(transport, handler);
+        prepareServer(transport, servlet);
         server.start();
     }
 
-    protected void prepareServer(Transport transport, Handler handler) throws Exception
+    protected void prepareServer(Transport transport, HttpServlet servlet) throws Exception
     {
         if (transport == Transport.UNIX_DOMAIN)
         {
@@ -110,7 +112,12 @@ public class AbstractTest
             server = newServer();
         connector = newConnector(transport, server);
         server.addConnector(connector);
-        server.setHandler(handler);
+        servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/");
+        ServletHolder holder = new ServletHolder(servlet);
+        holder.setAsyncSupported(true);
+        servletContextHandler.addServlet(holder, "/*");
+        server.setHandler(servletContextHandler);
     }
 
     protected Server newServer()
@@ -143,56 +150,56 @@ public class AbstractTest
     public AbstractConnector newConnector(Transport transport, Server server)
     {
         return switch (transport)
-        {
-            case HTTP:
-            case HTTPS:
-            case H2C:
-            case H2:
-            case FCGI:
-                yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-            case H3:
-                yield new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
-            case UNIX_DOMAIN:
-                UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-                connector.setUnixDomainPath(unixDomainPath);
-                yield connector;
-        };
+            {
+                case HTTP:
+                case HTTPS:
+                case H2C:
+                case H2:
+                case FCGI:
+                    yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
+                case H3:
+                    yield new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
+                case UNIX_DOMAIN:
+                    UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
+                    connector.setUnixDomainPath(unixDomainPath);
+                    yield connector;
+            };
     }
 
     protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
     {
         List<ConnectionFactory> list = switch (transport)
-        {
-            case HTTP, UNIX_DOMAIN -> List.of(new HttpConnectionFactory(httpConfig));
-            case HTTPS ->
             {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
-                yield List.of(ssl, http);
-            }
-            case H2C ->
-            {
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
-            }
-            case H2 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
-                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
-                yield List.of(ssl, alpn, h2);
-            }
-            case H3 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
-            }
-            case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
-        };
+                case HTTP, UNIX_DOMAIN -> List.of(new HttpConnectionFactory(httpConfig));
+                case HTTPS ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+                    SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
+                    yield List.of(ssl, http);
+                }
+                case H2C ->
+                {
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
+                }
+                case H2 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+                    ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
+                    SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
+                    yield List.of(ssl, alpn, h2);
+                }
+                case H3 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
+                }
+                case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
+            };
         return list.toArray(ConnectionFactory[]::new);
     }
 
@@ -270,20 +277,6 @@ public class AbstractTest
         }
     }
 
-    protected void setMaxRequestsPerConnection(int maxRequestsPerConnection)
-    {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
-        if (h2 != null)
-        {
-            h2.setMaxConcurrentStreams(maxRequestsPerConnection);
-        }
-        else
-        {
-            if (connector instanceof QuicServerConnector)
-                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
-        }
-    }
-
     public enum Transport
     {
         HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
@@ -291,19 +284,10 @@ public class AbstractTest
         public boolean isSecure()
         {
             return switch (this)
-            {
-                case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
-                case HTTPS, H2, H3 -> true;
-            };
-        }
-
-        public boolean isMultiplexed()
-        {
-            return switch (this)
-            {
-                case HTTP, HTTPS, FCGI, UNIX_DOMAIN -> false;
-                case H2C, H2, H3 -> true;
-            };
+                {
+                    case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
+                    case HTTPS, H2, H3 -> true;
+                };
         }
     }
 }

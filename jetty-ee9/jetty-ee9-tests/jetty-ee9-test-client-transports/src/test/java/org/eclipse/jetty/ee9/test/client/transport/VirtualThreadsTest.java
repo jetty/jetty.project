@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -36,29 +36,22 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledForJreRange(max = JRE.JAVA_18)
-public class VirtualThreadsTest extends AbstractTest<TransportScenario>
+public class VirtualThreadsTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testServletInvokedOnVirtualThread(Transport transport) throws Exception
     {
         // No virtual thread support in FCGI server-side.
         Assumptions.assumeTrue(transport != Transport.FCGI);
 
-        init(transport);
-        scenario.prepareServer(new HttpServlet()
+        prepareServer(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -67,13 +60,13 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
             }
         });
-        ThreadPool threadPool = scenario.server.getThreadPool();
+        ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
             ((VirtualThreads.Configurable)threadPool).setUseVirtualThreads(true);
-        scenario.server.start();
-        scenario.startClient();
+        server.start();
+        startClient(transport);
 
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -81,15 +74,14 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testServletCallbacksInvokedOnVirtualThread(Transport transport) throws Exception
     {
         // No virtual thread support in FCGI server-side.
         Assumptions.assumeTrue(transport != Transport.FCGI);
 
-        init(transport);
         byte[] data = new byte[128 * 1024 * 1024];
-        scenario.prepareServer(new HttpServlet()
+        prepareServer(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -148,15 +140,15 @@ public class VirtualThreadsTest extends AbstractTest<TransportScenario>
                 });
             }
         });
-        ThreadPool threadPool = scenario.server.getThreadPool();
+        ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
             ((VirtualThreads.Configurable)threadPool).setUseVirtualThreads(true);
-        scenario.server.start();
-        scenario.startClient();
+        server.start();
+        startClient(transport);
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger length = new AtomicInteger();
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
             .body(new StringRequestContent("hello"))
             .onResponseContent((response, content) -> length.addAndGet(content.remaining()))

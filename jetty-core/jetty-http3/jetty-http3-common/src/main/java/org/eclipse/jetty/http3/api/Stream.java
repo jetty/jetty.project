@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -87,10 +88,11 @@ public interface Stream
     public Stream.Data readData();
 
     /**
-     * <p>Causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client)}
+     * <p>Demands more {@code DATA} frames for this stream.</p>
+     * <p>Calling this method causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client)}
      * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server)}
      * on the server, to be invoked, possibly at a later time, when the stream
-     * has data to be read.</p>
+     * has data to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
      * outstanding demand to invoke {@code onDataAvailable(Stream)}
      * is a no-operation.</p>
@@ -98,8 +100,6 @@ public interface Stream
      * {@code onDataAvailable(Stream)}, unless another thread
      * that must invoke {@code onDataAvailable(Stream)}
      * notices the outstanding demand first.</p>
-     * <p>When all bytes have been read (via {@link #readData()}), further
-     * invocations of this method are a no-operation.</p>
      * <p>It is always guaranteed that invoking this method from within
      * {@code onDataAvailable(Stream)} will not cause a
      * {@link StackOverflowError}.</p>
@@ -151,6 +151,7 @@ public interface Stream
              */
             public default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
+                stream.demand();
             }
 
             /**
@@ -369,6 +370,8 @@ public interface Stream
      */
     public abstract static class Data implements Retainable
     {
+        public static final Data EOF = new EOFData();
+
         private final DataFrame frame;
 
         public Data(DataFrame frame)
@@ -397,6 +400,26 @@ public interface Stream
         public String toString()
         {
             return String.format("%s[%s]", getClass().getSimpleName(), frame);
+        }
+
+        private static class EOFData extends Data
+        {
+            public EOFData()
+            {
+                super(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
+            }
+
+            @Override
+            public void retain()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return true;
+            }
         }
     }
 }

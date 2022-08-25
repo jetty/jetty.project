@@ -45,8 +45,8 @@ public class HttpGenerator
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 
     private static final byte[] __colon_space = new byte[]{':', ' '};
-    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, null, -1);
-    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, null, -1);
+    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, HttpFields.EMPTY, -1);
+    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, HttpFields.EMPTY, -1);
     public static final MetaData.Response RESPONSE_500_INFO =
         new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
 

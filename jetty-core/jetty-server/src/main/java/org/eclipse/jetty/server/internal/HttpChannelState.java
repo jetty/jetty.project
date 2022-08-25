@@ -630,9 +630,10 @@ public class HttpChannelState implements HttpChannel, Components
                 // Customize before accepting.
                 HttpConfiguration configuration = getHttpConfiguration();
 
+                HttpFields.Mutable responseHeaders = request._response.getHeaders();
                 for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
                 {
-                    Request next = customizer.customize(request, ((Response)request._response).getHeaders());
+                    Request next = customizer.customize(customized, responseHeaders);
                     customized = next == null ? customized : next;
                 }
 

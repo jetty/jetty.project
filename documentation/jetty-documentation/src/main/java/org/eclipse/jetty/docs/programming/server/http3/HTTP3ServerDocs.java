@@ -205,8 +205,11 @@ public class HTTP3ServerDocs
                             {
                                 // Consume the request content.
                                 data.release();
+
                                 if (data.isLast())
                                     respond(stream, request);
+                                else
+                                    stream.demand();
                             }
                         }
                     };

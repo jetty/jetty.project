@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.client;
+package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,25 +25,18 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class RequestReaderTest extends AbstractTest<TransportScenario>
+public class RequestReaderTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRecyclingWhenUsingReader(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new HttpServlet()
+        start(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -61,7 +54,7 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
             }
         });
 
-        ContentResponse response1 = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response1 = client.newRequest(newURI(transport))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
@@ -69,7 +62,7 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
 
         // Send a 2nd request to make sure recycling works.
-        ContentResponse response2 = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response2 = client.newRequest(newURI(transport))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))

@@ -91,9 +91,10 @@ public class ConscryptHTTP2ClientTest
                     Stream.Data data = stream.readData();
                     System.err.println(data);
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         latch.countDown();
+                    else
+                        stream.demand();
                 }
             });
 

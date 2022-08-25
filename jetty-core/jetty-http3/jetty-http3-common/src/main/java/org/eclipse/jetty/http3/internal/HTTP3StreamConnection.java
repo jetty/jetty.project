@@ -51,7 +51,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private boolean dataStalled;
     private DataFrame dataFrame;
     private boolean dataLast;
-    private boolean noData;
+    private boolean hasNetworkData;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
@@ -191,11 +191,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("reading data on {}", this);
 
+            if (dataLast)
+                return Stream.Data.EOF;
+
             tryAcquireBuffer();
 
-            switch (parseAndFill(false))
+            return switch (parseAndFill(false))
             {
-                case FRAME:
+                case FRAME ->
                 {
                     if (parserDataMode)
                     {
@@ -203,22 +206,22 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         dataFrame = null;
                         if (LOG.isDebugEnabled())
                             LOG.debug("read data {} on {}", frame, this);
+                        dataLast = frame.isLast();
                         buffer.retain();
-                        // Store in a local variable so that the lambda captures the right buffer.
-                        RetainableByteBuffer current = buffer;
+                        StreamData data = new StreamData(frame, buffer);
                         // Release the network buffer here (if empty), since the application may
                         // not be reading more bytes, to avoid to keep around a consumed buffer.
                         tryReleaseBuffer(false);
-                        return new StreamData(frame, current);
+                        yield data;
                     }
                     else
                     {
                         // Not anymore in data mode, so it's a trailer frame.
                         tryReleaseBuffer(false);
-                        return null;
+                        yield null;
                     }
                 }
-                case MODE_SWITCH:
+                case MODE_SWITCH ->
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("switching to parserDataMode=false on {}", this);
@@ -226,20 +229,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     parserDataMode = false;
                     parser.setDataMode(false);
                     tryReleaseBuffer(false);
-                    return null;
+                    yield null;
                 }
-                case NO_FRAME:
+                case NO_FRAME ->
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("read no data on {}", this);
                     tryReleaseBuffer(false);
-                    return null;
+                    yield null;
                 }
-                default:
-                {
-                    throw new IllegalStateException();
-                }
-            }
+            };
         }
         catch (Throwable x)
         {
@@ -255,9 +254,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         boolean hasData;
         boolean process = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            hasData = !noData;
+            hasData = hasNetworkData;
             dataDemand = true;
             if (dataStalled && hasData)
             {
@@ -275,7 +274,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public boolean hasDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return dataDemand;
         }
@@ -283,7 +282,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private void cancelDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             dataDemand = false;
         }
@@ -291,17 +290,17 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private boolean isStalled()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return dataStalled;
         }
     }
 
-    private void setNoData(boolean noData)
+    private void setHasNetworkData(boolean hasNetworkData)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            this.noData = noData;
+            this.hasNetworkData = hasNetworkData;
         }
     }
 
@@ -310,15 +309,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         while (true)
         {
             boolean process = true;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("processing demand={}, last={} fillInterested={} on {}", dataDemand, dataLast, isFillInterested(), this);
                 if (dataDemand)
                 {
-                    // Do not process if the last frame was already
-                    // notified, or if there is demand but no data.
-                    if (dataLast || isFillInterested())
+                    // Do not process if there is demand but no data.
+                    if (isFillInterested())
                         process = false;
                     else
                         dataDemand = false;
@@ -370,7 +368,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, buffer);
 
-            setNoData(false);
+            // Assume there is network data until proven otherwise.
+            setHasNetworkData(true);
 
             while (true)
             {
@@ -411,7 +410,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         return MessageParser.Result.FRAME;
                     }
 
-                    setNoData(true);
+                    // Remember that there is no network data so that
+                    // we may call fillInterested() from demand().
+                    setHasNetworkData(false);
                     if (setFillInterest)
                         fillInterested();
                 }
@@ -522,10 +523,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 throw new IllegalStateException();
             dataFrame = frame;
             if (frame.isLast())
-            {
-                dataLast = true;
                 shutdownInput();
-            }
             super.onData(streamId, frame);
         }
 

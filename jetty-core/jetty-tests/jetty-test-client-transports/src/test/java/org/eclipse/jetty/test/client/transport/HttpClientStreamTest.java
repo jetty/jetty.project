@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -96,7 +97,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 response.setStatus(200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                response.write(false, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                Content.Sink.write(response, false, null);
 
                 Content.Source.consumeAll(request);
 
@@ -211,12 +212,12 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Say we want to send this much...
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2 * data.length);
                 // ...but write only half...
-                response.write(false, ByteBuffer.wrap(data), Callback.NOOP);
+                Content.Sink.write(response, false, ByteBuffer.wrap(data));
                 // ...then shutdown output
                 request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
                 callback.succeeded();
@@ -286,10 +287,10 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 contextRef.set(new HandlerContext(request, response, callback));
-                response.write(false, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                Content.Sink.write(response, false, null);
             }
         });
 
@@ -336,10 +337,10 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
-                response.write(false, ByteBuffer.wrap(chunk1), Callback.NOOP);
+                Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
             }
         });
@@ -493,7 +494,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.write(false, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                Content.Sink.write(response, false, null);
 
                 try
                 {
@@ -536,7 +537,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                response.write(false, ByteBuffer.wrap(data1), Callback.NOOP);
+                Content.Sink.write(response, false, ByteBuffer.wrap(data1));
 
                 try
                 {
@@ -949,6 +950,7 @@ public class HttpClientStreamTest extends AbstractTest
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 serverLatch.countDown();
+                // Do not complete the callback.
             }
         });
 
@@ -1069,6 +1071,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 if (request.getPathInContext().startsWith("/303"))
                     org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "/200");
+                callback.succeeded();
             }
         });
 

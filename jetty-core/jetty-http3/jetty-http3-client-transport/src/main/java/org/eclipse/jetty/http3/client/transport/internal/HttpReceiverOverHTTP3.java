@@ -34,8 +34,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
 
-    private volatile boolean notifySuccess;
-
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
@@ -58,10 +56,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        if (notifySuccess)
-            responseSuccess(exchange);
-        else
-            getHttpChannel().getStream().demand();
+        getHttpChannel().getStream().demand();
     }
 
     @Override
@@ -86,7 +81,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
             // TODO: add support for HttpMethod.CONNECT.
 
-            notifySuccess = frame.isLast();
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -116,16 +110,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             ByteBuffer byteBuffer = data.getByteBuffer();
             if (byteBuffer.hasRemaining())
             {
-                if (data.isLast())
-                    notifySuccess = true;
-
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
                     if (responseFailure(x))
                         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                 });
-
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
                 {
@@ -164,7 +154,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
-        responseSuccess(exchange);
     }
 
     @Override
@@ -181,12 +170,5 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
         responseFailure(failure);
-    }
-
-    @Override
-    protected void reset()
-    {
-        super.reset();
-        notifySuccess = false;
     }
 }

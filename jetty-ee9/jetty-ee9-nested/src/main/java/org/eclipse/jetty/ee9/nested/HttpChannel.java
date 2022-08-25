@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +43,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -99,6 +101,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private org.eclipse.jetty.server.Request _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
+    private Supplier<HttpFields> _responseTrailers;
 
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
@@ -806,12 +809,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean isExpecting100Continue()
     {
-        return false;
+        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
     }
 
     public boolean isExpecting102Processing()
     {
-        return false;
+        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.PROCESSING.asString());
     }
 
     @Override
@@ -1030,9 +1033,25 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _coreResponse.setStatus(response.getStatus());
             _coreResponse.getHeaders().add(response.getFields());
-            // TODO trailer stuff?
+            _responseTrailers = response.getTrailerSupplier();
+            if (_responseTrailers != null)
+                _coreResponse.getOrCreateTrailers();
         }
-        _coreResponse.write(complete, content, callback);
+        if (_responseTrailers == null || !complete)
+        {
+            _coreResponse.write(complete, content, callback);
+        }
+        else
+        {
+            _coreResponse.write(false, content, new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
+                {
+                    _coreResponse.writeTrailers(new Trailers(_responseTrailers.get()), getCallback());
+                }
+            });
+        }
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException

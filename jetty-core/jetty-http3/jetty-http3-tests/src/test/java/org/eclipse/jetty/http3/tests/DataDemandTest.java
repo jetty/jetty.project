@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -32,7 +33,12 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +46,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -299,12 +306,15 @@ public class DataDemandTest extends AbstractClientServerTest
                     {
                         onDataAvailableCalls.incrementAndGet();
                         Stream.Data data = stream.readData();
-                        if (data != null)
+                        if (data == null)
                         {
-                            if (dataRead.addAndGet(data.getByteBuffer().remaining()) == dataLength)
-                                serverDataLatch.countDown();
+                            stream.demand();
+                            return;
                         }
-                        stream.demand();
+                        if (dataRead.addAndGet(data.getByteBuffer().remaining()) == dataLength)
+                            serverDataLatch.countDown();
+                        else
+                            stream.demand();
                     }
 
                     @Override
@@ -362,7 +372,10 @@ public class DataDemandTest extends AbstractClientServerTest
                             // Store the Data away to be used later.
                             datas.add(data);
                             if (data.isLast())
+                            {
                                 serverDataLatch.countDown();
+                                return;
+                            }
                         }
                     }
                 };
@@ -411,7 +424,8 @@ public class DataDemandTest extends AbstractClientServerTest
                         Stream.Data data = stream.readData();
                         if (data != null && data.isLast())
                             serverDataLatch.countDown();
-                        stream.demand();
+                        else
+                            stream.demand();
                     }
                 };
             }
@@ -583,5 +597,58 @@ public class DataDemandTest extends AbstractClientServerTest
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
 
         assertTrue(lastDataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDemandAfterEOF() throws Exception
+    {
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, true, "hello", callback);
+            }
+        });
+
+        Session.Client session = newSession(new Session.Client.Listener() {});
+
+        CountDownLatch latch = new CountDownLatch(1);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
+        session.newRequest(request, new Stream.Client.Listener()
+        {
+            private int dataCalls;
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                Stream.Data data = stream.readData();
+                if (data == null && dataCalls == 0)
+                {
+                    stream.demand();
+                    return;
+                }
+
+                if (++dataCalls == 1)
+                {
+                    String content = StandardCharsets.UTF_8.decode(data.getByteBuffer()).toString();
+                    assertEquals("hello", content);
+                    data.release();
+                    assertTrue(data.isLast());
+
+                    // Demand one more time, we should get an EOF.
+                    stream.demand();
+                }
+                else
+                {
+                    assertNotNull(data);
+                    assertTrue(data.isLast());
+                    assertEquals(0, data.getByteBuffer().remaining());
+                    latch.countDown();
+                }
+            }
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

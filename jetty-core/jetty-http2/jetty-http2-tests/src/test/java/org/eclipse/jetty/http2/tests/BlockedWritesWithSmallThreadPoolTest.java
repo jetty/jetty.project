@@ -142,9 +142,10 @@ public class BlockedWritesWithSmallThreadPoolTest
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         clientDataLatch.countDown();
+                    else
+                        stream.demand();
                 }
                 catch (InterruptedException x)
                 {
@@ -203,11 +204,14 @@ public class BlockedWritesWithSmallThreadPoolTest
                             // to cause the client to TCP congest.
                             serverBlockLatch.await(5, SECONDS);
                             data.release();
-                            stream.demand();
                             if (data.frame().isEndStream())
                             {
                                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
                             }
                         }
                         catch (InterruptedException x)
