@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -26,7 +27,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.DemandingMessageHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class MessageHandlerTest
+public class DemandingMessageHandlerTest
 {
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     // Testing with 4 byte UTF8 character "\uD842\uDF9F"
@@ -52,7 +53,7 @@ public class MessageHandlerTest
     List<ByteBuffer> binaryMessages = new ArrayList<>();
     List<Callback> callbacks = new ArrayList<>();
     List<Frame> frames = new ArrayList<>();
-    MessageHandler handler;
+    DemandingMessageHandler handler;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -62,6 +63,7 @@ public class MessageHandlerTest
         coreSession = new CoreSession.Empty()
         {
             private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+            private final AtomicInteger demand = new AtomicInteger(0);
 
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
@@ -71,19 +73,26 @@ public class MessageHandlerTest
             }
 
             @Override
+            public void demand(long n)
+            {
+                demand.incrementAndGet();
+            }
+
+            @Override
             public ByteBufferPool getByteBufferPool()
             {
                 return byteBufferPool;
             }
         };
 
-        handler = new MessageHandler()
+        handler = new DemandingMessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)
             {
                 textMessages.add(message);
                 callbacks.add(callback);
+                getCoreSession().demand(1);
             }
 
             @Override
@@ -91,6 +100,7 @@ public class MessageHandlerTest
             {
                 binaryMessages.add(message);
                 callbacks.add(callback);
+                getCoreSession().demand(1);
             }
 
             @Override
@@ -401,31 +411,33 @@ public class MessageHandlerTest
     @Test
     public void testManyFrameBinary()
     {
-        FutureCallback callback;
-
-        callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.BINARY, false, "Hello"), callback);
-        assertThat(callback.isDone(), is(true));
+        FutureCallback callback1 = new FutureCallback();
+        handler.onFrame(new Frame(OpCode.BINARY, false, "Hello"), callback1);
+        assertThat(callback1.isDone(), is(false));
         assertThat(binaryMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
-        callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, false, " "), callback);
-        assertThat(callback.isDone(), is(true));
+        FutureCallback callback2 = new FutureCallback();
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false, " "), callback2);
+        assertThat(callback2.isDone(), is(false));
         assertThat(binaryMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
-        callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, true, "World"), callback);
-        assertThat(callback.isDone(), is(false));
+        FutureCallback callback3 = new FutureCallback();
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, "World"), callback3);
+
+        // Callbacks have been succeded.
+        assertThat(callback1.isDone(), is(true));
+        assertThat(callback2.isDone(), is(true));
+        assertThat(callback3.isDone(), is(true));
+        assertDoesNotThrow(() -> callback1.get());
+        assertDoesNotThrow(() -> callback2.get());
+        assertDoesNotThrow(() -> callback3.get());
+
         assertThat(binaryMessages.size(), is(1));
         assertThat(BufferUtil.toString(binaryMessages.get(0)), is("Hello World"));
         assertThat(callbacks.size(), is(1));
         callbacks.get(0).succeeded();
-        assertThat(callback.isDone(), is(true));
-        FutureCallback finalCallback = callback;
-        assertDoesNotThrow(() -> finalCallback.get());
-
         assertThat(frames.size(), is(0));
     }
 
@@ -469,28 +481,26 @@ public class MessageHandlerTest
     @Test
     public void testSplitBinaryTooLarge() throws Exception
     {
-        FutureCallback callback;
-
         coreSession.setMaxBinaryMessageSize(4);
         handler.onOpen(coreSession, NOOP);
 
-        callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.BINARY, false, "123"), callback);
-        assertThat(callback.isDone(), is(true));
-        assertThat(binaryMessages.size(), is(0));
-        assertThat(callbacks.size(), is(0));
-        FutureCallback finalCallback = callback;
-        assertDoesNotThrow(() -> finalCallback.get());
-
-        callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, false, "456"), callback);
-        assertThat(callback.isDone(), is(true));
+        FutureCallback callback1 = new FutureCallback();
+        handler.onFrame(new Frame(OpCode.BINARY, false, "123"), callback1);
+        assertThat(callback1.isDone(), is(false));
         assertThat(binaryMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
-        FutureCallback finalCallback1 = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback1.get());
-        assertThat(e.getCause(), instanceOf(MessageTooLargeException.class));
+        FutureCallback callback2 = new FutureCallback();
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false, "456"), callback2);
+        assertThat(callback2.isDone(), is(true));
+        assertThat(binaryMessages.size(), is(0));
+        assertThat(callbacks.size(), is(0));
+
+        Exception e1 = assertThrows(ExecutionException.class, callback1::get);
+        assertThat(e1.getCause(), instanceOf(MessageTooLargeException.class));
+
+        Exception e2 = assertThrows(ExecutionException.class, callback2::get);
+        assertThat(e2.getCause(), instanceOf(MessageTooLargeException.class));
     }
 
     @Test
@@ -526,13 +536,14 @@ public class MessageHandlerTest
     @Test
     public void testTextNotImplemented() throws Exception
     {
-        handler = new MessageHandler()
+        handler = new DemandingMessageHandler()
         {
             @Override
             protected void onBinary(ByteBuffer message, Callback callback)
             {
                 binaryMessages.add(message);
                 callbacks.add(callback);
+                getCoreSession().demand(1);
             }
         };
 
@@ -554,13 +565,14 @@ public class MessageHandlerTest
     @Test
     public void testBinaryNotImplemented() throws Exception
     {
-        handler = new MessageHandler()
+        handler = new DemandingMessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)
             {
                 textMessages.add(message);
                 callbacks.add(callback);
+                getCoreSession().demand(1);
             }
         };
 

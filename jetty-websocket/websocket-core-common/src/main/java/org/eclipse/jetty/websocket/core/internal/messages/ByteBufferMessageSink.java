@@ -77,10 +77,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 if (out == null)
                     out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
+                callback = Callback.NOOP;
             }
 
             // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
             if (frame.isFin())
             {
                 ByteBufferPool bufferPool = session.getByteBufferPool();
@@ -97,6 +97,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 }
             }
 
+            callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)

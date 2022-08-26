@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,16 +16,19 @@ package org.eclipse.jetty.websocket.core.chat;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +48,7 @@ public class ChatWebSocketClient
         this.client.start();
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
-        handler = MessageHandler.from(this::onText, null);
+        handler = messageHandlerFrom(this::onText, null);
         CoreClientUpgradeRequest request = CoreClientUpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
@@ -97,7 +100,7 @@ public class ChatWebSocketClient
         }
         LOG.debug("sending {}...", line);
 
-        handler.sendText(Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
+        TestMessageHandler.sendText(handler, Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
     }
 
     public static void main(String[] args)
@@ -132,5 +135,51 @@ public class ChatWebSocketClient
         {
             t.printStackTrace(System.err);
         }
+    }
+
+    public static MessageHandler messageHandlerFrom(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
+    {
+        return new MessageHandler()
+        {
+            @Override
+            protected void onText(String message, Callback callback)
+            {
+                if (onText == null)
+                {
+                    super.onText(message, callback);
+                    return;
+                }
+
+                try
+                {
+                    onText.accept(message);
+                    callback.succeeded();
+                }
+                catch (Throwable th)
+                {
+                    callback.failed(th);
+                }
+            }
+
+            @Override
+            protected void onBinary(ByteBuffer message, Callback callback)
+            {
+                if (onBinary == null)
+                {
+                    super.onBinary(message, callback);
+                    return;
+                }
+
+                try
+                {
+                    onBinary.accept(message);
+                    callback.succeeded();
+                }
+                catch (Throwable th)
+                {
+                    callback.failed(th);
+                }
+            }
+        };
     }
 }

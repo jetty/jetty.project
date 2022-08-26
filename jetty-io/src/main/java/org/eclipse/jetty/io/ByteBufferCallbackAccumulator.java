@@ -96,4 +96,14 @@ public class ByteBufferCallbackAccumulator
         _entries.clear();
         _length = 0;
     }
+
+    public void close()
+    {
+        for (Entry entry : _entries)
+        {
+            entry.callback.succeeded();
+        }
+        _entries.clear();
+        _length = 0;
+    }
 }

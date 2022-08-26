@@ -79,16 +79,17 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 if (out == null)
                     out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
+                callback = Callback.NOOP;
             }
 
             // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
             if (frame.isFin())
             {
                 byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
             }
 
+            callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)

@@ -19,7 +19,9 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
+import org.eclipse.jetty.websocket.core.util.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,5 +78,87 @@ public class TestMessageHandler extends MessageHandler
             LOG.debug("onBinary {}", message);
         binaryMessages.offer(message);
         callback.succeeded();
+    }
+
+    /**
+     * Send a sequence of Strings as a sequences for fragmented text frame.
+     * Sending a large message in fragments can reduce memory overheads as only a
+     * single fragment need be converted to bytes
+     *
+     * @param callback The callback to call when the send is complete
+     * @param batch    The batch mode to send the frames in.
+     * @param parts    The parts of the message.
+     */
+    public static void sendText(AbstractMessageHandler messageHandler, Callback callback, boolean batch, final String... parts)
+    {
+        if (parts == null || parts.length == 0)
+        {
+            callback.succeeded();
+            return;
+        }
+
+        if (parts.length == 1)
+        {
+            messageHandler.sendText(parts[0], callback, batch);
+            return;
+        }
+
+        new IteratingNestedCallback(callback)
+        {
+            int i = 0;
+
+            @Override
+            protected Action process() throws Throwable
+            {
+                if (i + 1 > parts.length)
+                    return Action.SUCCEEDED;
+
+                String part = parts[i++];
+                messageHandler.getCoreSession().sendFrame(new Frame(
+                    i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
+                    i == parts.length, part), this, batch);
+                return Action.SCHEDULED;
+            }
+        }.iterate();
+    }
+
+    /**
+     * Send a sequence of ByteBuffers as a sequences for fragmented text frame.
+     *
+     * @param callback The callback to call when the send is complete
+     * @param batch    The batch mode to send the frames in.
+     * @param parts    The parts of the message.
+     */
+    public static void sendBinary(AbstractMessageHandler messageHandler, Callback callback, boolean batch, final ByteBuffer... parts)
+    {
+        if (parts == null || parts.length == 0)
+        {
+            callback.succeeded();
+            return;
+        }
+
+        if (parts.length == 1)
+        {
+            messageHandler.sendBinary(parts[0], callback, batch);
+            return;
+        }
+
+        new IteratingNestedCallback(callback)
+        {
+            int i = 0;
+
+            @Override
+            protected Action process() throws Throwable
+            {
+                if (i + 1 > parts.length)
+                    return Action.SUCCEEDED;
+
+                ByteBuffer part = parts[i++];
+                messageHandler.getCoreSession().sendFrame(new Frame(
+                    i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
+                    i == parts.length, part), this, batch);
+                return Action.SCHEDULED;
+            }
+        }.iterate();
     }
 }

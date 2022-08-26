@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.MessageHandler;
 import org.eclipse.jetty.websocket.tests.AutobahnClient;
 import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;

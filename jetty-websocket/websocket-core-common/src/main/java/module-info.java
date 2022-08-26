@@ -21,6 +21,7 @@ module org.eclipse.jetty.websocket.core.common
 
     exports org.eclipse.jetty.websocket.core;
     exports org.eclipse.jetty.websocket.core.exception;
+    exports org.eclipse.jetty.websocket.core.util;
 
     exports org.eclipse.jetty.websocket.core.internal to
         org.eclipse.jetty.websocket.core.client,
