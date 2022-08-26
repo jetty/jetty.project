@@ -306,7 +306,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         {
             pending.decrementAndGet();
             if (LOG.isDebugEnabled())
-                LOG.debug("Not creating connection as pool is full, pending: {}", pending);
+                LOG.debug("Not creating connection as pool {} is full, pending: {}", pool, pending);
             return;
         }
 

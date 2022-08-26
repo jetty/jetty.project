@@ -131,8 +131,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
      */
     public Pool(StrategyType strategyType, int maxEntries, boolean cache)
     {
+        if (maxEntries < 1)
+            throw new IllegalArgumentException("maxEntries must be > 0");
         this.maxEntries = maxEntries;
-        this.strategyType = strategyType;
+        this.strategyType = Objects.requireNonNull(strategyType);
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
     }
@@ -341,14 +343,25 @@ public class Pool<T> implements AutoCloseable, Dumpable
         try (Locker.Lock l = locker.lock())
         {
             if (closed)
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("{} is closed, returning null reserved entry", this);
                 return null;
+            }
 
             // If we have no space
-            if (entries.size() >= maxEntries)
+            int entriesSize = entries.size();
+            if (entriesSize >= maxEntries)
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("{} has no space: {} >= {}, returning null reserved entry", this, entriesSize, maxEntries);
                 return null;
+            }
 
             Entry entry = newEntry();
             entries.add(entry);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("{} returning new reserved entry {}", this, entry);
             return entry;
         }
     }
@@ -546,6 +559,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public void close()
     {
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Closing {}", this);
+
         List<Entry> copy;
         try (Locker.Lock l = locker.lock())
         {
@@ -943,7 +959,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     break;
             }
 
-            int currentMaxUsageCount = maxUsage;
+            int currentMaxUsageCount = getMaxUsageCount(getPooled());
             boolean overUsed = currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
             return !(overUsed && newMultiplexCount == 0);
         }

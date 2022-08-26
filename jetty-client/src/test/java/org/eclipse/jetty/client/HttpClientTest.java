@@ -540,6 +540,40 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testRetryWithRemoveIdleDestinationsEnabled(Scenario scenario) throws Exception
+    {
+        start(scenario, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                baseRequest.setHandled(true);
+            }
+        });
+
+        client.setRemoveIdleDestinations(true);
+        client.setIdleTimeout(1000);
+        client.setMaxConnectionsPerDestination(1);
+
+        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/one")
+                .send();
+
+            Thread.sleep(150);
+
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/two")
+                .idleTimeout(100, TimeUnit.MILLISECONDS)
+                .send();
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
