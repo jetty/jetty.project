@@ -33,7 +33,9 @@ import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
  * <p>A utility implementation of FrameHandler that de-fragments text frames & binary frames into a whole messages before
  * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.</p>
  * <p>This is a demanding frame handler so flow control is by not automatic, an implementation of {@link #onText(String, Callback)}
- * and {@link #onBinary(ByteBuffer, Callback)} must call {@link CoreSession#demand(long)} to receive the next WebSocket frame.</p>
+ * and {@link #onBinary(ByteBuffer, Callback)} must call {@link CoreSession#demand(long)} to receive the next WebSocket frame.
+ * Because this is a demanding FrameHandler it can be more efficient for binary messages by avoiding copies
+ * for aggregation until the full message has been received.</p>
  */
 public class DemandingMessageHandler extends AbstractMessageHandler
 {
