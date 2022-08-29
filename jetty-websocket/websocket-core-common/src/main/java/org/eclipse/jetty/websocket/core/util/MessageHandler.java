@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
 
 /**
- * <p>A utility implementation of FrameHandler that de-fragments text frames & binary frames into a whole messages before
+ * <p>A utility implementation of FrameHandler that de-fragments text frames and binary frames into a whole messages before
  * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.</p>
  * <p>This is a demanding frame handler so flow control is by default automatic when the callback is succeeded.</p>
  */

@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A utility implementation of FrameHandler that de-fragments text frames & binary frames into a whole messages before
+ * A utility implementation of FrameHandler that de-fragments text frames and binary frames into a whole messages before
  * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.
  * This is a demanding frame handler so
  * Flow control is by default automatic, but an implementation
