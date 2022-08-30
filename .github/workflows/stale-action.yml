@@ -3,8 +3,15 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   stale:
+    permissions:
+      # for actions/stale
+      issues: write
+      pull-requests: writes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v4
