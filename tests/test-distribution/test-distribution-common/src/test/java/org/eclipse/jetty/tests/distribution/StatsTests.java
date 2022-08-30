@@ -59,7 +59,7 @@ public class StatsTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
