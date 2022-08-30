@@ -71,7 +71,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int port = distribution.freePort();
@@ -84,7 +84,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
                 run2.stop();
-                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
         }
     }
@@ -113,7 +113,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
@@ -171,7 +171,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             // Verify that --create-start-ini works
@@ -215,7 +215,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
@@ -266,7 +266,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
@@ -316,7 +316,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
             assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
 
@@ -372,7 +372,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-websocket-client-provided-webapp:war:" + jettyVersion);
@@ -429,7 +429,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-websocket-client-webapp:war:" + jettyVersion);
@@ -499,7 +499,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path logFile = distribution.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
@@ -630,7 +630,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Files.copy(Paths.get("src/test/resources/log4j2.xml"),
@@ -649,7 +649,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
                 run2.stop();
-                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
         }
     }
@@ -670,7 +670,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path julConfig = run1.getConfig().getJettyBase().resolve("resources/java-util-logging.properties");
@@ -709,7 +709,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path jettyBase = run1.getConfig().getJettyBase();
@@ -775,7 +775,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path jettyBase = run1.getConfig().getJettyBase();
@@ -830,7 +830,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, run2.getExitValue());
 
                 int port = distribution.freePort();
@@ -867,7 +867,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution1.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path jettyBase = run1.getConfig().getJettyBase();
@@ -890,7 +890,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run2 = distribution2.start(args2))
         {
-            assertTrue(run2.awaitFor(1000, TimeUnit.SECONDS));
+            assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run2.getExitValue());
 
             Path jettyBase = run2.getConfig().getJettyBase();
@@ -913,7 +913,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain-http"))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int maxUnixDomainPathLength = 108;
@@ -954,7 +954,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,exec")))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int port = distribution.freePort();
@@ -993,7 +993,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini"))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             // Override the property on the command line with the correct password.
@@ -1020,7 +1020,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             // Ensure .well-known directory exists.
@@ -1083,7 +1083,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run listConfigRun = distribution.start(List.of("--list-modules=deprecated")))
         {
-            assertTrue(listConfigRun.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(listConfigRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, listConfigRun.getExitValue());
 
             assertTrue(listConfigRun.getLogs().stream().anyMatch(log -> log.contains(description)));
@@ -1091,7 +1091,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,deprecated")))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             assertTrue(run1.getLogs().stream().anyMatch(log -> log.contains("WARN") && log.contains(reason)));

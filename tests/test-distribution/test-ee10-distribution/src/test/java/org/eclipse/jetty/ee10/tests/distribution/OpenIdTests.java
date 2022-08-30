@@ -54,7 +54,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
         OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-openid-webapp:war:" + jettyVersion);

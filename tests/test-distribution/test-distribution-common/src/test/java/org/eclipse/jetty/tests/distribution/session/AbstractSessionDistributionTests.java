@@ -85,7 +85,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
         try (JettyHomeTester.Run run1 = jettyHomeTester.start(argsStart))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." +  environment +

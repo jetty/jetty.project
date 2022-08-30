@@ -49,7 +49,7 @@ public class OsgiAppTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-felix-webapp:war:" + jettyVersion);
