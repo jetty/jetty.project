@@ -238,9 +238,7 @@ public class DataDemandTest extends AbstractClientServerTest
     @Test
     public void testHeadersNoDataThenTrailers() throws Exception
     {
-        CountDownLatch serverDataLatch = new CountDownLatch(1);
         CountDownLatch serverTrailerLatch = new CountDownLatch(1);
-        AtomicLong onDataAvailableCalls = new AtomicLong();
         start(new Session.Server.Listener()
         {
             @Override
@@ -249,18 +247,6 @@ public class DataDemandTest extends AbstractClientServerTest
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
-                    @Override
-                    public void onDataAvailable(Stream.Server stream)
-                    {
-                        onDataAvailableCalls.incrementAndGet();
-                        // Must read to EOF to trigger fill+parse of the trailer.
-                        Stream.Data data = stream.readData();
-                        assertNull(data);
-                        // It's typical to demand after null data.
-                        stream.demand();
-                        serverDataLatch.countDown();
-                    }
-
                     @Override
                     public void onTrailer(Stream.Server stream, HeadersFrame frame)
                     {
@@ -276,13 +262,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
 
-        assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
-        // Wait a little to be sure we do not spin.
-        Thread.sleep(500);
-        assertEquals(1, onDataAvailableCalls.get());
-
         assertTrue(serverTrailerLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(1, onDataAvailableCalls.get());
     }
 
     @Test
@@ -313,7 +293,7 @@ public class DataDemandTest extends AbstractClientServerTest
                         }
                         if (dataRead.addAndGet(data.getByteBuffer().remaining()) == dataLength)
                             serverDataLatch.countDown();
-                        else
+                        if (!data.isLast())
                             stream.demand();
                     }
 

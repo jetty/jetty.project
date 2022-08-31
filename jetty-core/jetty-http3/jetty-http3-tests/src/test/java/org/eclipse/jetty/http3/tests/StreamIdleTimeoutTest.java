@@ -29,7 +29,6 @@ import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,30 +59,9 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                     return new Stream.Server.Listener()
                     {
                         @Override
-                        public void onDataAvailable(Stream.Server stream)
+                        public void onFailure(Stream.Server stream, long error, Throwable failure)
                         {
-                            // When the client closes the stream, the server
-                            // may either receive an empty, last, DATA frame, or
-                            // an exception because the stream has been reset.
-                            try
-                            {
-                                Stream.Data data = stream.readData();
-                                if (data != null)
-                                {
-                                    assertTrue(data.isLast());
-                                    assertEquals(0, data.getByteBuffer().remaining());
-                                    serverLatch.countDown();
-                                }
-                                else
-                                {
-                                    stream.demand();
-                                }
-                            }
-                            catch (Exception x)
-                            {
-                                serverLatch.countDown();
-                                throw x;
-                            }
+                            serverLatch.countDown();
                         }
                     };
                 }
