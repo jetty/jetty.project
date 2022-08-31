@@ -37,6 +37,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -103,6 +104,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -570,6 +572,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .idleTimeout(100, TimeUnit.MILLISECONDS)
                 .send();
         }
+
+        // Wait for the sweeper to remove the idle HttpDestination.
+        await().atMost(10, TimeUnit.SECONDS).until(() ->
+        {
+            Collection<HttpDestination> destinations = client.getBeans(HttpDestination.class);
+            return destinations.isEmpty();
+        });
     }
 
     @ParameterizedTest

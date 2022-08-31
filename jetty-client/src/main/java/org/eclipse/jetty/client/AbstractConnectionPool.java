@@ -516,15 +516,17 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d,q=%d]",
+        return String.format("%s@%x[s=%s,c=%d/%d/%d,a=%d,i=%d,q=%d,p=%s]",
             getClass().getSimpleName(),
             hashCode(),
+            getState(),
             getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
             getActiveConnectionCount(),
             getIdleConnectionCount(),
-            destination.getQueuedRequestCount());
+            destination.getQueuedRequestCount(),
+            pool);
     }
 
     private class FutureConnection extends Promise.Completable<Connection>

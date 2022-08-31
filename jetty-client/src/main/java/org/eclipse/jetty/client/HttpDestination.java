@@ -45,14 +45,16 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
-public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
+public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
@@ -65,7 +67,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
     private final RequestTimeouts requestTimeouts;
+    private final Locker staleLock = new Locker();
     private ConnectionPool connectionPool;
+    private boolean stale;
+    private int staleCount;
 
     public HttpDestination(HttpClient client, Origin origin)
     {
@@ -104,6 +109,48 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         hostField = new HttpField(HttpHeader.HOST, host);
     }
 
+    public boolean stale()
+    {
+        try (Locker.Lock l = staleLock.lock())
+        {
+            boolean stale = this.stale;
+            if (!stale)
+                this.staleCount = 0;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stale check on {} done, result: {}", this, stale);
+            return stale;
+        }
+    }
+
+    @Override
+    public boolean sweep()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sweep check on {} in progress", this);
+        boolean remove = false;
+        try (Locker.Lock l = staleLock.lock())
+        {
+            boolean stale = exchanges.isEmpty() && connectionPool.isEmpty();
+            if (stale)
+                this.staleCount++;
+            else
+                this.staleCount = 0;
+            if (this.staleCount == 4)
+            {
+                this.stale = true;
+                remove = true;
+            }
+        }
+        if (remove)
+        {
+            getHttpClient().removeDestination(this);
+            LifeCycle.stop(this);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sweep check on {} done, result: {}", this, remove);
+        return remove;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -111,14 +158,23 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         addBean(connectionPool, true);
         super.doStart();
         Sweeper sweeper = client.getBean(Sweeper.class);
+        if (sweeper == null && getHttpClient().isRemoveIdleDestinations())
+        {
+            sweeper = new Sweeper(getHttpClient().getScheduler(), 1000L);
+            addBean(sweeper);
+        }
         if (sweeper != null && connectionPool instanceof Sweeper.Sweepable)
             sweeper.offer((Sweeper.Sweepable)connectionPool);
+        if (sweeper != null)
+            sweeper.offer(this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
         Sweeper sweeper = client.getBean(Sweeper.class);
+        if (sweeper != null)
+            sweeper.remove(this);
         if (sweeper != null && connectionPool instanceof Sweeper.Sweepable)
             sweeper.remove((Sweeper.Sweepable)connectionPool);
         super.doStop();
@@ -462,11 +518,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         boolean removed = connectionPool.remove(connection);
 
-        if (getHttpExchanges().isEmpty())
-        {
-            tryRemoveIdleDestination();
-        }
-        else if (removed)
+        if (removed)
         {
             // Process queued requests that may be waiting.
             // We may create a connection that is not
@@ -501,22 +553,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             exchange.getRequest().abort(cause);
         }
-        if (exchanges.isEmpty())
-            tryRemoveIdleDestination();
-    }
-
-    private void tryRemoveIdleDestination()
-    {
-        if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
-        {
-            // There is a race condition between this thread removing the destination
-            // and another thread queueing a request to this same destination.
-            // If this destination is removed, but the request queued, a new connection
-            // will be opened, the exchange will be executed and eventually the connection
-            // will idle timeout and be closed. Meanwhile a new destination will be created
-            // in HttpClient and will be used for other requests.
-            getHttpClient().removeDestination(this);
-        }
     }
 
     @Override
@@ -533,13 +569,23 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
+        boolean stale;
+        int staleCount;
+        try (Locker.Lock l = staleLock.lock())
+        {
+            stale = this.stale;
+            staleCount = this.staleCount;
+        }
+        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,staleCount=%d",
             HttpDestination.class.getSimpleName(),
             asString(),
             hashCode(),
             proxy == null ? "" : "(via " + proxy + ")",
+            getState(),
             getQueuedRequestCount(),
-            getConnectionPool());
+            getConnectionPool(),
+            stale,
+            staleCount);
     }
 
     /**
