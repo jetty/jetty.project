@@ -37,7 +37,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -542,18 +541,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testRetryWithRemoveIdleDestinationsEnabled(Scenario scenario) throws Exception
+    public void testRetryWithDestinationIdleTimeoutEnabled(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(scenario, new EmptyServerHandler());
 
-        client.setRemoveIdleDestinations(true);
+        client.setDestinationIdleTimeout(1000);
         client.setIdleTimeout(1000);
         client.setMaxConnectionsPerDestination(1);
 
@@ -564,21 +556,21 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .path("/one")
                 .send();
 
-            Thread.sleep(150);
+            int idleTimeout = 100;
+            Thread.sleep(idleTimeout * 2);
 
+            // After serving a request over a connection that hasn't timed out, serving a second
+            // request with a shorter idle timeout will make the connection timeout immediately
+            // after being taken out of the pool. This triggers the retry mechanism.
             client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .path("/two")
-                .idleTimeout(100, TimeUnit.MILLISECONDS)
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .send();
         }
 
         // Wait for the sweeper to remove the idle HttpDestination.
-        await().atMost(10, TimeUnit.SECONDS).until(() ->
-        {
-            Collection<HttpDestination> destinations = client.getBeans(HttpDestination.class);
-            return destinations.isEmpty();
-        });
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
     }
 
     @ParameterizedTest

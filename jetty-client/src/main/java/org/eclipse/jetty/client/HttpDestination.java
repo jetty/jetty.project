@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -70,7 +71,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final Locker staleLock = new Locker();
     private ConnectionPool connectionPool;
     private boolean stale;
-    private int staleCount;
+    private long staleTs;
+    private Sweeper idleDestinationsSweeper;
 
     public HttpDestination(HttpClient client, Origin origin)
     {
@@ -115,9 +117,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             boolean stale = this.stale;
             if (!stale)
-                this.staleCount = 0;
+                this.staleTs = 0;
             if (LOG.isDebugEnabled())
-                LOG.debug("Stale check on {} done, result: {}", this, stale);
+                LOG.debug("Stale check done with result {} on {}", stale, this);
             return stale;
         }
     }
@@ -126,16 +128,16 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     public boolean sweep()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Sweep check on {} in progress", this);
+            LOG.debug("Sweep check in progress on {}", this);
         boolean remove = false;
         try (Locker.Lock l = staleLock.lock())
         {
             boolean stale = exchanges.isEmpty() && connectionPool.isEmpty();
-            if (stale)
-                this.staleCount++;
-            else
-                this.staleCount = 0;
-            if (this.staleCount == 4)
+            if (!stale)
+            {
+                this.staleTs = System.nanoTime();
+            }
+            else if (isStaleDelayExpired())
             {
                 this.stale = true;
                 remove = true;
@@ -147,8 +149,15 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             LifeCycle.stop(this);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Sweep check on {} done, result: {}", this, remove);
+            LOG.debug("Sweep check done with result {} on {}", remove, this);
         return remove;
+    }
+
+    private boolean isStaleDelayExpired()
+    {
+        assert staleLock.isLocked();
+        long destinationIdleTimeout = TimeUnit.MILLISECONDS.toNanos(getHttpClient().getDestinationIdleTimeout());
+        return System.nanoTime() - staleTs >= destinationIdleTimeout;
     }
 
     @Override
@@ -157,26 +166,28 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         this.connectionPool = newConnectionPool(client);
         addBean(connectionPool, true);
         super.doStart();
-        Sweeper sweeper = client.getBean(Sweeper.class);
-        if (sweeper == null && getHttpClient().isRemoveIdleDestinations())
+        if (getHttpClient().getDestinationIdleTimeout() > 0)
         {
-            sweeper = new Sweeper(getHttpClient().getScheduler(), 1000L);
-            addBean(sweeper);
+            idleDestinationsSweeper = new Sweeper(getHttpClient().getScheduler(), 1000L);
+            addBean(idleDestinationsSweeper);
+            idleDestinationsSweeper.offer(this);
         }
-        if (sweeper != null && connectionPool instanceof Sweeper.Sweepable)
-            sweeper.offer((Sweeper.Sweepable)connectionPool);
-        if (sweeper != null)
-            sweeper.offer(this);
+        Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
+        if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
+            connectionPoolSweeper.offer((Sweeper.Sweepable)connectionPool);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        Sweeper sweeper = client.getBean(Sweeper.class);
-        if (sweeper != null)
-            sweeper.remove(this);
-        if (sweeper != null && connectionPool instanceof Sweeper.Sweepable)
-            sweeper.remove((Sweeper.Sweepable)connectionPool);
+        Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
+        if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
+            connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
+        if (idleDestinationsSweeper != null)
+        {
+            idleDestinationsSweeper.remove(this);
+            removeBean(idleDestinationsSweeper);
+        }
         super.doStop();
         removeBean(connectionPool);
     }
@@ -566,17 +577,29 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return origin.asString();
     }
 
+    private long getStaleDelayBeforeExpiration()
+    {
+        if (idleDestinationsSweeper == null)
+            return -1;
+        try (Locker.Lock l = staleLock.lock())
+        {
+            long destinationIdleTimeout = TimeUnit.MILLISECONDS.toNanos(getHttpClient().getDestinationIdleTimeout());
+            return TimeUnit.NANOSECONDS.toMillis(destinationIdleTimeout - (System.nanoTime() - this.staleTs));
+        }
+    }
+
+    private boolean isStale()
+    {
+        try (Locker.Lock l = staleLock.lock())
+        {
+            return this.stale;
+        }
+    }
+
     @Override
     public String toString()
     {
-        boolean stale;
-        int staleCount;
-        try (Locker.Lock l = staleLock.lock())
-        {
-            stale = this.stale;
-            staleCount = this.staleCount;
-        }
-        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,staleCount=%d",
+        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,staleDelay=%d",
             HttpDestination.class.getSimpleName(),
             asString(),
             hashCode(),
@@ -584,8 +607,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             getState(),
             getQueuedRequestCount(),
             getConnectionPool(),
-            stale,
-            staleCount);
+            isStale(),
+            getStaleDelayBeforeExpiration());
     }
 
     /**

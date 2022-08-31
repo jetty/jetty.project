@@ -73,7 +73,6 @@ public class HttpClientProxyProtocolTest
         clientThreads.setName("client");
         client = new HttpClient();
         client.setExecutor(clientThreads);
-        client.setRemoveIdleDestinations(false);
         client.start();
     }
 

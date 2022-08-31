@@ -148,7 +148,7 @@ public class HttpClient extends ContainerLifeCycle
     private boolean tcpNoDelay = true;
     private boolean strictEventOrdering = false;
     private HttpField encodingField;
-    private boolean removeIdleDestinations = false;
+    private long destinationIdleTimeout;
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
@@ -1088,13 +1088,43 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * @return the delay in ms before idle destinations should be removed
+     * @see #setDestinationIdleTimeout(long)
+     */
+    @ManagedAttribute("The delay in ms before idle destinations are removed, disabled when zero or negative")
+    public long getDestinationIdleTimeout()
+    {
+        return destinationIdleTimeout;
+    }
+
+    /**
+     * Whether destinations that have no connections (nor active nor idle) should be removed
+     * after a certain delay.
+     * <p>
+     * Applications typically make request to a limited number of destinations so keeping
+     * destinations around is not a problem for the memory or the GC.
+     * However, for applications that hit millions of different destinations (e.g. a spider
+     * bot) it would be useful to be able to remove the old destinations that won't be visited
+     * anymore and leave space for new destinations.
+     *
+     * @param destinationIdleTimeout the delay in ms before idle destinations should be removed
+     * @see org.eclipse.jetty.client.DuplexConnectionPool
+     */
+    public void setDestinationIdleTimeout(long destinationIdleTimeout)
+    {
+        this.destinationIdleTimeout = destinationIdleTimeout;
+    }
+
+    /**
      * @return whether destinations that have no connections should be removed
      * @see #setRemoveIdleDestinations(boolean)
+     * @deprecated replaced by {@link #getDestinationIdleTimeout()}
      */
+    @Deprecated
     @ManagedAttribute("Whether idle destinations are removed")
     public boolean isRemoveIdleDestinations()
     {
-        return removeIdleDestinations;
+        return destinationIdleTimeout > 0L;
     }
 
     /**
@@ -1108,10 +1138,12 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
      * @see org.eclipse.jetty.client.DuplexConnectionPool
+     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 5000 ms.
      */
+    @Deprecated
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
-        this.removeIdleDestinations = removeIdleDestinations;
+        setDestinationIdleTimeout(removeIdleDestinations ? 5000 : 0);
     }
 
     /**
