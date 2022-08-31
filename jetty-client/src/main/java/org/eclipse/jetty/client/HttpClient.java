@@ -71,12 +71,14 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.Sweeper;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
@@ -153,6 +155,7 @@ public class HttpClient extends ContainerLifeCycle
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
+    private Sweeper destinationIdleTimeoutSweeper;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -238,6 +241,21 @@ public class HttpClient extends ContainerLifeCycle
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
 
+        destinationIdleTimeoutSweeper = new Sweeper(scheduler, 1000L);
+        // Bind the start of the destinationIdleTimeoutSweeper to the scheduler's start as we cannot add the former as a bean
+        // because HttpDestination.doStart() expects to find a different sweeper by calling getBean() on the HttpClient to be
+        // used for connection pool sweeping. That sweeper cannot be used for destinationIdleTimeout sweeping, so we need to
+        // maintain a second one on the client that isn't a bean and is dedicated to that task.
+        scheduler.addLifeCycleListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarted(LifeCycle event)
+            {
+                LifeCycle.start(destinationIdleTimeoutSweeper);
+                scheduler.removeLifeCycleListener(this);
+            }
+        });
+
         if (resolver == null)
             setSocketAddressResolver(new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout()));
 
@@ -263,6 +281,8 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        LifeCycle.stop(destinationIdleTimeoutSweeper);
+
         decoderFactories.clear();
         handlers.clear();
 
@@ -316,6 +336,11 @@ public class HttpClient extends ContainerLifeCycle
     CookieManager getCookieManager()
     {
         return cookieManager;
+    }
+
+    Sweeper getDestinationIdleTimeoutSweeper()
+    {
+        return destinationIdleTimeoutSweeper;
     }
 
     /**

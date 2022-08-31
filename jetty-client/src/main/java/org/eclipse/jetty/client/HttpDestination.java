@@ -72,7 +72,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private ConnectionPool connectionPool;
     private boolean stale;
     private long activeNanos;
-    private Sweeper idleDestinationsSweeper;
 
     public HttpDestination(HttpClient client, Origin origin)
     {
@@ -127,6 +126,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public boolean sweep()
     {
+        if (getHttpClient().getDestinationIdleTimeout() <= 0L)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sweep skipped as DestinationIdleTimeout is disabled");
+            return false;
+        }
+
         if (LOG.isDebugEnabled())
             LOG.debug("Sweep check in progress on {}", this);
         boolean remove = false;
@@ -166,28 +172,19 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         this.connectionPool = newConnectionPool(client);
         addBean(connectionPool, true);
         super.doStart();
-        if (getHttpClient().getDestinationIdleTimeout() > 0)
-        {
-            idleDestinationsSweeper = new Sweeper(getHttpClient().getScheduler(), 1000L);
-            addBean(idleDestinationsSweeper);
-            idleDestinationsSweeper.offer(this);
-        }
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.offer((Sweeper.Sweepable)connectionPool);
+        getHttpClient().getDestinationIdleTimeoutSweeper().offer(this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        getHttpClient().getDestinationIdleTimeoutSweeper().remove(this);
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
-        if (idleDestinationsSweeper != null)
-        {
-            idleDestinationsSweeper.remove(this);
-            removeBean(idleDestinationsSweeper);
-        }
         super.doStop();
         removeBean(connectionPool);
     }
@@ -580,7 +577,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @ManagedAttribute("For how long this destination has been idle in ms")
     public long getIdle()
     {
-        if (idleDestinationsSweeper == null)
+        if (getHttpClient().getDestinationIdleTimeout() <= 0L)
             return -1;
         try (Locker.Lock l = staleLock.lock())
         {
