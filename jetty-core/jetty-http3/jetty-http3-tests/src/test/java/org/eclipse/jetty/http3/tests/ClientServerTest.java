@@ -317,34 +317,33 @@ public class ClientServerTest extends AbstractClientServerTest
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
         Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    clientResponseLatch.countDown();
-                    stream.demand();
-                }
+                clientResponseLatch.countDown();
+                stream.demand();
+            }
 
-                @Override
-                public void onDataAvailable(Stream.Client stream)
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                // Read data.
+                Stream.Data data = stream.readData();
+                if (data == null)
                 {
-                    // Read data.
-                    Stream.Data data = stream.readData();
-                    if (data == null)
-                    {
-                        stream.demand();
-                        return;
-                    }
-                    // Consume data.
-                    byteBuffer.put(data.getByteBuffer());
-                    data.release();
-                    if (data.isLast())
-                        clientDataLatch.countDown();
-                    else
-                        stream.demand();
+                    stream.demand();
+                    return;
                 }
-            })
-            .get(5, TimeUnit.SECONDS);
+                // Consume data.
+                byteBuffer.put(data.getByteBuffer());
+                data.release();
+                if (data.isLast())
+                    clientDataLatch.countDown();
+                else
+                    stream.demand();
+            }
+        }).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));

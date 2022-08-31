@@ -93,6 +93,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("stalling response processing, no demand after headers on {}", this);
+
+                // TODO: If frame.isLast(), calling demand() on it will kinda of make little sense.
+                //  we should go back to notifySuccessRef being set before this block (to avoid the race)
+                //  and in receive() query it to call notifySuccess().
+
             }
         }
     }

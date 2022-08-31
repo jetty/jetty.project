@@ -214,9 +214,4 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (messageFlusher.offer(endPoint, frame, callback))
             messageFlusher.iterate();
     }
-
-    public void onDataAvailable(long streamId)
-    {
-        session.onDataAvailable(streamId);
-    }
 }

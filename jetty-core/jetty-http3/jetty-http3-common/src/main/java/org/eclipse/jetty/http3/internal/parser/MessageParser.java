@@ -72,6 +72,11 @@ public class MessageParser
         return listener;
     }
 
+    public boolean isDataMode()
+    {
+        return dataMode;
+    }
+
     public void setDataMode(boolean enable)
     {
         this.dataMode = enable;
@@ -99,7 +104,7 @@ public class MessageParser
                         {
                             state = State.BODY;
                             // If we are in data mode, but we did not parse a DATA frame, bail out.
-                            if (dataMode && headerParser.getFrameType() != FrameType.DATA.type())
+                            if (isDataMode() && headerParser.getFrameType() != FrameType.DATA.type())
                                 return Result.MODE_SWITCH;
                         }
                         else

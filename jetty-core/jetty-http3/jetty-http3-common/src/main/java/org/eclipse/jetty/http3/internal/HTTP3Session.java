@@ -298,6 +298,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (failure == null)
         {
             HTTP3Stream stream = newHTTP3Stream(endPoint, local);
+            ((HTTP3StreamConnection)endPoint.getConnection()).setStream(stream);
             long idleTimeout = getStreamIdleTimeout();
             if (idleTimeout > 0)
                 stream.setIdleTimeout(idleTimeout);
@@ -463,14 +464,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             stream.onData(frame);
         else
             onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
-    }
-
-    public void onDataAvailable(long streamId)
-    {
-        HTTP3Stream stream = getStream(streamId);
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifying data available on {}", stream);
-        stream.onDataAvailable();
     }
 
     @Override
