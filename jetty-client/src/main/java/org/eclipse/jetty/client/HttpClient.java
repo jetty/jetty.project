@@ -1138,12 +1138,12 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
      * @see org.eclipse.jetty.client.DuplexConnectionPool
-     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 5000 ms.
+     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 10000 ms.
      */
     @Deprecated
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
-        setDestinationIdleTimeout(removeIdleDestinations ? 5000 : 0);
+        setDestinationIdleTimeout(removeIdleDestinations ? 10_000 : 0);
     }
 
     /**

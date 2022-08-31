@@ -71,7 +71,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final Locker staleLock = new Locker();
     private ConnectionPool connectionPool;
     private boolean stale;
-    private long staleTs;
+    private long activeNanos;
     private Sweeper idleDestinationsSweeper;
 
     public HttpDestination(HttpClient client, Origin origin)
@@ -117,7 +117,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             boolean stale = this.stale;
             if (!stale)
-                this.staleTs = 0;
+                this.activeNanos = System.nanoTime();
             if (LOG.isDebugEnabled())
                 LOG.debug("Stale check done with result {} on {}", stale, this);
             return stale;
@@ -135,7 +135,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             boolean stale = exchanges.isEmpty() && connectionPool.isEmpty();
             if (!stale)
             {
-                this.staleTs = System.nanoTime();
+                this.activeNanos = System.nanoTime();
             }
             else if (isStaleDelayExpired())
             {
@@ -157,7 +157,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         assert staleLock.isLocked();
         long destinationIdleTimeout = TimeUnit.MILLISECONDS.toNanos(getHttpClient().getDestinationIdleTimeout());
-        return System.nanoTime() - staleTs >= destinationIdleTimeout;
+        return System.nanoTime() - activeNanos >= destinationIdleTimeout;
     }
 
     @Override
@@ -577,18 +577,19 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return origin.asString();
     }
 
-    private long getStaleDelayBeforeExpiration()
+    @ManagedAttribute("For how long this destination has been idle in ms")
+    public long getIdle()
     {
         if (idleDestinationsSweeper == null)
             return -1;
         try (Locker.Lock l = staleLock.lock())
         {
-            long destinationIdleTimeout = TimeUnit.MILLISECONDS.toNanos(getHttpClient().getDestinationIdleTimeout());
-            return TimeUnit.NANOSECONDS.toMillis(destinationIdleTimeout - (System.nanoTime() - this.staleTs));
+            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - activeNanos);
         }
     }
 
-    private boolean isStale()
+    @ManagedAttribute("Whether this destinations is stale")
+    public boolean isStale()
     {
         try (Locker.Lock l = staleLock.lock())
         {
@@ -599,7 +600,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,staleDelay=%d",
+        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,idle=%d",
             HttpDestination.class.getSimpleName(),
             asString(),
             hashCode(),
@@ -608,7 +609,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             getQueuedRequestCount(),
             getConnectionPool(),
             isStale(),
-            getStaleDelayBeforeExpiration());
+            getIdle());
     }
 
     /**
