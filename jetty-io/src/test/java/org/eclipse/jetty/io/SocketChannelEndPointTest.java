@@ -274,6 +274,7 @@ public class SocketChannelEndPointTest
         }
     }
 
+    @Tag("stress")
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception

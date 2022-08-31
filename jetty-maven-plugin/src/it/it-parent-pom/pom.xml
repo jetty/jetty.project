@@ -129,6 +129,11 @@
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-maven-plugin</artifactId>
           <version>${jetty.version}</version>
+          <configuration>
+            <mavenServerConnector>
+              <reusePort>true</reusePort>
+            </mavenServerConnector>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

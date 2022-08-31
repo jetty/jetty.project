@@ -78,6 +78,31 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
+     * Attempt to resolve the real path of a Resource to potentially remove any symlinks causing the Resource to be an alias.
+     * @param resource the resource to resolve.
+     * @return a new Resource resolved to the real path of the original Resource, or the original resource if it was not an alias.
+     */
+    public static Resource resolveAlias(Resource resource)
+    {
+        if (!resource.isAlias())
+            return resource;
+
+        try
+        {
+            File file = resource.getFile();
+            if (file != null)
+                return Resource.newResource(file.toPath().toRealPath());
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("resolve alias failed", e);
+        }
+
+        return resource;
+    }
+
+    /**
      * Construct a resource from a uri.
      *
      * @param uri A URI.

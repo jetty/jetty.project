@@ -25,16 +25,16 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.12</ant.version>
-    <apache.avro.version>1.11.0</apache.avro.version>
+    <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.4</asciidoctorj.version>
+    <asciidoctorj.version>2.5.5</asciidoctorj.version>
     <asm.version>9.3</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.3.1</checkstyle.version>
+    <checkstyle.version>10.3.2</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
@@ -44,8 +44,8 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <google.errorprone.version>2.14.0</google.errorprone.version>
-    <grpc.version>1.47.0</grpc.version>
-    <gson.version>2.9.0</gson.version>
+    <grpc.version>1.48.0</grpc.version>
+    <gson.version>2.9.1</gson.version>
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
@@ -55,7 +55,7 @@
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.3</jackson.annotations.version>
     <jackson.core.version>2.13.3</jackson.core.version>
-    <jackson.databind.version>2.13.2.2</jackson.databind.version>
+    <jackson.databind.version>2.13.3</jackson.databind.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
     <jakarta.el-api.version>3.0.3</jakarta.el-api.version>
@@ -69,7 +69,7 @@
     <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
     <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
     <jakarta.xml.bind.api.version>2.3.3</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>2.3.5</jakarta.xml.bind.impl.version>
+    <jakarta.xml.bind.impl.version>2.3.6</jakarta.xml.bind.impl.version>
     <jakarta.xml.jaxws.impl.version>2.3.5</jakarta.xml.jaxws.impl.version>
     <jakarta.xml.ws.api.version>2.3.3</jakarta.xml.ws.api.version>
     <jamon.version>2.82</jamon.version>
@@ -100,13 +100,13 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
-    <junit.version>5.8.2</junit.version>
+    <junit.version>5.9.0</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.18.0</log4j2.version>
-    <logback.version>1.3.0-alpha16</logback.version>
+    <logback.version>1.3.0-beta0</logback.version>
     <mariadb.version>3.0.6</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.resolver.version>1.8.1</maven.resolver.version>
+    <maven.resolver.version>1.8.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -116,14 +116,14 @@
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.2</plexus-utils.version>
-    <slf4j.version>2.0.0-alpha6</slf4j.version>
+    <slf4j.version>2.0.0</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.17.3</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>1.19.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>1.20.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -134,23 +134,23 @@
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
-    <h2spec.maven.plugin.version>1.0.9</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.4.1</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.6</maven.bundle.plugin.version>
+    <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
+    <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.0.0-M2</maven.deploy.plugin.version>
+    <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
     <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
+    <maven.install.plugin.version>3.0.1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
@@ -158,14 +158,14 @@
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
-    <maven.remote-resources-plugin.version>1.7.0</maven.remote-resources-plugin.version>
-    <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
+    <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
+    <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
     <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.7.1.0</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.7.1.1</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.11.0</versions.maven.plugin.version>
 
     <!-- testing -->
@@ -2325,7 +2325,6 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
-                <excludedGroups>external, large-disk-resource</excludedGroups>
                 <systemPropertyVariables>
                   <env>ci</env>
                 </systemPropertyVariables>
