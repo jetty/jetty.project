@@ -131,8 +131,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
      */
     public Pool(StrategyType strategyType, int maxEntries, boolean cache)
     {
-        if (maxEntries < 1)
-            throw new IllegalArgumentException("maxEntries must be > 0");
         this.maxEntries = maxEntries;
         this.strategyType = Objects.requireNonNull(strategyType);
         this.cache = cache ? new ThreadLocal<>() : null;
