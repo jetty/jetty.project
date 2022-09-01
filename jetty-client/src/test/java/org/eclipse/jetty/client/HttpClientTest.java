@@ -103,6 +103,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -536,6 +537,41 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRetryWithDestinationIdleTimeoutEnabled(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.setIdleTimeout(1000);
+        client.setMaxConnectionsPerDestination(1);
+        client.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/one")
+                .send();
+
+            int idleTimeout = 100;
+            Thread.sleep(idleTimeout * 2);
+
+            // After serving a request over a connection that hasn't timed out, serving a second
+            // request with a shorter idle timeout will make the connection timeout immediately
+            // after being taken out of the pool. This triggers the retry mechanism.
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/two")
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
+        }
+
+        // Wait for the sweeper to remove the idle HttpDestination.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
     }
 
     @ParameterizedTest

@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.Sweeper;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
@@ -148,11 +149,12 @@ public class HttpClient extends ContainerLifeCycle
     private boolean tcpNoDelay = true;
     private boolean strictEventOrdering = false;
     private HttpField encodingField;
-    private boolean removeIdleDestinations = false;
+    private long destinationIdleTimeout;
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
+    private Sweeper destinationSweeper;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -252,7 +254,14 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         transport.setHttpClient(this);
+
         super.doStart();
+
+        if (getDestinationIdleTimeout() > 0L)
+        {
+            destinationSweeper = new Sweeper(scheduler, 1000L);
+            destinationSweeper.start();
+        }
     }
 
     private CookieManager newCookieManager()
@@ -263,6 +272,12 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        if (destinationSweeper != null)
+        {
+            destinationSweeper.stop();
+            destinationSweeper = null;
+        }
+
         decoderFactories.clear();
         handlers.clear();
 
@@ -316,6 +331,11 @@ public class HttpClient extends ContainerLifeCycle
     CookieManager getCookieManager()
     {
         return cookieManager;
+    }
+
+    Sweeper getDestinationSweeper()
+    {
+        return destinationSweeper;
     }
 
     /**
@@ -570,20 +590,27 @@ public class HttpClient extends ContainerLifeCycle
      */
     public HttpDestination resolveDestination(Origin origin)
     {
-        return destinations.computeIfAbsent(origin, o ->
+        return destinations.compute(origin, (k, v) ->
         {
-            HttpDestination newDestination = getTransport().newHttpDestination(o);
-            addManaged(newDestination);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Created {}", newDestination);
-            return newDestination;
+            if (v == null || v.stale())
+            {
+                HttpDestination newDestination = getTransport().newHttpDestination(k);
+                addManaged(newDestination);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Created {}; existing: '{}'", newDestination, v);
+                return newDestination;
+            }
+            return v;
         });
     }
 
     protected boolean removeDestination(HttpDestination destination)
     {
+        boolean removed = destinations.remove(destination.getOrigin(), destination);
         removeBean(destination);
-        return destinations.remove(destination.getOrigin(), destination);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Removed {}; result: {}", destination, removed);
+        return removed;
     }
 
     /**
@@ -1081,13 +1108,49 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * The default value is 0
+     * @return the time in ms after which idle destinations are removed
+     * @see #setDestinationIdleTimeout(long)
+     */
+    @ManagedAttribute("The time in ms after which idle destinations are removed, disabled when zero or negative")
+    public long getDestinationIdleTimeout()
+    {
+        return destinationIdleTimeout;
+    }
+
+    /**
+     * <p>
+     * Whether destinations that have no connections (nor active nor idle) and no exchanges
+     * should be removed after the specified timeout.
+     * </p>
+     * <p>
+     * If the specified {@code destinationIdleTimeout} is 0 or negative, then the destinations
+     * are not removed.
+     * </p>
+     * <p>
+     * Avoids accumulating destinations when applications (e.g. a spider bot or web crawler)
+     * hit a lot of different destinations that won't be visited again.
+     * </p>
+     *
+     * @param destinationIdleTimeout the time in ms after which idle destinations are removed
+     */
+    public void setDestinationIdleTimeout(long destinationIdleTimeout)
+    {
+        if (isStarted())
+            LOG.warn("Calling setDestinationIdleTimeout() while started has no effect");
+        this.destinationIdleTimeout = destinationIdleTimeout;
+    }
+
+    /**
      * @return whether destinations that have no connections should be removed
      * @see #setRemoveIdleDestinations(boolean)
+     * @deprecated replaced by {@link #getDestinationIdleTimeout()}
      */
+    @Deprecated
     @ManagedAttribute("Whether idle destinations are removed")
     public boolean isRemoveIdleDestinations()
     {
-        return removeIdleDestinations;
+        return destinationIdleTimeout > 0L;
     }
 
     /**
@@ -1101,10 +1164,12 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
      * @see org.eclipse.jetty.client.DuplexConnectionPool
+     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 10000 ms.
      */
+    @Deprecated
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
-        this.removeIdleDestinations = removeIdleDestinations;
+        setDestinationIdleTimeout(removeIdleDestinations ? 10_000L : 0L);
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ConnectionPoolHelper;
@@ -301,6 +302,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemoved(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
@@ -316,7 +320,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         Destination destinationAfter = client.getDestination(scenario.getScheme(), host, port);
         assertSame(destinationBefore, destinationAfter);
 
-        client.setRemoveIdleDestinations(true);
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
 
         response = client.newRequest(host, port)
             .scheme(scenario.getScheme())
@@ -334,21 +338,19 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemovedAfterConnectionError(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        client.setRemoveIdleDestinations(true);
         assertTrue(client.getDestinations().isEmpty(), "Destinations of a fresh client must be empty");
 
         server.stop();
         Request request = client.newRequest(host, port).scheme(scenario.getScheme());
         assertThrows(Exception.class, request::send);
 
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
-        while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
-        {
-            Thread.sleep(10);
-        }
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
         assertTrue(client.getDestinations().isEmpty(), "Destination must be removed after connection error");
     }
 
