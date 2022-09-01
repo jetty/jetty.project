@@ -126,13 +126,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public boolean sweep()
     {
-        if (getHttpClient().getDestinationIdleTimeout() <= 0L)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Sweep skipped as DestinationIdleTimeout is disabled");
-            return false;
-        }
-
         if (LOG.isDebugEnabled())
             LOG.debug("Sweep check in progress on {}", this);
         boolean remove = false;
@@ -175,13 +168,17 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.offer((Sweeper.Sweepable)connectionPool);
-        getHttpClient().getDestinationIdleTimeoutSweeper().offer(this);
+        Sweeper destinationSweeper = getHttpClient().getDestinationSweeper();
+        if (destinationSweeper != null)
+            destinationSweeper.offer(this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        getHttpClient().getDestinationIdleTimeoutSweeper().remove(this);
+        Sweeper destinationSweeper = getHttpClient().getDestinationSweeper();
+        if (destinationSweeper != null)
+            destinationSweeper.remove(this);
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
@@ -597,7 +594,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%s,idle=%d",
+        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%b,idle=%d",
             HttpDestination.class.getSimpleName(),
             asString(),
             hashCode(),

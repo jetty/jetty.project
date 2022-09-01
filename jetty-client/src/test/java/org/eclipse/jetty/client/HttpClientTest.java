@@ -544,10 +544,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testRetryWithDestinationIdleTimeoutEnabled(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
-
+        client.stop();
         client.setDestinationIdleTimeout(1000);
         client.setIdleTimeout(1000);
         client.setMaxConnectionsPerDestination(1);
+        client.start();
 
         try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
         {

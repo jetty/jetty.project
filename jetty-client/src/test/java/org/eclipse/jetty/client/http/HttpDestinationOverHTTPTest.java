@@ -302,8 +302,10 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemoved(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
-
+        client.stop();
         client.setDestinationIdleTimeout(1000);
+        client.start();
+
         String host = "localhost";
         int port = connector.getLocalPort();
         Destination destinationBefore = client.getDestination(scenario.getScheme(), host, port);
@@ -336,10 +338,12 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemovedAfterConnectionError(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        client.setDestinationIdleTimeout(1000);
         assertTrue(client.getDestinations().isEmpty(), "Destinations of a fresh client must be empty");
 
         server.stop();

@@ -71,7 +71,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -155,7 +154,7 @@ public class HttpClient extends ContainerLifeCycle
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
-    private Sweeper destinationIdleTimeoutSweeper;
+    private Sweeper destinationSweeper;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -241,21 +240,6 @@ public class HttpClient extends ContainerLifeCycle
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
 
-        destinationIdleTimeoutSweeper = new Sweeper(scheduler, 1000L);
-        // Bind the start of the destinationIdleTimeoutSweeper to the scheduler's start as we cannot add the former as a bean
-        // because HttpDestination.doStart() expects to find a different sweeper by calling getBean() on the HttpClient to be
-        // used for connection pool sweeping. That sweeper cannot be used for destinationIdleTimeout sweeping, so we need to
-        // maintain a second one on the client that isn't a bean and is dedicated to that task.
-        scheduler.addLifeCycleListener(new LifeCycle.Listener()
-        {
-            @Override
-            public void lifeCycleStarted(LifeCycle event)
-            {
-                LifeCycle.start(destinationIdleTimeoutSweeper);
-                scheduler.removeLifeCycleListener(this);
-            }
-        });
-
         if (resolver == null)
             setSocketAddressResolver(new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout()));
 
@@ -270,7 +254,14 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         transport.setHttpClient(this);
+
         super.doStart();
+
+        if (getDestinationIdleTimeout() > 0L)
+        {
+            destinationSweeper = new Sweeper(scheduler, 1000L);
+            destinationSweeper.start();
+        }
     }
 
     private CookieManager newCookieManager()
@@ -281,7 +272,11 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        LifeCycle.stop(destinationIdleTimeoutSweeper);
+        if (destinationSweeper != null)
+        {
+            destinationSweeper.stop();
+            destinationSweeper = null;
+        }
 
         decoderFactories.clear();
         handlers.clear();
@@ -338,9 +333,9 @@ public class HttpClient extends ContainerLifeCycle
         return cookieManager;
     }
 
-    Sweeper getDestinationIdleTimeoutSweeper()
+    Sweeper getDestinationSweeper()
     {
-        return destinationIdleTimeoutSweeper;
+        return destinationSweeper;
     }
 
     /**
@@ -1113,30 +1108,36 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the delay in ms before idle destinations should be removed
+     * The default value is 0
+     * @return the time in ms after which idle destinations are removed
      * @see #setDestinationIdleTimeout(long)
      */
-    @ManagedAttribute("The delay in ms before idle destinations are removed, disabled when zero or negative")
+    @ManagedAttribute("The time in ms after which idle destinations are removed, disabled when zero or negative")
     public long getDestinationIdleTimeout()
     {
         return destinationIdleTimeout;
     }
 
     /**
-     * Whether destinations that have no connections (nor active nor idle) should be removed
-     * after a certain delay.
      * <p>
-     * Applications typically make request to a limited number of destinations so keeping
-     * destinations around is not a problem for the memory or the GC.
-     * However, for applications that hit millions of different destinations (e.g. a spider
-     * bot) it would be useful to be able to remove the old destinations that won't be visited
-     * anymore and leave space for new destinations.
+     * Whether destinations that have no connections (nor active nor idle) and no exchanges
+     * should be removed after the specified timeout.
+     * </p>
+     * <p>
+     * If the specified {@code destinationIdleTimeout} is 0 or negative, then the destinations
+     * are not removed.
+     * </p>
+     * <p>
+     * Avoids accumulating destinations when applications (e.g. a spider bot or web crawler)
+     * hit a lot of different destinations that won't be visited again.
+     * </p>
      *
-     * @param destinationIdleTimeout the delay in ms before idle destinations should be removed
-     * @see org.eclipse.jetty.client.DuplexConnectionPool
+     * @param destinationIdleTimeout the time in ms after which idle destinations are removed
      */
     public void setDestinationIdleTimeout(long destinationIdleTimeout)
     {
+        if (isStarted())
+            LOG.warn("Calling setDestinationIdleTimeout() while started has no effect");
         this.destinationIdleTimeout = destinationIdleTimeout;
     }
 
@@ -1168,7 +1169,7 @@ public class HttpClient extends ContainerLifeCycle
     @Deprecated
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
-        setDestinationIdleTimeout(removeIdleDestinations ? 10_000 : 0);
+        setDestinationIdleTimeout(removeIdleDestinations ? 10_000L : 0L);
     }
 
     /**
