@@ -142,7 +142,7 @@
     <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
-    <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
