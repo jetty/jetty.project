@@ -34,7 +34,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.3.2</checkstyle.version>
+    <checkstyle.version>10.3.3</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
@@ -133,7 +133,7 @@
     <buildnumber.maven.plugin.version>3.0.0</buildnumber.maven.plugin.version>
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
-    <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
+    <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
