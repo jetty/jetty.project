@@ -14,8 +14,10 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
-              timeout( time: 180, unit: 'MINUTES' ) {
+              timeout( time: 180, unit: 'MINUTES' ) {               
                 checkout scm
+                sh "ls -lrt /home/jenkins/"
+                sh "ls -lrt /home/jenkins/jetty.project.git"
                 mavenBuild( "jdk17", "clean install -Perrorprone", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -51,6 +53,8 @@ pipeline {
             container( 'jetty-build' ) {
               timeout( time: 180, unit: 'MINUTES' ) {
                 checkout scm
+                sh "ls -lrt /home/jenkins/"
+                sh "ls -lrt /home/jenkins/jetty.project.git"                
                 mavenBuild( "jdk11", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
                 recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
               }
