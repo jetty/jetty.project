@@ -52,12 +52,12 @@ public class NanoTime
     }
 
     /**
-     * <p>Calculates the nanoseconds elapsed between the current nanoTime and an end nanoTime.</p>
+     * <p>Calculates the nanoseconds remaining between the current nanoTime and an end nanoTime.</p>
      *
      * @param endNanoTime the end nanoTime
-     * @return the nanoseconds elapsed between the current nanoTime and the given end nanoTime
+     * @return the nanoseconds remaining between the current nanoTime and the given end nanoTime
      */
-    public static long elapsedTo(long endNanoTime)
+    public static long remainingTo(long endNanoTime)
     {
         return elapsed(now(), endNanoTime);
     }
@@ -86,12 +86,12 @@ public class NanoTime
     }
 
     /**
-     * <p>Calculates the milliseconds elapsed between the current nanoTime and an end nanoTime.</p>
+     * <p>Calculates the milliseconds remaining between the current nanoTime and an end nanoTime.</p>
      *
      * @param endNanoTime the end nanoTime
-     * @return the milliseconds elapsed between the current nanoTime and the given end nanoTime
+     * @return the milliseconds remaining between the current nanoTime and the given end nanoTime
      */
-    public static long millisElapsedTo(long endNanoTime)
+    public static long millisRemainingTo(long endNanoTime)
     {
         return millisElapsed(now(), endNanoTime);
     }
@@ -120,12 +120,12 @@ public class NanoTime
     }
 
     /**
-     * <p>Calculates the seconds elapsed between the current nanoTime and an end nanoTime.</p>
+     * <p>Calculates the seconds remaining between the current nanoTime and an end nanoTime.</p>
      *
      * @param endNanoTime the end nanoTime
-     * @return the seconds elapsed between the current nanoTime and the given end nanoTime
+     * @return the seconds remaining between the current nanoTime and the given end nanoTime
      */
-    public static long secondsElapsedTo(long endNanoTime)
+    public static long secondsRemainingTo(long endNanoTime)
     {
         return secondsElapsed(now(), endNanoTime);
     }
@@ -134,7 +134,7 @@ public class NanoTime
      * <p>Returns whether the first nanoTime is strictly before the second nanoTime.</p>
      * <p>Reads as: {@code "is nanoTime1 strictly before nanoTime2?"}.</p>
      * <p>Avoids the common mistake of comparing the 2 nanoTimes with the
-     * less-than {@code <} operator, which cannot be used when comparing nanoTimes
+     * less-than {@code <} operator, which cannot be used when comparing nanoTimes,
      * as specified in {@link System#nanoTime()}.</p>
      *
      * @param nanoTime1 the first nanoTime

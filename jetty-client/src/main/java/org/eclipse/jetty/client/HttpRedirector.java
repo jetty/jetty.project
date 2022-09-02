@@ -315,7 +315,7 @@ public class HttpRedirector
             long timeoutNanoTime = httpRequest.getTimeoutNanoTime();
             if (timeoutNanoTime < Long.MAX_VALUE)
             {
-                long newTimeout = NanoTime.elapsedTo(timeoutNanoTime);
+                long newTimeout = NanoTime.remainingTo(timeoutNanoTime);
                 if (newTimeout > 0)
                 {
                     redirect.timeout(newTimeout, TimeUnit.NANOSECONDS);

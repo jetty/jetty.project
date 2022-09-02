@@ -140,7 +140,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         while (NanoTime.isBefore(expires, prevEarliest))
         {
             // A new entity expires earlier than previous entities, schedule it.
-            long delay = Math.max(0, NanoTime.elapsedTo(expires));
+            long delay = Math.max(0, NanoTime.remainingTo(expires));
             if (LOG.isDebugEnabled())
                 LOG.debug("Scheduling timeout in {} ms for {}", TimeUnit.NANOSECONDS.toMillis(delay), this);
             schedule(cyclicTimeout, delay, TimeUnit.NANOSECONDS);

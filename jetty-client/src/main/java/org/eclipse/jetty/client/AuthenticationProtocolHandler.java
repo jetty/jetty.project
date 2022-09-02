@@ -219,7 +219,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 long timeoutNanoTime = request.getTimeoutNanoTime();
                 if (timeoutNanoTime < Long.MAX_VALUE)
                 {
-                    long newTimeout = NanoTime.elapsedTo(timeoutNanoTime);
+                    long newTimeout = NanoTime.remainingTo(timeoutNanoTime);
                     if (newTimeout > 0)
                     {
                         newRequest.timeout(newTimeout, TimeUnit.NANOSECONDS);
