@@ -65,20 +65,6 @@
         </excludes>
       </resource>
     </resources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
-          <pde>true</pde>
-          <downloadSources>true</downloadSources>
-          <sourceExcludes>
-            <sourceExclude>**/.svn/**</sourceExclude>
-          </sourceExcludes>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
   <dependencyManagement>
