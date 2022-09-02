@@ -174,7 +174,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     {
         super.onContinue(clientRequest, proxyRequest);
         Runnable action = (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
-        action.run();
+        if (action != null) 
+        {
+            action.run();
+        }
     }
 
     private void transform(ContentTransformer transformer, ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
