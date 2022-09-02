@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -231,25 +232,25 @@ public class CyclicTimeoutsTest
             return new ConstantExpirable(delay, unit);
         }
 
-        private final long expireNanos;
+        private final long expireNanoTime;
         private final String asString;
 
         private ConstantExpirable()
         {
-            this.expireNanos = Long.MAX_VALUE;
+            this.expireNanoTime = Long.MAX_VALUE;
             this.asString = "noexp";
         }
 
         public ConstantExpirable(long delay, TimeUnit unit)
         {
-            this.expireNanos = System.nanoTime() + unit.toNanos(delay);
+            this.expireNanoTime = NanoTime.now() + unit.toNanos(delay);
             this.asString = String.valueOf(unit.toMillis(delay));
         }
 
         @Override
         public long getExpireNanoTime()
         {
-            return expireNanos;
+            return expireNanoTime;
         }
 
         @Override

@@ -55,6 +55,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.NanoTime;
 
 public class HttpRequest implements Request
 {
@@ -77,7 +78,7 @@ public class HttpRequest implements Request
     private boolean versionExplicit;
     private long idleTimeout = -1;
     private long timeout;
-    private long timeoutAt = Long.MAX_VALUE;
+    private long timeoutNanoTime = Long.MAX_VALUE;
     private Content content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
@@ -823,16 +824,16 @@ public class HttpRequest implements Request
     {
         long timeout = getTimeout();
         if (timeout > 0)
-            timeoutAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+            timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
     }
 
     /**
      * @return The nanoTime at which the timeout expires or {@link Long#MAX_VALUE} if there is no timeout.
      * @see #timeout(long, TimeUnit)
      */
-    long getTimeoutAt()
+    long getTimeoutNanoTime()
     {
-        return timeoutAt;
+        return timeoutNanoTime;
     }
 
     protected List<Response.ResponseListener> getResponseListeners()

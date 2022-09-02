@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -75,7 +76,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         if (LOG.isDebugEnabled())
             LOG.debug("Timeouts check for {}", this);
 
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         long earliest = Long.MAX_VALUE;
         // Reset the earliest timeout so we can expire again.
         // A concurrent call to schedule(long) may lose an
@@ -95,12 +96,12 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
             long expiresAt = expirable.getExpireNanoTime();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Entity {} expires in {} ms for {}", expirable, TimeUnit.NANOSECONDS.toMillis(expiresAt - now), this);
+                LOG.debug("Entity {} expires in {} ms for {}", expirable, NanoTime.millisElapsed(now, expiresAt), this);
 
             if (expiresAt == -1)
                 continue;
 
-            if (expiresAt <= now)
+            if (NanoTime.isBeforeOrSame(expiresAt, now))
             {
                 boolean remove = onExpired(expirable);
                 if (LOG.isDebugEnabled())
@@ -109,11 +110,12 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
                     iterator.remove();
                 continue;
             }
-            earliest = Math.min(earliest, expiresAt);
+
+            earliest = Math.min(earliest, NanoTime.elapsed(now, expiresAt));
         }
 
         if (earliest < Long.MAX_VALUE)
-            schedule(earliest);
+            schedule(now + earliest);
     }
 
     /**
@@ -133,12 +135,12 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         // Schedule a timeout for the earliest entity that may expire.
         // When the timeout expires, scan the entities for the next
         // earliest entity that may expire, and reschedule a new timeout.
-        long prevEarliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
+        long prevEarliest = earliestTimeout.getAndUpdate(t -> NanoTime.isBefore(t, expiresAt) ? t : expiresAt);
         long expires = expiresAt;
-        while (expires < prevEarliest)
+        while (NanoTime.isBefore(expires, prevEarliest))
         {
             // A new entity expires earlier than previous entities, schedule it.
-            long delay = Math.max(0, expires - System.nanoTime());
+            long delay = Math.max(0, NanoTime.elapsedTo(expires));
             if (LOG.isDebugEnabled())
                 LOG.debug("Scheduling timeout in {} ms for {}", TimeUnit.NANOSECONDS.toMillis(delay), this);
             schedule(cyclicTimeout, delay, TimeUnit.NANOSECONDS);

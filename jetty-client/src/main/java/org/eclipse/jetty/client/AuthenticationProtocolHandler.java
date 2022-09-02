@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,10 +216,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 // Adjust the timeout of the new request, taking into account the
                 // timeout of the previous request and the time already elapsed.
-                long timeoutAt = request.getTimeoutAt();
-                if (timeoutAt < Long.MAX_VALUE)
+                long timeoutNanoTime = request.getTimeoutNanoTime();
+                if (timeoutNanoTime < Long.MAX_VALUE)
                 {
-                    long newTimeout = timeoutAt - System.nanoTime();
+                    long newTimeout = NanoTime.elapsedTo(timeoutNanoTime);
                     if (newTimeout > 0)
                     {
                         newRequest.timeout(newTimeout, TimeUnit.NANOSECONDS);

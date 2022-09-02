@@ -30,6 +30,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -135,13 +136,12 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     {
         try (Socket socket = new Socket((String)null, _connector.getLocalPort()))
         {
-            socket.setSoTimeout(10 * MAX_IDLE_TIME);
+            socket.setSoTimeout((int)(10 * MAX_IDLE_TIME));
             socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             InputStream inputStream = socket.getInputStream();
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             String response = IO.toString(inputStream);
-            long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-            assertThat(timeElapsed, greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
+            assertThat(NanoTime.millisElapsedFrom(start), greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
             return response;
         }
     }

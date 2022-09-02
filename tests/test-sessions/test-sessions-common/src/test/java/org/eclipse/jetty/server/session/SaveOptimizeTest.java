@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -569,7 +570,7 @@ public class SaveOptimizeTest
             {
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
-                session.setAttribute("ttt", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+                session.setAttribute("ttt", NanoTime.now());
             }
             else if ("max".equalsIgnoreCase(action))
             {

@@ -62,6 +62,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -558,8 +559,8 @@ public class JettyHomeTester
          */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
-            long end = System.nanoTime() + unit.toNanos(time);
-            while (System.nanoTime() < end)
+            long start = NanoTime.now();
+            while (NanoTime.elapsedFrom(start) < unit.toNanos(time))
             {
                 boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                 if (result)
@@ -586,8 +587,8 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                long end = System.nanoTime() + unit.toNanos(time);
-                while (System.nanoTime() < end)
+                long start = NanoTime.now();
+                while (NanoTime.elapsedFrom(start) < unit.toNanos(time))
                 {
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                     if (result)

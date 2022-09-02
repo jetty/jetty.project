@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -998,9 +999,9 @@ public class HttpConnectionTest
                 "5;\r\n" +
                 "12345\r\n";
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long start = NanoTime.now();
         String response = connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThanOrEqualTo(2000L));
+        assertThat(NanoTime.millisElapsedFrom(start), lessThanOrEqualTo(2000L));
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "pathInfo=/R1");

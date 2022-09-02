@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -216,7 +217,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         addBean(_tryExecutor);
 
-        _lastShrink.set(System.nanoTime());
+        _lastShrink.set(NanoTime.now());
 
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
@@ -249,7 +250,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     break;
 
             // try to let jobs complete naturally for half our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
+            joinThreads(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
 
             // If we still have threads running, get a bit more aggressive
 
@@ -264,7 +265,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
 
             // wait again for the other half of our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
+            joinThreads(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
 
             Thread.yield();
 
@@ -323,7 +324,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 if (thread == Thread.currentThread())
                     continue;
 
-                long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
+                long canWait = NanoTime.millisElapsedTo(stopByNanos);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting for {} for {}", thread, canWait);
                 if (canWait <= 0)
@@ -826,7 +827,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
-            _lastShrink.set(System.nanoTime());
+            _lastShrink.set(NanoTime.now());
             thread.start();
             started = true;
         }
@@ -1050,8 +1051,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                             if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
                                 long last = _lastShrink.get();
-                                long now = System.nanoTime();
-                                if ((now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout) && _lastShrink.compareAndSet(last, now))
+                                long now = NanoTime.now();
+                                if (NanoTime.millisElapsed(last, now) > idleTimeout && _lastShrink.compareAndSet(last, now))
                                 {
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("shrinking {}", QueuedThreadPool.this);

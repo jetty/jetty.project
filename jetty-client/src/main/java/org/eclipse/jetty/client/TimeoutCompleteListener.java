@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
     {
         if (requestTimeout.compareAndSet(null, request))
         {
-            long delay = Math.max(0, timeoutAt - System.nanoTime());
+            long delay = Math.max(0, NanoTime.elapsedTo(timeoutAt));
             if (LOG.isDebugEnabled())
                 LOG.debug("Scheduling timeout in {} ms for {} on {}", TimeUnit.NANOSECONDS.toMillis(delay), request, this);
             schedule(delay, TimeUnit.NANOSECONDS);

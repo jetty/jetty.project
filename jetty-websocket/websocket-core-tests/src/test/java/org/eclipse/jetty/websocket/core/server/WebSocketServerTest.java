@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -178,10 +179,10 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildText("World", true), 0, 6 + 5);
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 3)
             {
-                assertThat(System.nanoTime(), Matchers.lessThan(end));
+                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(3));
@@ -192,10 +193,10 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildText("Bye", true), 0, 6 + 3);
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 5)
             {
-                assertThat(System.nanoTime(), Matchers.lessThan(end));
+                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(5));
@@ -284,10 +285,10 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildText("World", true), 0, 6 + 5);
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 3)
             {
-                assertThat(System.nanoTime(), Matchers.lessThan(end));
+                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(3));
@@ -349,10 +350,10 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 2)
             {
-                assertThat(System.nanoTime(), Matchers.lessThan(end));
+                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(2));
@@ -416,10 +417,10 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 2)
             {
-                assertThat(System.nanoTime(), Matchers.lessThan(end));
+                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(2));

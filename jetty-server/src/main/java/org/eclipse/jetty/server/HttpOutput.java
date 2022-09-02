@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -184,7 +185,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private Interceptor _interceptor;
     private long _written;
     private long _flushed;
-    private long _firstByteTimeStamp = -1;
+    private long _firstByteNanoTime = -1;
     private ByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -257,13 +258,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        if (_firstByteTimeStamp == -1)
+        if (_firstByteNanoTime == -1)
         {
             long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
             if (minDataRate > 0)
-                _firstByteTimeStamp = System.nanoTime();
+                _firstByteNanoTime = NanoTime.now();
             else
-                _firstByteTimeStamp = Long.MAX_VALUE;
+                _firstByteNanoTime = Long.MAX_VALUE;
         }
 
         _interceptor.write(content, last, callback);
@@ -1373,11 +1374,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void onFlushed(long bytes) throws IOException
     {
-        if (_firstByteTimeStamp == -1 || _firstByteTimeStamp == Long.MAX_VALUE)
+        if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
             return;
         long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
-        long elapsed = System.nanoTime() - _firstByteTimeStamp;
+        long elapsed = NanoTime.elapsedFrom(_firstByteNanoTime);
         long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
         if (LOG.isDebugEnabled())
             LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
@@ -1406,7 +1407,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _written = 0;
             _writeListener = null;
             _onError = null;
-            _firstByteTimeStamp = -1;
+            _firstByteNanoTime = -1;
             _flushed = 0;
             _closedCallback = null;
         }

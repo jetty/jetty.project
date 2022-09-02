@@ -14,10 +14,10 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PreconfigureStandardTestWar
 {
-    private static final long __start = System.nanoTime();
+    private static final long __start = NanoTime.now();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public static void main(String[] args) throws Exception
@@ -47,7 +47,7 @@ public class PreconfigureStandardTestWar
 
         PreconfigureQuickStartWar.main("target/test-standard.war", target, "src/test/resources/test.xml");
 
-        LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisElapsedFrom(__start));
 
         // IO.copy(new FileInputStream("target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }

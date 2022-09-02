@@ -34,6 +34,7 @@ import java.util.jar.JarOutputStream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
@@ -52,10 +53,10 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
 {
-    private final class UserCount implements PropertyUserStore.UserListener
+    private static final class UserCount implements PropertyUserStore.UserListener
     {
         private final AtomicInteger userCount = new AtomicInteger();
-        private final List<String> users = new ArrayList<String>();
+        private final List<String> users = new ArrayList<>();
 
         private UserCount()
         {
@@ -80,9 +81,8 @@ public class PropertyUserStoreTest
 
         public void awaitCount(int expectedCount) throws InterruptedException
         {
-            long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(10);
-
-            while (userCount.get() != expectedCount && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) < timeout))
+            long start = NanoTime.now();
+            while (userCount.get() != expectedCount && NanoTime.secondsElapsedFrom(start) < 10)
             {
                 TimeUnit.MILLISECONDS.sleep(100);
             }
@@ -193,7 +193,7 @@ public class PropertyUserStoreTest
     }
 
     @Test
-    public void testPropertyUserStoreFails() throws Exception
+    public void testPropertyUserStoreFails()
     {
         assertThrows(IllegalStateException.class, () ->
         {

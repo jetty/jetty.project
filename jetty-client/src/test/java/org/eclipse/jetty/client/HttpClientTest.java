@@ -86,6 +86,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.hamcrest.Matchers;
@@ -127,9 +128,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         HttpConnectionOverHTTP connection = null;
-        while (connection == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        while (connection == null && NanoTime.secondsElapsedFrom(start) < 5)
         {
             connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
             TimeUnit.MILLISECONDS.sleep(10);
@@ -611,7 +612,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .file(file)
             .onRequestSuccess(request ->
             {
-                requestTime.set(System.nanoTime());
+                requestTime.set(NanoTime.now());
                 latch.countDown();
             })
             .send(new Response.Listener.Adapter()
@@ -619,22 +620,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 @Override
                 public void onSuccess(Response response)
                 {
-                    responseTime.set(System.nanoTime());
+                    responseTime.set(NanoTime.now());
                     latch.countDown();
                 }
 
                 @Override
                 public void onComplete(Result result)
                 {
-                    exchangeTime.set(System.nanoTime());
+                    exchangeTime.set(NanoTime.now());
                     latch.countDown();
                 }
             });
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        assertTrue(requestTime.get() <= exchangeTime.get());
-        assertTrue(responseTime.get() <= exchangeTime.get());
+        assertTrue(NanoTime.isBeforeOrSame(requestTime.get(), exchangeTime.get()));
+        assertTrue(NanoTime.isBeforeOrSame(responseTime.get(), exchangeTime.get()));
 
         // Give some time to the server to consume the request content
         // This is just to avoid exception traces in the test output

@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -499,10 +500,9 @@ public class LocalAsyncContextTest
 
     static <T> void spinAssertEquals(T expected, Supplier<T> actualSupplier, long waitFor, TimeUnit units)
     {
-        long now = System.nanoTime();
-        long end = now + units.toNanos(waitFor);
         T actual = null;
-        while (now < end)
+        long start = NanoTime.now();
+        while (NanoTime.elapsedFrom(start) < units.toNanos(waitFor))
         {
             actual = actualSupplier.get();
             if (actual == null && expected == null ||
@@ -516,7 +516,6 @@ public class LocalAsyncContextTest
             {
                 // Ignored
             }
-            now = System.nanoTime();
         }
 
         assertEquals(expected, actual);

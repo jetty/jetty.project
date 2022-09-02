@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -436,7 +437,7 @@ public class WebSocketDocs
             long start = payload.getLong();
 
             // Calculate the round-trip time.
-            long roundTrip = System.nanoTime() - start;
+            long roundTrip = NanoTime.elapsedFrom(start);
         }
     }
     // end::pingPongListener[]

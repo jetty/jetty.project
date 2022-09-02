@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -156,12 +157,12 @@ public class StopTest
                     @Override
                     public void close()
                     {
-                        long start = System.nanoTime();
+                        long start = NanoTime.now();
                         new Thread(() ->
                         {
                             try
                             {
-                                Thread.sleep(closeWait - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                                Thread.sleep(closeWait - NanoTime.millisElapsedFrom(start));
                             }
                             catch (Throwable e)
                             {
@@ -206,7 +207,7 @@ public class StopTest
                 break;
         }
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         try
         {
             server.stop();
@@ -216,10 +217,9 @@ public class StopTest
         {
             assertTrue(stopTimeout > 0 && stopTimeout < closeWait);
         }
-        long stop = System.nanoTime();
 
         // Check stop time was correct
-        assertThat(TimeUnit.NANOSECONDS.toMillis(stop - start), stopTimeMatcher);
+        assertThat(NanoTime.millisElapsedFrom(start), stopTimeMatcher);
 
         // Connection closed
         while (true)
@@ -227,7 +227,7 @@ public class StopTest
             int r = client.getInputStream().read();
             if (r == -1)
                 break;
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start), lessThan(10L));
+            assertThat(NanoTime.millisElapsedFrom(start), lessThan(10L));
         }
 
         // onClose Thread interrupted or completed
@@ -344,10 +344,10 @@ public class StopTest
             }
         }).start();
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         while (!connector.isShutdown())
         {
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start), lessThan(10L));
+            assertThat(NanoTime.secondsElapsedFrom(start), lessThan(10L));
             Thread.sleep(10);
         }
 

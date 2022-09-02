@@ -20,12 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -130,9 +130,9 @@ public class ContainerInitializer
                 context.getServletContext().setExtendedListenerTypes(true);
                 if (LOG.isDebugEnabled())
                 {
-                    long start = System.nanoTime();
+                    long start = NanoTime.now();
                     _target.onStartup(classes, context.getServletContext());
-                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), NanoTime.millisElapsedFrom(start));
                 }
                 else
                     _target.onStartup(classes, context.getServletContext());

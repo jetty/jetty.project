@@ -80,6 +80,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1746,14 +1747,13 @@ public class RequestTest
                 "\r\n" +
                 buf;
 
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
-            long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertTrue((now - start) < 5000);
+            assertTrue(NanoTime.millisElapsedFrom(start) < 5000);
         }
     }
 
@@ -1785,14 +1785,13 @@ public class RequestTest
                 "\r\n" +
                 buf;
 
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
-            long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertTrue((now - start) < 5000);
+            assertTrue(NanoTime.millisElapsedFrom(start) < 5000);
         }
     }
 

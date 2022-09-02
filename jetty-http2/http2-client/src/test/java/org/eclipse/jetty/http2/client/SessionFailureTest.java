@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
@@ -116,14 +117,12 @@ public class SessionFailureTest extends AbstractTest
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
-        long start = System.nanoTime();
-        long now = System.nanoTime();
+        long start = NanoTime.now();
         while (((HTTP2Session)session).getEndPoint().isOpen())
         {
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(now - start), lessThanOrEqualTo(5L));
+            assertThat(NanoTime.secondsElapsedFrom(start), lessThanOrEqualTo(5L));
 
             Thread.sleep(10);
-            now = System.nanoTime();
         }
     }
 }

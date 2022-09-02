@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
@@ -283,7 +284,7 @@ public class ByteArrayEndPointTest
         assertEquals("test", BufferUtil.toString(buffer));
 
         // Wait for a read timeout.
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
         try
@@ -295,7 +296,7 @@ public class ByteArrayEndPointTest
         {
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), greaterThan(halfIdleTimeout));
+        assertThat(NanoTime.millisElapsedFrom(start), greaterThan(halfIdleTimeout));
         assertThat("Endpoint open", endp.isOpen(), is(true));
     }
 }

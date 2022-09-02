@@ -72,6 +72,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -133,7 +134,7 @@ public class HTTPServerDocs
             public void onComplete(Request request)
             {
                 long begin = times.remove(request);
-                long elapsed = System.nanoTime() - begin;
+                long elapsed = NanoTime.elapsedFrom(begin);
                 System.getLogger("timing").log(INFO, "Request {0} took {1} ns", request, elapsed);
             }
         }

@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -265,15 +266,14 @@ public class HttpChannelEventTest
             @Override
             public void onRequestBegin(Request request)
             {
-                request.setAttribute(attribute, System.nanoTime());
+                request.setAttribute(attribute, NanoTime.now());
             }
 
             @Override
             public void onComplete(Request request)
             {
-                long endTime = System.nanoTime();
                 long beginTime = (Long)request.getAttribute(attribute);
-                elapsed.set(endTime - beginTime);
+                elapsed.set(NanoTime.elapsedFrom(beginTime));
                 latch.countDown();
             }
         });

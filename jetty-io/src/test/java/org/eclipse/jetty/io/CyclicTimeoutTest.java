@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CyclicTimeoutTest
 {
     private volatile boolean _expired;
-    private ScheduledExecutorScheduler _timer = new ScheduledExecutorScheduler();
+    private final ScheduledExecutorScheduler _timer = new ScheduledExecutorScheduler();
     private CyclicTimeout _timeout;
 
     @BeforeEach
@@ -132,11 +133,11 @@ public class CyclicTimeoutTest
     }
 
     @Test
-    public void testBusy() throws Exception
+    public void testBusy()
     {
-        long testUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2000);
         assertTrue(_timeout.schedule(500, TimeUnit.MILLISECONDS));
-        while (System.nanoTime() < testUntil)
+        long start = NanoTime.now();
+        while (NanoTime.secondsElapsedFrom(start) < 2)
             _timeout.schedule(500, TimeUnit.MILLISECONDS);
         _timeout.cancel();
         assertFalse(_expired);

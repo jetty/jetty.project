@@ -29,7 +29,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +65,7 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1008,7 +1008,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private void notIdle()
     {
-        streamsState.idleTime = System.nanoTime();
+        streamsState.idleNanoTime = NanoTime.now();
     }
 
     @Override
@@ -1516,7 +1516,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private final Queue<Slot> slots = new ArrayDeque<>();
         // Must be incremented with the lock held.
         private final AtomicLong streamCount = new AtomicLong();
-        private long idleTime = System.nanoTime();
+        private long idleNanoTime = NanoTime.now();
         private CloseState closed = CloseState.NOT_CLOSED;
         private Runnable zeroStreamsAction;
         private GoAwayFrame goAwayRecv;
@@ -1872,7 +1872,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     case NOT_CLOSED:
                     {
-                        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTime);
+                        long elapsed = NanoTime.millisElapsedFrom(idleNanoTime);
                         if (elapsed < endPoint.getIdleTimeout())
                             return false;
                         notify = true;

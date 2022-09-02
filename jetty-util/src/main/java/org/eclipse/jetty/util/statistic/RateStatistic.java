@@ -18,6 +18,7 @@ import java.util.Deque;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -69,14 +70,13 @@ public class RateStatistic
 
     private void update()
     {
-        update(System.nanoTime());
+        update(NanoTime.now());
     }
 
     private void update(long now)
     {
-        long expire = now - _nanoPeriod;
         Long head = _samples.peekFirst();
-        while (head != null && head < expire)
+        while (head != null && NanoTime.elapsed(head, now) > _nanoPeriod)
         {
             _samples.removeFirst();
             head = _samples.peekFirst();
@@ -104,7 +104,7 @@ public class RateStatistic
      */
     public int record()
     {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         try (AutoLock l = _lock.lock())
         {
             _count++;
@@ -151,7 +151,7 @@ public class RateStatistic
             Long head = _samples.peekFirst();
             if (head == null)
                 return -1;
-            return units.convert(System.nanoTime() - head, TimeUnit.NANOSECONDS);
+            return units.convert(NanoTime.elapsedFrom(head), TimeUnit.NANOSECONDS);
         }
     }
 
@@ -173,11 +173,11 @@ public class RateStatistic
 
     public String dump(TimeUnit units)
     {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         try (AutoLock l = _lock.lock())
         {
             String samples = _samples.stream()
-                .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
+                .mapToLong(t -> units.convert(NanoTime.elapsed(t, now), TimeUnit.NANOSECONDS))
                 .mapToObj(Long::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
             return String.format("%s%n%s", toString(now), samples);
@@ -187,7 +187,7 @@ public class RateStatistic
     @Override
     public String toString()
     {
-        return toString(System.nanoTime());
+        return toString(NanoTime.now());
     }
 
     private String toString(long nanoTime)

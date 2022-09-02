@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
@@ -677,19 +678,18 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
         });
 
-        long beforeStop = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long beforeStop = NanoTime.now();
         tp.stop();
-        long afterStop = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long afterStop = NanoTime.now();
         assertTrue(tp.isStopped());
-        assertTrue(afterStop - beforeStop < 1000);
+        assertTrue(NanoTime.millisElapsed(beforeStop, afterStop) < 1000);
         assertTrue(interruptedLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void waitForIdle(QueuedThreadPool tp, int idle)
     {
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long start = now;
-        while (tp.getIdleThreads() != idle && (now - start) < 10000)
+        long start = NanoTime.now();
+        while (tp.getIdleThreads() != idle && NanoTime.millisElapsedFrom(start) < 10000)
         {
             try
             {
@@ -698,17 +698,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             catch (InterruptedException ignored)
             {
             }
-            now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         assertThat(tp.getIdleThreads(), is(idle));
     }
 
     private void waitForReserved(QueuedThreadPool tp, int reserved)
     {
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long start = now;
+        long start = NanoTime.now();
         ReservedThreadExecutor reservedThreadExecutor = tp.getBean(ReservedThreadExecutor.class);
-        while (reservedThreadExecutor.getAvailable() != reserved && (now - start) < 10000)
+        while (reservedThreadExecutor.getAvailable() != reserved && NanoTime.millisElapsedFrom(start) < 10000)
         {
             try
             {
@@ -717,16 +715,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             catch (InterruptedException ignored)
             {
             }
-            now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         assertThat(reservedThreadExecutor.getAvailable(), is(reserved));
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)
     {
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long start = now;
-        while (tp.getThreads() != threads && (now - start) < 10000)
+        long start = NanoTime.now();
+        while (tp.getThreads() != threads && NanoTime.millisElapsedFrom(start) < 10000)
         {
             try
             {
@@ -735,7 +731,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             catch (InterruptedException ignored)
             {
             }
-            now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         assertThat(tp.getThreads(), is(threads));
     }

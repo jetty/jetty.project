@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,9 +105,9 @@ public class DataRateLimitedServletTest
             }
         }
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long start = NanoTime.now();
         String response = connector.getResponse("GET /context/stream/content.txt HTTP/1.0\r\n\r\n");
-        long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+        long duration = NanoTime.millisElapsedFrom(start);
 
         assertThat("Response", response, containsString("200 OK"));
         assertThat("Response Length", response.length(), greaterThan(1024 * 1024));

@@ -21,6 +21,7 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
@@ -104,7 +105,7 @@ public class PlusConfiguration extends AbstractConfiguration
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
-            _key = (int)(this.hashCode() ^ System.nanoTime());
+            _key = (int)(this.hashCode() ^ NanoTime.now());
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
