@@ -112,33 +112,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <platforms>
-            <platform>unix</platform>
-          </platforms>
-          <programs>
-            <program>
-              <id>preconfigure</id>
-              <mainClass>org.eclipse.jetty.quickstart.PreconfigureQuickStartWar</mainClass>
-            </program>
-            <program>
-              <mainClass>org.eclipse.jetty.quickstart.QuickStartWar</mainClass>
-              <id>quickstart</id>
-            </program>
-          </programs>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>

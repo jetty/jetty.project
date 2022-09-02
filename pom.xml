@@ -43,7 +43,7 @@
     <disruptor.version>3.4.2</disruptor.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.14.0</google.errorprone.version>
+    <google.errorprone.version>2.15.0</google.errorprone.version>
     <grpc.version>1.49.0</grpc.version>
     <gson.version>2.9.1</gson.version>
     <guava.version>31.1-jre</guava.version>
@@ -127,12 +127,10 @@
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
-    <appassembler.maven.plugin.version>2.1.0</appassembler.maven.plugin.version>
     <asciidoctor.maven.plugin.version>2.2.2</asciidoctor.maven.plugin.version>
     <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
     <buildnumber.maven.plugin.version>3.0.0</buildnumber.maven.plugin.version>
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
-    <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
@@ -146,7 +144,6 @@
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
-    <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
@@ -154,14 +151,12 @@
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.jxr.plugin.version>3.3.0</maven.jxr.plugin.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
-    <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
@@ -703,11 +698,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jxr-plugin</artifactId>
-          <version>${maven.jxr.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
           <version>${maven-plugin.plugin.version}</version>
         </plugin>
@@ -736,11 +726,6 @@
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>${maven.site.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -808,11 +793,6 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>${jacoco.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>com.agilejava.docbkx</groupId>
-          <artifactId>docbkx-maven-plugin</artifactId>
-          <version>${docbkx.maven.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
@@ -896,11 +876,6 @@
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
-          <artifactId>appassembler-maven-plugin</artifactId>
-          <version>${appassembler.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>${build-helper.maven.plugin.version}</version>
         </plugin>
@@ -929,11 +904,6 @@
             <processPluginDependencies>true</processPluginDependencies>
             <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-eclipse-plugin</artifactId>
-          <version>${maven.eclipse.plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
