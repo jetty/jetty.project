@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -418,6 +419,47 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 content = response.getContentAsString();
                 assertThat("Content", content, containsString("<b>Zed:</b> [alpha]<br/>"));
+            }
+        }
+    }
+
+    @Test
+    public void testDemoHandler() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+                .build();
+
+        int httpPort = distribution.freePort();
+
+        String[] argsConfig = {
+                "--add-modules=http,demo-handler"
+        };
+
+        String baseURI = "http://localhost:%d/demo-handler/".formatted(httpPort);
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                    "jetty.http.port=" + httpPort
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET(baseURI);
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat(response.getContentAsString(), containsString("Hello World"));
             }
         }
     }
