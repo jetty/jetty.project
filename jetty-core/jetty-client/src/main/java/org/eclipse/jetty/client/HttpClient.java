@@ -953,28 +953,6 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return whether TCP_NODELAY is enabled
-     * @deprecated use {@link ClientConnector#isTCPNoDelay()} instead
-     */
-    @ManagedAttribute(value = "Whether the TCP_NODELAY option is enabled", name = "tcpNoDelay")
-    @Deprecated
-    public boolean isTCPNoDelay()
-    {
-        return tcpNoDelay;
-    }
-
-    /**
-     * @param tcpNoDelay whether TCP_NODELAY is enabled
-     * @see java.net.Socket#setTcpNoDelay(boolean)
-     * @deprecated use {@link ClientConnector#setTCPNoDelay(boolean)} instead
-     */
-    @Deprecated
-    public void setTCPNoDelay(boolean tcpNoDelay)
-    {
-        this.tcpNoDelay = tcpNoDelay;
-    }
-
-    /**
      * Gets the http compliance mode for parsing http responses.
      * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
      *
@@ -1072,37 +1050,6 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return whether destinations that have no connections should be removed
-     * @see #setRemoveIdleDestinations(boolean)
-     * @deprecated replaced by {@link #getDestinationIdleTimeout()}
-     */
-    @Deprecated
-    @ManagedAttribute("Whether idle destinations are removed")
-    public boolean isRemoveIdleDestinations()
-    {
-        return destinationIdleTimeout > 0L;
-    }
-
-    /**
-     * Whether destinations that have no connections (nor active nor idle) should be removed.
-     * <p>
-     * Applications typically make request to a limited number of destinations so keeping
-     * destinations around is not a problem for the memory or the GC.
-     * However, for applications that hit millions of different destinations (e.g. a spider
-     * bot) it would be useful to be able to remove the old destinations that won't be visited
-     * anymore and leave space for new destinations.
-     *
-     * @param removeIdleDestinations whether destinations that have no connections should be removed
-     * @see org.eclipse.jetty.client.DuplexConnectionPool
-     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 10000 ms.
-     */
-    @Deprecated
-    public void setRemoveIdleDestinations(boolean removeIdleDestinations)
-    {
-        setDestinationIdleTimeout(removeIdleDestinations ? 10_000L : 0L);
-    }
-
-    /**
      * @return whether {@code connect()} operations are performed in blocking mode
      */
     @ManagedAttribute("Whether the connect() operation is blocking")
@@ -1188,17 +1135,6 @@ public class HttpClient extends ContainerLifeCycle
     protected HttpField getAcceptEncodingField()
     {
         return encodingField;
-    }
-
-    /**
-     * @param host the host to normalize
-     * @return the host itself
-     * @deprecated no replacement, do not use it
-     */
-    @Deprecated
-    protected String normalizeHost(String host)
-    {
-        return host;
     }
 
     public static int normalizePort(String scheme, int port)
